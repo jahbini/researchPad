@@ -1,6 +1,7 @@
 <!DOCTYPE html>
 <!--
 	Demonstration of the TI SensorTag JavaScript library.
+	Adaptation for clinical use for Android and iOS devices
 -->
 <html>
 <head>
@@ -41,6 +42,11 @@
 	<script src="libs/evothings/util/util.js"></script>
 	<script src="libs/evothings/easyble/easyble.js"></script>
 	<script src="libs/evothings/tisensortag/tisensortag.js"></script>
+	<script src="libs/dbg/jquery.js"></script>
+	<script src="libs/dbg/backbone.js"></script>
+	<script src="libs/dbg/underscore.js"></script>
+	<script src="libs/dbg/three.js"></script>
+	<script src="libs/dbg/d3.js"></script>
 </head>
 
 <body>
@@ -320,5 +326,6 @@
 
 	document.addEventListener('deviceready', initialiseSensorTag, false)
 	</script>
+	<script src="libs/extras/coffee-script.js"></script>
 </body>
 </html>
