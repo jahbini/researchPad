@@ -1,5 +1,5 @@
 	// SensorTag object.
-	var sensortag = evothings.tisensortag.createInstance()
+	var sensortag = evothings.tisensortag.createInstance();
 
 	function initialiseSensorTag()
 	{
@@ -20,9 +20,6 @@
 			.statusCallback(statusHandler)
 			.errorCallback(errorHandler)
 			.keypressCallback(keypressHandler)
-			.irTemperatureCallback(irTemperatureHandler, 500)
-			.humidityCallback(humidityHandler)
-			.barometerCallback(barometerHandler, 500)
 			.accelerometerCallback(accelerometerHandler, 200)
 			.magnetometerCallback(magnetometerHandler, 200)
 			.gyroscopeCallback(gyroscopeHandler, 200, 7) // 7 = enable all axes.
@@ -48,11 +45,8 @@
 			displayValue('StatusData', 'Ready to connect')
 			displayValue('FirmwareData', '?')
 			displayValue('KeypressData', blank)
-			displayValue('IRTemperatureData', blank)
 			displayValue('AccelerometerData', blank)
-			displayValue('HumidityData', blank)
 			displayValue('MagnetometerData', blank)
-			displayValue('BarometerData', blank)
 			displayValue('GyroscopeData', blank)
 
 			// Reset screen color.
@@ -74,85 +68,39 @@
 		switch (data[0])
 		{
 			case 0:
-				setBackgroundColor('white')
+				setBackgroundColor('white');
 				break;
 			case 1:
-				setBackgroundColor('red')
+				setBackgroundColor('red');
 				break;
 			case 2:
-				setBackgroundColor('blue')
+				setBackgroundColor('blue');
 				break;
 			case 3:
-				setBackgroundColor('magenta')
+				setBackgroundColor('magenta');
 				break;
 		}
 
 		// Update the value displayed.
-		var string = 'raw: 0x' + bufferToHexStr(data, 0, 1)
-		displayValue('KeypressData', string)
+		var string = 'raw: 0x' + bufferToHexStr(data, 0, 1);
+		displayValue('KeypressData', string);
 	}
-
-	function irTemperatureHandler(data)
-	{
-		// Calculate temperature from raw sensor data.
-		var values = sensortag.getIRTemperatureValues(data)
-		var ac = values.ambientTemperature
-		var af = sensortag.celsiusToFahrenheit(ac)
-		var tc = values.targetTemperature
-		var tf = sensortag.celsiusToFahrenheit(tc)
-
-		// Prepare the information to display.
-		var string =
-			'raw: 0x' + bufferToHexStr(data, 0, 4) + '<br/>'
-			+ (tc >= 0 ? '+' : '') + tc.toFixed(2) + '&deg; C '
-			+ '(' + (tf >= 0 ? '+' : '') + tf.toFixed(2) + '&deg; F)' + '<br/>'
-			+ (ac >= 0 ? '+' : '') + ac.toFixed(2) + '&deg; C '
-			+ '(' + (af >= 0 ? '+' : '') + af.toFixed(2) + '&deg; F) [amb]' + '<br/>'
-
-		// Update the value displayed.
-		displayValue('IRTemperatureData', string)
+	function templater(x,y,z,sensor,unit){
+			return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(5) + unit +' -- '
+			+ 'y=' + (y >= 0 ? '+' : '') + y.toFixed(5) + unit + ' -- '
+			+ 'z=' + (z >= 0 ? '+' : '') + z.toFixed(5) + unit;
 	}
 
 	function accelerometerHandler(data)
 	{
 		// Calculate the x,y,z accelerometer values from raw data.
-		var values = sensortag.getAccelerometerValues(data)
-		var x = values.x
-		var y = values.y
-		var z = values.z
-
-		// Prepare the information to display.
-		string =
-			'raw: 0x' + bufferToHexStr(data, 0, 3) + '<br/>'
-			+ 'x = ' + (x >= 0 ? '+' : '') + x.toFixed(5) + 'G<br/>'
-			+ 'y = ' + (y >= 0 ? '+' : '') + y.toFixed(5) + 'G<br/>'
-			+ 'z = ' + (z >= 0 ? '+' : '') + z.toFixed(5) + 'G<br/>'
+		var values = sensortag.getAccelerometerValues(data);
+		var x = values.x;
+		var y = values.y;
+		var z = values.z;
 
 		// Update the value displayed.
-		displayValue('AccelerometerData', string)
-	}
-
-	function humidityHandler(data)
-	{
-		// Calculate the humidity values from raw data.
-		var values = sensortag.getHumidityValues(data)
-
-		// Calculate the humidity temperature (C and F).
-		var tc = values.humidityTemperature
-		var tf = sensortag.celsiusToFahrenheit(tc)
-
-		// Calculate the relative humidity.
-		var h = values.relativeHumidity
-
-		// Prepare the information to display.
-		string =
-			'raw: 0x' + bufferToHexStr(data, 0, 4) + '<br/>'
-			+ (tc >= 0 ? '+' : '') + tc.toFixed(2) + '&deg; C '
-			+ '(' + (tf >= 0 ? '+' : '') + tf.toFixed(2) + '&deg; F)' + '<br/>'
-			+ (h >= 0 ? '+' : '') + h.toFixed(2) + '% RH' + '<br/>'
-
-		// Update the value displayed.
-		displayValue('HumidityData', string)
+		displayValue('AccelerometerData', templater(x,y,z,'accel','G') );
 	}
 
 	function magnetometerHandler(data)
@@ -163,46 +111,20 @@
 		var y = values.y
 		var z = values.z
 
-		// Prepare the information to display.
-		string =
-			'raw: 0x' + bufferToHexStr(data, 0, 6) + '<br/>'
-			+ 'x = ' + (x >= 0 ? '+' : '') + x.toFixed(5) + '&micro;T <br/>'
-			+ 'y = ' + (y >= 0 ? '+' : '') + y.toFixed(5) + '&micro;T <br/>'
-			+ 'z = ' + (z >= 0 ? '+' : '') + z.toFixed(5) + '&micro;T <br/>'
-
 		// Update the value displayed.
-		displayValue('MagnetometerData', string)
-	}
-
-	function barometerHandler(data)
-	{
-		// Prepare the information to display.
-		string =
-			'raw: 0x' + bufferToHexStr(data, 0, 4) + '<br/>'
-
-		// Update the value displayed.
-		displayValue('BarometerData', string)
-
-		// Calculated values not implemented yet.
+		displayValue('MagnetometerData', templater(x,y,z,'mag','&micro;T'))
 	}
 
 	function gyroscopeHandler(data)
 	{
 		// Calculate the gyroscope values from raw sensor data.
-		var values = sensortag.getGyroscopeValues(data)
-		var x = values.x
-		var y = values.y
-		var z = values.z
-
-		// Prepare the information to display.
-		string =
-			'raw: 0x' + bufferToHexStr(data, 0, 6) + '<br/>'
-			+ 'x = ' + (x >= 0 ? '+' : '') + x.toFixed(5) + '<br/>'
-			+ 'y = ' + (y >= 0 ? '+' : '') + y.toFixed(5) + '<br/>'
-			+ 'z = ' + (z >= 0 ? '+' : '') + z.toFixed(5) + '<br/>'
+		var values = sensortag.getGyroscopeValues(data);
+		var x = values.x;
+		var y = values.y;
+		var z = values.z;
 
 		// Update the value displayed.
-		displayValue('GyroscopeData', string)
+		displayValue('GyroscopeData', templater(x,y,z,'gyro',''));
 	}
 
 	function displayValue(elementId, value)
