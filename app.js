@@ -1,8 +1,50 @@
 	// SensorTag object.
 	var sensortag = evothings.tisensortag.createInstance();
-
+	var recording = false;
+    var reading,
+    	readings,
+	    g_,a_,m_;
+	    
+	function countReadings(){
+		displayValue('TotalReadings',readings.length);
+	}
+    function initAll(){
+     var m,rtemp,hopper,brainDump; 
+     reading = Backbone.Model.extend(
+     	{defaults:{sensor:'gyro',x:0,y:0,z:0},
+     	 initialize: function(){var d= new Date(); 
+     	 						this.set('time',d.getTime())}
+     	});
+     
+     rtemp = Backbone.Collection.extend(
+     	{
+     		model:'reading',
+     		initialize: function() {
+     			this.on('add',countReadings);
+     			this.on('remove',countReadings);
+     		}
+     		
+     	});
+     readings = new rtemp();
+     hopper = Backbone.Model.extend({url:"/trajectory"});
+     
+  
+     g_= new reading({sensor:'gyro',x:1,y:2,z:3});
+     a_= new reading({sensor:'accel',x:11,y:22,z:33});
+     m_= new reading({sensor:'mag',x:111,y:222,z:333});
+     readings.add(g_); 
+     readings.add(a_); 
+     readings.add(m_);
+     brainDump = new hopper({readings: readings});
+     console.log(JSON.stringify(brainDump));
+     brainDump.save();
+     m = 21;
+    
+    }
+    
 	function initialiseSensorTag()
 	{
+     
 		//
 		// Here sensors are set up.
 		//
@@ -41,16 +83,16 @@
 		if ('disconnected' == error)
 		{
 			// Clear current values.
-			var blank = '[Waiting for value]'
-			displayValue('StatusData', 'Ready to connect')
-			displayValue('FirmwareData', '?')
-			displayValue('KeypressData', blank)
-			displayValue('AccelerometerData', blank)
-			displayValue('MagnetometerData', blank)
-			displayValue('GyroscopeData', blank)
+			var blank = '[Waiting for value]';
+			displayValue('StatusData', 'Ready to connect');
+			displayValue('FirmwareData', '?');
+			displayValue('KeypressData', blank);
+			displayValue('AccelerometerData', blank);
+			displayValue('MagnetometerData', blank);
+			displayValue('GyroscopeData', blank);
 
 			// Reset screen color.
-			setBackgroundColor('white')
+			setBackgroundColor('white');
 
 			// If disconneted attempt to connect again.
 			setTimeout(
@@ -86,6 +128,7 @@
 		displayValue('KeypressData', string);
 	}
 	function templater(x,y,z,sensor,unit){
+	
 			return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(5) + unit +' -- '
 			+ 'y=' + (y >= 0 ? '+' : '') + y.toFixed(5) + unit + ' -- '
 			+ 'z=' + (z >= 0 ? '+' : '') + z.toFixed(5) + unit;
@@ -98,7 +141,7 @@
 		var x = values.x;
 		var y = values.y;
 		var z = values.z;
-
+		readings.push( new reading({sensor:'accel',x:x,y:y,z:z}));
 		// Update the value displayed.
 		displayValue('AccelerometerData', templater(x,y,z,'accel','G') );
 	}
@@ -110,6 +153,7 @@
 		var x = values.x
 		var y = values.y
 		var z = values.z
+		readings.push( new reading({sensor:'mag',x:x,y:y,z:z}));
 
 		// Update the value displayed.
 		displayValue('MagnetometerData', templater(x,y,z,'mag','&micro;T'))
@@ -122,6 +166,7 @@
 		var x = values.x;
 		var y = values.y;
 		var z = values.z;
+		readings.push( new reading({x:x,y:y,z:z})) ;
 
 		// Update the value displayed.
 		displayValue('GyroscopeData', templater(x,y,z,'gyro',''));
@@ -170,5 +215,12 @@
 		return hex
 	}
 
-	document.addEventListener('deviceready', initialiseSensorTag, false)
-	
+ /*document.addEventListener('deviceready', initialiseSensorTag, false); */
+ /*
+ document.addEventListener('deviceready', initAll, false);
+*/
+$(function(){
+	initAll();
+	$(document).on('deviceready', initialiseSensorTag );
+
+});	

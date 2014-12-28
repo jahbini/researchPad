@@ -10,7 +10,7 @@
 	<meta name="viewport" content="width=device-width, user-scalable=no
 		initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
 
-	<title>Jims Big Time SensorTag Sensors</title>
+	<title>Movement Capture</title>
 
 	<style>
 		@import 'ui/css/evothings-app.css';
@@ -38,13 +38,14 @@
 	if (window.hyper && window.hyper.log) { console.log = window.hyper.log }
 	</script>
 
+	<script src="libs/dbg/jquery-2.1.1.js"></script>
 	<script src="cordova.js"></script>
+	<script src="libs/extras/coffee-script.js"></script>
 	<script src="libs/evothings/util/util.js"></script>
 	<script src="libs/evothings/easyble/easyble.js"></script>
 	<script src="libs/evothings/tisensortag/tisensortag.js"></script>
-	<script src="libs/dbg/jquery-2.1.1.js"></script>
-	<script src="libs/dbg/backbone.js"></script>
 	<script src="libs/dbg/underscore.js"></script>
+	<script src="libs/dbg/backbone.js"></script>
 	<script src="libs/dbg/three.js"></script>
 	<script src="libs/dbg/d3.js"></script>
 </head>
@@ -58,13 +59,12 @@
 		<!--<button class="menu" onclick=""><img src="ui/images/menu.svg" /></button>-->
 	</header>
 
-	<h1>Jim's Very New TI SensorTag Sensors</h1>
+	<h1>SensorTag Motion Capture</h1>
 
-	<p style="font-weight:bold;">
-		This example works with SensorTag firmware version 1.5 and above.
-		Current firmware version: <span id="FirmwareData">?</span></p>
+	<p>SensorTag firmware version: <span id="FirmwareData">?</span></p>
+	<p>readings captured: <span id="TotalReadings">0</span></p>
 
-	<div class="SensorData">SensorTag Status: <span id="StatusData">Ready to connect</span></div>
+	<div class="SensorData">SensorTag Status: <span id="StatusData">Not ready to connect</span></div>
 	<div class="SensorData">Keypress: <br/><span id="KeypressData">[Waiting for value]</span></div>
 
 	<div class="SensorData">Accelerometer:<br/><span id="AccelerometerData">[Waiting for value]</span></div>
@@ -73,6 +73,5 @@
 
 	<script src="app.js">
 	</script>
-	<script src="libs/extras/coffee-script.js"></script>
 </body>
 </html>
