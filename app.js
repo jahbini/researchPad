@@ -100,6 +100,7 @@ function countReadings(){
 
 	function keypressHandler(data)
 	{
+		var left=0,right=0;
 		// Update background color.
 		switch (data[0])
 		{
@@ -107,15 +108,20 @@ function countReadings(){
 				setBackgroundColor('white');
 				break;
 			case 1:
+				right=1;
 				setBackgroundColor('red');
 				break;
 			case 2:
+				left=1;
 				setBackgroundColor('blue');
 				break;
 			case 3:
+				right=1;
+				left=1;
 				setBackgroundColor('magenta');
 				break;
 		}
+				if(recording) readings.push( new reading({sensor:'button',left:left,right:right}));
 
 		// Update the value displayed.
 		var string = 'raw: 0x' + bufferToHexStr(data, 0, 1);
