@@ -56,9 +56,9 @@ function countReadings(){
 			.statusCallback(statusHandler)
 			.errorCallback(errorHandler)
 			.keypressCallback(keypressHandler)
-			.accelerometerCallback(accelerometerHandler, 200)
-			.magnetometerCallback(magnetometerHandler, 200)
-			.gyroscopeCallback(gyroscopeHandler, 200, 7) // 7 = enable all axes.
+			.accelerometerCallback(accelerometerHandler, 100)
+			.magnetometerCallback(magnetometerHandler, 100)
+			.gyroscopeCallback(gyroscopeHandler, 100, 7) // 7 = enable all axes.
 			.connectToClosestDevice()
 	}
 
