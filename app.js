@@ -1,14 +1,34 @@
 	// SensorTag object.
 	var sensortag = evothings.tisensortag.createInstance();
-	var recording = false;
- var reading,
-    	readings;
-	    
+	var recording = false,
+	 connected=false,
+		reading,
+		readings;
+	
+	function clearUserInterface(){
+			// Clear current values.
+			var blank = '[Waiting for value]';
+			displayValue('StatusData', 'Ready to connect');
+			displayValue('FirmwareData', '?');
+			displayValue('KeypressData', blank);
+			displayValue('AccelerometerData', blank);
+			displayValue('MagnetometerData', blank);
+			displayValue('GyroscopeData', blank);
+			// Reset screen color.
+			setBackgroundColor('white');
+	 $(":button").prop("disabled",true);
+		$("#stop").click(stopRecording);
+		$("#record").click(enterRecording).fadeTo(0,1).text('record');
+		
+		$("#reset").prop("disabled",false);
+	}
+
 function countReadings(){
 		displayValue('TotalReadings',readings.length);
 	}
     function initAll(){
      var rtemp; 
+     clearUserInterface();
      reading = Backbone.Model.extend(
      	{defaults:{sensor:'gyro',x:0,y:0,z:0},
      	 initialize: function(){var d= new Date(); 
@@ -27,19 +47,18 @@ function countReadings(){
      readings = new rtemp();
     }
     
-    function uploadData(){
+    function enterUpload(){
     	var hopper,brainDump;
     	recording = false;
      hopper = Backbone.Model.extend({url:"/trajectory"});
      brainDump = new hopper({readings: readings});
      brainDump.save();
      readings.reset();
+     enterConnected();
     }
     
 	function initialiseSensorTag()
 	{
-     
-		//
 		// Here sensors are set up.
 		//
 		// If you wish to use only one or a few sensors, just set up
@@ -52,6 +71,7 @@ function countReadings(){
 		// 1 to enable X axis only, 2 to enable Y axis only, 3 = X and Y,
 		// 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.
 		//
+		connected = false;
 		sensortag
 			.statusCallback(statusHandler)
 			.errorCallback(errorHandler)
@@ -59,35 +79,59 @@ function countReadings(){
 			.accelerometerCallback(accelerometerHandler, 100)
 			.magnetometerCallback(magnetometerHandler, 100)
 			.gyroscopeCallback(gyroscopeHandler, 100, 7) // 7 = enable all axes.
-			.connectToClosestDevice()
+			.connectToClosestDevice();
 	}
+function enterReset(){
+	// legal to enter Reset from any state 
+	reading = false;
+	readings = null;
+	sensortag.disconnectDevice();
+	//sensortag = evothings.tisensortag.createInstance();
+	initAll();
+	initialiseSensorTag();
+	setTimeout(
+		function() { sensortag.connectToClosestDevice() },
+		1000);
+}
+
+function enterConnected(){
+	// enable the recording button
+	connected = true;
+	$("#record").prop('disabled',false).fadeTo(100,1).text('record').click(enterRecording);
+}
+
+function enterRecording(){
+	$("#record").prop('disabled',true).text('recording').fadeTo(200,0.6);
+	$("#stop").prop('disabled',false).fadeTo(100,1).click(enterReview);
+	recording=true;
+}
+
+function enterReview(){
+	$("#stop").prop('disabled',true).fadeTo(100,0.5);
+	$("#record").prop('disabled',true).text('recorded').fadeTo(200,0.3);
+	$("#upload").prop('disabled',false).click(enterUpload).fadeTo(100,1)
+ recording=false;	
+}
 
 	function statusHandler(status)
 	{
+		if ('Sensors online' == status){
+			enterConnected();
+		}
+		
 		if ('Device data available' == status)
 		{
-			displayValue('FirmwareData', sensortag.getFirmwareString())
+			displayValue('FirmwareData', sensortag.getFirmwareString());
 		}
-		displayValue('StatusData', status)
+		displayValue('StatusData', status);
 	}
-
 	function errorHandler(error)
 	{
 		console.log('Error: ' + error)
 		if ('disconnected' == error)
 		{
-			// Clear current values.
-			var blank = '[Waiting for value]';
-			displayValue('StatusData', 'Ready to connect');
-			displayValue('FirmwareData', '?');
-			displayValue('KeypressData', blank);
-			displayValue('AccelerometerData', blank);
-			displayValue('MagnetometerData', blank);
-			displayValue('GyroscopeData', blank);
-
-			// Reset screen color.
-			setBackgroundColor('white');
-
+			connected = false;
+			clearUserInterface();
 			// If disconneted attempt to connect again.
 			setTimeout(
 				function() { sensortag.connectToClosestDevice() },
@@ -218,11 +262,16 @@ function countReadings(){
  /*
  document.addEventListener('deviceready', initAll, false);
 */
+function stopRecording(){
+	if (recording) {
+		recording = false;
+	$("#record").prop('disabled',true).text('finished').fadeTo(200,0.3);
+	}
+}
+
 $(function(){
 	initAll();
-	$("#record").click(function(){recording=true;})
-	$("#upload").click(function(){recording=false; uploadData(); })
-	$("#reset").click(function(){recording=false; readings.reset(); })
+	$("#reset").prop('disabled',false).fadeTo(0,1).click(enterReset);
 	$(document).on('deviceready', initialiseSensorTag );
 
 });	

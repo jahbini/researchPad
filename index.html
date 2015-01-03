@@ -32,10 +32,19 @@
 <body>
  <div class="container">
 	<h1>SensorTag Motion Capture</h1>
+	<div class="row">
+		<p class="four columns">SensorTag Status: <span id="StatusData">Not ready to connect</span></p>
+		<p class="four columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
+		<p class="four columns">readings captured: <span id="TotalReadings">0</span></p>
+	</div>
+  
     <div class="row">
   	
-	<button id="record" class="three columns">
+	<button id="record" class="three columns button-primary">
 			Record
+		</button>
+		<button id="stop" class="three columns">
+			Stop
 		</button>
 		<button id="upload" class="three columns">
 			Upload
@@ -45,19 +54,16 @@
 		</button>
   </div>
 <div class="row">
-	<p class="five columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
-	<p class="five columns">readings captured: <span id="TotalReadings">0</span></p>
-  </div>
-<div class="row">
-
-	<div class="one-half column">SensorTag Status: <span id="StatusData">Not ready to connect</span></div>
-	<div class="one-half column">Keypress: <br/><span id="KeypressData">[Waiting for value]</span></div>
-</div>
-<div class="row">
-	
-	<div class="one-third column">Accelerometer:<br/><span id="AccelerometerData">[Waiting for value]</span></div>
-	<div class="one-third column">Magnetometer:<br/><span id="MagnetometerData">[Waiting for value]</span></div>
-	<div class="one-third column">Gyroscope:<br/><span id="GyroscopeData">[Waiting for value]</span></div>
+	<div class="seven columns">
+	<canvas id="monitor" width="500" height="500" style="width=100%"></canvas>
+	</div>
+	<div class="five columns">
+		
+	<p>Keypress: <br/><span id="KeypressData">[Waiting for value]</span></p>
+	<p>Accelerometer:<br/><span id="AccelerometerData">[Waiting for value]</span></p>
+	<p>Magnetometer:<br/><span id="MagnetometerData">[Waiting for value]</span></p>
+	<p>Gyroscope:<br/><span id="GyroscopeData">[Waiting for value]</span></p>
+	</div>
 </div>
 
   </div>
