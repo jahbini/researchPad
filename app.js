@@ -10,10 +10,11 @@
 			var blank = '[Waiting for value]';
 			displayValue('StatusData', 'Ready to connect');
 			displayValue('FirmwareData', '?');
-			displayValue('KeypressData', blank);
+			displayValue('KeypressData', "");
 			displayValue('AccelerometerData', blank);
 			displayValue('MagnetometerData', blank);
 			displayValue('GyroscopeData', blank);
+			displayValue('TotalReadings',0);
 			// Reset screen color.
 			setBackgroundColor('white');
 	 $(":button").prop("disabled",true);
@@ -26,9 +27,8 @@
 function countReadings(){
 		displayValue('TotalReadings',readings.length);
 	}
-    function initAll(){
-     var rtemp; 
-     clearUserInterface();
+	function initDataStructures(){
+     
      reading = Backbone.Model.extend(
      	{defaults:{sensor:'gyro',x:0,y:0,z:0},
      	 initialize: function(){var d= new Date(); 
@@ -45,6 +45,12 @@ function countReadings(){
      		}
      	});
      readings = new rtemp();
+			  displayValue('TotalReadings',0);
+	}
+    function initAll(){
+     var rtemp; 
+     clearUserInterface();
+     initDataStructures();
     }
     
     function enterUpload(){
@@ -85,24 +91,25 @@ function enterReset(){
 	// legal to enter Reset from any state 
 	reading = false;
 	readings = null;
-	sensortag.disconnectDevice();
+	// sensortag.disconnectDevice();
 	//sensortag = evothings.tisensortag.createInstance();
-	initAll();
-	initialiseSensorTag();
-	setTimeout(
-		function() { sensortag.connectToClosestDevice() },
-		1000);
+	recording=false;
+ initDataStructures();
+ enterConnected();
 }
 
 function enterConnected(){
 	// enable the recording button
 	connected = true;
 	$("#record").prop('disabled',false).fadeTo(100,1).text('record').click(enterRecording);
+	$("#stop").prop('disabled',true);
+	$("#upload").prop('disabled',true);
 }
 
 function enterRecording(){
 	$("#record").prop('disabled',true).text('recording').fadeTo(200,0.6);
 	$("#stop").prop('disabled',false).fadeTo(100,1).click(enterReview);
+	$("#upload").prop('disabled',true);
 	recording=true;
 }
 
@@ -144,33 +151,34 @@ function enterReview(){
 
 	function keypressHandler(data)
 	{
-		var left=0,right=0;
-		// Update background color.
+		var left=0,right=0,string;
+		// Do NOT Update background color.
 		switch (data[0])
 		{
 			case 0:
-				setBackgroundColor('white');
+				string = "          ";
 				break;
 			case 1:
 				right=1;
-				setBackgroundColor('red');
+				string = "     right";
 				break;
 			case 2:
 				left=1;
-				setBackgroundColor('blue');
+				string = "left      ";
 				break;
 			case 3:
 				right=1;
 				left=1;
-				setBackgroundColor('magenta');
+				string = "   both   ";
 				break;
 		}
 				if(recording) readings.push( new reading({sensor:'button',left:left,right:right}));
 
 		// Update the value displayed.
-		var string = 'raw: 0x' + bufferToHexStr(data, 0, 1);
+		// var string = 'raw: 0x' + bufferToHexStr(data, 0, 1);
 		displayValue('KeypressData', string);
 	}
+	
 	function templater(x,y,z,sensor,unit){
 	
 			return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(5) + unit +' -- '
