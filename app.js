@@ -53,16 +53,6 @@ function countReadings(){
      initDataStructures();
     }
     
-    function enterUpload(){
-    	var hopper,brainDump;
-    	recording = false;
-     hopper = Backbone.Model.extend({url:"/trajectory"});
-     brainDump = new hopper({readings: readings});
-     brainDump.save();
-     readings.reset();
-     enterConnected();
-    }
-    
 	function initialiseSensorTag()
 	{
 		// Here sensors are set up.
@@ -119,6 +109,18 @@ function enterReview(){
 	$("#upload").prop('disabled',false).click(enterUpload).fadeTo(100,1)
  recording=false;	
 }
+
+function enterUpload(){
+	var hopper,brainDump;
+	/* eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
+	if(!readings.length) return;
+	hopper = Backbone.Model.extend({url:"/trajectory"});
+	brainDump = new hopper({readings: readings});
+	brainDump.save();
+	readings.reset();
+	enterConnected();
+}
+    
 
 	function statusHandler(status)
 	{
