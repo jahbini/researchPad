@@ -1,72 +1,82 @@
 <!DOCTYPE html>
 <!--
-	Demonstration of the TI SensorTag JavaScript library.
-	Adaptation for clinical use for Android and iOS devices
+  Demonstration of the TI SensorTag JavaScript library.
+  Adaptation for clinical use for Android and iOS devices
 -->
 <html>
 <head>
-	<meta charset="utf-8" />
-	<meta name="format-detection" content="telephone=no" />
-	<meta name="viewport" content="width=device-width, user-scalable=no
-		initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
+  <meta charset="utf-8" />
+  <meta name="format-detection" content="telephone=no" />
+  <meta name="viewport" content="width=device-width, user-scalable=no
+    initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0" />
 
-	<title>Movement Capture</title>
+  <title>Movement Capture</title>
 
-	<style>
-		@import 'skeleton/css/normalize.css';
-		@import 'skeleton/css/skeleton.css';
-	</style>
+  <style>
+    @import 'skeleton/css/normalize.css';
+    @import 'skeleton/css/skeleton.css';
+  </style>
 
-	<script src="libs/dbg/jquery-2.1.1.js"></script>
-	<script src="cordova.js"></script>
-	<script src="libs/extras/coffee-script.js"></script>
-	<script src="libs/evothings/util/util.js"></script>
-	<script src="libs/evothings/easyble/easyble.js"></script>
-	<script src="libs/evothings/tisensortag/tisensortag.js"></script>
-	<script src="libs/dbg/underscore.js"></script>
-	<script src="libs/dbg/backbone.js"></script>
-	<script src="libs/min/seen.min.js"></script>
+  <script src="libs/dbg/jquery-2.1.1.js"></script>
+  <script src="cordova.js"></script>
+  <script src="libs/extras/coffee-script.js"></script>
+  <script src="libs/evothings/util/util.js"></script>
+  <script src="libs/evothings/easyble/easyble.js"></script>
+  <script src="libs/evothings/tisensortag/tisensortag.js"></script>
+  <script src="libs/dbg/underscore.js"></script>
+  <script src="libs/dbg/backbone.js"></script>
+  <script src="libs/dbg/seen.js"></script>
 </head>
 
 <body>
  <div class="container">
-	<h1>SensorTag Motion Capture</h1>
-	<div class="row">
-		<p class="four columns">SensorTag Status: <span id="StatusData">Not ready to connect</span></p>
-		<p class="four columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
-		<p class="four columns">readings captured: <span id="TotalReadings">0</span></p>
-	</div>
+  <h1>SensorTag Motion Capture</h1>
   
-    <div class="row">
-  	
-	<button id="record" class="three columns button-primary">
-			Record
-		</button>
-		<button id="stop" class="three columns">
-			Stop
-		</button>
-		<button id="upload" class="three columns">
-			Upload
-		</button>
-		<button id="reset" class="three columns">
-			Reset
-		</button>
+  <div class="row">
+    <button id="record" class="three columns button-primary">
+      Record
+    </button>
+    <button id="stop" class="three columns">
+      Stop
+    </button>
+    <button id="upload" class="three columns">
+      Upload
+    </button>
+    <button id="reset" class="three columns">
+      Reset
+    </button>
   </div>
-<div class="row">
-	<div class="five columns">
-	<canvas id="monitor" width="400" height="400" style="width=100%"></canvas>
-	</div>
-	<div class="seven columns">
-		
-	<p>Keypress: <span id="KeypressData">[Waiting for value]</span></p>
-	<p><span id="AccelerometerData">[Waiting for value]</span></p>
-	<p><span id="MagnetometerData">[Waiting for value]</span></p>
-	<p><span id="GyroscopeData">[Waiting for value]</span></p>
-	</div>
-</div>
+  
+  <div class="row keys">
+    <p>Keypress: <span id="KeypressData">[Waiting for value]</span></p>
+  </div>
 
+  <div class="row acelleration">
+    <div class="four columns">
+      <canvas id="accel-view" width="200" height="200" style="width=100%"></canvas>
+    </div>
+    <div class="five columns" id="AccelerometerData"></div>
   </div>
-	<script src="app.js">
-	</script>
+  <div class="row magnetometer">
+    <div class="four columns">
+      <canvas id="magnet-view" width="200" height="200" style="width=100%"></canvas>
+    </div>
+    <div class="five columns" id="MagnetometerData"></div>
+  </div>
+  <div class="row gyroscope">
+    <div class="four columns">
+      <canvas id="gyro-view" width="200" height="200" style="width=100%"></canvas>
+    </div>
+    <div class="five columns" id="GyroscopeData"></div>
+  </div>
+  <div class="row">
+    <p class="four columns">SensorTag Status: <span id="StatusData">Not ready to connect</span></p>
+    <p class="four columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
+    <p class="four columns">readings captured: <span id="TotalReadings">0</span></p>
+  </div>
+
+ </div>
+ <script src="app.js">
+ </script>
 </body>
 </html>
