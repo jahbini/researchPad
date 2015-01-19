@@ -8,6 +8,9 @@
         "backbone":"latest",
         "three":"latest",
         "d3":"latest",
+        "seen": "themadcreator/seen.git",
+	"winston":"latest",
+	"docco":"latest",
         "underscore":"latest"
     },
     "devDependencies": {
