@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+
+<html>
+<head>
+  <title>app.js</title>
+  <meta http-equiv="content-type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, target-densitydpi=160dpi, initial-scale=1.0; maximum-scale=1.0; user-scalable=0;">
+  <link rel="stylesheet" media="all" href="docco.css" />
+</head>
+<body>
+  <div id="container">
+    <div id="background"></div>
+    
+    <ul class="sections">
+        
+          <li id="title">
+              <div class="annotation">
+                  <h1>app.js</h1>
+              </div>
+          </li>
+        
+        
+        
+        <li id="section-1">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-1">&#182;</a>
+              </div>
+              <p>SensorTag object.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  <span class="hljs-keyword">var</span> sensortag = evothings.tisensortag.createInstance();
+  <span class="hljs-keyword">var</span> recording = <span class="hljs-literal">false</span>,
+   connected=<span class="hljs-literal">false</span>,
+    reading,
+    readings;
+  
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">clearUserInterface</span><span class="hljs-params">()</span></span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Clear current values.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      <span class="hljs-keyword">var</span> blank = <span class="hljs-string">'[Waiting for value]'</span>;
+      displayValue(<span class="hljs-string">'StatusData'</span>, <span class="hljs-string">'Ready to connect'</span>);
+      displayValue(<span class="hljs-string">'FirmwareData'</span>, <span class="hljs-string">'?'</span>);
+      displayValue(<span class="hljs-string">'KeypressData'</span>, <span class="hljs-string">""</span>);
+      displayValue(<span class="hljs-string">'AccelerometerData'</span>, blank);
+      displayValue(<span class="hljs-string">'MagnetometerData'</span>, blank);
+      displayValue(<span class="hljs-string">'GyroscopeData'</span>, blank);
+      displayValue(<span class="hljs-string">'TotalReadings'</span>,<span class="hljs-number">0</span>);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-3">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-3">&#182;</a>
+              </div>
+              <p>Reset screen color.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      setBackgroundColor(<span class="hljs-string">'white'</span>);
+   $(<span class="hljs-string">":button"</span>).prop(<span class="hljs-string">"disabled"</span>,<span class="hljs-literal">true</span>);
+    $(<span class="hljs-string">"#stop"</span>).click(stopRecording);
+    $(<span class="hljs-string">"#record"</span>).click(enterRecording).fadeTo(<span class="hljs-number">0</span>,<span class="hljs-number">1</span>).text(<span class="hljs-string">'record'</span>);
+    
+    $(<span class="hljs-string">"#reset"</span>).prop(<span class="hljs-string">"disabled"</span>,<span class="hljs-literal">false</span>);
+  }
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">countReadings</span><span class="hljs-params">()</span></span>{
+    displayValue(<span class="hljs-string">'TotalReadings'</span>,readings.length);
+  }
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initDataStructures</span><span class="hljs-params">()</span></span>{
+     
+     reading = Backbone.Model.extend(
+      {defaults:{sensor:<span class="hljs-string">'gyro'</span>,x:<span class="hljs-number">0</span>,y:<span class="hljs-number">0</span>,z:<span class="hljs-number">0</span>},
+       initialize: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{<span class="hljs-keyword">var</span> d= <span class="hljs-keyword">new</span> <span class="hljs-built_in">Date</span>(); 
+                  <span class="hljs-keyword">this</span>.set(<span class="hljs-string">'time'</span>,d.getTime())}
+      });
+     
+     rtemp = Backbone.Collection.extend(
+      {
+        model:<span class="hljs-string">'reading'</span>,
+        initialize: <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> </span>{
+          <span class="hljs-keyword">this</span>.on(<span class="hljs-string">'add'</span>,countReadings);
+          <span class="hljs-keyword">this</span>.on(<span class="hljs-string">'remove'</span>,countReadings);
+          <span class="hljs-keyword">this</span>.on(<span class="hljs-string">'reset'</span>,countReadings);
+        }
+      });
+     readings = <span class="hljs-keyword">new</span> rtemp();
+        displayValue(<span class="hljs-string">'TotalReadings'</span>,<span class="hljs-number">0</span>);
+  }
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initAll</span><span class="hljs-params">()</span></span>{
+     <span class="hljs-keyword">var</span> rtemp; 
+     clearUserInterface();
+     initDataStructures();
+    }
+    
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">initialiseSensorTag</span><span class="hljs-params">()</span>
+  </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-4">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p>Here sensors are set up.</p>
+<p>If you wish to use only one or a few sensors, just set up
+the ones you wish to use.</p>
+<p>First parameter to sensor function is the callback function.
+Several of the sensors take a millisecond update interval
+as the second parameter.
+Gyroscope takes the axes to enable as the third parameter:
+1 to enable X axis only, 2 to enable Y axis only, 3 = X and Y,
+4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    connected = <span class="hljs-literal">false</span>;
+    sensortag
+      .statusCallback(statusHandler)
+      .errorCallback(errorHandler)
+      .keypressCallback(keypressHandler)
+      .accelerometerCallback(accelerometerHandler, <span class="hljs-number">100</span>)
+      .magnetometerCallback(magnetometerHandler, <span class="hljs-number">100</span>)
+      .gyroscopeCallback(gyroscopeHandler, <span class="hljs-number">100</span>, <span class="hljs-number">7</span>) <span class="hljs-comment">// 7 = enable all axes.</span>
+      .connectToClosestDevice();
+  }
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">enterReset</span><span class="hljs-params">()</span></span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
+              </div>
+              <p>legal to enter Reset from any state </p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  reading = <span class="hljs-literal">false</span>;
+  readings = <span class="hljs-literal">null</span>;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-6">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-6">&#182;</a>
+              </div>
+              <p>sensortag.disconnectDevice();
+sensortag = evothings.tisensortag.createInstance();</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  recording=<span class="hljs-literal">false</span>;
+ initDataStructures();
+ enterConnected();
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">enterConnected</span><span class="hljs-params">()</span></span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-7">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>enable the recording button</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  connected = <span class="hljs-literal">true</span>;
+  $(<span class="hljs-string">"#record"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">false</span>).fadeTo(<span class="hljs-number">100</span>,<span class="hljs-number">1</span>).text(<span class="hljs-string">'record'</span>).click(enterRecording);
+  $(<span class="hljs-string">"#stop"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>);
+  $(<span class="hljs-string">"#upload"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>);
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">enterRecording</span><span class="hljs-params">()</span></span>{
+  $(<span class="hljs-string">"#record"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>).text(<span class="hljs-string">'recording'</span>).fadeTo(<span class="hljs-number">200</span>,<span class="hljs-number">0.6</span>);
+  $(<span class="hljs-string">"#stop"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">false</span>).fadeTo(<span class="hljs-number">100</span>,<span class="hljs-number">1</span>).click(enterReview);
+  $(<span class="hljs-string">"#upload"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>);
+  recording=<span class="hljs-literal">true</span>;
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">enterReview</span><span class="hljs-params">()</span></span>{
+  $(<span class="hljs-string">"#stop"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>).fadeTo(<span class="hljs-number">100</span>,<span class="hljs-number">0.5</span>);
+  $(<span class="hljs-string">"#record"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>).text(<span class="hljs-string">'recorded'</span>).fadeTo(<span class="hljs-number">200</span>,<span class="hljs-number">0.3</span>);
+  $(<span class="hljs-string">"#upload"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">false</span>).click(enterUpload).fadeTo(<span class="hljs-number">100</span>,<span class="hljs-number">1</span>)
+ recording=<span class="hljs-literal">false</span>;	
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">enterUpload</span><span class="hljs-params">()</span></span>{
+  <span class="hljs-keyword">var</span> hopper,brainDump;
+  <span class="hljs-comment">/* eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */</span>
+  <span class="hljs-keyword">if</span>(!readings.length) <span class="hljs-keyword">return</span>;
+  hopper = Backbone.Model.extend({url:<span class="hljs-string">"/trajectory"</span>});
+  brainDump = <span class="hljs-keyword">new</span> hopper({readings: readings});
+  brainDump.save();
+  readings.reset();
+  enterConnected();
+}
+    
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">statusHandler</span><span class="hljs-params">(status)</span>
+  </span>{
+    <span class="hljs-keyword">if</span> (<span class="hljs-string">'Sensors online'</span> == status){
+      enterConnected();
+    }
+    
+    <span class="hljs-keyword">if</span> (<span class="hljs-string">'Device data available'</span> == status)
+    {
+      displayValue(<span class="hljs-string">'FirmwareData'</span>, sensortag.getFirmwareString());
+    }
+    displayValue(<span class="hljs-string">'StatusData'</span>, status);
+  }
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">errorHandler</span><span class="hljs-params">(error)</span>
+  </span>{
+    <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'Error: '</span> + error)
+    <span class="hljs-keyword">if</span> (<span class="hljs-string">'disconnected'</span> == error)
+    {
+      connected = <span class="hljs-literal">false</span>;
+      clearUserInterface();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>If disconneted attempt to connect again.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      setTimeout(
+        <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span> </span>{ sensortag.connectToClosestDevice() },
+        <span class="hljs-number">1000</span>)
+    }
+  }</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
+              </div>
+              <p>calculations implemented as based on TI wiki pages
+<a href="http://processors.wiki.ti.com/index.php/SensorTag_User_Guide">http://processors.wiki.ti.com/index.php/SensorTag_User_Guide</a></p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">keypressHandler</span><span class="hljs-params">(data)</span>
+  </span>{
+    <span class="hljs-keyword">var</span> left=<span class="hljs-number">0</span>,right=<span class="hljs-number">0</span>,string;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-10">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-10">&#182;</a>
+              </div>
+              <p>Do NOT Update background color.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">switch</span> (data[<span class="hljs-number">0</span>])
+    {
+      <span class="hljs-keyword">case</span> <span class="hljs-number">0</span>:
+        string = <span class="hljs-string">"          "</span>;
+        <span class="hljs-keyword">break</span>;
+      <span class="hljs-keyword">case</span> <span class="hljs-number">1</span>:
+        right=<span class="hljs-number">1</span>;
+        string = <span class="hljs-string">"     right"</span>;
+        <span class="hljs-keyword">break</span>;
+      <span class="hljs-keyword">case</span> <span class="hljs-number">2</span>:
+        left=<span class="hljs-number">1</span>;
+        string = <span class="hljs-string">"left      "</span>;
+        <span class="hljs-keyword">break</span>;
+      <span class="hljs-keyword">case</span> <span class="hljs-number">3</span>:
+        right=<span class="hljs-number">1</span>;
+        left=<span class="hljs-number">1</span>;
+        string = <span class="hljs-string">"   both   "</span>;
+        <span class="hljs-keyword">break</span>;
+    }
+        <span class="hljs-keyword">if</span>(recording) readings.push( <span class="hljs-keyword">new</span> reading({sensor:<span class="hljs-string">'button'</span>,left:left,right:right}));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-11">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-11">&#182;</a>
+              </div>
+              <p>Update the value displayed.
+var string = ‘raw: 0x’ + bufferToHexStr(data, 0, 1);</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    displayValue(<span class="hljs-string">'KeypressData'</span>, string);
+  }
+  
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">templater</span><span class="hljs-params">(x,y,z,sensor,unit)</span></span>{
+      <span class="hljs-keyword">return</span>  sensor+ <span class="hljs-string">' x='</span> + (x &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + x.toFixed(<span class="hljs-number">3</span>) + unit +<span class="hljs-string">' -- '</span>
+      + <span class="hljs-string">'y='</span> + (y &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + y.toFixed(<span class="hljs-number">3</span>) + unit + <span class="hljs-string">' -- '</span>
+      + <span class="hljs-string">'z='</span> + (z &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + z.toFixed(<span class="hljs-number">3</span>) + unit;
+  }
+  
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">pointFormat</span><span class="hljs-params">(p,unit,precision)</span></span>{
+      <span class="hljs-keyword">if</span>(!precision) precision = <span class="hljs-number">3</span>;
+      <span class="hljs-keyword">if</span>(!unit) unit = <span class="hljs-string">'v'</span>;
+      <span class="hljs-keyword">return</span>  <span class="hljs-string">' x='</span> + (p.x &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + p.x.toFixed(precision) + unit +<span class="hljs-string">' -- '</span>
+      + <span class="hljs-string">'y='</span> + (p.y &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + p.y.toFixed(precision) + unit + <span class="hljs-string">' -- '</span>
+      + <span class="hljs-string">'z='</span> + (p.z &gt;= <span class="hljs-number">0</span> ? <span class="hljs-string">'+'</span> : <span class="hljs-string">''</span>) + p.z.toFixed(precision) + unit;
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">accelerometerHandler</span><span class="hljs-params">(data)</span>
+  </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-12">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-12">&#182;</a>
+              </div>
+              <p>Calculate the x,y,z accelerometer values from raw data.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> values = sensortag.getAccelerometerValues(data);
+    <span class="hljs-keyword">var</span> x = values.x;
+    <span class="hljs-keyword">var</span> y = values.y;
+    <span class="hljs-keyword">var</span> z = values.z;
+    <span class="hljs-keyword">if</span>(recording) readings.push( <span class="hljs-keyword">new</span> reading({sensor:<span class="hljs-string">'accel'</span>,x:x,y:y,z:z,raw:_.toArray(data)}));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-13">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-13">&#182;</a>
+              </div>
+              <p>Update the value displayed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    displayValue(<span class="hljs-string">'AccelerometerData'</span>, templater(x,y,z,<span class="hljs-string">'accel'</span>,<span class="hljs-string">'G'</span>) );
+    viewAccel(x,y,z);
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">magnetometerHandler</span><span class="hljs-params">(data)</span>
+  </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-14">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-14">&#182;</a>
+              </div>
+              <p>Calculate the magnetometer values from raw sensor data.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> values = sensortag.getMagnetometerValues(data)
+    <span class="hljs-keyword">var</span> x = values.x
+    <span class="hljs-keyword">var</span> y = values.y
+    <span class="hljs-keyword">var</span> z = values.z
+    <span class="hljs-keyword">if</span>(recording) readings.push( <span class="hljs-keyword">new</span> reading({sensor:<span class="hljs-string">'mag'</span>,x:x,y:y,z:z,raw:_.toArray(data)}));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-15">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-15">&#182;</a>
+              </div>
+              <p>Update the value displayed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    displayValue(<span class="hljs-string">'MagnetometerData'</span>, templater(x,y,z,<span class="hljs-string">'mag'</span>,<span class="hljs-string">'&amp;micro;T'</span>))
+    viewMagnet(x,y,z);
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">gyroscopeHandler</span><span class="hljs-params">(data)</span>
+  </span>{</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-16">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-16">&#182;</a>
+              </div>
+              <p>Calculate the gyroscope values from raw sensor data.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">var</span> values = sensortag.getGyroscopeValues(data);
+    <span class="hljs-keyword">var</span> x = values.x;
+    <span class="hljs-keyword">var</span> y = values.y;
+    <span class="hljs-keyword">var</span> z = values.z;
+    <span class="hljs-keyword">if</span>(recording) readings.push( <span class="hljs-keyword">new</span> reading({x:x,y:y,z:z,raw:_.toArray(data)})) ;</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-17">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-17">&#182;</a>
+              </div>
+              <p>Update the value displayed.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    displayValue(<span class="hljs-string">'GyroscopeData'</span>, templater(x,y,z,<span class="hljs-string">'gyro'</span>,<span class="hljs-string">''</span>));
+    viewGyro(x,y,z);
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">displayValue</span><span class="hljs-params">(elementId, value)</span>
+  </span>{
+    <span class="hljs-built_in">document</span>.getElementById(elementId).innerHTML = value
+  }
+
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">setBackgroundColor</span><span class="hljs-params">(color)</span>
+  </span>{
+    <span class="hljs-built_in">document</span>.documentElement.style.background = color
+    <span class="hljs-built_in">document</span>.body.style.background = color
+  }
+
+  <span class="hljs-comment">/**
+   * Convert byte buffer to hex string.
+   * @param buffer - an Uint8Array
+   * @param offset - byte offset
+   * @param numBytes - number of bytes to read
+   * @return string with hex representation of bytes
+   */</span>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">bufferToHexStr</span><span class="hljs-params">(buffer, offset, numBytes)</span>
+  </span>{
+    <span class="hljs-keyword">var</span> hex = <span class="hljs-string">''</span>
+    <span class="hljs-keyword">for</span> (<span class="hljs-keyword">var</span> i = <span class="hljs-number">0</span>; i &lt; numBytes; ++i)
+    {
+      hex += byteToHexStr(buffer[offset + i])
+    }
+    <span class="hljs-keyword">return</span> hex
+  }
+
+  <span class="hljs-comment">/**
+   * Convert byte number to hex string.
+   */</span>
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">byteToHexStr</span><span class="hljs-params">(d)</span>
+  </span>{
+    <span class="hljs-keyword">if</span> (d &lt; <span class="hljs-number">0</span>) { d = <span class="hljs-number">0xFF</span> + d + <span class="hljs-number">1</span> }
+    <span class="hljs-keyword">var</span> hex = <span class="hljs-built_in">Number</span>(d).toString(<span class="hljs-number">16</span>)
+    <span class="hljs-keyword">var</span> padding = <span class="hljs-number">2</span>
+    <span class="hljs-keyword">while</span> (hex.length &lt; padding)
+    {
+      hex = <span class="hljs-string">'0'</span> + hex
+    }
+  }
+
+ <span class="hljs-comment">/*document.addEventListener('deviceready', initialiseSensorTag, false); */</span>
+ <span class="hljs-comment">/*
+ document.addEventListener('deviceready', initAll, false);
+*/</span>
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">stopRecording</span><span class="hljs-params">()</span></span>{
+  <span class="hljs-keyword">if</span> (recording) {
+    recording = <span class="hljs-literal">false</span>;
+  $(<span class="hljs-string">"#record"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">true</span>).text(<span class="hljs-string">'finished'</span>).fadeTo(<span class="hljs-number">200</span>,<span class="hljs-number">0.3</span>);
+  }
+}
+
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">viewSensor</span><span class="hljs-params">(viewport,scaleFactor)</span></span>{
+  <span class="hljs-keyword">var</span> height = <span class="hljs-number">200</span>, width = <span class="hljs-number">200</span>,
+    model = seen.Models[<span class="hljs-string">"default"</span>](),
+    scene = <span class="hljs-keyword">new</span> seen.Scene({ model: model, viewport: seen.Viewports.center(width, height) }),
+    context = seen.Context(viewport, scene),
+    cubie = seen.Shapes.cube().scale(<span class="hljs-number">0.25</span>),
+    spearFromPool = <span class="hljs-keyword">new</span> spearPool(<span class="hljs-number">10</span>);
+    
+    cubie.fill( <span class="hljs-keyword">new</span> seen.Material (<span class="hljs-keyword">new</span> seen.Color(<span class="hljs-number">25</span>,<span class="hljs-number">200</span>,<span class="hljs-number">200</span>,<span class="hljs-number">100</span>)));
+    model.add(cubie);
+  
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">spearPool</span><span class="hljs-params">(many)</span></span>{
+    <span class="hljs-keyword">var</span> i,j,shapes = <span class="hljs-keyword">new</span> <span class="hljs-built_in">Array</span>(many),count=-<span class="hljs-number">1</span>,colors=<span class="hljs-keyword">new</span> <span class="hljs-built_in">Array</span>(many);
+    <span class="hljs-keyword">for</span> (i=<span class="hljs-number">0</span>; i&lt; many;i++) {
+      shapes[i] = seen.Shapes.arrow(<span class="hljs-number">1</span>,<span class="hljs-number">18</span>,<span class="hljs-number">0.5</span>,<span class="hljs-number">2</span>,<span class="hljs-number">1</span>).scale(-<span class="hljs-number">1</span>,<span class="hljs-number">1</span>,<span class="hljs-number">1</span>).translate(<span class="hljs-number">20</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>).scale(height * <span class="hljs-number">0.025</span>);
+      shapes[i].bake();
+      colors[i] = <span class="hljs-keyword">new</span> seen.Material (<span class="hljs-keyword">new</span> seen.Color(<span class="hljs-number">255</span>,<span class="hljs-number">80</span>,<span class="hljs-number">255</span>,<span class="hljs-number">255</span>-(<span class="hljs-number">250</span>/many)*i));
+    }
+    
+    <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">newArrow</span><span class="hljs-params">(model,x,y,z)</span></span>{
+      <span class="hljs-keyword">var</span> alphaDecay=<span class="hljs-number">255</span>;
+      count = count+<span class="hljs-number">1</span>;
+      <span class="hljs-keyword">if</span>(count == many) count=<span class="hljs-number">0</span>;
+      
+      <span class="hljs-keyword">if</span> (shapes[count]) model.remove(shapes[count]);
+      shapes[count] = seen.Shapes.arrow(<span class="hljs-number">1</span>,<span class="hljs-number">18</span>,<span class="hljs-number">0.5</span>,<span class="hljs-number">2</span>,<span class="hljs-number">1</span>).scale(-<span class="hljs-number">1</span>,<span class="hljs-number">1</span>,<span class="hljs-number">1</span>).translate(<span class="hljs-number">20</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>).scale(height * <span class="hljs-number">0.025</span>),
+      model.add(shapes[count]);
+      shapes[count].bake(); 
+      shapes[count].reset();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-18">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-18">&#182;</a>
+              </div>
+              <p>assign alpha to the arrows color</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      j=<span class="hljs-number">0</span>; 
+      <span class="hljs-keyword">for</span> (i= count; i&lt;many;i++){
+        <span class="hljs-keyword">if</span>(shapes[i])
+          shapes[i].fill( colors[j++]);
+      }
+      <span class="hljs-keyword">for</span> (i= <span class="hljs-number">0</span>; i&lt;count;i++){
+        <span class="hljs-keyword">if</span>(shapes[i])
+          shapes[i].fill( colors[j++]);
+      }
+      <span class="hljs-keyword">return</span> shapes[count]; 
+    }
+   <span class="hljs-keyword">return</span> newArrow; 
+  }
+  
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">getSine</span><span class="hljs-params">(p1,p2)</span></span>{
+  <span class="hljs-keyword">var</span> pNew = p1.copy(),m1=p1.magnitude(),m2=p2.magnitude(),sinval;
+  <span class="hljs-keyword">if</span>(m1*m2 === <span class="hljs-number">0</span>) <span class="hljs-keyword">return</span> <span class="hljs-number">0</span>;
+  sinval = pNew.cross(p2).magnitude()/( m1*m2);
+  sinval = <span class="hljs-built_in">Math</span>.asin(sinval);
+  <span class="hljs-keyword">return</span> sinval;
+}
+  
+  <span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">newValue</span><span class="hljs-params">(x,y,z)</span></span>{
+    <span class="hljs-keyword">var</span> p1=seen.P(x,y,z),spear,pOriginal = p1.copy(),pBar=seen.P(<span class="hljs-number">1</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>),m,
+    leng = p1.magnitude();
+    p1=p1.normalize();</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-19">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-19">&#182;</a>
+              </div>
+              <p>shape2.fill( new seen.Material (new seen.Color(77,80,0)));</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    m=seen.M().scale(leng);
+    m.roty(getSine(pBar,seen.P(x,<span class="hljs-number">0</span>,z)));
+    m.rotz(getSine(pBar,seen.P(x,y,<span class="hljs-number">0</span>)));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-20">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-20">&#182;</a>
+              </div>
+              <p>m.rotx(getSine(pBar,seen.P(0,y,z) ));</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    
+    pBar.transform(m);</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-21">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-21">&#182;</a>
+              </div>
+              <p>alert(pointFormat(pOriginal)+ ‘\n’ +pointFormat(pBar));</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    spear = spearFromPool(model,x,y,z).transform(m).scale(scaleFactor);
+    spear.fill( <span class="hljs-keyword">new</span> seen.Material (<span class="hljs-keyword">new</span> seen.Color(<span class="hljs-number">255</span>,<span class="hljs-number">80</span>,<span class="hljs-number">255</span>)));</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-22">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-22">&#182;</a>
+              </div>
+              <p>model.add(spear.rotz(z/size)),</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>    context.render();
+  }
+  <span class="hljs-keyword">return</span> newValue;
+}
+<span class="hljs-keyword">var</span> viewGyro = viewSensor(<span class="hljs-string">'gyro-view'</span>,<span class="hljs-number">0.125</span>);
+<span class="hljs-keyword">var</span> viewAccel = viewSensor(<span class="hljs-string">'accel-view'</span>,<span class="hljs-number">0.5</span>);
+<span class="hljs-keyword">var</span> viewMagnet = viewSensor(<span class="hljs-string">'magnet-view'</span>,<span class="hljs-number">0.02</span>);
+
+viewGyro(<span class="hljs-number">0</span>,<span class="hljs-number">10</span>,<span class="hljs-number">0</span>);
+viewGyro(<span class="hljs-number">0</span>,-<span class="hljs-number">5</span>,<span class="hljs-number">0</span>);
+viewGyro(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,<span class="hljs-number">10</span>);
+viewGyro(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>,-<span class="hljs-number">5</span>);
+viewGyro(<span class="hljs-number">5</span>,<span class="hljs-number">5</span>,<span class="hljs-number">5</span>);
+viewGyro(<span class="hljs-number">0</span>,<span class="hljs-number">5</span>,<span class="hljs-number">5</span>);
+viewGyro(<span class="hljs-number">5</span>,<span class="hljs-number">0</span>,<span class="hljs-number">5</span>);
+viewGyro(<span class="hljs-number">5</span>,<span class="hljs-number">5</span>,<span class="hljs-number">0</span>);
+viewAccel(-<span class="hljs-number">0.5</span>,<span class="hljs-number">0.6</span>,<span class="hljs-number">0.7</span>);
+viewMagnet(<span class="hljs-number">0.5</span>,<span class="hljs-number">0.6</span>,-<span class="hljs-number">0.7</span>);
+viewMagnet(<span class="hljs-number">0.4</span>,<span class="hljs-number">0.6</span>,-<span class="hljs-number">0.8</span>);
+viewMagnet(<span class="hljs-number">0.3</span>,<span class="hljs-number">0.6</span>,-<span class="hljs-number">0.2</span>);
+viewGyro(<span class="hljs-number">10</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>);
+viewGyro(-<span class="hljs-number">5</span>,<span class="hljs-number">0</span>,<span class="hljs-number">0</span>);
+<span class="hljs-function"><span class="hljs-keyword">function</span> <span class="hljs-title">show3d</span> <span class="hljs-params">()</span> </span>{
+  <span class="hljs-keyword">var</span> context, dragger, height =<span class="hljs-number">200</span>, scene, shape, width =<span class="hljs-number">200</span>;
+
+  shape = seen.Shapes.arrow(<span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">1</span>,<span class="hljs-number">1.4</span>).scale(height * <span class="hljs-number">0.1</span>);
+  seen.Colors.randomSurfaces2(shape);
+
+  scene = <span class="hljs-keyword">new</span> seen.Scene({
+    model: seen.Models[<span class="hljs-string">"default"</span>]().add(shape),
+    viewport: seen.Viewports.center(width, height)
+  });
+
+context = seen.Context(<span class="hljs-string">'seen-canvas'</span>, scene).render();
+
+context.animate().onBefore(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(t, dt)</span> </span>{
+  <span class="hljs-keyword">return</span> shape.rotx(dt * <span class="hljs-number">1e-4</span>).roty(<span class="hljs-number">0.7</span> * dt * <span class="hljs-number">1e-4</span>);
+}).start();
+
+dragger = <span class="hljs-keyword">new</span> seen.Drag(<span class="hljs-string">'seen-canvas'</span>, {
+  inertia: <span class="hljs-literal">true</span>
+});
+
+dragger.on(<span class="hljs-string">'drag.rotate'</span>, <span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">(e)</span> </span>{
+  <span class="hljs-keyword">var</span> xform, _ref;
+  xform = (_ref = seen.Quaternion).xyToTransform.apply(_ref, e.offsetRelative);
+  shape.transform(xform);
+  <span class="hljs-keyword">return</span> context.render();
+});
+}
+
+$(<span class="hljs-function"><span class="hljs-keyword">function</span><span class="hljs-params">()</span></span>{
+  initAll();
+  $(<span class="hljs-string">"#reset"</span>).prop(<span class="hljs-string">'disabled'</span>,<span class="hljs-literal">false</span>).fadeTo(<span class="hljs-number">0</span>,<span class="hljs-number">1</span>).click(enterReset);
+  $(<span class="hljs-built_in">document</span>).on(<span class="hljs-string">'deviceready'</span>, initialiseSensorTag );
+});</pre></div></div>
+            
+        </li>
+        
+    </ul>
+  </div>
+</body>
+</html>
