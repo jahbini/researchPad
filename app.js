@@ -182,10 +182,17 @@ function enterUpload(){
   }
   
   function templater(x,y,z,sensor,unit){
-  
       return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(3) + unit +' -- '
       + 'y=' + (y >= 0 ? '+' : '') + y.toFixed(3) + unit + ' -- '
       + 'z=' + (z >= 0 ? '+' : '') + z.toFixed(3) + unit;
+  }
+  
+  function pointFormat(p,unit,precision){
+      if(!precision) precision = 3;
+      if(!unit) unit = 'v';
+      return  ' x=' + (p.x >= 0 ? '+' : '') + p.x.toFixed(precision) + unit +' -- '
+      + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + unit + ' -- '
+      + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision) + unit;
   }
 
   function accelerometerHandler(data)
@@ -282,15 +289,6 @@ function stopRecording(){
   }
 }
 
-function myQuart(p1){
-  var rotvec,rotang,p2=p1.copy(),output;
-  /* the input vector assumed to be normalized */
-  /* our pointer is initially on the X axis */
-  rotvec = p2.cross(seen.Points.X() );
-  rotang = Math.sqrt (1.0 - p1.x);  
-  output= seen.Quaternion.pointAngle(rotvec,rotang).toMatrix();
-  return output;
-}
 function viewSensor(viewport,scaleFactor){
   var height = 200, width = 200,
     model = seen.Models["default"](),
@@ -305,7 +303,8 @@ function viewSensor(viewport,scaleFactor){
   function spearPool(many){
     var i,j,shapes = new Array(many),count=-1,colors=new Array(many);
     for (i=0; i< many;i++) {
-      shapes[i] = seen.Shapes.arrow(1,18,0.5,2,1).scale(-1,1,1).translate(20,0,0).scale(height * 0.025),
+      shapes[i] = seen.Shapes.arrow(1,18,0.5,2,1).scale(-1,1,1).translate(20,0,0).scale(height * 0.025);
+      shapes[i].bake();
       colors[i] = new seen.Material (new seen.Color(255,80,255,255-(250/many)*i));
     }
     
@@ -313,9 +312,13 @@ function viewSensor(viewport,scaleFactor){
       var alphaDecay=255;
       count = count+1;
       if(count == many) count=0;
+      
       if (shapes[count]) model.remove(shapes[count]);
       shapes[count] = seen.Shapes.arrow(1,18,0.5,2,1).scale(-1,1,1).translate(20,0,0).scale(height * 0.025),
       model.add(shapes[count]);
+      shapes[count].bake(); 
+      shapes[count].reset();
+      // assign alpha to the arrows color
       j=0; 
       for (i= count; i<many;i++){
         if(shapes[i])
@@ -330,27 +333,37 @@ function viewSensor(viewport,scaleFactor){
    return newArrow; 
   }
   
+function getSine(p1,p2){
+  var pNew = p1.copy(),m1=p1.magnitude(),m2=p2.magnitude(),sinval;
+  if(m1*m2 === 0) return 0;
+  sinval = pNew.cross(p2).magnitude()/( m1*m2);
+  sinval = Math.asin(sinval);
+  return sinval;
+}
+  
   function newValue(x,y,z){
-    var p1=seen.P(x,y,z),spear,
-    leng = p1.magnitude(),
-    q;
+    var p1=seen.P(x,y,z),spear,pOriginal = p1.copy(),pBar=seen.P(1,0,0),m,
+    leng = p1.magnitude();
     p1=p1.normalize();
-    q=myQuart(p1);
     //shape2.fill( new seen.Material (new seen.Color(77,80,0)));
+    m=seen.M().scale(leng);
+    m.roty(getSine(pBar,seen.P(x,0,z)));
+    m.rotz(getSine(pBar,seen.P(x,y,0)));
+    //m.rotx(getSine(pBar,seen.P(0,y,z) ));
     
-    spear = spearFromPool(model,x,y,z).transform(q).scale(leng*scaleFactor);
+    pBar.transform(m); 
+    //alert(pointFormat(pOriginal)+ '\n' +pointFormat(pBar));
+    spear = spearFromPool(model,x,y,z).transform(m).scale(scaleFactor);
     spear.fill( new seen.Material (new seen.Color(255,80,255)));
     // model.add(spear.rotz(z/size)),
     context.render();
   }
   return newValue;
 }
-var viewGyro = viewSensor('gyro-view',0.25);
+var viewGyro = viewSensor('gyro-view',0.125);
 var viewAccel = viewSensor('accel-view',0.5);
 var viewMagnet = viewSensor('magnet-view',0.02);
 
-viewGyro(10,0,0);
-viewGyro(-5,0,0);
 viewGyro(0,10,0);
 viewGyro(0,-5,0);
 viewGyro(0,0,10);
@@ -363,6 +376,8 @@ viewAccel(-0.5,0.6,0.7);
 viewMagnet(0.5,0.6,-0.7);
 viewMagnet(0.4,0.6,-0.8);
 viewMagnet(0.3,0.6,-0.2);
+viewGyro(10,0,0);
+viewGyro(-5,0,0);
 function show3d () {
   var context, dragger, height =200, scene, shape, width =200;
 

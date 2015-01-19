@@ -51,6 +51,13 @@
     <p>Keypress: <span id="KeypressData">[Waiting for value]</span></p>
   </div>
 
+  <div class="row gyroscope">
+    <div class="four columns">
+      <canvas id="gyro-view" width="200" height="200" style="width=100%"></canvas>
+    </div>
+    <div class="five columns" id="GyroscopeData"></div>
+  </div>
+  
   <div class="row acelleration">
     <div class="four columns">
       <canvas id="accel-view" width="200" height="200" style="width=100%"></canvas>
@@ -63,12 +70,7 @@
     </div>
     <div class="five columns" id="MagnetometerData"></div>
   </div>
-  <div class="row gyroscope">
-    <div class="four columns">
-      <canvas id="gyro-view" width="200" height="200" style="width=100%"></canvas>
-    </div>
-    <div class="five columns" id="GyroscopeData"></div>
-  </div>
+
   <div class="row">
     <p class="four columns">SensorTag Status: <span id="StatusData">Not ready to connect</span></p>
     <p class="four columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
