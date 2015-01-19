@@ -24,18 +24,19 @@
     $("#reset").prop("disabled",false);
   }
 
-function countReadings(){
+  function countReadings(){
     displayValue('TotalReadings',readings.length);
   }
+  
   function initDataStructures(){
      
-     reading = Backbone.Model.extend(
+    reading = Backbone.Model.extend(
       {defaults:{sensor:'gyro',x:0,y:0,z:0},
        initialize: function(){var d= new Date(); 
                   this.set('time',d.getTime())}
       });
      
-     rtemp = Backbone.Collection.extend(
+    rtemp = Backbone.Collection.extend(
       {
         model:'reading',
         initialize: function() {
@@ -44,6 +45,7 @@ function countReadings(){
           this.on('reset',countReadings);
         }
       });
+
      readings = new rtemp();
         displayValue('TotalReadings',0);
   }
@@ -342,28 +344,33 @@ function getSine(p1,p2){
 }
   
   function newValue(x,y,z){
-    var p1=seen.P(x,y,z),spear,pOriginal = p1.copy(),pBar=seen.P(1,0,0),m,
+    var p1=seen.P(x,y,z),spear,pOriginal = p1.copy(),pBar=seen.P(1,0,0),m,q,
+     cross,dot,
     leng = p1.magnitude();
     p1=p1.normalize();
-    //shape2.fill( new seen.Material (new seen.Color(77,80,0)));
-    m=seen.M().scale(leng);
-    m.roty(getSine(pBar,seen.P(x,0,z)));
-    m.rotz(getSine(pBar,seen.P(x,y,0)));
-    //m.rotx(getSine(pBar,seen.P(0,y,z) ));
     
-    pBar.transform(m); 
-    //alert(pointFormat(pOriginal)+ '\n' +pointFormat(pBar));
+    pBar.add(p1);
+    
+    if (pBar.magnitude() < 0.000001) {
+      /* this is a 180 degree rotation, so use y axis as rotation vector */
+      pBar=seen.P(0,1,0);  
+    }
+    
+    pBar.normalize();
+    q=seen.Quaternion.pointAngle(pBar,Math.PI);
+    
+    m=q.toMatrix();
     spear = spearFromPool(model,x,y,z).transform(m).scale(scaleFactor);
     spear.fill( new seen.Material (new seen.Color(255,80,255)));
-    // model.add(spear.rotz(z/size)),
     context.render();
   }
   return newValue;
 }
-var viewGyro = viewSensor('gyro-view',0.125);
-var viewAccel = viewSensor('accel-view',0.5);
-var viewMagnet = viewSensor('magnet-view',0.02);
+var viewGyro = viewSensor('gyro-view',1);
+var viewAccel = viewSensor('accel-view',0.8);
+var viewMagnet = viewSensor('magnet-view',1);
 
+/*
 viewGyro(0,10,0);
 viewGyro(0,-5,0);
 viewGyro(0,0,10);
@@ -378,34 +385,7 @@ viewMagnet(0.4,0.6,-0.8);
 viewMagnet(0.3,0.6,-0.2);
 viewGyro(10,0,0);
 viewGyro(-5,0,0);
-function show3d () {
-  var context, dragger, height =200, scene, shape, width =200;
-
-  shape = seen.Shapes.arrow(1,2,1,1.4).scale(height * 0.1);
-  seen.Colors.randomSurfaces2(shape);
-
-  scene = new seen.Scene({
-    model: seen.Models["default"]().add(shape),
-    viewport: seen.Viewports.center(width, height)
-  });
-
-context = seen.Context('seen-canvas', scene).render();
-
-context.animate().onBefore(function(t, dt) {
-  return shape.rotx(dt * 1e-4).roty(0.7 * dt * 1e-4);
-}).start();
-
-dragger = new seen.Drag('seen-canvas', {
-  inertia: true
-});
-
-dragger.on('drag.rotate', function(e) {
-  var xform, _ref;
-  xform = (_ref = seen.Quaternion).xyToTransform.apply(_ref, e.offsetRelative);
-  shape.transform(xform);
-  return context.render();
-});
-}
+*/
 
 $(function(){
   initAll();
