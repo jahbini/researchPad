@@ -698,9 +698,9 @@ evothings.tisensortag = (function()
 		instance.getAccelerometerValues = function(data)
 		{
 			// Calculate accelerometer values.
-			var ax = evothings.util.littleEndianToInt8(data, 0) / 16.0
-			var ay = evothings.util.littleEndianToInt8(data, 1) / 16.0
-			var az = evothings.util.littleEndianToInt8(data, 2) / 16.0 * -1.0
+			var ax = evothings.util.littleEndianToInt8(data, 0) / 16.0;
+			var ay = evothings.util.littleEndianToInt8(data, 1) / 16.0 * -1.0;
+			var az = evothings.util.littleEndianToInt8(data, 2) / 16.0;
 
 			// Return result.
 			return { x: ax, y: ay, z: az }

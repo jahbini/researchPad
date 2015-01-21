@@ -204,9 +204,13 @@ function enterUpload(){
     var x = values.x;
     var y = values.y;
     var z = values.z;
+  function temp(o){
+    return evothings.util.littleEndianToInt8(data,o);
+  }
     if(recording) readings.push( new reading({sensor:'accel',x:x,y:y,z:z,raw:_.toArray(data)}));
     // Update the value displayed.
     displayValue('AccelerometerData', templater(x,y,z,'accel','G') );
+    //displayValue('AccelerometerData', templater(temp(0),temp(1),temp(2),'accel','G') );
     viewAccel(x,y,z);
   }
 
