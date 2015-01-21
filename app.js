@@ -3,7 +3,8 @@
   var recording = false,
    connected=false,
     reading,
-    readings;
+    readings,
+    magoffset=undefined;
   
   function clearUserInterface(){
       // Clear current values.
@@ -169,6 +170,7 @@ function enterUpload(){
       case 2:
         left=1;
         string = "left      ";
+        magoffset=undefined;
         break;
       case 3:
         right=1;
@@ -204,9 +206,6 @@ function enterUpload(){
     var x = values.x;
     var y = values.y;
     var z = values.z;
-  function temp(o){
-    return evothings.util.littleEndianToInt8(data,o);
-  }
     if(recording) readings.push( new reading({sensor:'accel',x:x,y:y,z:z,raw:_.toArray(data)}));
     // Update the value displayed.
     displayValue('AccelerometerData', templater(x,y,z,'accel','G') );
@@ -214,18 +213,27 @@ function enterUpload(){
     viewAccel(x,y,z);
   }
 
+  
   function magnetometerHandler(data)
   {
     // Calculate the magnetometer values from raw sensor data.
-    var values = sensortag.getMagnetometerValues(data)
-    var x = values.x
-    var y = values.y
-    var z = values.z
-    if(recording) readings.push( new reading({sensor:'mag',x:x,y:y,z:z,raw:_.toArray(data)}));
+    var values = sensortag.getMagnetometerValues(data);
+    var curr = seen.P(values.x,values.y,values.z);
+    if (!magoffset ) {
+      magoffset = curr.copy();
+      return;
+    }
+    curr.subtract(magoffset);
+    
+  function temp(o){
+    return evothings.util.littleEndianToInt8(data,o);
+  }
+    if(recording) readings.push( new reading({sensor:'mag',x:curr.x,y:curr.y,z:curr.z,raw:_.toArray(data)}));
 
     // Update the value displayed.
-    displayValue('MagnetometerData', templater(x,y,z,'mag','&micro;T'))
-    viewMagnet(x,y,z);
+    displayValue('MagnetometerData', templater(curr.x,curr.y,curr.z,'mag','&micro;T'));
+    //displayValue('MagnetometerData', templater(x,temp(1),temp(0),'mag','&micro;T'))
+    viewMagnet(curr.x,curr.y,curr.z);
   }
 
   function gyroscopeHandler(data)
@@ -384,9 +392,13 @@ viewGyro(0,5,5);
 viewGyro(5,0,5);
 viewGyro(5,5,0);
 viewAccel(-0.5,0.6,0.7);
-viewMagnet(0.5,0.6,-0.7);
-viewMagnet(0.4,0.6,-0.8);
-viewMagnet(0.3,0.6,-0.2);
+
+viewMagnet(10.5,0.6,-0.7);
+viewMagnet(10.4,0.6,-0.8);
+viewMagnet(10.4,2.6,-0.8);
+viewMagnet(10.4,5.6,-0.8);
+viewMagnet(10.3,0.6,-0.2);
+
 viewGyro(10,0,0);
 viewGyro(-5,0,0);
 */
