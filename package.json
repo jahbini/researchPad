@@ -3,6 +3,17 @@
     "description": "igrab data for clinical mobility study",
     "version": "0.1.0",
     "author": "James A. Hinds",
-    "dependencies": {},
-    "devDependencies": {}
+    "dependencies": {
+        "jquery":"latest",
+        "backbone":"latest",
+        "three":"latest",
+        "d3":"latest",
+        "seen": "themadcreator/seen.git",
+	"winston":"latest",
+	"docco":"latest",
+        "underscore":"latest"
+    },
+    "devDependencies": {
+        "require":"latest"
+    }
 }
