@@ -1,24 +1,27 @@
+// # stagapp
+// ## data handler for clinical recording of SensorTag data
   // SensorTag object.
   var sensortag = evothings.tisensortag.createInstance();
   var recording = false,
    connected=false,
-    reading,
-    readings,
-    magoffset=undefined;
-  
+   reading,
+   readings,
+   calibrating=false,
+   calibrate=false;
+   
   function clearUserInterface(){
-      // Clear current values.
-      var blank = '[Waiting for value]';
-      displayValue('StatusData', 'Ready to connect');
-      displayValue('FirmwareData', '?');
-      displayValue('KeypressData', "");
-      displayValue('AccelerometerData', blank);
-      displayValue('MagnetometerData', blank);
-      displayValue('GyroscopeData', blank);
-      displayValue('TotalReadings',0);
-      // Reset screen color.
-      setBackgroundColor('white');
-   $(":button").prop("disabled",true);
+    // Clear current values.
+    var blank = '[Waiting for value]';
+    $('#StatusData').html('Ready to connect');
+    $('#FirmwareData').html('?');
+    $('#KeypressData').html('');
+    $('#AccelerometerData').html(blank);
+    $('#MagnetometerData').html(blank);
+    $('#GyroscopeData').html(blank);
+    $('#TotalReadings').html( 0);
+    // Reset screen color.
+    setBackgroundColor('white');
+    $(":button").prop("disabled",true);
     $("#stop").click(stopRecording);
     $("#record").click(enterRecording).fadeTo(0,1).text('record');
     
@@ -26,11 +29,11 @@
   }
 
   function countReadings(){
-    displayValue('TotalReadings',readings.length);
+    $('#TotalReadings').html(readings.length);
   }
   
   function initDataStructures(){
-     
+    var rtemp; 
     reading = Backbone.Model.extend(
       {defaults:{sensor:'gyro',x:0,y:0,z:0},
        initialize: function(){var d= new Date(); 
@@ -47,17 +50,17 @@
         }
       });
 
-     readings = new rtemp();
-        displayValue('TotalReadings',0);
+    readings = new rtemp();
+    $('#TotalReadings').html( '0');
   }
-    function initAll(){
-     var rtemp; 
-     clearUserInterface();
-     initDataStructures();
-    }
+  
+  function initAll(){
+    var rtemp; 
+    clearUserInterface();
+    initDataStructures();
+  }
     
-  function initialiseSensorTag()
-  {
+  function initialiseSensorTag(){
     // Here sensors are set up.
     //
     // If you wish to use only one or a few sensors, just set up
@@ -80,68 +83,73 @@
       .gyroscopeCallback(gyroscopeHandler, 100, 7) // 7 = enable all axes.
       .connectToClosestDevice();
   }
-
-function enterReset(){
-  // legal to enter Reset from any state 
-  reading = false;
-  readings = null;
-  // sensortag.disconnectDevice();
-  //sensortag = evothings.tisensortag.createInstance();
-  recording=false;
- initDataStructures();
- enterConnected();
-}
-
-function enterConnected(){
-  // enable the recording button
-  connected = true;
-  $("#record").prop('disabled',false).fadeTo(100,1).text('record').click(enterRecording);
-  $("#stop").prop('disabled',true);
-  $("#upload").prop('disabled',true);
-}
-
-function enterRecording(){
-  $("#record").prop('disabled',true).text('recording').fadeTo(200,0.6);
-  $("#stop").prop('disabled',false).fadeTo(100,1).click(enterReview);
-  $("#upload").prop('disabled',true);
-  recording=true;
-}
-
-function enterReview(){
-  $("#stop").prop('disabled',true).fadeTo(100,0.5);
-  $("#record").prop('disabled',true).text('recorded').fadeTo(200,0.3);
-  $("#upload").prop('disabled',false).click(enterUpload).fadeTo(100,1)
- recording=false;	
-}
-
-function enterUpload(){
-  var hopper,brainDump;
-  /* eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
-  if(!readings.length) return;
-  hopper = Backbone.Model.extend({url:"/trajectory"});
-  brainDump = new hopper({readings: readings});
-  brainDump.save();
-  readings.reset();
-  enterConnected();
-}
-
-  function statusHandler(status)
-  {
+  
+  function enterReset(){
+    // legal to enter Reset from any state 
+    reading = false;
+    readings = null;
+    // sensortag.disconnectDevice();
+    //sensortag = evothings.tisensortag.createInstance();
+    recording=false;
+    initDataStructures();
+    enterConnected();
+  }
+  
+  function enterConnected(){
+    // enable the recording button
+    connected = true;
+    $("#record").prop('disabled',false).fadeTo(100,1).text('record').click(enterRecording);
+    $("#stop").prop('disabled',true);
+    $("#upload").prop('disabled',true);
+    $("#calibrate").prop('disabled',false);
+  }
+  
+  function enterCalibrating(){
+    $("#record").prop('disabled',true);
+    $("#stop").prop('disabled',true);
+    $("#upload").prop('disabled',true);
+    calibrating=true;
+  }
+  
+  function enterRecording(){
+    $("#record").prop('disabled',true).text('recording').fadeTo(200,0.6);
+    $("#stop").prop('disabled',false).fadeTo(100,1).click(enterReview);
+    $("#upload").prop('disabled',true);
+    recording=true;
+  }
+  
+  function enterReview(){
+    $("#stop").prop('disabled',true).fadeTo(100,0.5);
+    $("#record").prop('disabled',true).text('recorded').fadeTo(200,0.3);
+    $("#upload").prop('disabled',false).click(enterUpload).fadeTo(100,1)
+   recording=false;	
+  }
+  
+  function enterUpload(){
+    var hopper,brainDump;
+    /* eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
+    if(!readings.length) return;
+    hopper = Backbone.Model.extend({url:"/trajectory"});
+    brainDump = new hopper({readings: readings});
+    brainDump.save();
+    readings.reset();
+    enterConnected();
+  }
+  
+  function statusHandler(status){
     if ('Sensors online' == status){
       enterConnected();
     }
     
-    if ('Device data available' == status)
-    {
-      displayValue('FirmwareData', sensortag.getFirmwareString());
+    if ('Device data available' == status){
+      $('#FirmwareData').html(sensortag.getFirmwareString());
     }
-    displayValue('StatusData', status);
+    $('#StatusData').html(status);
   }
-  function errorHandler(error)
-  {
+  
+  function errorHandler(error){
     console.log('Error: ' + error)
-    if ('disconnected' == error)
-    {
+    if ('disconnected' == error){
       connected = false;
       clearUserInterface();
       // If disconneted attempt to connect again.
@@ -154,23 +162,20 @@ function enterUpload(){
   // calculations implemented as based on TI wiki pages
   // http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
 
-  function keypressHandler(data)
-  {
+  function keypressHandler(data){
     var left=0,right=0,string;
-    // Do NOT Update background color.
-    switch (data[0])
-    {
+    
+    switch (data[0]){
       case 0:
         string = "          ";
         break;
       case 1:
-        right=1;
         string = "     right";
+        right=1;
         break;
       case 2:
-        left=1;
         string = "left      ";
-        magoffset=undefined;
+        left=1;
         break;
       case 3:
         right=1;
@@ -178,11 +183,11 @@ function enterUpload(){
         string = "   both   ";
         break;
     }
-        if(recording) readings.push( new reading({sensor:'button',left:left,right:right}));
+    calibrate = (left && calibrating);
+    if(recording) readings.push( new reading({sensor:'button',left:left,right:right}));
 
     // Update the value displayed.
-    // var string = 'raw: 0x' + bufferToHexStr(data, 0, 1);
-    displayValue('KeypressData', string);
+    $('KeypressData').html(string);
   }
   
   function templater(x,y,z,sensor,unit){
@@ -198,61 +203,47 @@ function enterUpload(){
       + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + unit + ' -- '
       + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision) + unit;
   }
-
-  function accelerometerHandler(data)
-  {
-    // Calculate the x,y,z accelerometer values from raw data.
-    var values = sensortag.getAccelerometerValues(data);
-    var x = values.x;
-    var y = values.y;
-    var z = values.z;
-    if(recording) readings.push( new reading({sensor:'accel',x:x,y:y,z:z,raw:_.toArray(data)}));
-    // Update the value displayed.
-    displayValue('AccelerometerData', templater(x,y,z,'accel','G') );
-    //displayValue('AccelerometerData', templater(temp(0),temp(1),temp(2),'accel','G') );
-    viewAccel(x,y,z);
-  }
-
-  
-  function magnetometerHandler(data)
-  {
-    // Calculate the magnetometer values from raw sensor data.
-    var values = sensortag.getMagnetometerValues(data);
-    var curr = seen.P(values.x,values.y,values.z);
-    if (!magoffset ) {
-      magoffset = curr.copy();
-      return;
-    }
-    curr.subtract(magoffset);
+ 
+ var accelerometerHandler = readingHandler(
+   {sensor:'accel',
+    source:sensortag.getAccelerometerValues,
+    units:'G',
+    viewer:viewSensor('accel-view',0.8),
+    htmlID:'AccelerometerData'}
+    );
+ var magnetometerHandler = readingHandler(
+   { sensor:'mag',
+     source:sensortag.getMagnetometerValues,
+     units:'&micro;T',
+     viewer:viewSensor('magnet-view',1),
+     htmlID:'MagnetometerData'}
+     );
+ var gyroscopeHandler = readingHandler(
+   {sensor:'gyro',
+    source:sensortag.getGyroscopeValues,
+    viewer:viewSensor('gyro-view',1),
+    htmlID:'GyroscopeData'
+   }
+   );
+     
+ //#  ## readingHandler()
+ //# create and return a function to handle a sensor's new data
+  function readingHandler(o){
+    // if there is no calibration function, just use a null offset
+    if(!o.calibrator) o.calibrator = function(){return seen.P(0,0,0)};
+    if(!o.units) o.units = '';
     
-  function temp(o){
-    return evothings.util.littleEndianToInt8(data,o);
-  }
-    if(recording) readings.push( new reading({sensor:'mag',x:curr.x,y:curr.y,z:curr.z,raw:_.toArray(data)}));
-
-    // Update the value displayed.
-    displayValue('MagnetometerData', templater(curr.x,curr.y,curr.z,'mag','&micro;T'));
-    //displayValue('MagnetometerData', templater(x,temp(1),temp(0),'mag','&micro;T'))
-    viewMagnet(curr.x,curr.y,curr.z);
-  }
-
-  function gyroscopeHandler(data)
-  {
-    // Calculate the gyroscope values from raw sensor data.
-    var values = sensortag.getGyroscopeValues(data);
-    var x = values.x;
-    var y = values.y;
-    var z = values.z;
-    if(recording) readings.push( new reading({x:x,y:y,z:z,raw:_.toArray(data)})) ;
-
-    // Update the value displayed.
-    displayValue('GyroscopeData', templater(x,y,z,'gyro',''));
-    viewGyro(x,y,z);
-  }
-
-  function displayValue(elementId, value)
-  {
-    document.getElementById(elementId).innerHTML = value
+    return function (data){
+      // data points from Evothings library are seen.Point NOT compatible as sources
+      var r=o.source(data); 
+      var p = new seen.P(r.x,r.y,r.z); 
+      p.subtract(o.calibrator());
+      if(recording) readings.push(
+        new reading({sensor:o.sensor,x:p.x,y:p.y,z:p.z,raw:_.toArray(data)})
+        );
+      $(o.htmlID).html(templater(p.x,p.y,p.z,o.sensor,o.units) );
+      o.viewer(p.x,p.y,p.z);
+    };
   }
 
   function setBackgroundColor(color)
@@ -291,17 +282,16 @@ function enterUpload(){
       hex = '0' + hex
     }
   }
-
- /*document.addEventListener('deviceready', initialiseSensorTag, false); */
- /*
- document.addEventListener('deviceready', initAll, false);
-*/
-function stopRecording(){
-  if (recording) {
-    recording = false;
-  $("#record").prop('disabled',true).text('finished').fadeTo(200,0.3);
+  
+// ## stopRecording
+// halt the record session -- no restart allowed
+// upload button remains enabled, reset button remains enabled
+  function stopRecording(){
+    if (recording) {
+      recording = false;
+    $("#record").prop('disabled',true).text('finished').fadeTo(200,0.3);
+    }
   }
-}
 
 function viewSensor(viewport,scaleFactor){
   var height = 200, width = 200,
@@ -347,14 +337,6 @@ function viewSensor(viewport,scaleFactor){
    return newArrow; 
   }
   
-function getSine(p1,p2){
-  var pNew = p1.copy(),m1=p1.magnitude(),m2=p2.magnitude(),sinval;
-  if(m1*m2 === 0) return 0;
-  sinval = pNew.cross(p2).magnitude()/( m1*m2);
-  sinval = Math.asin(sinval);
-  return sinval;
-}
-  
   function newValue(x,y,z){
     var p1=seen.P(x,y,z),spear,pOriginal = p1.copy(),pBar=seen.P(1,0,0),m,q,
      cross,dot,
@@ -378,9 +360,6 @@ function getSine(p1,p2){
   }
   return newValue;
 }
-var viewGyro = viewSensor('gyro-view',1);
-var viewAccel = viewSensor('accel-view',0.8);
-var viewMagnet = viewSensor('magnet-view',1);
 
 /*
 viewGyro(0,10,0);
