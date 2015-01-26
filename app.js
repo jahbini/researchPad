@@ -44,17 +44,19 @@
  //
   
   function templater(x,y,z,sensor,unit){
-      return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(3) + unit +' -- '
-      + 'y=' + (y >= 0 ? '+' : '') + y.toFixed(3) + unit + ' -- '
-      + 'z=' + (z >= 0 ? '+' : '') + z.toFixed(3) + unit;
+      if(!unit) unit = '';
+      if(!sensor) sensor="raw";
+      return  sensor+ ' x=' + (x >= 0 ? '+' : '') + x.toFixed(2) + unit +' -- '
+      + 'y=' + (y >= 0 ? '+' : '') + y.toFixed(2) + unit + ' -- '
+      + 'z=' + (z >= 0 ? '+' : '') + z.toFixed(2) + unit;
   }
   
   function pointFormat(p,unit,precision){
-      if(!precision) precision = 3;
+      if(!precision) precision = 2;
       if(!unit) unit = 'v';
-      return  ' x=' + (p.x >= 0 ? '+' : '') + p.x.toFixed(precision) + unit +' -- '
-      + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + unit + ' -- '
-      + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision) + unit;
+      return  unit +' x=' + (p.x >= 0 ? '+' : '') + p.x.toFixed(precision) +' -- '
+      + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + ' -- '
+      + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision);
   }
  
   function clearUserInterface(){
@@ -229,25 +231,28 @@
 // http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
  var accelerometerHandler = readingHandler(
    {sensor:'accel',
+    debias:'calibrateAccel',
     source:sensortag.getAccelerometerValues,
     units:'G',
-    calibrator:calibratorMid,
-    viewer:viewSensor('accel-view',0.8),
+    calibrator:[calibratorAverage,calibratorSmooth],
+    viewer:viewSensor('accel-view',0.4),
     htmlID:'AccelerometerData'}
     );
  var magnetometerHandler = readingHandler(
    { sensor:'mag',
-    calibrator:calibratorMid,
+    debias:'calibrateMag',
+    calibrator:[calibratorAverage,calibratorSmooth],
      source:sensortag.getMagnetometerValues,
      units:'&micro;T',
-     viewer:viewSensor('magnet-view',1),
+     viewer:viewSensor('magnet-view',0.05),
      htmlID:'MagnetometerData'}
      );
  var gyroscopeHandler = readingHandler(
    {sensor:'gyro',
-    calibrator:calibratorMid,
+    debias:'calibrateGyro',
+    calibrator:[calibratorAverage,calibratorSmooth],
     source:sensortag.getGyroscopeValues,
-    viewer:viewSensor('gyro-view',1),
+    viewer:viewSensor('gyro-view',0.005),
     htmlID:'GyroscopeData'
    }
    );
@@ -255,20 +260,19 @@
  function calibratorAverage(dataCondition,calibrate,calibrating){
    try{ 
      var tH;
-     if(dataCondition.dataHistory === undefined){
-       dataCondition.dataHistory = {
-         grandTotal:seen.P(0,0,0),
-         grandAverage:seen.P(0,0,0),
-         totalReadings:1
-       };
+     if(dataCondition.dataHistory.grandTotal === undefined){
+       dataCondition.dataHistory.grandTotal = seen.P(0,0,0);
+       dataCondition.dataHistory.grandAverage = seen.P(0,0,0);
+       dataCondition.dataHistory.totalReadings = 1;
      }
      tH = dataCondition.dataHistory;
-   // If button one is down, and we are in a calibration mode, gather all values
-     if(calibrating){
-       tH.grandTotal.add(dataCondition.curValue);
-       tH.totalReadings++;
-       tH.grandAverage=tH.grandTotal.copy().divide(tH.totalReadings);
+     if(tH.totalReadings === 1000){
+       tH.grandTotal.subtract(tH.grandAverage);
+       tH.totalReadings --;
      }
+     tH.grandTotal.add(dataCondition.curValue);
+     tH.totalReadings++;
+     tH.grandAverage=tH.grandTotal.copy().divide(tH.totalReadings);
      dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
    } catch (e) {
      console.log(e.message);
@@ -276,16 +280,14 @@
  }
  
   function split(raw,lo,hi){
-    return raw-(hi-lo)/2.0;
+    return raw-(hi+lo)/2.0;
   } 
  function calibratorMid(dataCondition,calibrate,calibrating){
    try{ 
      var tH;
-     if(dataCondition.dataHistory === undefined){
-       dataCondition.dataHistory = {
-         max:dataCondition.cookedValue.copy(),
-         min:dataCondition.cookedValue.copy()
-       };
+     if(dataCondition.dataHistory.max === undefined){
+       dataCondition.dataHistory.max = dataCondition.cookedValue.copy();
+       dataCondition.dataHistory.min = dataCondition.cookedValue.copy();
      }
      tH = dataCondition.dataHistory;
      if(dataCondition.cookedValue.x>tH.max.x)tH.max.x = dataCondition.cookedValue.x;
@@ -304,11 +306,9 @@
  
  function calibratorSmooth(dataCondition,calibrate,calibrating){
    try{ 
-     if(dataCondition.dataHistory === undefined){
-       dataCondition.dataHistory = {
-         runningSum: dataCondition.cookedValue.copy()
-       };
-     }
+     if(dataCondition.dataHistory.runniongSum === undefined){
+       dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy()
+     };
      dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).
       add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
    } catch (e) {
@@ -323,25 +323,38 @@
     var dataCondition = {
       curValue:seen.P(0,0,0),
       cookedValue:seen.P(0,0,0),
-      dataHistory:undefined
-    };
+      dataHistory:{}
+      };
     // if there is no calibration function, just use a null offset
     if(!o.calibrator) o.calibrator = function(d){d.cookedValue = d.curValue;};
     if(!o.units) o.units = '';
+    o.bias = seen.P(0,0,0);
+    $('#'+o.debias).click(function(){
+      o.bias = o.cookedValue;
+      console.log(o);
+      });
     
     return function (data){
       // data points from Evothings library are seen.Point NOT compatible as sources
-      var r=o.source(data),p; 
+      var r=o.source(data),p,m; 
       // get the sensor data and pass to conditioner
-      dataCondition.curValue = new seen.P(r.x,r.y,r.z); 
-      dataCondition.cookedValue = new seen.P(r.x,r.y,r.z); 
-      o.calibrator(dataCondition,calibrate,calibrating);
+      r=seen.P(r.x,r.y,r.z);
+      r.subtract(o.bias);
+      dataCondition.curValue = r.copy(); 
+      dataCondition.cookedValue = r.copy(); 
+      for (var i=0; i<o.calibrator.length; i++) o.calibrator[i](dataCondition,calibrate,calibrating);
       p=dataCondition.cookedValue;
       if(recording) readings.push(
         new reading({sensor:o.sensor,x:p.x,y:p.y,z:p.z,raw:_.toArray(data)})
         
         );
-      $('#'+o.htmlID).html(templater(p.x,p.y,p.z,o.sensor,o.units) );
+      m=dataCondition.dataHistory;
+      $('#'+o.htmlID).html(templater(p.x,p.y,p.z,o.sensor,o.units)
+      + "<br>" + templater(r.x,r.y,r.z,"raw")
+      +((m.min)? "<br>" + pointFormat(m.min,"min") + "<br>" + pointFormat(m.max,"max"):"" )
+      +((m.grandAverage)? "<br>" +pointFormat(m.grandAverage,"ave"):"" )
+      + "<br>" + bufferToHexStr(data)
+      );
       o.viewer(p.x,p.y,p.z);
     };
   }
@@ -360,26 +373,25 @@
    */
   function bufferToHexStr(buffer, offset, numBytes)
   {
-    var hex = ''
+    var hex = '';
+    if(!numBytes)numBytes=buffer.length;
+    if(!offset) offset=0;
     for (var i = 0; i < numBytes; ++i)
     {
-      hex += byteToHexStr(buffer[offset + i])
+      hex += byteToHexStr(buffer[offset + i]) + " ";
     }
-    return hex
+    return hex;
   }
 
   /**
    * Convert byte number to hex string.
    */
+  var hx = ['0','1','2','3','4','5','6','7','8','9','A','B','C','D','E','F'];
   function byteToHexStr(d)
   {
-    if (d < 0) { d = 0xFF + d + 1 }
-    var hex = Number(d).toString(16)
-    var padding = 2
-    while (hex.length < padding)
-    {
-      hex = '0' + hex
-    }
+    var lo =hx[d & 0xf];
+    var hi =hx[(d&0xf0)>>4];
+    return hi+lo;
   }
   
 // ## stopRecording
@@ -453,7 +465,7 @@ function viewSensor(viewport,scaleFactor){
     q=seen.Quaternion.pointAngle(pBar,Math.PI);
     
     m=q.toMatrix();
-    spear = spearFromPool(model,x,y,z).transform(m).scale(scaleFactor);
+    spear = spearFromPool(model,x,y,z).transform(m).scale(scaleFactor*leng);
     spear.fill( new seen.Material (new seen.Color(255,80,255)));
     context.render();
   }
@@ -484,6 +496,7 @@ viewGyro(-5,0,0);
 $(function(){
   console.log('hello');
   initAll();
+  $('.suppress').hide();
   $("#reset").prop('disabled',false).fadeTo(0,1).click(enterReset);
   $(document).on('deviceready', initialiseSensorTag );
 });	
