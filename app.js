@@ -1,6 +1,18 @@
 // # stagapp
 // ## data handler for clinical recording of SensorTag data
   // SensorTag object.
+  // external requirements
+  require('./libs/console.js');
+  var console = new Console('console-log');
+  var $=require('jquery');
+  var _=require("./libs/dbg/underscore.js");
+  var Backbone=require("./libs/dbg/backbone.js");
+  var seen=require("./libs/dbg/seen.js");
+  //  require("./libs/extras/coffee-script.js");
+  require("./libs/evothings/easyble/easyble.js");
+  require("./libs/evothings/tisensortag/tisensortag.js");
+  require("./libs/evothings/util/util.js");
+  
   var sensortag = evothings.tisensortag.createInstance();
   var recording = false,
    connected=false,
@@ -8,7 +20,11 @@
    readings,
    calibrating=false,
    calibrate=false;
-   var console = new Console('console-log');
+  try {
+  $(document).on('deviceready', initialiseSensorTag );
+  } catch (e){
+    console.error(e);
+  }
 // ## Hardware
 // external communications to Hardware
 //
@@ -28,6 +44,8 @@
     // 1 to enable X axis only, 2 to enable Y axis only, 3 = X and Y,
     // 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.
     //
+    console.log('Enter Sensor Init');
+    try {
     connected = false;
     sensortag
       .statusCallback(statusHandler)
@@ -37,6 +55,10 @@
       .magnetometerCallback(magnetometerHandler, 100)
       .gyroscopeCallback(gyroscopeHandler, 100, 7) // 7 = enable all axes.
       .connectToClosestDevice();
+    } catch (e) {
+      console.error(e);
+    }
+      console.log('Sensor Init');
   }
   
  // ## section: View
@@ -75,6 +97,7 @@
     $("#stop").click(stopRecording);
     $("#record").click(enterRecording).fadeTo(0,1).text('record');
     $("#reset").prop("disabled",false);
+      console.log('UI Init')
   }
 
   function countReadings(){
@@ -103,6 +126,7 @@
       });
 
     readings = new rtemp();
+    console.log('Data Structures Init')
   }
   // ## Section State Handlers
   
@@ -156,6 +180,7 @@
   }
   
   function enterConnected(){
+    console.log('enterConnected begin');
     // enable the recording button
     connected = true;
     $("#record").prop('disabled',false).fadeTo(100,1).text('record').click(enterRecording);
@@ -498,5 +523,4 @@ $(function(){
   initAll();
   $('.suppress').hide();
   $("#reset").prop('disabled',false).fadeTo(0,1).click(enterReset);
-  $(document).on('deviceready', initialiseSensorTag );
 });	

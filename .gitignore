@@ -1,4 +1,6 @@
 .c9
-node_modules
+node_modules/*
+.all.js
 cordova.js
 *.log
+temp
