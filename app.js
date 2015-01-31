@@ -241,7 +241,7 @@
  var magnetometerHandler = readingHandler(
    { sensor:'mag',
     debias:'calibrateMag',
-    calibrator:[calibratorAverage,calibratorSmooth,calibratorQuaternian],
+    calibrator:[calibratorAverage,calibratorSmooth,calibratorQuaternion],
      source:sensortag.getMagnetometerValues,
      units:'&micro;T',
      viewer:viewSensor('magnet-view',0.05),
@@ -257,17 +257,17 @@
    }
    );
  
- function calibratorQuaternian(dataCondition,calibrate,calibrating){
+ function calibratorQuaternion(dataCondition,calibrate,calibrating){
    try{ 
-     var tH=dataCondition.dataHistory,tQuaternian;
+     var tH=dataCondition.dataHistory,tQuaternion;
      if(tH.unitVector === undefined){
        // We start with a vector that points at 1,1,1 that isn't rotating
        tH.unitVector = seen.P(1,1,1).normalize();
        tH.velocity = seen.Quaternion.axisAngle(0,0,0,0);
      }
      // calculate new rotation and cook it into the history
-     tQuaternian = seen.Quaternion.pointAngle(dataCondition.cookedValue,dataCondition.cookedValue.length());
-     tH.velocity.multiply(tQuaternian);
+     tQuaternion = seen.Quaternion.pointAngle(dataCondition.cookedValue,dataCondition.cookedValue.length());
+     tH.velocity.multiply(tQuaternion);
      tH.unitVector.transform(tH.velocity.toMatrix());
      dataCondition.cookedValue.set( tH.unitVector ) ;
    } catch (e) {
