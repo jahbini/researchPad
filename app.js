@@ -241,7 +241,7 @@
  var magnetometerHandler = readingHandler(
    { sensor:'mag',
     debias:'calibrateMag',
-    calibrator:[calibratorAverage,calibratorSmooth],
+    calibrator:[calibratorAverage,calibratorSmooth,calibratorQuaternian],
      source:sensortag.getMagnetometerValues,
      units:'&micro;T',
      viewer:viewSensor('magnet-view',0.05),
@@ -256,6 +256,25 @@
     htmlID:'GyroscopeData'
    }
    );
+ 
+ function calibratorQuaternian(dataCondition,calibrate,calibrating){
+   try{ 
+     var tH=dataCondition.dataHistory,tQuaternian;
+     if(tH.unitVector === undefined){
+       // We start with a vector that points at 1,1,1 that isn't rotating
+       tH.unitVector = seen.P(1,1,1).normalize();
+       tH.velocity = seen.Quaternion.axisAngle(0,0,0,0);
+     }
+     // calculate new rotation and cook it into the history
+     tQuaternian = seen.Quaternion.pointAngle(dataCondition.cookedValue,dataCondition.cookedValue.length());
+     tH.velocity.multiply(tQuaternian);
+     tH.unitVector.transform(tH.velocity.toMatrix());
+     dataCondition.cookedValue.set( tH.unitVector ) ;
+   } catch (e) {
+     console.log(e.message);
+   }
+ }
+ 
  
  function calibratorAverage(dataCondition,calibrate,calibrating){
    try{ 
