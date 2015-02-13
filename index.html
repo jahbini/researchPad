@@ -15,9 +15,14 @@
   <style>
     @import 'skeleton/css/normalize.css';
     @import 'skeleton/css/skeleton.css';
+    @import 'css/console.css';
+    .dump {
+      font: normal 14px/1.3 Consolas,'Andale Mono','Courier New',Courier,monospace;
+    }
   </style>
 
   <script src="libs/dbg/jquery-2.1.1.js"></script>
+  <script src="libs/console.js"></script>
   <script src="cordova.js"></script>
   <script src="libs/extras/coffee-script.js"></script>
   <script src="libs/evothings/util/util.js"></script>
@@ -30,7 +35,7 @@
 </head>
 
 <body>
- <div class="container">
+ <div id="capture-display" class="container">
   <h1>SensorTag Motion Capture</h1>
   
   <div class="row">
@@ -59,23 +64,33 @@
     <div class="four columns">
       <canvas id="gyro-view" width="200" height="200" style="width=100%"></canvas>
     </div>
-    <div class="five columns" id="GyroscopeData"></div>
+    <div class="five columns dump" id="GyroscopeData"></div>
+    <button id="calibrateGyro" class="suppress three columns">
+      Debias
+    </button>
   </div>
   
   <div class="row acelleration">
     <div class="four columns">
       <canvas id="accel-view" width="200" height="200" style="width=100%"></canvas>
     </div>
-    <div class="five columns" id="AccelerometerData"></div>
+    <div class="five columns dump" id="AccelerometerData"></div>
+    <button id="calibrateAccel" class="suppress three columns">
+      Debias
+    </button>
   </div>
   <div class="row magnetometer">
     <div class="four columns">
       <canvas id="magnet-view" width="200" height="200" style="width=100%"></canvas>
     </div>
-    <div class="five columns" id="MagnetometerData"></div>
+    <div class="five columns dump" id="MagnetometerData"></div>
+    <button id="calibrateMag" class="suppress three columns">
+      Debias
+    </button>
   </div>
 
  </div>
+ <div class="container" id="console-log"></div>
  <script src="app.js">
  </script>
 </body>
