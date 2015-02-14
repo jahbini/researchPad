@@ -1,6 +1,5 @@
 .c9
 node_modules
-cordova.js
 *.log
 .all.js
 temp/
