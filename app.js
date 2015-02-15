@@ -234,7 +234,7 @@
     var hopper,brainDump;
 //    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
     if(!readings.length) return;
-    hopper = Backbone.Model.extend({url:remoteHost+"/trajectory"});
+    hopper = Backbone.Model.extend({url:"https://"+remoteHost+"/trajectory"});
     brainDump = new hopper({readings: readings, user:user, password:password, patientID: patientID, testID:testID});
     brainDump.save();
     readings.reset();
