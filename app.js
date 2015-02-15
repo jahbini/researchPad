@@ -231,10 +231,11 @@
   }
   
   function enterUpload(){
-    var hopper,brainDump;
+    var hopper,brainDump,host = "https://" + remoteHost +"/trajectory";
 //    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
     if(!readings.length) return;
-    hopper = Backbone.Model.extend({url:"https://"+remoteHost+"/trajectory"});
+    alert(host);
+    hopper = Backbone.Model.extend({url:host});
     brainDump = new hopper({readings: readings, user:user, password:password, patientID: patientID, testID:testID});
     brainDump.save();
     readings.reset();
