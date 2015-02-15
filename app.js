@@ -3,11 +3,17 @@
   // SensorTag object.
   var sensortag = evothings.tisensortag.createInstance();
   var recording = false,
-   connected=false,
-   reading,
-   readings,
-   calibrating=false,
-   calibrate=false;
+    authorized=false,
+    reading,
+    readings,
+    calibrating=false,
+    calibrate=false,
+    remoteHost,
+    user,
+    password,
+    testID,
+    patientID;
+   
    var console = new Console('console-log');
 // ## Hardware
 // external communications to Hardware
@@ -59,9 +65,39 @@
       + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision);
   }
  
+  function authButtons(){
+    if(authorized){
+      $('#authorize').removeClass('button-primary').addClass('button');
+      $('#record').addClass('button-primary').removeClass('button');
+    } else {
+      $('#record').removeClass('button-primary').addClass('button');
+      $('#authorize').addClass('button-primary').removeClass('button');
+    }
+    
+  }
+  function setAuthority(){
+    $('#authority').show();
+    $('#record').prop('disabled',true);
+    authButtons();
+  }
+  
+  function acceptAuthority(){
+    $('#authority').hide();
+    $('#record').prop('disabled',false);
+    $("#record").click(enterRecording).fadeTo(0,1).text('record');
+    authorized = true;
+    authButtons();
+    remoteHost=$("#remoteHost").val();
+    user=$("#user").val();
+    password=$("#password").val();
+    patientID=$("#patientID").val();
+    testID=$("#testID").val();
+  }
+  
   function clearUserInterface(){
     // Clear current values.
     var blank = '[Waiting for value]';
+    $('#authority').hide();
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
     $('#KeypressData').html('');
@@ -75,6 +111,9 @@
     $("#stop").click(stopRecording);
     $("#record").click(enterRecording).fadeTo(0,1).text('record');
     $("#reset").prop("disabled",false);
+    authButtons();
+    $('#authorize').prop('disabled',false).click(setAuthority);
+    $('#authorizeDone').prop('disabled',false).click(acceptAuthority);
   }
 
   function countReadings(){
@@ -195,8 +234,8 @@
     var hopper,brainDump;
 //    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
     if(!readings.length) return;
-    hopper = Backbone.Model.extend({url:"/trajectory"});
-    brainDump = new hopper({readings: readings});
+    hopper = Backbone.Model.extend({url:remoteHost+"/trajectory"});
+    brainDump = new hopper({readings: readings, user:user, password:password, patientID: patientID, testID:testID});
     brainDump.save();
     readings.reset();
     enterConnected();
