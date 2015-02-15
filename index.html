@@ -34,9 +34,60 @@
 </head>
 
 <body>
- <div id="capture-display" class="container">
+<div id="capture-display" class="container">
   <h1>SensorTag Motion Capture</h1>
   
+  <div class="InputsWrapper1 row" style="display: none">
+    <div id="yourhead">
+      <div id="your" style="display: block; background-color: rgb(244, 212, 250); width: 530px;">
+        <h2 id="yourtitle" style="color: rgb(255, 255, 255); text-align: center; font-size: 25px; cursor: pointer;">
+          <h1>Upload Host, Proctor, client, test</h1>
+        </h2>
+        <h4 id="justclickid" style="display: none;">
+          Just Click on Fields on left to start building your form. It's fast, easy &amp; fun.
+        </h4>
+      </div>
+    </div>	
+			
+    <div id="InputsWrapper" class="ui-sortable">
+      <div>
+        <div class="name" id="InputsWrapper_04">
+          <label>Name:4</label>
+          <input type="text" name="mytext[]" id="field_4" placeholder="Name 4">
+          <br>
+        </div>
+      </div>
+      <div>
+        <div class="name" id="InputsWrapper_05">
+          <label>Name:5</label>
+          <input type="text" name="mytext[]" id="field_5" placeholder="Name 5">
+          <br>
+        </div>
+      </div>
+      <div class="checkbox" id="InputsWrapper_3_1"></div>
+      <div class="checkbox" id="InputsWrapper_3_2"></div>
+      <div class="radiobutton" id="InputsWrapper_4_3">
+        <p class="radiobutton_child" id="para3">
+          <label>Radio:8</label>
+          <input type="radio" name="myradio[]" id="field_8" placeholder="Radio_8">
+        </p>
+        <p class="radiobutton_child" id="para3">
+          <label>Radio:9</label>
+          <input type="radio" name="myradio[]" id="field_9" placeholder="Radio_9">
+        </p>
+      </div>
+      <div class="radiobutton" id="InputsWrapper_4_4" style="">
+        <p class="radiobutton_child" id="para4">
+          <label>Radio:11</label>
+          <input type="radio" name="myradio[]" id="field_11" placeholder="Radio_11">
+        </p>
+        <p class="radiobutton_child" id="para4">
+          <label>Radio:12</label>
+          <input type="radio" name="myradio[]" id="field_12" placeholder="Radio_12">
+        </p>
+      </div>
+    </div>
+  </div>
   <div class="row">
     <button id="record" class="three columns button-primary">
       Record
