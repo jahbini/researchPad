@@ -4,7 +4,7 @@
  * Author: Aaron Ardiri
  */
 if (!window.evothings) { window.evothings = {} }
-evothings.util = (function()
+exports.util = (function()
 {
 	var funs = {};
 

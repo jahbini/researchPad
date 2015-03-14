@@ -1,0 +1,57 @@
+doctype TODO
+comment 'Demonstration of the TI SensorTag JavaScript library.\n  Adaptation for clinical use for Android and iOS devices'
+html ->
+  head ->
+    meta charset: 'utf-8'
+    meta name: 'format-detection', content: 'telephone=no'
+    meta name: 'viewport', content: 'width=device-width, user-scalable=no\n    initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0'
+    title 'Movement Capture'
+    style '@import \'skeleton/css/normalize.css\';\n    @import \'skeleton/css/skeleton.css\';\n    @import \'css/console.css\';\n    .dump {\n      font: normal 14px/1.3 Consolas,\'Andale Mono\',\'Courier New\',Courier,monospace;\n    }'
+    script src: 'libs/dbg/jquery-2.1.1.js'
+    script src: 'libs/console.js'
+    script src: 'cordova.js'
+    script src: 'libs/extras/coffee-script.js'
+    script src: 'libs/evothings/util/util.js'
+    script src: 'libs/evothings/easyble/easyble.js'
+    script src: 'libs/evothings/tisensortag/tisensortag.js'
+    script src: 'libs/dbg/underscore.js'
+    script src: 'libs/dbg/backbone.js'
+    script src: 'libs/dbg/seen.js'
+  body ->
+    div '#capture-display.container', ->
+      h1 'SensorTag Motion Capture'
+      div '.row', ->
+        button '#record.three.columns button-primary', 'Record'
+        button '#stop.three.columns', 'Stop'
+        button '#upload.three.columns', 'Upload'
+        button '#reset.three.columns', 'Reset'
+      div '.row.keys', ->
+        p '.three.columns', ->
+          text 'SensorTag Status:'
+          span '#StatusData', 'Not ready to connect'
+        p '.three.columns', ->
+          text 'SensorTag firmware version:'
+          span '#FirmwareData', '?'
+        p '.three.columns', ->
+          text 'readings captured:'
+          span '#TotalReadings', '0'
+        p '.two.columns', ->
+          text 'Keypress:'
+          span '#KeypressData', '[Waiting for value]'
+      div '.row.gyroscope', ->
+        div '.four.columns', ->
+          canvas '#gyro-view' width: '200', height: '200', style: 'width=100%'
+        div '#GyroscopeData.five.columns dump'
+        button '#calibrateGyro.suppress.three columns', 'Debias'
+      div '.row.acelleration', ->
+        div '.four.columns', ->
+          canvas '#accel-view' width: '200', height: '200', style: 'width=100%'
+        div '#AccelerometerData.five.columns dump'
+        button '#calibrateAccel.suppress.three columns', 'Debias'
+      div '.row.magnetometer', ->
+        div '.four.columns', ->
+          canvas '#magnet-view' width: '200', height: '200', style: 'width=100%'
+        div '#MagnetometerData.five.columns dump'
+        button '#calibrateMag.suppress.three columns', 'Debias'
+    div '#console-log.container'
+    script src: 'app.js', ''
