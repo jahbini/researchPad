@@ -21,24 +21,24 @@
     }
   </style>
 
-  <script src="libs/dbg/jquery-2.1.1.js"></script>
-  <script src="libs/console.js"></script>
   <script src="cordova.js"></script>
 <!--
+  <script src="libs/dbg/jquery-2.1.1.js"></script>
+  <script src="libs/console.js"></script>
   <script src="libs/extras/coffee-script.js"></script>
   <script src="libs/evothings/util/util.js"></script>
   <script src="libs/evothings/easyble/easyble.js"></script>
   <script src="libs/evothings/tisensortag/tisensortag.js"></script>
--->
   <script src="libs/dbg/underscore.js"></script>
   <script src="libs/dbg/backbone.js"></script>
   <script src="libs/dbg/seen.js"></script>
+-->
 </head>
 
 <body>
  <div id="capture-display" class="container">
   <h1>SensorTag Motion Capture</h1>
-  
+
   <div class="row">
     <button id="record" class="three columns button-primary">
       Record
@@ -53,7 +53,7 @@
       Reset
     </button>
   </div>
-  
+
   <div class="row keys">
     <p class="three columns">SensorTag Status: <span id="StatusData">Not ready to connect</span></p>
     <p class="three columns">SensorTag firmware version: <span id="FirmwareData">?</span></p>
@@ -70,7 +70,7 @@
       Debias
     </button>
   </div>
-  
+
   <div class="row acelleration">
     <div class="four columns">
       <canvas id="accel-view" width="200" height="200" style="width=100%"></canvas>

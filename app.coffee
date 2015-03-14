@@ -1,8 +1,15 @@
 # # stagapp
 # ## data handler for clinical recording of SensorTag data
 # SensorTag object.
-evothings = window.evothings
-evothings.util =require('./libs/evothings/util/util').util
+
+Backbone = require ('backbone')
+_ = require('underscore')
+require('./libs/console')
+$ = require('jquery')
+Seen = require('./libs/dbg/seen')
+
+evothings = window.evothings ={}
+evothings.util = require('./libs/evothings/util/util')
 evothings.easyble =require('./libs/evothings/easyble/easyble').easyble
 evothings.tisensortag=require('./libs/evothings/tisensortag/tisensortag').tisensortag
 sensortag = evothings.tisensortag.createInstance()
@@ -159,7 +166,7 @@ initAll = ->
   $('#TotalReadings').html '0'
   return
 
-# ### subsection State handlers that depend on the View 
+# ### subsection State handlers that depend on the View
 
 keypressHandler = (data) ->
   left = 0
@@ -189,7 +196,7 @@ keypressHandler = (data) ->
   return
 
 enterReset = ->
-  # legal to enter Reset from any state 
+  # legal to enter Reset from any state
   reading = false
   readings = null
   # sensortag.disconnectDevice();
@@ -334,7 +341,7 @@ calibratorSmooth = (dataCondition, calibrate, calibrating) ->
 ## create and return a function to handle a sensor's new data
 
 readingHandler = (o) ->
-  dataCondition = 
+  dataCondition =
     curValue: seen.P(0, 0, 0)
     cookedValue: seen.P(0, 0, 0)
     dataHistory: {}
@@ -498,7 +505,7 @@ viewSensor = (viewport, scaleFactor) ->
   cubie.fill new (seen.Material)(new (seen.Color)(25, 200, 200, 100))
   model.add cubie
   newValue
-  
+
 # ## subsection State routines that depend on hardware and update the view or data structures
 # calculations implemented as based on TI wiki pages
 # http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
