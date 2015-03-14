@@ -4,7 +4,7 @@
 
 Backbone = require ('backbone')
 _ = require('underscore')
-require('./libs/console')
+require('./libs/dbg/console')
 $ = require('jquery')
 Seen = require('./libs/dbg/seen')
 

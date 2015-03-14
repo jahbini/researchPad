@@ -5,7 +5,7 @@ Backbone = require('backbone');
 
 _ = require('underscore');
 
-require('./libs/console');
+require('./libs/dbg/console');
 
 $ = require('jquery');
 
@@ -564,7 +564,7 @@ exports = initialiseSensorTag;
 
 
 
-},{"./libs/console":"/Users/bamboo-jim/development/stagapp/libs/console.js","./libs/dbg/seen":"/Users/bamboo-jim/development/stagapp/libs/dbg/seen.js","./libs/evothings/easyble/easyble":"/Users/bamboo-jim/development/stagapp/libs/evothings/easyble/easyble.js","./libs/evothings/tisensortag/tisensortag":"/Users/bamboo-jim/development/stagapp/libs/evothings/tisensortag/tisensortag.js","./libs/evothings/util/util":"/Users/bamboo-jim/development/stagapp/libs/evothings/util/util.js","backbone":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/backbone.js","jquery":"/Users/bamboo-jim/development/stagapp/node_modules/jquery/dist/jquery.js","underscore":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/node_modules/underscore/underscore.js"}],"/Users/bamboo-jim/development/stagapp/libs/console.js":[function(require,module,exports){
+},{"./libs/dbg/console":"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js","./libs/dbg/seen":"/Users/bamboo-jim/development/stagapp/libs/dbg/seen.js","./libs/evothings/easyble/easyble":"/Users/bamboo-jim/development/stagapp/libs/evothings/easyble/easyble.js","./libs/evothings/tisensortag/tisensortag":"/Users/bamboo-jim/development/stagapp/libs/evothings/tisensortag/tisensortag.js","./libs/evothings/util/util":"/Users/bamboo-jim/development/stagapp/libs/evothings/util/util.js","backbone":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/backbone.js","jquery":"/Users/bamboo-jim/development/stagapp/node_modules/jquery/dist/jquery.js","underscore":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/node_modules/underscore/underscore.js"}],"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js":[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
