@@ -8,8 +8,13 @@ require('./libs/dbg/console')
 $ = require('jquery')
 Seen = require('./libs/dbg/seen')
 
+CoffeeTemplates=require 'coffee-templates'
+engine = new CoffeeTemplates format: false, autoescape: false # defaults
+bodySource = require './firstpage.coffee'
+bodyHtml = engine.render(bodySource)
+
 evothings = window.evothings ={}
-evothings.util = require('./libs/evothings/util/util')
+evothings.util = require('./libs/evothings/util/util').util
 evothings.easyble =require('./libs/evothings/easyble/easyble').easyble
 evothings.tisensortag=require('./libs/evothings/tisensortag/tisensortag').tisensortag
 sensortag = evothings.tisensortag.createInstance()
@@ -20,7 +25,6 @@ reading = undefined
 readings = undefined
 calibrating = false
 calibrate = false
-console = new Console('console-log')
 ###*
 # Convert byte number to hex string.
 ###
@@ -43,27 +47,6 @@ hx = [
   'E'
   'F'
 ]
-
-###
-viewGyro(0,10,0);
-viewGyro(0,-5,0);
-viewGyro(0,0,10);
-viewGyro(0,0,-5);
-viewGyro(5,5,5);
-viewGyro(0,5,5);
-viewGyro(5,0,5);
-viewGyro(5,5,0);
-viewAccel(-0.5,0.6,0.7);
-
-viewMagnet(10.5,0.6,-0.7);
-viewMagnet(10.4,0.6,-0.8);
-viewMagnet(10.4,2.6,-0.8);
-viewMagnet(10.4,5.6,-0.8);
-viewMagnet(10.3,0.6,-0.2);
-
-viewGyro(10,0,0);
-viewGyro(-5,0,0);
-###
 
 # ## Hardware
 # external communications to Hardware
@@ -283,8 +266,8 @@ calibratorAverage = (dataCondition, calibrate, calibrating) ->
   try
     tH = undefined
     if dataCondition.dataHistory.grandTotal == undefined
-      dataCondition.dataHistory.grandTotal = seen.P(0, 0, 0)
-      dataCondition.dataHistory.grandAverage = seen.P(0, 0, 0)
+      dataCondition.dataHistory.grandTotal = Seen.P(0, 0, 0)
+      dataCondition.dataHistory.grandAverage = Seen.P(0, 0, 0)
       dataCondition.dataHistory.totalReadings = 1
     tH = dataCondition.dataHistory
     if tH.totalReadings == 1000
@@ -342,8 +325,8 @@ calibratorSmooth = (dataCondition, calibrate, calibrating) ->
 
 readingHandler = (o) ->
   dataCondition =
-    curValue: seen.P(0, 0, 0)
-    cookedValue: seen.P(0, 0, 0)
+    curValue: Seen.P(0, 0, 0)
+    cookedValue: Seen.P(0, 0, 0)
     dataHistory: {}
   # if there is no calibration function, just use a null offset
   if !o.calibrator
@@ -354,37 +337,40 @@ readingHandler = (o) ->
 
   if !o.units
     o.units = ''
-  o.bias = seen.P(0, 0, 0)
+  o.bias = Seen.P(0, 0, 0)
   $('#' + o.debias).click ->
     o.bias = o.cookedValue
     console.log o
     return
   (data) ->
-    # data points from Evothings library are seen.Point NOT compatible as sources
-    r = o.source(data)
-    p = undefined
-    m = undefined
-    # get the sensor data and pass to conditioner
-    r = seen.P(r.x, r.y, r.z)
-    r.subtract o.bias
-    dataCondition.curValue = r.copy()
-    dataCondition.cookedValue = r.copy()
-    i = 0
-    while i < o.calibrator.length
-      o.calibrator[i] dataCondition, calibrate, calibrating
-      i++
-    p = dataCondition.cookedValue
-    if recording
-      readings.push new reading(
-        sensor: o.sensor
-        x: p.x
-        y: p.y
-        z: p.z
-        raw: _.toArray(data))
-    m = dataCondition.dataHistory
-    $('#' + o.htmlID).html templater(p.x, p.y, p.z, o.sensor, o.units) + '<br>' + templater(r.x, r.y, r.z, 'raw') + (if m.min then '<br>' + pointFormat(m.min, 'min') + '<br>' + pointFormat(m.max, 'max') else '') + (if m.grandAverage then '<br>' + pointFormat(m.grandAverage, 'ave') else '') + '<br>' + bufferToHexStr(data)
-    o.viewer p.x, p.y, p.z
-    return
+    # data points from Evothings library are Seen.Point NOT compatible as sources
+    try
+      r = o.source(data)
+      p = undefined
+      m = undefined
+      # get the sensor data and pass to conditioner
+      r = Seen.P(r.x, r.y, r.z)
+      r.subtract o.bias
+      dataCondition.curValue = r.copy()
+      dataCondition.cookedValue = r.copy()
+      i = 0
+      while i < o.calibrator.length
+        o.calibrator[i] dataCondition, calibrate, calibrating
+        i++
+      p = dataCondition.cookedValue
+      if recording
+        readings.push new reading(
+          sensor: o.sensor
+          x: p.x
+          y: p.y
+          z: p.z
+          raw: _.toArray(data))
+      m = dataCondition.dataHistory
+      $('#' + o.htmlID).html templater(p.x, p.y, p.z, o.sensor, o.units) + '<br>' + templater(r.x, r.y, r.z, 'raw') + (if m.min then '<br>' + pointFormat(m.min, 'min') + '<br>' + pointFormat(m.max, 'max') else '') + (if m.grandAverage then '<br>' + pointFormat(m.grandAverage, 'ave') else '') + '<br>' + bufferToHexStr(data)
+      o.viewer p.x, p.y, p.z
+      return
+    catch error
+      console.log error
 
 setBackgroundColor = (color) ->
   document.documentElement.style.background = color
@@ -429,12 +415,11 @@ stopRecording = ->
 viewSensor = (viewport, scaleFactor) ->
   height = 200
   width = 200
-  model = seen.Models['default']()
-  scene = new (seen.Scene)(
+  model = Seen.Models['default']()
+  scene = new (Seen.Scene)(
     model: model
-    viewport: seen.Viewports.center(width, height))
-  context = seen.Context(viewport, scene)
-  cubie = seen.Shapes.cube().scale(0.25)
+    viewport: Seen.Viewports.center(width, height))
+  cubie = Seen.Shapes.cube().scale(0.25)
 
   spearPool = (many) ->
     i = undefined
@@ -450,7 +435,7 @@ viewSensor = (viewport, scaleFactor) ->
         count = 0
       if shapes[count]
         model.remove shapes[count]
-      shapes[count] = seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
+      shapes[count] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
       model.add(shapes[count])
       shapes[count].bake()
       shapes[count].reset()
@@ -470,17 +455,17 @@ viewSensor = (viewport, scaleFactor) ->
 
     i = 0
     while i < many
-      shapes[i] = seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
+      shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
       shapes[i].bake()
-      colors[i] = new (seen.Material)(new (seen.Color)(255, 80, 255, 255 - 250 / many * i))
+      colors[i] = new (Seen.Material)(new (Seen.Color)(255, 80, 255, 255 - 250 / many * i))
       i++
     newArrow
 
   newValue = (x, y, z) ->
-    p1 = seen.P(x, y, z)
+    p1 = Seen.P(x, y, z)
     spear = undefined
     pOriginal = p1.copy()
-    pBar = seen.P(1, 0, 0)
+    pBar = Seen.P(1, 0, 0)
     m = undefined
     q = undefined
     cross = undefined
@@ -489,20 +474,18 @@ viewSensor = (viewport, scaleFactor) ->
     p1 = p1.normalize()
     pBar.add p1
     if pBar.magnitude() < 0.000001
-
-      ### this is a 180 degree rotation, so use y axis as rotation vector ###
-
-      pBar = seen.P(0, 1, 0)
+      pBar = Seen.P(0, 1, 0) # this is a 180 degree rotation, so use y axis as rotation vector ###
     pBar.normalize()
-    q = seen.Quaternion.pointAngle(pBar, Math.PI)
+    q = Seen.Quaternion.pointAngle(pBar, Math.PI)
     m = q.toMatrix()
     spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
-    spear.fill new (seen.Material)(new (seen.Color)(255, 80, 255))
+    spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
+    context = Seen.Context(viewport, scene) if !context
     context.render()
     return
 
   spearFromPool = new spearPool(10)
-  cubie.fill new (seen.Material)(new (seen.Color)(25, 200, 200, 100))
+  cubie.fill new (Seen.Material)(new (Seen.Color)(25, 200, 200, 100))
   model.add cubie
   newValue
 
@@ -542,17 +525,23 @@ gyroscopeHandler = readingHandler(
   viewer: viewSensor('gyro-view', 0.005)
   htmlID: 'GyroscopeData')
 
-
+### export things like seen -- it's clean
+#seen = {}
+#if window? then window.seen = seen # for the web
+#if module?.exports? then module.exports = seen # for node
+###
 
 $ ->
-  console.log 'hello'
-  initAll()
-  $('.suppress').hide()
-  $('#reset').prop('disabled', false).fadeTo(0, 1).click enterReset
-  $(document).on 'deviceready', initialiseSensorTag
-  initialiseSensorTag()
+  $('body').html(bodyHtml)
+  $ ->
+    console = new Console('console-log')
+    console.log 'hello'
+    initAll()
+    $('.suppress').hide()
+    $('#reset').prop('disabled', false).fadeTo(0, 1).click enterReset
+    $(document).on 'deviceready', initialiseSensorTag
+    return
   return
 
- #---
-exports = initialiseSensorTag
+#---
 # generated by js2coffee 2.0.1
