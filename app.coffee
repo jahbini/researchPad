@@ -10,8 +10,9 @@ Seen = require('./libs/dbg/seen')
 
 CoffeeTemplates=require 'coffee-templates'
 engine = new CoffeeTemplates format: false, autoescape: false # defaults
-bodySource = require './firstpage.coffee'
-bodyHtml = engine.render(bodySource)
+bodySource = require './pages.coffee'
+
+bodyHtml = ( engine.render bodySource.logo ) + engine.render bodySource.firstpage
 
 evothings = window.evothings ={}
 evothings.util = require('./libs/evothings/util/util').util

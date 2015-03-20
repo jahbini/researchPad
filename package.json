@@ -8,7 +8,7 @@
         "backbone":"latest",
         "backbone-forms":"latest",
         "seen": "themadcreator/seen.git",
-        "coffee-templates":"latest",
+        "teacup":"latest",
 	"hbsfy": "~2.2.1",
         "winston":"latest",
         "underscore":"latest",
