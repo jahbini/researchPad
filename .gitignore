@@ -3,4 +3,6 @@ node_modules
 cordova.js
 *.log
 .all.js
+.app.js
 temp/
+x.*

@@ -7,12 +7,10 @@ _ = require('underscore')
 require('./libs/dbg/console')
 $ = require('jquery')
 Seen = require('./libs/dbg/seen')
-
-CoffeeTemplates=require 'coffee-templates'
-engine = new CoffeeTemplates format: false, autoescape: false # defaults
+Teacup = require('teacup')
 bodySource = require './pages.coffee'
 
-bodyHtml = ( engine.render bodySource.logo ) + engine.render bodySource.firstpage
+bodyHtml = bodySource.firstpage
 
 evothings = window.evothings ={}
 evothings.util = require('./libs/evothings/util/util').util
@@ -93,7 +91,7 @@ pointFormat = (p, unit, precision) ->
 
 clearUserInterface = ->
   # Clear current values.
-  blank = '[Waiting for value]'
+  blank = 'Waiting...'
   $('#StatusData').html 'Ready to connect'
   $('#FirmwareData').html '?'
   $('#KeypressData').html ''
@@ -367,7 +365,7 @@ readingHandler = (o) ->
           z: p.z
           raw: _.toArray(data))
       m = dataCondition.dataHistory
-      $('#' + o.htmlID).html templater(p.x, p.y, p.z, o.sensor, o.units) + '<br>' + templater(r.x, r.y, r.z, 'raw') + (if m.min then '<br>' + pointFormat(m.min, 'min') + '<br>' + pointFormat(m.max, 'max') else '') + (if m.grandAverage then '<br>' + pointFormat(m.grandAverage, 'ave') else '') + '<br>' + bufferToHexStr(data)
+      $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
       o.viewer p.x, p.y, p.z
       return
     catch error
