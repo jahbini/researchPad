@@ -9,7 +9,7 @@
         "backbone-forms":"latest",
         "seen": "themadcreator/seen.git",
         "teacup":"latest",
-	"hbsfy": "~2.2.1",
+      	"hbsfy": "~2.2.1",
         "winston":"latest",
         "underscore":"latest",
         "coffee-script":"latest"

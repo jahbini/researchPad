@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/bamboo-jim/development/stagapp/app.coffee":[function(require,module,exports){
-var $, Backbone, Seen, Teacup, _, accelerometerHandler, bodyHtml, bodySource, bufferToHexStr, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearUserInterface, connected, countReadings, enterCalibrating, enterConnected, enterRecording, enterReset, enterReview, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, hx, initAll, initDataStructures, initialiseSensorTag, keypressHandler, magnetometerHandler, pointFormat, reading, readingHandler, readings, recording, sensortag, setBackgroundColor, split, statusHandler, stopRecording, templater, viewSensor;
+var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, user, userCollection, users, viewSensor;
 
 Backbone = require('backbone');
 
@@ -7,15 +7,11 @@ _ = require('underscore');
 
 require('./libs/dbg/console');
 
-$ = require('jquery');
+Backbone.$ = $ = require('jquery');
 
 Seen = require('./libs/dbg/seen');
 
-Teacup = require('teacup');
-
-bodySource = require('./pages.coffee');
-
-bodyHtml = bodySource.firstpage;
+pages = require('./pages.coffee');
 
 evothings = window.evothings = {};
 
@@ -39,36 +35,137 @@ calibrating = false;
 
 calibrate = false;
 
+temp = Backbone.Model.extend(function() {
+  return {
+    defaults: {
+      user: '',
+      patient: '',
+      testID: '',
+      hostUrl: void 0
+    }
+  };
+});
 
-/**
- * Convert byte number to hex string.
- */
+sessionInfo = new temp;
 
-hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-
-initialiseSensorTag = function() {
+initializeSensorTag = function() {
   connected = false;
-  sensortag.statusCallback(statusHandler).errorCallback(errorHandler).keypressCallback(keypressHandler).accelerometerCallback(accelerometerHandler, 100).magnetometerCallback(magnetometerHandler, 100).gyroscopeCallback(gyroscopeHandler, 100, 7).connectToClosestDevice();
+  sensortag.statusCallback(statusHandler);
+  sensortag.errorCallback(errorHandler);
+  sensortag.keypressCallback(keypressHandler);
+  sensortag.accelerometerCallback(accelerometerHandler, 100);
+  sensortag.magnetometerCallback(magnetometerHandler, 100);
+  sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
+  sensortag.connectToClosestDevice();
 };
 
 templater = function(x, y, z, sensor, unit) {
-  if (!unit) {
-    unit = '';
+  if (sensor == null) {
+    sensor = 'unknown';
   }
-  if (!sensor) {
-    sensor = 'raw';
+  if (unit == null) {
+    unit = '';
   }
   return sensor + ' x=' + (x >= 0 ? '+' : '') + x.toFixed(2) + unit + ' -- ' + 'y=' + (y >= 0 ? '+' : '') + y.toFixed(2) + unit + ' -- ' + 'z=' + (z >= 0 ? '+' : '') + z.toFixed(2) + unit;
 };
 
 pointFormat = function(p, unit, precision) {
-  if (!precision) {
-    precision = 2;
-  }
-  if (!unit) {
+  if (unit == null) {
     unit = 'v';
   }
+  if (precision == null) {
+    precision = 2;
+  }
   return unit + ' x=' + (p.x >= 0 ? '+' : '') + p.x.toFixed(precision) + ' -- ' + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + ' -- ' + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision);
+};
+
+startRecording = function() {
+  return enterRecording();
+};
+
+startStop = function() {
+  return enterStop();
+};
+
+startDebug = function() {
+  pageGen.activateButtons(buttonModelDebugOn);
+  $('#footer').show();
+  return false;
+};
+
+stopDebug = function() {
+  pageGen.activateButtons(buttonModelDebugOff);
+  $('#footer').hide();
+  return false;
+};
+
+startReset = function() {
+  return enterReset();
+};
+
+startUpload = function() {
+  return enterUpload();
+};
+
+startCalibrate = function() {
+  return enterCalibrate();
+};
+
+startAdmin = function() {
+  alert('Admin');
+  return enterAdmin();
+};
+
+buttonModelDebugOn = {
+  selector: '#debug',
+  text: "Hide Log",
+  funct: stopDebug
+};
+
+buttonModelDebugOff = {
+  selector: '#debug',
+  text: "Show Log",
+  funct: startDebug
+};
+
+buttonModelActionRecord = {
+  selector: '#action',
+  text: 'Record',
+  funct: startRecording
+};
+
+buttonModelActionStop = {
+  selector: '#action',
+  text: 'Stop',
+  funct: startStop
+};
+
+buttonModelReset = {
+  selector: '#reset',
+  text: 'Clear',
+  funct: startReset
+};
+
+buttonModelUpload = {
+  selector: '#upload',
+  text: 'Upload',
+  funct: startUpload
+};
+
+buttonModelCalibrate = {
+  selector: '#calibrate',
+  text: 'Shake',
+  funct: startCalibrate
+};
+
+buttonModelAdmin = {
+  selector: '#admin',
+  text: 'Admin',
+  funct: startAdmin
+};
+
+clearButtons = function() {
+  pageGen.deactivateButtons(buttonModelAdmin, buttonModelDebugOff, buttonModelActionRecord, buttonModelUpload, buttonModelCalibrate, buttonModelReset);
 };
 
 clearUserInterface = function() {
@@ -82,25 +179,100 @@ clearUserInterface = function() {
   $('#GyroscopeData').html(blank);
   $('#TotalReadings').html(0);
   setBackgroundColor('white');
-  $(':button').prop('disabled', true);
-  $('#stop').click(stopRecording);
-  $('#record').click(enterRecording).fadeTo(0, 1).text('record');
-  $('#reset').prop('disabled', false);
+  pageGen.activateButtons(buttonModelAdmin, buttonModelDebugOn);
 };
 
 countReadings = function() {
   $('#TotalReadings').html(readings.length);
 };
 
+user = Backbone.Model.extend({
+  defaults: {
+    name: 'Text',
+    password: 'Password',
+    patientOnly: 'Boolean'
+  }
+});
+
+host = Backbone.Model.extend({
+  defaults: {
+    hostUrl: 'Text',
+    name: 'Text'
+  }
+});
+
+userCollection = Backbone.Collection.extend({
+  model: user,
+  url: '/users'
+});
+
+hostCollection = Backbone.Collection.extend({
+  model: host,
+  url: "/host_list.json"
+});
+
+users = new userCollection;
+
+users.push(new user({
+  name: 'Jim',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Harry',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Sam',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Bob',
+  password: 'Y',
+  patientOnly: true
+}));
+
+hosts = new hostCollection;
+
+hosts.push(new host({
+  name: 'saal',
+  url: 'http://www.saal.org:3000'
+}));
+
+hosts.push(new host({
+  name: 'local',
+  url: 'http://192.168.1.200:3000'
+}));
+
+hosts.push(new host({
+  name: 'Cloud 9',
+  url: 'https://stagserv-jahbini.c9.io'
+}));
+
+adminData = Backbone.Model.extend({
+  defaults: {
+    host: hosts,
+    user: users,
+    testIDs: {
+      test1: "Test 1",
+      test2: "Test 2"
+    }
+  }
+});
+
+admin = new adminData;
+
 initDataStructures = function() {
   var rtemp;
   rtemp = void 0;
   reading = Backbone.Model.extend({
     defaults: {
-      sensor: 'gyro',
-      x: 0,
-      y: 0,
-      z: 0
+      sensor: 'gyro'
     },
     initialize: function() {
       var d;
@@ -117,11 +289,16 @@ initDataStructures = function() {
     }
   });
   readings = new rtemp;
+  readings.push(new reading({
+    raw: [1, 2, 3, 4, 5, 6],
+    sensor: 'Test'
+  }));
 };
 
 initAll = function() {
   var rtemp;
   rtemp = void 0;
+  clearButtons();
   clearUserInterface();
   initDataStructures();
   $('#TotalReadings').html('0');
@@ -165,57 +342,67 @@ enterReset = function() {
   readings = null;
   recording = false;
   initDataStructures();
-  enterConnected();
   $('#TotalReadings').html('0');
+  pageGen.deactivateButtons(buttonModelReset, buttonModelUpload);
+  if (connected) {
+    pageGen.activateButtons(buttonModelActionRecord, buttonModelCalibrate);
+    pageGen.deactivateButtons(buttonModelAdmin);
+  } else {
+    pageGen.activateButtons(buttonModelAdmin);
+  }
 };
 
 enterConnected = function() {
   connected = true;
-  $('#record').prop('disabled', false).fadeTo(100, 1).text('record').click(enterRecording);
-  $('#stop').prop('disabled', true);
-  $('#upload').prop('disabled', true);
-  $('#calibrate').prop('disabled', false).click(enterCalibrating);
+  pageGen.deactivateButtons(buttonModelAdmin);
+  pageGen.activateButtons(buttonModelActionRecord, buttonModelCalibrate);
 };
 
 enterCalibrating = function() {
-  $('#record').prop('disabled', true);
-  $('#stop').prop('disabled', true);
-  $('#upload').prop('disabled', true);
-  $('#calibrate').text('button 1 active').click(exitCalibrating);
+  pageGen.deactivateButtons(buttonModelRecord, buttonModelUpload);
+  pageGen.activateButtons({
+    selector: '#calibrate',
+    text: 'Exit Calibrate',
+    funct: exitCalibrating
+  });
   calibrating = true;
 };
 
 exitCalibrating = function() {
   calibrating = false;
-  $('#calibrate').text('calibrate').click(enterCalibrating);
+  pageGen.activateButtons(buttonModelRecord, buttonModelCalibrate);
 };
 
 enterRecording = function() {
-  $('#record').prop('disabled', true).text('recording').fadeTo(200, 0.6);
-  $('#stop').prop('disabled', false).fadeTo(100, 1).click(enterReview);
-  $('#upload').prop('disabled', true);
+  pageGen.activateButtons(buttonModelActionStop);
   recording = true;
 };
 
-enterReview = function() {
-  $('#stop').prop('disabled', true).fadeTo(100, 0.5);
-  $('#record').prop('disabled', true).text('recorded').fadeTo(200, 0.3);
-  $('#upload').prop('disabled', false).click(enterUpload).fadeTo(100, 1);
+enterStop = function() {
+  pageGen.deactivateButtons({
+    selector: '#action',
+    text: 'recorded',
+    funct: function() {}
+  });
+  pageGen.activateButtons(buttonModelUpload, buttonModelReset);
   recording = false;
 };
 
 enterUpload = function() {
-  var brainDump, hopper;
+  var brainDump, hopper, hostUrl;
   hopper = void 0;
   brainDump = void 0;
   if (!readings.length) {
     return;
   }
+  hostUrl = sessionInfo.get('hostUrl');
   hopper = Backbone.Model.extend({
-    url: '/trajectory'
+    url: '/trajectory',
+    urlRoot: hostUrl
   });
   brainDump = new hopper({
-    readings: readings
+    readings: readings,
+    session: sessionInfo
   });
   brainDump.save();
   readings.reset();
@@ -223,8 +410,12 @@ enterUpload = function() {
 };
 
 statusHandler = function(status) {
+  console.log(status);
   if ('Sensors online' === status) {
     enterConnected();
+    if (typeof sensortag.id === "function") {
+      sensortag.id(typeof console !== "undefined" && console !== null ? console.log(sensortag.id) : void 0);
+    }
   }
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
@@ -233,7 +424,9 @@ statusHandler = function(status) {
 };
 
 errorHandler = function(error) {
-  console.log('Error: ' + error);
+  if (typeof console !== "undefined" && console !== null) {
+    console.log('Error: ' + error);
+  }
   if ('disconnected' === error) {
     connected = false;
     clearUserInterface();
@@ -263,7 +456,6 @@ calibratorAverage = function(dataCondition, calibrate, calibrating) {
     dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
   } catch (_error) {
     e = _error;
-    console.log(e.message);
   }
 };
 
@@ -303,7 +495,6 @@ calibratorMid = function(dataCondition, calibrate, calibrating) {
     dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z);
   } catch (_error) {
     e = _error;
-    console.log(e.message);
   }
 };
 
@@ -316,7 +507,6 @@ calibratorSmooth = function(dataCondition, calibrate, calibrating) {
     dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
   } catch (_error) {
     e = _error;
-    console.log(e.message);
   }
 };
 
@@ -338,7 +528,6 @@ readingHandler = function(o) {
   o.bias = Seen.P(0, 0, 0);
   $('#' + o.debias).click(function() {
     o.bias = o.cookedValue;
-    console.log(o);
   });
   return function(data) {
     var error, i, m, p, r;
@@ -359,9 +548,6 @@ readingHandler = function(o) {
       if (recording) {
         readings.push(new reading({
           sensor: o.sensor,
-          x: p.x,
-          y: p.y,
-          z: p.z,
           raw: _.toArray(data)
         }));
       }
@@ -388,6 +574,8 @@ setBackgroundColor = function(color) {
  * @param numBytes - number of bytes to read
  * @return string with hex representation of bytes
  */
+
+hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
 
 bufferToHexStr = function(buffer, offset, numBytes) {
   var hex, i;
@@ -538,29 +726,60 @@ gyroscopeHandler = readingHandler({
   htmlID: 'GyroscopeData'
 });
 
+deviceIsReady = false;
 
-/* export things like seen -- it's clean
+setSensor = function() {
+  pageGen.activateSensorPage();
+  if (deviceIsReady) {
+    initializeSensorTag();
+  }
+  initAll();
+  return false;
+};
+
+pageGen = new pages.Pages(admin, sessionInfo);
+
+
+/* this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web
 #if module?.exports? then module.exports = seen # for node
  */
 
+
+/*  And since we are in a browser ---
+ */
+
+window.$ = $;
+
+window.sessionInfo = sessionInfo;
+
+window.pageGen = pageGen;
+
+pageEmpty = true;
+
+$(document).on('deviceready', function() {
+  return deviceIsReady = true;
+});
+
 $(function() {
-  $('body').html(bodyHtml);
-  $(function() {
-    var console;
-    console = new Console('console-log');
+  var console;
+  clearButtons();
+  if (pageEmpty) {
+    pageGen.activateAdminPage(setSensor);
+  }
+  pageEmpty = false;
+  if ($('#console-log') != null) {
+    window.console = console = new Console('console-log');
     console.log('hello');
-    initAll();
-    $('.suppress').hide();
-    $('#reset').prop('disabled', false).fadeTo(0, 1).click(enterReset);
-    $(document).on('deviceready', initialiseSensorTag);
-  });
+    stopDebug();
+  }
+  return false;
 });
 
 
 
-},{"./libs/dbg/console":"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js","./libs/dbg/seen":"/Users/bamboo-jim/development/stagapp/libs/dbg/seen.js","./libs/evothings/easyble/easyble":"/Users/bamboo-jim/development/stagapp/libs/evothings/easyble/easyble.js","./libs/evothings/tisensortag/tisensortag":"/Users/bamboo-jim/development/stagapp/libs/evothings/tisensortag/tisensortag.js","./libs/evothings/util/util":"/Users/bamboo-jim/development/stagapp/libs/evothings/util/util.js","./pages.coffee":"/Users/bamboo-jim/development/stagapp/pages.coffee","backbone":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/backbone.js","jquery":"/Users/bamboo-jim/development/stagapp/node_modules/jquery/dist/jquery.js","teacup":"/Users/bamboo-jim/development/stagapp/node_modules/teacup/lib/teacup.js","underscore":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/node_modules/underscore/underscore.js"}],"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js":[function(require,module,exports){
+},{"./libs/dbg/console":"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js","./libs/dbg/seen":"/Users/bamboo-jim/development/stagapp/libs/dbg/seen.js","./libs/evothings/easyble/easyble":"/Users/bamboo-jim/development/stagapp/libs/evothings/easyble/easyble.js","./libs/evothings/tisensortag/tisensortag":"/Users/bamboo-jim/development/stagapp/libs/evothings/tisensortag/tisensortag.js","./libs/evothings/util/util":"/Users/bamboo-jim/development/stagapp/libs/evothings/util/util.js","./pages.coffee":"/Users/bamboo-jim/development/stagapp/pages.coffee","backbone":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/backbone.js","jquery":"/Users/bamboo-jim/development/stagapp/node_modules/jquery/dist/jquery.js","underscore":"/Users/bamboo-jim/development/stagapp/node_modules/backbone/node_modules/underscore/underscore.js"}],"/Users/bamboo-jim/development/stagapp/libs/dbg/console.js":[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -5258,6 +5477,8 @@ exports.util = (function()
     // Proxy `Backbone.sync` by default -- but override this if you need
     // custom syncing semantics for *this* particular model.
     sync: function() {
+      console.log('Sync Args=')
+      console.log (arguments)
       return Backbone.sync.apply(this, arguments);
     },
 
@@ -6115,12 +6336,13 @@ exports.util = (function()
 
     // Default JSON-request options.
     var params = {type: type, dataType: 'json'};
-
+console.log('URL?');
+console.log(options.url);
     // Ensure that we have a URL.
     if (!options.url) {
       params.url = _.result(model, 'url') || urlError();
     }
-
+console.log(params.url);
     // Ensure that we have the appropriate request data.
     if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
       params.contentType = 'application/json';
@@ -6158,7 +6380,10 @@ exports.util = (function()
         return new ActiveXObject("Microsoft.XMLHTTP");
       };
     }
-
+console.log('to Ajax!')
+console.log(params);
+console.log('Ajax options');
+console.log(options);
     // Make the request, allowing the user to override any Ajax options.
     var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
     model.trigger('request', model, xhr, options);
@@ -6181,6 +6406,8 @@ exports.util = (function()
   // Set the default implementation of `Backbone.ajax` to proxy through to `$`.
   // Override this if you'd like to use a different library.
   Backbone.ajax = function() {
+    console.log('ajax args =')
+    console.log(arguments)
     return Backbone.$.ajax.apply(Backbone.$, arguments);
   };
 
@@ -16261,7 +16488,7 @@ jQuery.extend({
 
 		// Get transport
 		transport = inspectPrefiltersOrTransports( transports, s, options, jqXHR );
-
+console.log(transport);
 		// If no transport, we auto-abort
 		if ( !transport ) {
 			done( -1, "No Transport" );
@@ -16668,6 +16895,7 @@ support.ajax = xhrSupported = !!xhrSupported;
 jQuery.ajaxTransport(function( options ) {
 	var callback;
 
+console.log('at XHR1')
 	// Cross domain only allowed if supported through XMLHttpRequest
 	if ( support.cors || xhrSupported && !options.crossDomain ) {
 		return {
@@ -16675,7 +16903,7 @@ jQuery.ajaxTransport(function( options ) {
 				var i,
 					xhr = options.xhr(),
 					id = ++xhrId;
-
+console.log('at XHR')
 				xhr.open( options.type, options.url, options.async, options.username, options.password );
 
 				// Apply custom fields if provided
@@ -17740,70 +17968,243 @@ return jQuery;
 }).call(this);
 
 },{}],"/Users/bamboo-jim/development/stagapp/pages.coffee":[function(require,module,exports){
-var body, button, canvas, div, doctype, firstpage, form, h2, h3, head, hostForm, hr, img, loginForm, logo, option, p, raw, ref, render, renderable, select, span, text;
+var Pages,
+  slice = [].slice;
 
-ref = require('teacup'), render = ref.render, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr;
+exports.Pages = Pages = (function() {
+  var $, Teacup, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, modelCheck, option, p, password, raw, ref, render, renderable, select, span, tea, text;
 
-logo = renderable(function() {
-  return div('.row', function() {
-    img("#logo.five.columns", {
-      src: './ui/images/logo-final.png',
-      width: '100%'
+  Teacup = require('teacup');
+
+  $ = require('jquery');
+
+  tea = new Teacup.Teacup;
+
+  ref = tea.tags(), render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+
+  Pages.prototype.sessionInfo = {};
+
+  Pages.prototype.admin = {};
+
+  function Pages(admin, session) {
+    this.admin = admin;
+    Teacup.Teacup.prototype.admin = this.admin;
+    Teacup.Teacup.prototype.Page = this;
+    this.sessionInfo = session;
+  }
+
+  Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
+    return div('#capture-display.container', function() {
+      div('.row', function() {
+        img("#logo.five.columns", {
+          src: './ui/images/logo-final.png',
+          width: '100%'
+        });
+        div('#dud.one.columns', function() {
+          return raw('&nbsp;');
+        });
+        return h3('.five.columns', 'Movement data capture');
+      });
+      buttons();
+      contents1();
+      hr();
+      contents2();
+      hr();
+      return div('#footer', 'style="display:none;"', function() {
+        return div('#console-log.container', function() {
+          return h2('Console');
+        });
+      });
     });
-    div('#dud.one.columns', function() {
-      return raw('&nbsp;');
-    });
-    return h3('.five.columns', 'Movement data capture');
   });
-});
 
-firstpage = render(function() {
-  return div('#capture-display.container', function() {
-    logo(function() {});
-    div('.row', function() {
-      button('#record.three.columns button-primary', 'Record');
-      button('#stop.three.columns', 'Stop');
-      button('#upload.three.columns', 'Upload');
-      return button('#reset.three.columns', 'Reset');
+  Pages.prototype.adminContents = renderable(function() {
+    return div('#adminForm', function() {
+      hr();
+      return form(function() {
+        div('.row', function() {
+          div('.two.columns', function() {
+            label('Remote Host');
+            return select('#desiredHost.u-full-width', {
+              onchange: ""
+            }, 'Host', function() {
+              var host, i, len, ref1, results;
+              option("Select ---");
+              ref1 = this.admin.get('host').toArray();
+              results = [];
+              for (i = 0, len = ref1.length; i < len; i++) {
+                host = ref1[i];
+                results.push(option({
+                  value: host.get('url')
+                }, host.get('name')));
+              }
+              return results;
+            });
+          });
+          div('.four.columns', function() {
+            label({
+              "for": 'clinician'
+            }, 'Clinician');
+            select('#clinician.u-full-width', function() {
+              var i, len, ref1, results, user;
+              option("Select ---");
+              ref1 = this.admin.get('user').toArray();
+              results = [];
+              for (i = 0, len = ref1.length; i < len; i++) {
+                user = ref1[i];
+                if (!user.get('patientOnly')) {
+                  results.push(option({
+                    value: user.get('name')
+                  }, user.get('name')));
+                }
+              }
+              return results;
+            });
+            br();
+            label({
+              "for": "password"
+            }, "Enter Password");
+            return input("#password", {
+              type: 'password'
+            });
+          });
+          return div('.four.columns', function() {
+            label({
+              "for": 'patient'
+            }, 'Client');
+            return select('#patient.u-full-width', function() {
+              var i, len, patient, ref1, results;
+              option("Select ---");
+              ref1 = this.admin.get('user').toArray();
+              results = [];
+              for (i = 0, len = ref1.length; i < len; i++) {
+                patient = ref1[i];
+                results.push(option({
+                  value: patient.get('name')
+                }, patient.get('name')));
+              }
+              return results;
+            });
+          });
+        });
+        return div('.row', function() {
+          div('.nine.columns', function() {
+            return raw('&nbsp;');
+          });
+          return button('#done.three.columns', {
+            disabled: true
+          }, "Done");
+        });
+      });
     });
-    div('.row', function() {
-      button('.three.columns.disabled', '');
-      button('.three.columns.disabled', '');
-      button('.three.columns.disabled', '');
-      return button('.three.columns.disabled', '');
+  });
+
+  modelCheck = function(me) {
+    var model;
+    model = this.sessionInfo;
+    if ((model.get('TestID')) && (model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient'))) {
+      console.log('activating');
+      me.activateButtons({
+        selector: "#done",
+        funct: me.done,
+        text: "Done"
+      });
+    }
+  };
+
+  Pages.prototype.wireButtons = function() {
+    var me, model;
+    model = this.sessionInfo;
+    me = this;
+    return $('#TestID').change(function(node) {
+      model.set('TestID', $('#TestID option:selected').val());
+      return modelCheck(me);
     });
+  };
+
+  Pages.prototype.wireAdmin = function() {
+    var me, model;
+    model = this.sessionInfo;
+    me = this;
+    $('#desiredHost').change(function(node) {
+      model.set('hostUrl', $('#desiredHost option:selected').val());
+      return modelCheck(me);
+    });
+    $('#clinician').change(function(node) {
+      model.set('clinician', $('#clinician option:selected').val());
+      return modelCheck(me);
+    });
+    return $('#patient').change(function(node) {
+      model.set('patient', $('#patient option:selected').val());
+      return modelCheck(me);
+    });
+  };
+
+  Pages.prototype.buttons = renderable(function() {
+    div('.row', function() {
+      button('#admin.three.columns button-primary', 'Admin');
+      button('.three.columns.disabled', '');
+      button('.three.columns.disabled', '');
+      return button('#debug.three.columns.disabled', '');
+    });
+    return div('.row', function() {
+      button('#action.three.columns.disabled', '');
+      button('#upload.three.columns.disabled', 'Upload');
+      button('#reset.three.columns.disabled', 'Reset');
+      return div('.three.columns', function() {
+        label({
+          "for": "TestID"
+        }, 'Which Test?');
+        return select("#TestID.u-full-width", function() {
+          var k, ref1, results, test;
+          option("Select ---");
+          ref1 = this.admin.get('testIDs');
+          results = [];
+          for (k in ref1) {
+            test = ref1[k];
+            results.push(option({
+              value: k
+            }, test));
+          }
+          return results;
+        });
+      });
+    });
+  });
+
+  Pages.prototype.sensorContents = renderable(function() {
     hr();
     div('.row.readings', function() {
-      div('.row.gyroscope.four.columns', function() {
-        h3('Gyroscope');
+      div('#gyroscope.four.columns', function() {
+        h4('Gyroscope');
         canvas('#gyro-view', {
           width: '200',
           height: '200',
           style: 'width=100%'
         });
-        return div('#GyroscopeData.five.columns dump', button('#calibrateGyro.suppress.three columns', 'Debias'));
+        return div('#GyroscopeData.u-full-width.dump', ' ');
       });
-      div('.row.acelleration.four.columns', function() {
-        h3('Accelerometer');
+      div('#acelleration.four.columns', function() {
+        h4('Accelerometer');
         canvas('#accel-view', {
           width: '200',
           height: '200',
           style: 'width=100%'
         });
-        return div('#AccelerometerData.five.columns dump', button('#calibrateAccel.suppress.three columns', 'Debias'));
+        return div('#AccelerometerData.u-full-width.dump', ' ');
       });
-      return div('.row.magnetometer.four.columns', function() {
-        h3('Magnetometer');
+      return div('#magnetometer.four.columns', function() {
+        h4('Magnetometer');
         canvas('#magnet-view', {
           width: '200',
           height: '200',
           style: 'width=100%'
         });
-        return div('#MagnetometerData.five.columns dump', button('#calibrateMag.suppress.three columns', 'Debias'));
+        return div('#MagnetometerData.u-full-width.dump', '');
       });
     });
     hr();
-    div('.row.keys', function() {
+    return div('.row.keys', function() {
       p('.three.columns', function() {
         text('SensorTag Status:');
         return span('#StatusData', 'Not ready to connect');
@@ -17821,57 +18222,61 @@ firstpage = render(function() {
         return span('#KeypressData', '[Waiting for value]');
       });
     });
-    hr();
-    return div('#console-log.container', function() {
-      return h2('Console');
-    });
   });
-});
 
-loginForm = renderable(function(users, patients) {
-  return form('#login.row', function() {
-    label('Clinition');
-    select('Clinician', function() {
-      var i, len, results, user;
-      results = [];
-      for (i = 0, len = users.length; i < len; i++) {
-        user = users[i];
-        results.push(option(user));
+  Pages.prototype.deactivateButtons = function() {
+    var b, btn, buttons, i, len, results;
+    buttons = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    results = [];
+    for (i = 0, len = buttons.length; i < len; i++) {
+      btn = buttons[i];
+      b = $(btn.selector).removeClass('button-primary').attr('disabled', 'disabled').off('click');
+      if (btn.text != null) {
+        b.text(btn.text);
       }
-      return results;
-    });
-    label('Client');
-    return select('Patient', function() {
-      var i, len, patient, results;
-      results = [];
-      for (i = 0, len = patients.length; i < len; i++) {
-        patient = patients[i];
-        results.push(option(patient));
+      results.push(b.fadeTo(500, 0.25));
+    }
+    return results;
+  };
+
+  Pages.prototype.activateButtons = function() {
+    var b, btn, buttons, i, len, results;
+    buttons = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+    results = [];
+    for (i = 0, len = buttons.length; i < len; i++) {
+      btn = buttons[i];
+      b = $(btn.selector).addClass('button-primary').removeAttr('disabled').off('click');
+      if (btn.funct != null) {
+        b.on('click', btn.funct);
       }
-      return results;
-    });
-  });
-});
-
-hostForm = renderable(function(hosts) {
-  return form('#remoteHost', function() {
-    return select('Host', function() {
-      var host, i, len, results;
-      results = [];
-      for (i = 0, len = Hosts.length; i < len; i++) {
-        host = Hosts[i];
-        results.push(host);
+      if (btn.text != null) {
+        b.text(btn.text);
       }
-      return results;
-    });
-  });
-});
+      results.push(b.show().fadeTo(500, 1));
+    }
+    return results;
+  };
 
-module.exports = {
-  logo: logo,
-  firstpage: firstpage
-};
+  Pages.prototype.activateAdminPage = function(done) {
+    var bodyHtml;
+    this.done = done;
+    bodyHtml = pageGen.theBody(pageGen.buttons, pageGen.adminContents, pageGen.sensorContents);
+    $('body').html(bodyHtml);
+    this.wireButtons();
+    return this.wireAdmin();
+  };
+
+  Pages.prototype.activateSensorPage = function(buttonspec) {
+    $('#adminForm').hide();
+    if (buttonspec != null) {
+      return activateButtons(buttonspec);
+    }
+  };
+
+  return Pages;
+
+})();
 
 
 
-},{"teacup":"/Users/bamboo-jim/development/stagapp/node_modules/teacup/lib/teacup.js"}]},{},["/Users/bamboo-jim/development/stagapp/app.coffee"]);
+},{"jquery":"/Users/bamboo-jim/development/stagapp/node_modules/jquery/dist/jquery.js","teacup":"/Users/bamboo-jim/development/stagapp/node_modules/teacup/lib/teacup.js"}]},{},["/Users/bamboo-jim/development/stagapp/app.coffee"]);

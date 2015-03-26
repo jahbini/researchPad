@@ -1,16 +1,15 @@
 # # stagapp
+# vim: et:ts=2:sw=2:sts=2
 # ## data handler for clinical recording of SensorTag data
 # SensorTag object.
 
 Backbone = require ('backbone')
 _ = require('underscore')
 require('./libs/dbg/console')
-$ = require('jquery')
+Backbone.$ = $ = require('jquery')
 Seen = require('./libs/dbg/seen')
-Teacup = require('teacup')
-bodySource = require './pages.coffee'
+pages = require './pages.coffee'
 
-bodyHtml = bodySource.firstpage
 
 evothings = window.evothings ={}
 evothings.util = require('./libs/evothings/util/util').util
@@ -24,28 +23,16 @@ reading = undefined
 readings = undefined
 calibrating = false
 calibrate = false
-###*
-# Convert byte number to hex string.
-###
 
-hx = [
-  '0'
-  '1'
-  '2'
-  '3'
-  '4'
-  '5'
-  '6'
-  '7'
-  '8'
-  '9'
-  'A'
-  'B'
-  'C'
-  'D'
-  'E'
-  'F'
-]
+temp = Backbone.Model.extend ->
+  defaults:
+    user: ''
+    patient: ''
+    testID: ''
+    hostUrl: undefined
+
+sessionInfo = new temp
+
 
 # ## Hardware
 # external communications to Hardware
@@ -54,7 +41,7 @@ hx = [
 # accelerometer, magnetometer and gyro data
 #
 
-initialiseSensorTag = ->
+initializeSensorTag = ->
   # Here sensors are set up.
   #
   # If you wish to use only one or a few sensors, just set up
@@ -68,26 +55,91 @@ initialiseSensorTag = ->
   # 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.
   #
   connected = false
-  sensortag.statusCallback(statusHandler).errorCallback(errorHandler).keypressCallback(keypressHandler).accelerometerCallback(accelerometerHandler, 100).magnetometerCallback(magnetometerHandler, 100).gyroscopeCallback(gyroscopeHandler, 100, 7).connectToClosestDevice()
+  sensortag.statusCallback(statusHandler)
+  sensortag.errorCallback(errorHandler)
+  sensortag.keypressCallback(keypressHandler)
+  sensortag.accelerometerCallback(accelerometerHandler, 100)
+  sensortag.magnetometerCallback(magnetometerHandler, 100)
+  sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7)
+  sensortag.connectToClosestDevice()
   return
 
 # ## section: View
 # routines to control or coordinate with user
 #
 
-templater = (x, y, z, sensor, unit) ->
-  if !unit
-    unit = ''
-  if !sensor
-    sensor = 'raw'
+templater = (x, y, z, sensor='unknown', unit='') ->
   sensor + ' x=' + (if x >= 0 then '+' else '') + x.toFixed(2) + unit + ' -- ' + 'y=' + (if y >= 0 then '+' else '') + y.toFixed(2) + unit + ' -- ' + 'z=' + (if z >= 0 then '+' else '') + z.toFixed(2) + unit
 
-pointFormat = (p, unit, precision) ->
-  if !precision
-    precision = 2
-  if !unit
-    unit = 'v'
+pointFormat = (p, unit ='v', precision=2) ->
   unit + ' x=' + (if p.x >= 0 then '+' else '') + p.x.toFixed(precision) + ' -- ' + 'y=' + (if p.y >= 0 then '+' else '') + p.y.toFixed(precision) + ' -- ' + 'z=' + (if p.z >= 0 then '+' else '') + p.z.toFixed(precision)
+
+startRecording= () ->
+  enterRecording()
+startStop= () ->
+  enterStop()
+startDebug = () ->
+  pageGen.activateButtons buttonModelDebugOn
+  $('#footer').show()
+  return false
+stopDebug = () ->
+  pageGen.activateButtons buttonModelDebugOff
+  $('#footer').hide()
+  return false
+
+startReset = () ->
+  enterReset()
+startUpload = () ->
+  enterUpload()
+startCalibrate = () ->
+  enterCalibrate()
+startAdmin = () ->
+  alert('Admin')
+  enterAdmin()
+
+buttonModelDebugOn =
+  selector: '#debug'
+  text: "Hide Log"
+  funct: stopDebug
+buttonModelDebugOff =
+  selector: '#debug'
+  text: "Show Log"
+  funct: startDebug
+buttonModelActionRecord =
+  selector: '#action',
+  text: 'Record',
+  funct: startRecording
+
+buttonModelActionStop =
+  selector: '#action',
+  text: 'Stop',
+  funct: startStop
+    
+buttonModelReset =
+  selector: '#reset'
+  text: 'Clear'
+  funct: startReset
+
+buttonModelUpload =
+  selector: '#upload'
+  text: 'Upload'
+  funct: startUpload
+
+buttonModelCalibrate =
+  selector: '#calibrate'
+  text: 'Shake'
+  funct: startCalibrate
+
+buttonModelAdmin =
+  selector: '#admin'
+  text: 'Admin'
+  funct: startAdmin
+
+  
+clearButtons = ->
+  pageGen.deactivateButtons buttonModelAdmin, buttonModelDebugOff,
+    buttonModelActionRecord,buttonModelUpload,buttonModelCalibrate,buttonModelReset
+  return
 
 clearUserInterface = ->
   # Clear current values.
@@ -101,10 +153,7 @@ clearUserInterface = ->
   $('#TotalReadings').html 0
   # Reset screen color.
   setBackgroundColor 'white'
-  $(':button').prop 'disabled', true
-  $('#stop').click stopRecording
-  $('#record').click(enterRecording).fadeTo(0, 1).text 'record'
-  $('#reset').prop 'disabled', false
+  pageGen.activateButtons buttonModelAdmin, buttonModelDebugOn
   return
 
 countReadings = ->
@@ -115,14 +164,75 @@ countReadings = ->
 # Routines to create and handle data structures and interfaces to them
 #
 
+user = Backbone.Model.extend
+  defaults:
+    name: 'Text'
+    password: 'Password'
+    patientOnly: 'Boolean'
+host = Backbone.Model.extend
+  defaults:
+    hostUrl: 'Text'
+    name: 'Text'
+
+userCollection = Backbone.Collection.extend
+  model: user
+  url: '/users'
+
+
+hostCollection = Backbone.Collection.extend
+  model: host
+  url:"/host_list.json"
+
+users = new userCollection
+users.push new user(
+    name: 'Jim'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Harry'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Sam'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'Bob'
+    password: 'Y'
+    patientOnly: true
+  )
+
+hosts = new hostCollection
+hosts.push new host(
+  name: 'saal'
+  url: 'http://www.saal.org:3000'
+)
+hosts.push new host(
+  name: 'local'
+  url: 'http://192.168.1.200:3000'
+)
+hosts.push new host(
+  name: 'Cloud 9'
+  url: 'https://stagserv-jahbini.c9.io'
+)
+adminData = Backbone.Model.extend
+  defaults:
+    host: hosts
+    user: users
+    testIDs:
+      test1: "Test 1"
+      test2: "Test 2"
+
+admin = new adminData
+
 initDataStructures = ->
   rtemp = undefined
   reading = Backbone.Model.extend(
     defaults:
       sensor: 'gyro'
-      x: 0
-      y: 0
-      z: 0
     initialize: ->
       d = new Date
       @set 'time', d.getTime()
@@ -137,12 +247,16 @@ initDataStructures = ->
       return
   )
   readings = new rtemp
+  readings.push(
+    new reading raw: [ 1,2,3,4,5,6], sensor: 'Test'
+    )
   return
 
 # ## Section State Handlers
 
 initAll = ->
   rtemp = undefined
+  clearButtons()
   clearUserInterface()
   initDataStructures()
   $('#TotalReadings').html '0'
@@ -178,50 +292,54 @@ keypressHandler = (data) ->
   return
 
 enterReset = ->
-  # legal to enter Reset from any state
+  # Reset only clears the data -- does NOT disconnedt
   reading = false
   readings = null
-  # sensortag.disconnectDevice();
-  #sensortag = evothings.tisensortag.createInstance();
   recording = false
   initDataStructures()
-  enterConnected()
   $('#TotalReadings').html '0'
+  pageGen.deactivateButtons buttonModelReset,buttonModelUpload
+  if connected
+    pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
+    pageGen.deactivateButtons buttonModelAdmin
+  else
+    pageGen.activateButtons buttonModelAdmin
   return
 
 enterConnected = ->
   # enable the recording button
   connected = true
-  $('#record').prop('disabled', false).fadeTo(100, 1).text('record').click enterRecording
-  $('#stop').prop 'disabled', true
-  $('#upload').prop 'disabled', true
-  $('#calibrate').prop('disabled', false).click enterCalibrating
+  pageGen.deactivateButtons buttonModelAdmin
+  pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
   return
 
 enterCalibrating = ->
-  $('#record').prop 'disabled', true
-  $('#stop').prop 'disabled', true
-  $('#upload').prop 'disabled', true
-  $('#calibrate').text('button 1 active').click exitCalibrating
+  pageGen.deactivateButtons buttonModelRecord, buttonModelUpload
+  pageGen.activateButtons {
+    selector: '#calibrate'
+    text: 'Exit Calibrate'
+    funct: exitCalibrating
+  }
   calibrating = true
   return
 
 exitCalibrating = ->
   calibrating = false
-  $('#calibrate').text('calibrate').click enterCalibrating
+  pageGen.activateButtons buttonModelRecord, buttonModelCalibrate 
   return
 
 enterRecording = ->
-  $('#record').prop('disabled', true).text('recording').fadeTo 200, 0.6
-  $('#stop').prop('disabled', false).fadeTo(100, 1).click enterReview
-  $('#upload').prop 'disabled', true
+  pageGen.activateButtons buttonModelActionStop
   recording = true
   return
 
-enterReview = ->
-  $('#stop').prop('disabled', true).fadeTo 100, 0.5
-  $('#record').prop('disabled', true).text('recorded').fadeTo 200, 0.3
-  $('#upload').prop('disabled', false).click(enterUpload).fadeTo 100, 1
+enterStop = ->
+  pageGen.deactivateButtons {
+    selector: '#action'
+    text: 'recorded'
+    funct: () ->
+  }
+  pageGen.activateButtons buttonModelUpload, buttonModelReset
   recording = false
   return
 
@@ -230,9 +348,16 @@ enterUpload = ->
   brainDump = undefined
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
   if !readings.length
-    return
-  hopper = Backbone.Model.extend(url: '/trajectory')
-  brainDump = new hopper(readings: readings)
+   return 
+  hostUrl= sessionInfo.get 'hostUrl'
+  hopper = Backbone.Model.extend {
+    url: '/trajectory'
+    urlRoot: hostUrl
+  }
+  brainDump = new hopper 
+    readings: readings
+    session: sessionInfo
+
   brainDump.save()
   readings.reset()
   enterConnected()
@@ -242,15 +367,17 @@ enterUpload = ->
 # ### Subsection State Handlers that depend on the Hardware
 
 statusHandler = (status) ->
+  console.log status
   if 'Sensors online' == status
     enterConnected()
+    sensortag.id? console?.log sensortag.id
   if 'Device data available' == status
     $('#FirmwareData').html sensortag.getFirmwareString()
   $('#StatusData').html status
   return
 
 errorHandler = (error) ->
-  console.log 'Error: ' + error
+  console?.log 'Error: ' + error
   if 'disconnected' == error
     connected = false
     clearUserInterface()
@@ -277,7 +404,7 @@ calibratorAverage = (dataCondition, calibrate, calibrating) ->
     tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings)
     dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage)
   catch e
-    console.log e.message
+    #console.log e.message
   return
 
 split = (raw, lo, hi) ->
@@ -306,7 +433,7 @@ calibratorMid = (dataCondition, calibrate, calibrating) ->
     dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y)
     dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z)
   catch e
-    console.log e.message
+    #console.log e.message
   return
 
 calibratorSmooth = (dataCondition, calibrate, calibrating) ->
@@ -315,7 +442,7 @@ calibratorSmooth = (dataCondition, calibrate, calibrating) ->
       dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy()
     dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy()
   catch e
-    console.log e.message
+    #console.log e.message
   return
 
 #
@@ -329,7 +456,6 @@ readingHandler = (o) ->
     dataHistory: {}
   # if there is no calibration function, just use a null offset
   if !o.calibrator
-
     o.calibrator = (d) ->
       d.cookedValue = d.curValue
       return
@@ -339,7 +465,7 @@ readingHandler = (o) ->
   o.bias = Seen.P(0, 0, 0)
   $('#' + o.debias).click ->
     o.bias = o.cookedValue
-    console.log o
+    #console.log o
     return
   (data) ->
     # data points from Evothings library are Seen.Point NOT compatible as sources
@@ -360,9 +486,6 @@ readingHandler = (o) ->
       if recording
         readings.push new reading(
           sensor: o.sensor
-          x: p.x
-          y: p.y
-          z: p.z
           raw: _.toArray(data))
       m = dataCondition.dataHistory
       $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
@@ -383,6 +506,25 @@ setBackgroundColor = (color) ->
 # @param numBytes - number of bytes to read
 # @return string with hex representation of bytes
 ###
+hx = [
+  '0'
+  '1'
+  '2'
+  '3'
+  '4'
+  '5'
+  '6'
+  '7'
+  '8'
+  '9'
+  'A'
+  'B'
+  'C'
+  'D'
+  'E'
+  'F'
+]
+
 
 bufferToHexStr = (buffer, offset, numBytes) ->
   hex = ''
@@ -524,23 +666,40 @@ gyroscopeHandler = readingHandler(
   viewer: viewSensor('gyro-view', 0.005)
   htmlID: 'GyroscopeData')
 
-### export things like seen -- it's clean
+deviceIsReady = false
+setSensor = ->
+  pageGen.activateSensorPage()
+  if deviceIsReady
+    initializeSensorTag()
+  initAll()
+  return false
+
+pageGen = new pages.Pages admin, sessionInfo
+### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web
 #if module?.exports? then module.exports = seen # for node
 ###
-
-$ ->
-  $('body').html(bodyHtml)
-  $ ->
-    console = new Console('console-log')
-    console.log 'hello'
-    initAll()
-    $('.suppress').hide()
-    $('#reset').prop('disabled', false).fadeTo(0, 1).click enterReset
-    $(document).on 'deviceready', initialiseSensorTag
-    return
-  return
-
+###  And since we are in a browser ---
+###
+window.$=$
+window.sessionInfo = sessionInfo
+window.pageGen = pageGen
 #---
 # generated by js2coffee 2.0.1
+
+pageEmpty=true
+
+$(document).on 'deviceready', ->
+  deviceIsReady = true
+
+$ ->
+  clearButtons()
+  pageGen.activateAdminPage setSensor if pageEmpty
+  pageEmpty = false
+  if $('#console-log')?
+    window.console=console = new Console('console-log')
+    console.log 'hello'
+    stopDebug()
+  return false
+
