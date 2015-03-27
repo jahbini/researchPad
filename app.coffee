@@ -94,8 +94,11 @@ startUpload = () ->
 startCalibrate = () ->
   enterCalibrate()
 startAdmin = () ->
-  alert('Admin')
   enterAdmin()
+
+enterAdmin = ->
+  clearButtons()
+  pageGen.activateAdminPage buttonModelDebugOff
 
 buttonModelDebugOn =
   selector: '#debug'
@@ -127,7 +130,7 @@ buttonModelUpload =
 
 buttonModelCalibrate =
   selector: '#calibrate'
-  text: 'Shake'
+  text: 'Calibrate'
   funct: startCalibrate
 
 buttonModelAdmin =
@@ -153,7 +156,7 @@ clearUserInterface = ->
   $('#TotalReadings').html 0
   # Reset screen color.
   setBackgroundColor 'white'
-  pageGen.activateButtons buttonModelAdmin, buttonModelDebugOn
+  pageGen.activateButtons buttonModelAdmin, buttonModelDebugOff
   return
 
 countReadings = ->
@@ -359,6 +362,7 @@ enterUpload = ->
     session: sessionInfo
 
   brainDump.save()
+  pageGen.deactivateButtons buttonModelUpload, buttonModelReset
   readings.reset()
   enterConnected()
   return
@@ -695,7 +699,7 @@ $(document).on 'deviceready', ->
 
 $ ->
   clearButtons()
-  pageGen.activateAdminPage setSensor if pageEmpty
+  pageGen.renderPage setSensor
   pageEmpty = false
   if $('#console-log')?
     window.console=console = new Console('console-log')

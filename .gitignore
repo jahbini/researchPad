@@ -6,3 +6,4 @@ cordova.js
 .app.js
 temp/
 x.*
+*.swp

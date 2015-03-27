@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/bamboo-jim/development/stagapp/app.coffee":[function(require,module,exports){
-var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, user, userCollection, users, viewSensor;
+var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, user, userCollection, users, viewSensor;
 
 Backbone = require('backbone');
 
@@ -112,8 +112,12 @@ startCalibrate = function() {
 };
 
 startAdmin = function() {
-  alert('Admin');
   return enterAdmin();
+};
+
+enterAdmin = function() {
+  clearButtons();
+  return pageGen.activateAdminPage(buttonModelDebugOff);
 };
 
 buttonModelDebugOn = {
@@ -154,7 +158,7 @@ buttonModelUpload = {
 
 buttonModelCalibrate = {
   selector: '#calibrate',
-  text: 'Shake',
+  text: 'Calibrate',
   funct: startCalibrate
 };
 
@@ -179,7 +183,7 @@ clearUserInterface = function() {
   $('#GyroscopeData').html(blank);
   $('#TotalReadings').html(0);
   setBackgroundColor('white');
-  pageGen.activateButtons(buttonModelAdmin, buttonModelDebugOn);
+  pageGen.activateButtons(buttonModelAdmin, buttonModelDebugOff);
 };
 
 countReadings = function() {
@@ -405,6 +409,7 @@ enterUpload = function() {
     session: sessionInfo
   });
   brainDump.save();
+  pageGen.deactivateButtons(buttonModelUpload, buttonModelReset);
   readings.reset();
   enterConnected();
 };
@@ -765,9 +770,7 @@ $(document).on('deviceready', function() {
 $(function() {
   var console;
   clearButtons();
-  if (pageEmpty) {
-    pageGen.activateAdminPage(setSensor);
-  }
+  pageGen.renderPage(setSensor);
   pageEmpty = false;
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
@@ -18143,7 +18146,7 @@ exports.Pages = Pages = (function() {
   Pages.prototype.buttons = renderable(function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
-      button('.three.columns.disabled', '');
+      button('#calibrate.three.columns.disabled', 'Calibrate');
       button('.three.columns.disabled', '');
       return button('#debug.three.columns.disabled', '');
     });
@@ -18173,53 +18176,55 @@ exports.Pages = Pages = (function() {
   });
 
   Pages.prototype.sensorContents = renderable(function() {
-    hr();
-    div('.row.readings', function() {
-      div('#gyroscope.four.columns', function() {
-        h4('Gyroscope');
-        canvas('#gyro-view', {
-          width: '200',
-          height: '200',
-          style: 'width=100%'
+    return div('#sensorPage.container', function() {
+      hr();
+      div('.row.readings', function() {
+        div('#gyroscope.four.columns', function() {
+          h4('Gyroscope');
+          canvas('#gyro-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#GyroscopeData.u-full-width.dump', ' ');
         });
-        return div('#GyroscopeData.u-full-width.dump', ' ');
-      });
-      div('#acelleration.four.columns', function() {
-        h4('Accelerometer');
-        canvas('#accel-view', {
-          width: '200',
-          height: '200',
-          style: 'width=100%'
+        div('#acelleration.four.columns', function() {
+          h4('Accelerometer');
+          canvas('#accel-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#AccelerometerData.u-full-width.dump', ' ');
         });
-        return div('#AccelerometerData.u-full-width.dump', ' ');
-      });
-      return div('#magnetometer.four.columns', function() {
-        h4('Magnetometer');
-        canvas('#magnet-view', {
-          width: '200',
-          height: '200',
-          style: 'width=100%'
+        return div('#magnetometer.four.columns', function() {
+          h4('Magnetometer');
+          canvas('#magnet-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#MagnetometerData.u-full-width.dump', '');
         });
-        return div('#MagnetometerData.u-full-width.dump', '');
       });
-    });
-    hr();
-    return div('.row.keys', function() {
-      p('.three.columns', function() {
-        text('SensorTag Status:');
-        return span('#StatusData', 'Not ready to connect');
-      });
-      p('.three.columns', function() {
-        text('SensorTag firmware version:');
-        return span('#FirmwareData', '?');
-      });
-      p('.three.columns', function() {
-        text('readings captured:');
-        return span('#TotalReadings', '0');
-      });
-      return p('.two.columns', function() {
-        text('Keypress:');
-        return span('#KeypressData', '[Waiting for value]');
+      hr();
+      return div('.row.keys', function() {
+        p('.three.columns', function() {
+          text('SensorTag Status:');
+          return span('#StatusData', 'Not ready to connect');
+        });
+        p('.three.columns', function() {
+          text('SensorTag firmware version:');
+          return span('#FirmwareData', '?');
+        });
+        p('.three.columns', function() {
+          text('readings captured:');
+          return span('#TotalReadings', '0');
+        });
+        return p('.two.columns', function() {
+          text('Keypress:');
+          return span('#KeypressData', '[Waiting for value]');
+        });
       });
     });
   });
@@ -18257,7 +18262,7 @@ exports.Pages = Pages = (function() {
     return results;
   };
 
-  Pages.prototype.activateAdminPage = function(done) {
+  Pages.prototype.renderPage = function(done) {
     var bodyHtml;
     this.done = done;
     bodyHtml = pageGen.theBody(pageGen.buttons, pageGen.adminContents, pageGen.sensorContents);
@@ -18266,10 +18271,19 @@ exports.Pages = Pages = (function() {
     return this.wireAdmin();
   };
 
-  Pages.prototype.activateSensorPage = function(buttonspec) {
+  Pages.prototype.activateAdminPage = function(buttonSpec) {
+    $('#sensorPage').hide();
+    $('#adminForm').show();
+    if (buttonSpec != null) {
+      return this.activateButtons(buttonSpec);
+    }
+  };
+
+  Pages.prototype.activateSensorPage = function(buttonSpec) {
     $('#adminForm').hide();
-    if (buttonspec != null) {
-      return activateButtons(buttonspec);
+    $('#sensorPage').show();
+    if (buttonSpec != null) {
+      return this.activateButtons(buttonSpec);
     }
   };
 

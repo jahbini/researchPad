@@ -1,4 +1,4 @@
-# vim: et:ts=2:sw=2:sts=2
+# vim: et:ts=2:sw=2:sts=2:nowrap
 exports.Pages = class Pages
   Teacup = require('teacup')
   $=require('jquery')
@@ -40,7 +40,7 @@ exports.Pages = class Pages
             select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
               option "Select ---"
               for host in @admin.get('host').toArray()
-                option value: host.get('url') , host.get('name')
+                option value: host.get('url'), host.get('name')
           div '.four.columns', ->
             label for: 'clinician','Clinician'
             select '#clinician.u-full-width', ->
@@ -91,7 +91,7 @@ exports.Pages = class Pages
   buttons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
-        button '.three.columns.disabled', ''
+        button '#calibrate.three.columns.disabled', 'Calibrate'
         button '.three.columns.disabled', ''
         button '#debug.three.columns.disabled', ''
       div '.row', ->
@@ -106,6 +106,7 @@ exports.Pages = class Pages
               option value: k, test
 
   sensorContents: renderable ->
+    div '#sensorPage.container', ->
       hr()
       div '.row.readings', ->
         div '#gyroscope.four.columns', ->
@@ -151,12 +152,18 @@ exports.Pages = class Pages
       if btn.text? then b.text(btn.text)
       b.show().fadeTo(500,1)
 
-  activateAdminPage: (@done) ->
+  renderPage: (@done) ->
     bodyHtml = pageGen.theBody pageGen.buttons , pageGen.adminContents, pageGen.sensorContents
     $('body').html bodyHtml
     @wireButtons()
     @wireAdmin()
 
-  activateSensorPage: (buttonspec)->
+  activateAdminPage: (buttonSpec)->
+    $('#sensorPage').hide()
+    $('#adminForm').show()
+    @activateButtons buttonSpec if buttonSpec?
+
+  activateSensorPage: (buttonSpec)->
     $('#adminForm').hide()
-    activateButtons buttonspec if buttonspec?
+    $('#sensorPage').show()
+    @activateButtons buttonSpec if buttonSpec?
