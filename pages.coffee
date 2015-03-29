@@ -1,5 +1,5 @@
 # vim: et:ts=2:sw=2:sts=2:nowrap
-exports.Pages = class Pages
+class Pages
   Teacup = require('teacup')
   $=require('jquery')
   tea = new Teacup.Teacup
@@ -9,10 +9,9 @@ exports.Pages = class Pages
 
   admin: {}
 
-  constructor: (@admin,session) ->
+  constructor: (@admin,@sessionInfo) ->
       Teacup.Teacup.prototype.admin = @admin
       Teacup.Teacup.prototype.Page = @
-      @sessionInfo = session
 
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
@@ -61,32 +60,30 @@ exports.Pages = class Pages
             raw '&nbsp;'
           button '#done.three.columns', disabled: true, "Done"
 
-  modelCheck = (me)->
+  modelCheck: ()=>
     model = @sessionInfo
     if (model.get 'TestID') && (model.get 'hostUrl') && (model.get 'clinician') && (model.get 'patient')
       console.log('activating')
-      me.activateButtons selector: "#done", funct: me.done, text: "Done"
+      @activateButtons selector: "#done", funct: @done, text: "Done"
     return
 
-  wireButtons: ->
+  wireButtons: =>
     model = @sessionInfo
-    me = @
-    $('#TestID').change (node)->
+    $('#TestID').change (node)=>
       model.set 'TestID',$('#TestID option:selected').val()
-      modelCheck(me)
+      @modelCheck()
 
-  wireAdmin: ->
+  wireAdmin: =>
     model = @sessionInfo
-    me = @
-    $('#desiredHost').change (node) ->
+    $('#desiredHost').change (node) =>
       model.set 'hostUrl',$('#desiredHost option:selected').val()
-      modelCheck(me)
-    $('#clinician').change (node) ->
+      @modelCheck()
+    $('#clinician').change (node) =>
       model.set 'clinician',$('#clinician option:selected').val()
-      modelCheck(me)
-    $('#patient').change (node) ->
+      @modelCheck()
+    $('#patient').change (node) =>
       model.set 'patient', $('#patient option:selected').val()
-      modelCheck(me)
+      @modelCheck()
 
   buttons: renderable ()->
       div '.row', ->
@@ -153,7 +150,7 @@ exports.Pages = class Pages
       b.show().fadeTo(500,1)
 
   renderPage: (@done) ->
-    bodyHtml = pageGen.theBody pageGen.buttons , pageGen.adminContents, pageGen.sensorContents
+    bodyHtml = @theBody @buttons , @adminContents, @sensorContents
     $('body').html bodyHtml
     @wireButtons()
     @wireAdmin()
@@ -167,3 +164,5 @@ exports.Pages = class Pages
     $('#adminForm').hide()
     $('#sensorPage').show()
     @activateButtons buttonSpec if buttonSpec?
+
+exports.Pages = Pages

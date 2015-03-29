@@ -80,11 +80,13 @@ pointFormat = function(p, unit, precision) {
 };
 
 startRecording = function() {
-  return enterRecording();
+  enterRecording();
+  return false;
 };
 
 startStop = function() {
-  return enterStop();
+  enterStop();
+  return false;
 };
 
 startDebug = function() {
@@ -100,24 +102,29 @@ stopDebug = function() {
 };
 
 startReset = function() {
-  return enterReset();
+  enterReset();
+  return false;
 };
 
 startUpload = function() {
-  return enterUpload();
+  enterUpload();
+  return false;
 };
 
 startCalibrate = function() {
-  return enterCalibrate();
+  enterCalibrate();
+  return false;
 };
 
 startAdmin = function() {
-  return enterAdmin();
+  enterAdmin();
+  return false;
 };
 
 enterAdmin = function() {
   clearButtons();
-  return pageGen.activateAdminPage(buttonModelDebugOff);
+  pageGen.activateAdminPage(buttonModelDebugOff);
+  return false;
 };
 
 buttonModelDebugOn = {
@@ -339,6 +346,7 @@ keypressHandler = function(data) {
     }));
   }
   $('KeypressData').html(string);
+  return false;
 };
 
 enterReset = function() {
@@ -354,12 +362,14 @@ enterReset = function() {
   } else {
     pageGen.activateButtons(buttonModelAdmin);
   }
+  return false;
 };
 
 enterConnected = function() {
   connected = true;
   pageGen.deactivateButtons(buttonModelAdmin);
   pageGen.activateButtons(buttonModelActionRecord, buttonModelCalibrate);
+  return false;
 };
 
 enterCalibrating = function() {
@@ -370,11 +380,13 @@ enterCalibrating = function() {
     funct: exitCalibrating
   });
   calibrating = true;
+  return false;
 };
 
 exitCalibrating = function() {
   calibrating = false;
   pageGen.activateButtons(buttonModelRecord, buttonModelCalibrate);
+  return false;
 };
 
 enterRecording = function() {
@@ -756,8 +768,6 @@ pageGen = new pages.Pages(admin, sessionInfo);
  */
 
 window.$ = $;
-
-window.sessionInfo = sessionInfo;
 
 window.pageGen = pageGen;
 
@@ -17972,10 +17982,11 @@ return jQuery;
 
 },{}],"/Users/bamboo-jim/development/stagapp/pages.coffee":[function(require,module,exports){
 var Pages,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
 
-exports.Pages = Pages = (function() {
-  var $, Teacup, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, modelCheck, option, p, password, raw, ref, render, renderable, select, span, tea, text;
+Pages = (function() {
+  var $, Teacup, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
 
   Teacup = require('teacup');
 
@@ -17989,11 +18000,14 @@ exports.Pages = Pages = (function() {
 
   Pages.prototype.admin = {};
 
-  function Pages(admin, session) {
+  function Pages(admin, sessionInfo) {
     this.admin = admin;
+    this.sessionInfo = sessionInfo;
+    this.wireAdmin = bind(this.wireAdmin, this);
+    this.wireButtons = bind(this.wireButtons, this);
+    this.modelCheck = bind(this.modelCheck, this);
     Teacup.Teacup.prototype.admin = this.admin;
     Teacup.Teacup.prototype.Page = this;
-    this.sessionInfo = session;
   }
 
   Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
@@ -18102,45 +18116,51 @@ exports.Pages = Pages = (function() {
     });
   });
 
-  modelCheck = function(me) {
+  Pages.prototype.modelCheck = function() {
     var model;
     model = this.sessionInfo;
     if ((model.get('TestID')) && (model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient'))) {
       console.log('activating');
-      me.activateButtons({
+      this.activateButtons({
         selector: "#done",
-        funct: me.done,
+        funct: this.done,
         text: "Done"
       });
     }
   };
 
   Pages.prototype.wireButtons = function() {
-    var me, model;
+    var model;
     model = this.sessionInfo;
-    me = this;
-    return $('#TestID').change(function(node) {
-      model.set('TestID', $('#TestID option:selected').val());
-      return modelCheck(me);
-    });
+    return $('#TestID').change((function(_this) {
+      return function(node) {
+        model.set('TestID', $('#TestID option:selected').val());
+        return _this.modelCheck();
+      };
+    })(this));
   };
 
   Pages.prototype.wireAdmin = function() {
-    var me, model;
+    var model;
     model = this.sessionInfo;
-    me = this;
-    $('#desiredHost').change(function(node) {
-      model.set('hostUrl', $('#desiredHost option:selected').val());
-      return modelCheck(me);
-    });
-    $('#clinician').change(function(node) {
-      model.set('clinician', $('#clinician option:selected').val());
-      return modelCheck(me);
-    });
-    return $('#patient').change(function(node) {
-      model.set('patient', $('#patient option:selected').val());
-      return modelCheck(me);
-    });
+    $('#desiredHost').change((function(_this) {
+      return function(node) {
+        model.set('hostUrl', $('#desiredHost option:selected').val());
+        return _this.modelCheck();
+      };
+    })(this));
+    $('#clinician').change((function(_this) {
+      return function(node) {
+        model.set('clinician', $('#clinician option:selected').val());
+        return _this.modelCheck();
+      };
+    })(this));
+    return $('#patient').change((function(_this) {
+      return function(node) {
+        model.set('patient', $('#patient option:selected').val());
+        return _this.modelCheck();
+      };
+    })(this));
   };
 
   Pages.prototype.buttons = renderable(function() {
@@ -18265,7 +18285,7 @@ exports.Pages = Pages = (function() {
   Pages.prototype.renderPage = function(done) {
     var bodyHtml;
     this.done = done;
-    bodyHtml = pageGen.theBody(pageGen.buttons, pageGen.adminContents, pageGen.sensorContents);
+    bodyHtml = this.theBody(this.buttons, this.adminContents, this.sensorContents);
     $('body').html(bodyHtml);
     this.wireButtons();
     return this.wireAdmin();
@@ -18290,6 +18310,8 @@ exports.Pages = Pages = (function() {
   return Pages;
 
 })();
+
+exports.Pages = Pages;
 
 
 
