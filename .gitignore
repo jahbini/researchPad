@@ -2,4 +2,7 @@
 node_modules
 *.log
 .all.js
+.app.js
 temp/
+x.*
+*.swp

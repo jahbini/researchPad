@@ -1,19 +1,50 @@
 {
     "name": "motility",
-    "description": "igrab data for clinical mobility study",
-    "version": "0.1.0",
+    "description": "Retrotope acuire data for clinical mobility study",
+    "version": "0.2.0",
     "author": "James A. Hinds",
     "dependencies": {
         "jquery":"latest",
         "backbone":"latest",
-        "three":"latest",
-        "d3":"latest",
+        "backbone-forms":"latest",
         "seen": "themadcreator/seen.git",
-	"winston":"latest",
-	"docco":"latest",
-        "underscore":"latest"
-    },
+        "teacup":"latest",
+      	"hbsfy": "~2.2.1",
+        "winston":"latest",
+        "underscore":"latest",
+        "coffee-script":"latest"
+        },
+    "browser": {
+      "underscore": "backbone/node_modules/underscore",
+      "plugin": "./src/javascript/vendor/jquery-plugin.js"
+      },
+    "browserify": {
+      "transform": [
+        "browserify-shim",
+        "coffeeify",
+        "hbsfy"
+        ]
+      },
+    "browserify-shim": {
+      "plugin": {
+        "exports": "plugin",
+        "depends": [
+          "jquery:$"
+          ]
+        }
+      },
     "devDependencies": {
-        "require":"latest"
+      "browser-sync": "~2.2.2",
+      "browserify": "^9.0.3",
+      "browserify-shim": "^3.8.2",
+      "coffeeify": "~1.0.0",
+      "handlebars": "^3.0.0",
+      "hbsfy": "~2.2.1",
+      "pretty-hrtime": "~1.0.0",
+      "require-dir": "^0.1.0",
+      "vinyl-source-stream": "~1.0.0",
+      "watchify": "^2.4.0",
+    	"docco":"latest",
+      "coffee-script":"latest"
     }
 }
