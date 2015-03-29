@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/bamboo-jim/development/stagapp/app.coffee":[function(require,module,exports){
-var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, user, userCollection, users, viewSensor;
+var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, test, testCollection, tests, user, userCollection, users, viewSensor;
 
 Backbone = require('backbone');
 
@@ -212,6 +212,13 @@ host = Backbone.Model.extend({
   }
 });
 
+test = Backbone.Model.extend({
+  defaults: {
+    name: "test 0",
+    Description: "Test 0"
+  }
+});
+
 userCollection = Backbone.Collection.extend({
   model: user,
   url: '/users'
@@ -220,6 +227,11 @@ userCollection = Backbone.Collection.extend({
 hostCollection = Backbone.Collection.extend({
   model: host,
   url: "/host_list.json"
+});
+
+testCollection = Backbone.Collection.extend({
+  model: test,
+  url: "/tests_list.json"
 });
 
 users = new userCollection;
@@ -265,14 +277,23 @@ hosts.push(new host({
   url: 'https://stagserv-jahbini.c9.io'
 }));
 
+tests = new testCollection;
+
+tests.push(new test({
+  name: 'test1',
+  Description: 'Test 1'
+}));
+
+tests.push(new test({
+  name: 'test2',
+  Description: 'Test 2'
+}));
+
 adminData = Backbone.Model.extend({
   defaults: {
     host: hosts,
     user: users,
-    testIDs: {
-      test1: "Test 1",
-      test2: "Test 2"
-    }
+    testIDs: tests
   }
 });
 
@@ -768,8 +789,6 @@ pageGen = new pages.Pages(admin, sessionInfo);
  */
 
 window.$ = $;
-
-window.pageGen = pageGen;
 
 pageEmpty = true;
 
@@ -17981,9 +18000,23 @@ return jQuery;
 }).call(this);
 
 },{}],"/Users/bamboo-jim/development/stagapp/pages.coffee":[function(require,module,exports){
-var Pages,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  slice = [].slice;
+var Pages, implementing,
+  slice = [].slice,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
 
 Pages = (function() {
   var $, Teacup, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
@@ -18000,14 +18033,18 @@ Pages = (function() {
 
   Pages.prototype.admin = {};
 
+  Pages.prototype.getAdmin = function(kind) {
+    return this.admin.get(kind).toArray();
+  };
+
   function Pages(admin, sessionInfo) {
     this.admin = admin;
     this.sessionInfo = sessionInfo;
     this.wireAdmin = bind(this.wireAdmin, this);
     this.wireButtons = bind(this.wireButtons, this);
     this.modelCheck = bind(this.modelCheck, this);
-    Teacup.Teacup.prototype.admin = this.admin;
-    Teacup.Teacup.prototype.Page = this;
+    this.getAdmin = bind(this.getAdmin, this);
+    tea.getAdmin = this.getAdmin;
   }
 
   Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
@@ -18047,7 +18084,7 @@ Pages = (function() {
             }, 'Host', function() {
               var host, i, len, ref1, results;
               option("Select ---");
-              ref1 = this.admin.get('host').toArray();
+              ref1 = this.getAdmin('host');
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
                 host = ref1[i];
@@ -18065,7 +18102,7 @@ Pages = (function() {
             select('#clinician.u-full-width', function() {
               var i, len, ref1, results, user;
               option("Select ---");
-              ref1 = this.admin.get('user').toArray();
+              ref1 = this.getAdmin('user');
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
                 user = ref1[i];
@@ -18092,7 +18129,7 @@ Pages = (function() {
             return select('#patient.u-full-width', function() {
               var i, len, patient, ref1, results;
               option("Select ---");
-              ref1 = this.admin.get('user').toArray();
+              ref1 = this.getAdmin('user');
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
                 patient = ref1[i];
@@ -18179,15 +18216,15 @@ Pages = (function() {
           "for": "TestID"
         }, 'Which Test?');
         return select("#TestID.u-full-width", function() {
-          var k, ref1, results, test;
+          var i, len, ref1, results, test;
           option("Select ---");
-          ref1 = this.admin.get('testIDs');
+          ref1 = this.getAdmin('testIDs');
           results = [];
-          for (k in ref1) {
-            test = ref1[k];
+          for (i = 0, len = ref1.length; i < len; i++) {
+            test = ref1[i];
             results.push(option({
-              value: k
-            }, test));
+              value: test.get('name')
+            }, test.get('Description')));
           }
           return results;
         });

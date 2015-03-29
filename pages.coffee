@@ -1,4 +1,11 @@
 # vim: et:ts=2:sw=2:sts=2:nowrap
+
+implementing = (mixins..., classReference) ->
+  for mixin in mixins
+    for key, value of mixin::
+      classReference::[key] = value
+  classReference
+
 class Pages
   Teacup = require('teacup')
   $=require('jquery')
@@ -9,9 +16,13 @@ class Pages
 
   admin: {}
 
+  getAdmin: (kind) =>
+    return @admin.get(kind).toArray()
+
   constructor: (@admin,@sessionInfo) ->
-      Teacup.Teacup.prototype.admin = @admin
-      Teacup.Teacup.prototype.Page = @
+      tea.getAdmin =  @getAdmin
+      #Teacup.Teacup.prototype.admin = @admin
+      #Teacup.Teacup.prototype.Page = @
 
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
@@ -38,13 +49,13 @@ class Pages
             label 'Remote Host'
             select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
               option "Select ---"
-              for host in @admin.get('host').toArray()
+              for host in @getAdmin('host')
                 option value: host.get('url'), host.get('name')
           div '.four.columns', ->
             label for: 'clinician','Clinician'
             select '#clinician.u-full-width', ->
               option "Select ---"
-              for user in @admin.get('user').toArray() when !user.get('patientOnly')
+              for user in @getAdmin('user') when !user.get('patientOnly')
                 option value: user.get('name'), user.get('name')
             br()
             label for: "password", "Enter Password"
@@ -53,7 +64,7 @@ class Pages
             label for: 'patient', 'Client'
             select '#patient.u-full-width', ->
               option "Select ---"
-              for patient  in @admin.get('user').toArray()
+              for patient  in @getAdmin('user')
                 option value: patient.get('name'), patient.get('name')
         div '.row', ->
           div '.nine.columns', ->
@@ -99,8 +110,8 @@ class Pages
           label for: "TestID", 'Which Test?'
           select "#TestID.u-full-width",  ->
             option "Select ---"
-            for k, test of @admin.get('testIDs')
-              option value: k, test
+            for test in @getAdmin('testIDs')
+              option value: test.get('name') , test.get('Description')
 
   sensorContents: renderable ->
     div '#sensorPage.container', ->
