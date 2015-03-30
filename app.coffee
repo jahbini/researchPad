@@ -24,14 +24,15 @@ readings = undefined
 calibrating = false
 calibrate = false
 
-temp = Backbone.Model.extend ->
+rawSession = Backbone.Model.extend ->
   defaults:
     user: ''
     patient: ''
     testID: ''
     hostUrl: undefined
+    deviceUUID: ''
 
-sessionInfo = new temp
+sessionInfo = new rawSession
 
 
 # ## Hardware
@@ -57,7 +58,7 @@ initializeSensorTag = ->
   connected = false
   sensortag.statusCallback(statusHandler)
   sensortag.errorCallback(errorHandler)
-  sensortag.keypressCallback(keypressHandler)
+#  sensortag.keypressCallback(keypressHandler)
   sensortag.accelerometerCallback(accelerometerHandler, 100)
   sensortag.magnetometerCallback(magnetometerHandler, 100)
   sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7)
@@ -108,6 +109,9 @@ startAdmin = () ->
   enterAdmin()
   return false
 
+startLogout = () ->
+  enterLogout()
+  return false
 enterAdmin = ->
   clearButtons()
   pageGen.activateAdminPage buttonModelDebugOff
@@ -148,12 +152,27 @@ buttonModelCalibrate =
 
 buttonModelAdmin =
   selector: '#admin'
-  text: 'Admin'
+  text: 'Log In'
   funct: startAdmin
+
+buttonModelLogout =
+  selector: '#admin'
+  text: 'Log out'
+  funct: startLogout
+
+loginLogout = buttonModelAdmin
+
+enterLogout = () ->
+  sessionInfo.set('password','')
+  sessionInfo.set('user','')
+  sessionInfo.set('patient','')
+  sessionInfo.set('testID','')  
+  loginLogout = buttonModelAdmin
+  pageGen.activateButtons buttonModelAdmin
 
   
 clearButtons = ->
-  pageGen.deactivateButtons buttonModelAdmin, buttonModelDebugOff,
+  pageGen.deactivateButtons loginLogout, buttonModelDebugOff,
     buttonModelActionRecord,buttonModelUpload,buttonModelCalibrate,buttonModelReset
   return
 
@@ -162,14 +181,13 @@ clearUserInterface = ->
   blank = 'Waiting...'
   $('#StatusData').html 'Ready to connect'
   $('#FirmwareData').html '?'
-  $('#KeypressData').html ''
-  $('#AccelerometerData').html blank
-  $('#MagnetometerData').html blank
-  $('#GyroscopeData').html blank
+  #$('#AccelerometerData').html blank
+  #$('#MagnetometerData').html blank
+  #$('#GyroscopeData').html blank
   $('#TotalReadings').html 0
   # Reset screen color.
   setBackgroundColor 'white'
-  pageGen.activateButtons buttonModelAdmin, buttonModelDebugOff
+  pageGen.activateButtons loginLogout, buttonModelDebugOff
   return
 
 countReadings = ->
@@ -278,7 +296,7 @@ initDataStructures = ->
   )
   readings = new rtemp
   readings.push(
-    new reading raw: [ 1,2,3,4,5,6], sensor: 'Test'
+    new reading raw: [ 1,2,3,4,5,6], sensor: 'DebugOnly'
     )
   return
 
@@ -295,6 +313,7 @@ initAll = ->
 # ### subsection State handlers that depend on the View
 
 keypressHandler = (data) ->
+  return false
   left = 0
   right = 0
   string = undefined
@@ -331,15 +350,15 @@ enterReset = ->
   pageGen.deactivateButtons buttonModelReset,buttonModelUpload
   if connected
     pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
-    pageGen.deactivateButtons buttonModelAdmin
+    pageGen.deactivateButtons loginLogout
   else
-    pageGen.activateButtons buttonModelAdmin
+    pageGen.activateButtons loginLogout
   return false
 
 enterConnected = ->
   # enable the recording button
   connected = true
-  pageGen.deactivateButtons buttonModelAdmin
+  pageGen.deactivateButtons loginLogout
   pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
   return false
 
@@ -384,9 +403,20 @@ enterUpload = ->
     url: '/trajectory'
     urlRoot: hostUrl
   }
+  console?log 'hostURL=' + hostURL
+  console?log sessionInfo
+  alert("Upload")
+  alert(hostUrl)
   brainDump = new hopper 
-    readings: readings
-    session: sessionInfo
+
+  brainDump.set('readings',readings )
+  brainDump.set('deviceUUID',sessionInfo.get('deviceUUID') )
+  brainDump.set('patientID',sessionInfo.get('patient') )
+  brainDump.set('user',sessionInfo.get('clinician') )
+
+  brainDump.set('password',sessionInfo.get('password') )
+  brainDump.set('testID',sessionInfo.get('testID') )
+  brainDump.set('hostUrl',sessionInfo.get('hostUrl') )
 
   brainDump.save()
   pageGen.deactivateButtons buttonModelUpload, buttonModelReset
@@ -401,14 +431,15 @@ statusHandler = (status) ->
   console.log status
   if 'Sensors online' == status
     enterConnected()
-    sensortag.id? console?.log sensortag.id
   if 'Device data available' == status
     $('#FirmwareData').html sensortag.getFirmwareString()
+    sessionInfo.set 'deviceUUID', sensortag?.device?.address
+    console?.log sensortag?.device?.address
   $('#StatusData').html status
   return
 
 errorHandler = (error) ->
-  console?.log 'Error: ' + error
+  console?log 'Error: ' + error
   if 'disconnected' == error
     connected = false
     clearUserInterface()
@@ -519,7 +550,7 @@ readingHandler = (o) ->
           sensor: o.sensor
           raw: _.toArray(data))
       m = dataCondition.dataHistory
-      $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
+      #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
       o.viewer p.x, p.y, p.z
       return
     catch error
@@ -705,6 +736,12 @@ setSensor = ->
   initAll()
   return false
 
+adminDone= ->
+  loginLogout = buttonModelLogout
+  setSensor()
+  
+buttonModelAdmin
+
 pageGen = new pages.Pages admin, sessionInfo
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
@@ -714,21 +751,22 @@ pageGen = new pages.Pages admin, sessionInfo
 ###  And since we are in a browser ---
 ###
 window.$=$
+window.sessionInfo = sessionInfo
 #---
 # generated by js2coffee 2.0.1
 
-pageEmpty=true
 
 $(document).on 'deviceready', ->
+  if !deviceIsReady
+    initializeSensorTag()
   deviceIsReady = true
 
 $ ->
   clearButtons()
-  pageGen.renderPage setSensor
-  pageEmpty = false
+  pageGen.renderPage adminDone
   if $('#console-log')?
     window.console=console = new Console('console-log')
-    console.log 'hello'
     stopDebug()
+  setSensor()
   return false
 

@@ -30,7 +30,7 @@ class Pages
         img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
-        h3 '.five.columns', 'Movement data capture'
+        h4 '.five.columns', 'Movement data capture'
       buttons()
       contents1()
       hr()
@@ -73,15 +73,18 @@ class Pages
 
   modelCheck: ()=>
     model = @sessionInfo
-    if (model.get 'TestID') && (model.get 'hostUrl') && (model.get 'clinician') && (model.get 'patient')
-      console.log('activating')
-      @activateButtons selector: "#done", funct: @done, text: "Done"
-    return
+    if (model.get 'testID') && 
+      (model.get 'hostUrl') && (model.get 'clinician') && 
+      (model.get 'patient') && (model.get 'password')
+        console.log('activating')
+        @activateButtons selector: "#done", funct: @done, text: "Done"
+        return true
+    return false
 
   wireButtons: =>
     model = @sessionInfo
     $('#TestID').change (node)=>
-      model.set 'TestID',$('#TestID option:selected').val()
+      model.set 'testID',$('#TestID option:selected').val()
       @modelCheck()
 
   wireAdmin: =>
@@ -89,14 +92,32 @@ class Pages
     $('#desiredHost').change (node) =>
       model.set 'hostUrl',$('#desiredHost option:selected').val()
       @modelCheck()
+      return false
     $('#clinician').change (node) =>
       model.set 'clinician',$('#clinician option:selected').val()
       @modelCheck()
+      return false
     $('#patient').change (node) =>
       model.set 'patient', $('#patient option:selected').val()
       @modelCheck()
+      return false
+    $('#password').keypress( (node)=>
+        if (node.keyCode == 13 && !node.shiftKey)
+          node.preventDefault(); #disallow page reload default
 
-  buttons: renderable ()->
+          if $('#password')?.val
+            model.set 'password', $('#password').val()
+            @modelCheck()
+            return false #stop bubble up
+        return
+       ).on 'blur', (node) =>
+          if $('#password')?.val
+            model.set 'password', $('#password').val()
+            @modelCheck()
+            return false #stop bubble up
+    return   #otherwise allow bubble-up and default action
+
+  topButtons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
         button '#calibrate.three.columns.disabled', 'Calibrate'
@@ -138,14 +159,11 @@ class Pages
           text 'SensorTag Status:'
           span '#StatusData', 'Not ready to connect'
         p '.three.columns', ->
-          text 'SensorTag firmware version:'
+          text 'SensorTag ID:'
           span '#FirmwareData', '?'
         p '.three.columns', ->
           text 'readings captured:'
           span '#TotalReadings', '0'
-        p '.two.columns', ->
-          text 'Keypress:'
-          span '#KeypressData', '[Waiting for value]'
 
   deactivateButtons: (buttons...) ->
     for btn in  buttons
@@ -161,10 +179,11 @@ class Pages
       b.show().fadeTo(500,1)
 
   renderPage: (@done) ->
-    bodyHtml = @theBody @buttons , @adminContents, @sensorContents
+    bodyHtml = @theBody @topButtons , @adminContents, @sensorContents
     $('body').html bodyHtml
     @wireButtons()
     @wireAdmin()
+    return
 
   activateAdminPage: (buttonSpec)->
     $('#sensorPage').hide()

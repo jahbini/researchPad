@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/bamboo-jim/development/stagapp/app.coffee":[function(require,module,exports){
-var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrating, enterConnected, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, magnetometerHandler, pageEmpty, pageGen, pages, pointFormat, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, temp, templater, test, testCollection, tests, user, userCollection, users, viewSensor;
+var $, Backbone, Seen, _, accelerometerHandler, admin, adminData, adminDone, bufferToHexStr, buttonModelActionRecord, buttonModelActionStop, buttonModelAdmin, buttonModelCalibrate, buttonModelDebugOff, buttonModelDebugOn, buttonModelLogout, buttonModelReset, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearButtons, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrating, enterConnected, enterLogout, enterRecording, enterReset, enterStop, enterUpload, errorHandler, evothings, exitCalibrating, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, keypressHandler, loginLogout, magnetometerHandler, pageGen, pages, pointFormat, rawSession, reading, readingHandler, readings, recording, sensortag, sessionInfo, setBackgroundColor, setSensor, split, startAdmin, startCalibrate, startDebug, startLogout, startRecording, startReset, startStop, startUpload, statusHandler, stopDebug, stopRecording, templater, test, testCollection, tests, user, userCollection, users, viewSensor;
 
 Backbone = require('backbone');
 
@@ -35,24 +35,24 @@ calibrating = false;
 
 calibrate = false;
 
-temp = Backbone.Model.extend(function() {
+rawSession = Backbone.Model.extend(function() {
   return {
     defaults: {
       user: '',
       patient: '',
       testID: '',
-      hostUrl: void 0
+      hostUrl: void 0,
+      deviceUUID: ''
     }
   };
 });
 
-sessionInfo = new temp;
+sessionInfo = new rawSession;
 
 initializeSensorTag = function() {
   connected = false;
   sensortag.statusCallback(statusHandler);
   sensortag.errorCallback(errorHandler);
-  sensortag.keypressCallback(keypressHandler);
   sensortag.accelerometerCallback(accelerometerHandler, 100);
   sensortag.magnetometerCallback(magnetometerHandler, 100);
   sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
@@ -121,6 +121,11 @@ startAdmin = function() {
   return false;
 };
 
+startLogout = function() {
+  enterLogout();
+  return false;
+};
+
 enterAdmin = function() {
   clearButtons();
   pageGen.activateAdminPage(buttonModelDebugOff);
@@ -171,12 +176,29 @@ buttonModelCalibrate = {
 
 buttonModelAdmin = {
   selector: '#admin',
-  text: 'Admin',
+  text: 'Log In',
   funct: startAdmin
 };
 
+buttonModelLogout = {
+  selector: '#admin',
+  text: 'Log out',
+  funct: startLogout
+};
+
+loginLogout = buttonModelAdmin;
+
+enterLogout = function() {
+  sessionInfo.set('password', '');
+  sessionInfo.set('user', '');
+  sessionInfo.set('patient', '');
+  sessionInfo.set('testID', '');
+  loginLogout = buttonModelAdmin;
+  return pageGen.activateButtons(buttonModelAdmin);
+};
+
 clearButtons = function() {
-  pageGen.deactivateButtons(buttonModelAdmin, buttonModelDebugOff, buttonModelActionRecord, buttonModelUpload, buttonModelCalibrate, buttonModelReset);
+  pageGen.deactivateButtons(loginLogout, buttonModelDebugOff, buttonModelActionRecord, buttonModelUpload, buttonModelCalibrate, buttonModelReset);
 };
 
 clearUserInterface = function() {
@@ -184,13 +206,9 @@ clearUserInterface = function() {
   blank = 'Waiting...';
   $('#StatusData').html('Ready to connect');
   $('#FirmwareData').html('?');
-  $('#KeypressData').html('');
-  $('#AccelerometerData').html(blank);
-  $('#MagnetometerData').html(blank);
-  $('#GyroscopeData').html(blank);
   $('#TotalReadings').html(0);
   setBackgroundColor('white');
-  pageGen.activateButtons(buttonModelAdmin, buttonModelDebugOff);
+  pageGen.activateButtons(loginLogout, buttonModelDebugOff);
 };
 
 countReadings = function() {
@@ -323,7 +341,7 @@ initDataStructures = function() {
   readings = new rtemp;
   readings.push(new reading({
     raw: [1, 2, 3, 4, 5, 6],
-    sensor: 'Test'
+    sensor: 'DebugOnly'
   }));
 };
 
@@ -338,6 +356,7 @@ initAll = function() {
 
 keypressHandler = function(data) {
   var left, right, string;
+  return false;
   left = 0;
   right = 0;
   string = void 0;
@@ -379,16 +398,16 @@ enterReset = function() {
   pageGen.deactivateButtons(buttonModelReset, buttonModelUpload);
   if (connected) {
     pageGen.activateButtons(buttonModelActionRecord, buttonModelCalibrate);
-    pageGen.deactivateButtons(buttonModelAdmin);
+    pageGen.deactivateButtons(loginLogout);
   } else {
-    pageGen.activateButtons(buttonModelAdmin);
+    pageGen.activateButtons(loginLogout);
   }
   return false;
 };
 
 enterConnected = function() {
   connected = true;
-  pageGen.deactivateButtons(buttonModelAdmin);
+  pageGen.deactivateButtons(loginLogout);
   pageGen.activateButtons(buttonModelActionRecord, buttonModelCalibrate);
   return false;
 };
@@ -437,10 +456,22 @@ enterUpload = function() {
     url: '/trajectory',
     urlRoot: hostUrl
   });
-  brainDump = new hopper({
-    readings: readings,
-    session: sessionInfo
-  });
+  if (typeof console === "function") {
+    console(log('hostURL=' + hostURL));
+  }
+  if (typeof console === "function") {
+    console(log(sessionInfo));
+  }
+  alert("Upload");
+  alert(hostUrl);
+  brainDump = new hopper;
+  brainDump.set('readings', readings);
+  brainDump.set('deviceUUID', sessionInfo.get('deviceUUID'));
+  brainDump.set('patientID', sessionInfo.get('patient'));
+  brainDump.set('user', sessionInfo.get('clinician'));
+  brainDump.set('password', sessionInfo.get('password'));
+  brainDump.set('testID', sessionInfo.get('testID'));
+  brainDump.set('hostUrl', sessionInfo.get('hostUrl'));
   brainDump.save();
   pageGen.deactivateButtons(buttonModelUpload, buttonModelReset);
   readings.reset();
@@ -448,22 +479,24 @@ enterUpload = function() {
 };
 
 statusHandler = function(status) {
+  var ref, ref1;
   console.log(status);
   if ('Sensors online' === status) {
     enterConnected();
-    if (typeof sensortag.id === "function") {
-      sensortag.id(typeof console !== "undefined" && console !== null ? console.log(sensortag.id) : void 0);
-    }
   }
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
+    sessionInfo.set('deviceUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+    if (typeof console !== "undefined" && console !== null) {
+      console.log(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0);
+    }
   }
   $('#StatusData').html(status);
 };
 
 errorHandler = function(error) {
-  if (typeof console !== "undefined" && console !== null) {
-    console.log('Error: ' + error);
+  if (typeof console === "function") {
+    console(log('Error: ' + error));
   }
   if ('disconnected' === error) {
     connected = false;
@@ -590,7 +623,6 @@ readingHandler = function(o) {
         }));
       }
       m = dataCondition.dataHistory;
-      $('#' + o.htmlID).html(templater(r.x, r.y, r.z, 'raw'));
       o.viewer(p.x, p.y, p.z);
     } catch (_error) {
       error = _error;
@@ -775,6 +807,13 @@ setSensor = function() {
   return false;
 };
 
+adminDone = function() {
+  loginLogout = buttonModelLogout;
+  return setSensor();
+};
+
+buttonModelAdmin;
+
 pageGen = new pages.Pages(admin, sessionInfo);
 
 
@@ -790,22 +829,24 @@ pageGen = new pages.Pages(admin, sessionInfo);
 
 window.$ = $;
 
-pageEmpty = true;
+window.sessionInfo = sessionInfo;
 
 $(document).on('deviceready', function() {
+  if (!deviceIsReady) {
+    initializeSensorTag();
+  }
   return deviceIsReady = true;
 });
 
 $(function() {
   var console;
   clearButtons();
-  pageGen.renderPage(setSensor);
-  pageEmpty = false;
+  pageGen.renderPage(adminDone);
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
-    console.log('hello');
     stopDebug();
   }
+  setSensor();
   return false;
 });
 
@@ -5509,8 +5550,6 @@ exports.util = (function()
     // Proxy `Backbone.sync` by default -- but override this if you need
     // custom syncing semantics for *this* particular model.
     sync: function() {
-      console.log('Sync Args=')
-      console.log (arguments)
       return Backbone.sync.apply(this, arguments);
     },
 
@@ -6368,13 +6407,10 @@ exports.util = (function()
 
     // Default JSON-request options.
     var params = {type: type, dataType: 'json'};
-console.log('URL?');
-console.log(options.url);
     // Ensure that we have a URL.
     if (!options.url) {
       params.url = _.result(model, 'url') || urlError();
     }
-console.log(params.url);
     // Ensure that we have the appropriate request data.
     if (options.data == null && model && (method === 'create' || method === 'update' || method === 'patch')) {
       params.contentType = 'application/json';
@@ -6412,10 +6448,6 @@ console.log(params.url);
         return new ActiveXObject("Microsoft.XMLHTTP");
       };
     }
-console.log('to Ajax!')
-console.log(params);
-console.log('Ajax options');
-console.log(options);
     // Make the request, allowing the user to override any Ajax options.
     var xhr = options.xhr = Backbone.ajax(_.extend(params, options));
     model.trigger('request', model, xhr, options);
@@ -6438,8 +6470,6 @@ console.log(options);
   // Set the default implementation of `Backbone.ajax` to proxy through to `$`.
   // Override this if you'd like to use a different library.
   Backbone.ajax = function() {
-    console.log('ajax args =')
-    console.log(arguments)
     return Backbone.$.ajax.apply(Backbone.$, arguments);
   };
 
@@ -18057,7 +18087,7 @@ Pages = (function() {
         div('#dud.one.columns', function() {
           return raw('&nbsp;');
         });
-        return h3('.five.columns', 'Movement data capture');
+        return h4('.five.columns', 'Movement data capture');
       });
       buttons();
       contents1();
@@ -18156,14 +18186,16 @@ Pages = (function() {
   Pages.prototype.modelCheck = function() {
     var model;
     model = this.sessionInfo;
-    if ((model.get('TestID')) && (model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient'))) {
+    if ((model.get('testID')) && (model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && (model.get('password'))) {
       console.log('activating');
       this.activateButtons({
         selector: "#done",
         funct: this.done,
         text: "Done"
       });
+      return true;
     }
+    return false;
   };
 
   Pages.prototype.wireButtons = function() {
@@ -18171,7 +18203,7 @@ Pages = (function() {
     model = this.sessionInfo;
     return $('#TestID').change((function(_this) {
       return function(node) {
-        model.set('TestID', $('#TestID option:selected').val());
+        model.set('testID', $('#TestID option:selected').val());
         return _this.modelCheck();
       };
     })(this));
@@ -18183,24 +18215,49 @@ Pages = (function() {
     $('#desiredHost').change((function(_this) {
       return function(node) {
         model.set('hostUrl', $('#desiredHost option:selected').val());
-        return _this.modelCheck();
+        _this.modelCheck();
+        return false;
       };
     })(this));
     $('#clinician').change((function(_this) {
       return function(node) {
         model.set('clinician', $('#clinician option:selected').val());
-        return _this.modelCheck();
+        _this.modelCheck();
+        return false;
       };
     })(this));
-    return $('#patient').change((function(_this) {
+    $('#patient').change((function(_this) {
       return function(node) {
         model.set('patient', $('#patient option:selected').val());
-        return _this.modelCheck();
+        _this.modelCheck();
+        return false;
+      };
+    })(this));
+    $('#password').keypress((function(_this) {
+      return function(node) {
+        var ref1;
+        if (node.keyCode === 13 && !node.shiftKey) {
+          node.preventDefault();
+          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+            model.set('password', $('#password').val());
+            _this.modelCheck();
+            return false;
+          }
+        }
+      };
+    })(this)).on('blur', (function(_this) {
+      return function(node) {
+        var ref1;
+        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+          model.set('password', $('#password').val());
+          _this.modelCheck();
+          return false;
+        }
       };
     })(this));
   };
 
-  Pages.prototype.buttons = renderable(function() {
+  Pages.prototype.topButtons = renderable(function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#calibrate.three.columns.disabled', 'Calibrate');
@@ -18271,16 +18328,12 @@ Pages = (function() {
           return span('#StatusData', 'Not ready to connect');
         });
         p('.three.columns', function() {
-          text('SensorTag firmware version:');
+          text('SensorTag ID:');
           return span('#FirmwareData', '?');
         });
-        p('.three.columns', function() {
+        return p('.three.columns', function() {
           text('readings captured:');
           return span('#TotalReadings', '0');
-        });
-        return p('.two.columns', function() {
-          text('Keypress:');
-          return span('#KeypressData', '[Waiting for value]');
         });
       });
     });
@@ -18322,10 +18375,10 @@ Pages = (function() {
   Pages.prototype.renderPage = function(done) {
     var bodyHtml;
     this.done = done;
-    bodyHtml = this.theBody(this.buttons, this.adminContents, this.sensorContents);
+    bodyHtml = this.theBody(this.topButtons, this.adminContents, this.sensorContents);
     $('body').html(bodyHtml);
     this.wireButtons();
-    return this.wireAdmin();
+    this.wireAdmin();
   };
 
   Pages.prototype.activateAdminPage = function(buttonSpec) {
