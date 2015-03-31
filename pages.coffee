@@ -77,9 +77,16 @@ class Pages
       (model.get 'hostUrl') && (model.get 'clinician') && 
       (model.get 'patient') && (model.get 'password')
         console.log('activating')
-        @activateButtons selector: "#done", funct: @done, text: "Done"
+        b=$('#done')
+        b.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
+        b.on 'click', @done
+        b.text "Done"
+        b.show().fadeTo(500,1)
         return true
     return false
+  
+  resetTest: () ->
+    $('TestID :selected').val([''])
 
   wireButtons: =>
     model = @sessionInfo
@@ -126,7 +133,7 @@ class Pages
       div '.row', ->
         button '#action.three.columns.disabled', ''
         button '#upload.three.columns.disabled', 'Upload'
-        button '#reset.three.columns.disabled', 'Reset'
+        button '#clear.three.columns.disabled', 'Reset'
         div '.three.columns', ->
           label for: "TestID", 'Which Test?'
           select "#TestID.u-full-width",  ->
@@ -165,20 +172,21 @@ class Pages
           text 'readings captured:'
           span '#TotalReadings', '0'
 
-  deactivateButtons: (buttons...) ->
-    for btn in  buttons
-      b=$(btn.selector).removeClass('button-primary').attr('disabled','disabled').off('click')
-      if btn.text? then b.text(btn.text)
-      b.fadeTo(500,0.25)
+  activateButtons: (buttonStruct) ->
+    for key, btn of buttonStruct
+      btn=btn.toJSON()
+      selector = '#' + btn.selector
+      if btn.active
+        b=$(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click')
+        if btn.funct? then b.on('click',btn.funct)
+        if btn.text? then b.text(btn.text)
+        b.show().fadeTo(500,1)
+      else
+        b=$(selector).removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
+        if btn.text? then b.text(btn.text)
+        b.fadeTo(500,0.25)
 
-  activateButtons: (buttons...) ->
-    for btn in  buttons
-      b=$(btn.selector).addClass('button-primary').removeAttr('disabled').off('click')
-      if btn.funct? then b.on('click',btn.funct)
-      if btn.text? then b.text(btn.text)
-      b.show().fadeTo(500,1)
-
-  renderPage: (@done) ->
+  renderPage: (@done) =>
     bodyHtml = @theBody @topButtons , @adminContents, @sensorContents
     $('body').html bodyHtml
     @wireButtons()

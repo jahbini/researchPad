@@ -50,14 +50,15 @@ readings = <span class="hljs-literal">undefined</span>
 calibrating = <span class="hljs-literal">false</span>
 calibrate = <span class="hljs-literal">false</span>
 
-temp = Backbone.Model.extend -&gt;
+rawSession = Backbone.Model.extend -&gt;
   <span class="hljs-attribute">defaults</span>:
     <span class="hljs-attribute">user</span>: <span class="hljs-string">''</span>
     <span class="hljs-attribute">patient</span>: <span class="hljs-string">''</span>
     <span class="hljs-attribute">testID</span>: <span class="hljs-string">''</span>
     <span class="hljs-attribute">hostUrl</span>: <span class="hljs-literal">undefined</span>
+    <span class="hljs-attribute">deviceUUID</span>: <span class="hljs-string">''</span>
 
-sessionInfo = <span class="hljs-keyword">new</span> temp</pre></div></div>
+sessionInfo = <span class="hljs-keyword">new</span> rawSession</pre></div></div>
             
         </li>
         
@@ -101,13 +102,7 @@ Gyroscope takes the axes to enable as the third parameter:
             
             <div class="content"><div class='highlight'><pre>  connected = <span class="hljs-literal">false</span>
   sensortag.statusCallback(statusHandler)
-  sensortag.errorCallback(errorHandler)
-  sensortag.keypressCallback(keypressHandler)
-  sensortag.accelerometerCallback(accelerometerHandler, <span class="hljs-number">100</span>)
-  sensortag.magnetometerCallback(magnetometerHandler, <span class="hljs-number">100</span>)
-  sensortag.gyroscopeCallback(gyroscopeHandler, <span class="hljs-number">100</span>, <span class="hljs-number">7</span>)
-  sensortag.connectToClosestDevice()
-  <span class="hljs-keyword">return</span></pre></div></div>
+  sensortag.errorCallback(errorHandler)</pre></div></div>
             
         </li>
         
@@ -117,6 +112,25 @@ Gyroscope takes the axes to enable as the third parameter:
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-4">&#182;</a>
+              </div>
+              <p> sensortag.keypressCallback(keypressHandler)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  sensortag.accelerometerCallback(accelerometerHandler, <span class="hljs-number">100</span>)
+  sensortag.magnetometerCallback(magnetometerHandler, <span class="hljs-number">100</span>)
+  sensortag.gyroscopeCallback(gyroscopeHandler, <span class="hljs-number">100</span>, <span class="hljs-number">7</span>)
+  sensortag.connectToClosestDevice()
+  <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-5">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <h2 id="section-view">section: View</h2>
 <p>routines to control or coordinate with user</p>
@@ -129,8 +143,7 @@ Gyroscope takes the axes to enable as the third parameter:
 <span class="hljs-function">
 <span class="hljs-title">pointFormat</span> = <span class="hljs-params">(p, unit =<span class="hljs-string">'v'</span>, precision=<span class="hljs-number">2</span>)</span> -&gt;</span>
   unit + <span class="hljs-string">' x='</span> + (<span class="hljs-keyword">if</span> p.x &gt;= <span class="hljs-number">0</span> <span class="hljs-keyword">then</span> <span class="hljs-string">'+'</span> <span class="hljs-keyword">else</span> <span class="hljs-string">''</span>) + p.x.toFixed(precision) + <span class="hljs-string">' -- '</span> + <span class="hljs-string">'y='</span> + (<span class="hljs-keyword">if</span> p.y &gt;= <span class="hljs-number">0</span> <span class="hljs-keyword">then</span> <span class="hljs-string">'+'</span> <span class="hljs-keyword">else</span> <span class="hljs-string">''</span>) + p.y.toFixed(precision) + <span class="hljs-string">' -- '</span> + <span class="hljs-string">'z='</span> + (<span class="hljs-keyword">if</span> p.z &gt;= <span class="hljs-number">0</span> <span class="hljs-keyword">then</span> <span class="hljs-string">'+'</span> <span class="hljs-keyword">else</span> <span class="hljs-string">''</span>) + p.z.toFixed(precision)
-<span class="hljs-function">
-<span class="hljs-title">startRecording</span>= <span class="hljs-params">()</span> -&gt;</span>
+<span class="hljs-function"><span class="hljs-title">startRecording</span>= <span class="hljs-params">()</span> -&gt;</span>
   enterRecording()
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
 <span class="hljs-function">
@@ -164,78 +177,93 @@ Gyroscope takes the axes to enable as the third parameter:
   enterAdmin()
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
 <span class="hljs-function">
+<span class="hljs-title">startLogout</span> = <span class="hljs-params">()</span> -&gt;</span>
+  enterLogout()
+  <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+<span class="hljs-function">
 <span class="hljs-title">enterAdmin</span> = -&gt;</span>
-  clearButtons()
-  pageGen.activateAdminPage buttonModelDebugOff
+  buttonCollection.admin = buttonModelLogout
+  setButtons()
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
 
-buttonModelDebugOn =
+aButtonModel = Backbone.Model.extend 
+  <span class="hljs-attribute">defaults</span>: {
+    <span class="hljs-attribute">active</span>: <span class="hljs-literal">false</span>
+    <span class="hljs-attribute">func</span>: <span class="hljs-function">-&gt;</span>
+    <span class="hljs-attribute">text</span>: <span class="hljs-string">'--'</span>
+    <span class="hljs-attribute">selector</span>: <span class="hljs-string">'button'</span>
+  }
+
+
+buttonModelDebugOn = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#debug'</span>
   <span class="hljs-attribute">text</span>: <span class="hljs-string">"Hide Log"</span>
   <span class="hljs-attribute">funct</span>: stopDebug
-buttonModelDebugOff =
+buttonModelDebugOff = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#debug'</span>
   <span class="hljs-attribute">text</span>: <span class="hljs-string">"Show Log"</span>
   <span class="hljs-attribute">funct</span>: startDebug
-buttonModelActionRecord =
+buttonModelActionRecord = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#action'</span>,
   <span class="hljs-attribute">text</span>: <span class="hljs-string">'Record'</span>,
   <span class="hljs-attribute">funct</span>: startRecording
 
-buttonModelActionStop =
+buttonModelActionStop = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#action'</span>,
   <span class="hljs-attribute">text</span>: <span class="hljs-string">'Stop'</span>,
   <span class="hljs-attribute">funct</span>: startStop
     
-buttonModelReset =
+buttonModelReset = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#reset'</span>
   <span class="hljs-attribute">text</span>: <span class="hljs-string">'Clear'</span>
   <span class="hljs-attribute">funct</span>: startReset
 
-buttonModelUpload =
+buttonModelUpload = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#upload'</span>
   <span class="hljs-attribute">text</span>: <span class="hljs-string">'Upload'</span>
   <span class="hljs-attribute">funct</span>: startUpload
 
-buttonModelCalibrate =
+buttonModelCalibrate = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#calibrate'</span>
   <span class="hljs-attribute">text</span>: <span class="hljs-string">'Calibrate'</span>
   <span class="hljs-attribute">funct</span>: startCalibrate
 
-buttonModelAdmin =
+buttonModelAdmin = <span class="hljs-keyword">new</span> aButtonModel
   <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#admin'</span>
-  <span class="hljs-attribute">text</span>: <span class="hljs-string">'Admin'</span>
+  <span class="hljs-attribute">text</span>: <span class="hljs-string">'Log In'</span>
   <span class="hljs-attribute">funct</span>: startAdmin
+
+buttonModelLogout = <span class="hljs-keyword">new</span> aButtonModel
+  <span class="hljs-attribute">selector</span>: <span class="hljs-string">'#admin'</span>
+  <span class="hljs-attribute">text</span>: <span class="hljs-string">'Log out'</span>
+  <span class="hljs-attribute">funct</span>: startLogout
+
+buttonValueAdmin = buttonModelAdmin
+
+buttonCollection = {
+  <span class="hljs-attribute">admin</span>: buttonValueAdmin
+  <span class="hljs-attribute">calibrate</span>: buttonModelCalibrate
+  <span class="hljs-attribute">debug</span>: buttonModelDebugOn
+  <span class="hljs-attribute">action</span>: buttonModelActionRecord
+  <span class="hljs-attribute">upload</span>: buttonModelUpload
+  <span class="hljs-attribute">reset</span>: buttonModelReset
+  }
+<span class="hljs-function">  
+
+<span class="hljs-title">enterLogout</span> = <span class="hljs-params">()</span> -&gt;</span>
+  sessionInfo.set(<span class="hljs-string">'password'</span>,<span class="hljs-string">''</span>)
+  sessionInfo.set(<span class="hljs-string">'user'</span>,<span class="hljs-string">''</span>)
+  sessionInfo.set(<span class="hljs-string">'patient'</span>,<span class="hljs-string">''</span>)
+  sessionInfo.set(<span class="hljs-string">'testID'</span>,<span class="hljs-string">''</span>)  
+  buttonValueAdmin = buttonModelAdmin
+  pageGen.activateButtons buttonCollection
 <span class="hljs-function">
   
-<span class="hljs-title">clearButtons</span> = -&gt;</span>
-  pageGen.deactivateButtons buttonModelAdmin, buttonModelDebugOff,
-    buttonModelActionRecord,buttonModelUpload,buttonModelCalibrate,buttonModelReset
+<span class="hljs-title">setButtons</span> = -&gt;</span>
+  pageGen.activateButtons buttonCollection
   <span class="hljs-keyword">return</span>
 <span class="hljs-function">
 <span class="hljs-title">clearUserInterface</span> = -&gt;</span></pre></div></div>
-            
-        </li>
-        
-        
-        <li id="section-5">
-            <div class="annotation">
-              
-              <div class="pilwrap ">
-                <a class="pilcrow" href="#section-5">&#182;</a>
-              </div>
-              <p>Clear current values.</p>
-
-            </div>
-            
-            <div class="content"><div class='highlight'><pre>  blank = <span class="hljs-string">'Waiting...'</span>
-  $(<span class="hljs-string">'#StatusData'</span>).html <span class="hljs-string">'Ready to connect'</span>
-  $(<span class="hljs-string">'#FirmwareData'</span>).html <span class="hljs-string">'?'</span>
-  $(<span class="hljs-string">'#KeypressData'</span>).html <span class="hljs-string">''</span>
-  $(<span class="hljs-string">'#AccelerometerData'</span>).html blank
-  $(<span class="hljs-string">'#MagnetometerData'</span>).html blank
-  $(<span class="hljs-string">'#GyroscopeData'</span>).html blank
-  $(<span class="hljs-string">'#TotalReadings'</span>).html <span class="hljs-number">0</span></pre></div></div>
             
         </li>
         
@@ -246,17 +274,13 @@ buttonModelAdmin =
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-6">&#182;</a>
               </div>
-              <p>Reset screen color.</p>
+              <p>Clear current values.</p>
 
             </div>
             
-            <div class="content"><div class='highlight'><pre>  setBackgroundColor <span class="hljs-string">'white'</span>
-  pageGen.activateButtons buttonModelAdmin, buttonModelDebugOff
-  <span class="hljs-keyword">return</span>
-<span class="hljs-function">
-<span class="hljs-title">countReadings</span> = -&gt;</span>
-  $(<span class="hljs-string">'#TotalReadings'</span>).html readings.length
-  <span class="hljs-keyword">return</span></pre></div></div>
+            <div class="content"><div class='highlight'><pre>  blank = <span class="hljs-string">'Waiting...'</span>
+  $(<span class="hljs-string">'#StatusData'</span>).html <span class="hljs-string">'Ready to connect'</span>
+  $(<span class="hljs-string">'#FirmwareData'</span>).html <span class="hljs-string">'?'</span></pre></div></div>
             
         </li>
         
@@ -266,6 +290,45 @@ buttonModelAdmin =
               
               <div class="pilwrap ">
                 <a class="pilcrow" href="#section-7">&#182;</a>
+              </div>
+              <p>$(‘#AccelerometerData’).html blank
+$(‘#MagnetometerData’).html blank
+$(‘#GyroscopeData’).html blank</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  $(<span class="hljs-string">'#TotalReadings'</span>).html <span class="hljs-number">0</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-8">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-8">&#182;</a>
+              </div>
+              <p>Reset screen color.</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>  setBackgroundColor <span class="hljs-string">'white'</span>
+  buttonCollection.debug = buttonModelDebugOff
+  pageGen.activateButtons buttonCollection
+  <span class="hljs-keyword">return</span>
+<span class="hljs-function">
+<span class="hljs-title">countReadings</span> = -&gt;</span>
+  $(<span class="hljs-string">'#TotalReadings'</span>).html readings.length
+  <span class="hljs-keyword">return</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-9">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-9">&#182;</a>
               </div>
               <h2 id="section-data-structures">Section: Data Structures</h2>
 <p>Routines to create and handle data structures and interfaces to them</p>
@@ -282,16 +345,22 @@ host = Backbone.Model.extend
   <span class="hljs-attribute">defaults</span>:
     <span class="hljs-attribute">hostUrl</span>: <span class="hljs-string">'Text'</span>
     <span class="hljs-attribute">name</span>: <span class="hljs-string">'Text'</span>
+test = Backbone.Model.extend
+  <span class="hljs-attribute">defaults</span>:
+    <span class="hljs-attribute">name</span>: <span class="hljs-string">"test 0"</span>
+    <span class="hljs-attribute">Description</span>: <span class="hljs-string">"Test 0"</span>
 
 userCollection = Backbone.Collection.extend
   <span class="hljs-attribute">model</span>: user
   <span class="hljs-attribute">url</span>: <span class="hljs-string">'/users'</span>
 
-
 hostCollection = Backbone.Collection.extend
   <span class="hljs-attribute">model</span>: host
   <span class="hljs-attribute">url</span>:<span class="hljs-string">"/host_list.json"</span>
 
+testCollection = Backbone.Collection.extend
+  <span class="hljs-attribute">model</span>: test
+  <span class="hljs-attribute">url</span>: <span class="hljs-string">"/tests_list.json"</span>
 users = <span class="hljs-keyword">new</span> userCollection
 users.push <span class="hljs-keyword">new</span> user(
     <span class="hljs-attribute">name</span>: <span class="hljs-string">'Jim'</span>
@@ -327,13 +396,21 @@ hosts.push <span class="hljs-keyword">new</span> host(
   <span class="hljs-attribute">name</span>: <span class="hljs-string">'Cloud 9'</span>
   <span class="hljs-attribute">url</span>: <span class="hljs-string">'https://stagserv-jahbini.c9.io'</span>
 )
+tests = <span class="hljs-keyword">new</span> testCollection
+tests.push <span class="hljs-keyword">new</span> test
+  <span class="hljs-attribute">name</span>: <span class="hljs-string">'test1'</span>
+  <span class="hljs-attribute">Description</span>: <span class="hljs-string">'Test 1'</span>
+  
+tests.push <span class="hljs-keyword">new</span> test
+  <span class="hljs-attribute">name</span>: <span class="hljs-string">'test2'</span>
+  <span class="hljs-attribute">Description</span>: <span class="hljs-string">'Test 2'</span>
+  
+
 adminData = Backbone.Model.extend
   <span class="hljs-attribute">defaults</span>:
     <span class="hljs-attribute">host</span>: hosts
     <span class="hljs-attribute">user</span>: users
-    <span class="hljs-attribute">testIDs</span>:
-      <span class="hljs-attribute">test1</span>: <span class="hljs-string">"Test 1"</span>
-      <span class="hljs-attribute">test2</span>: <span class="hljs-string">"Test 2"</span>
+    <span class="hljs-attribute">testIDs</span>: tests
 
 admin = <span class="hljs-keyword">new</span> adminData
 <span class="hljs-function">
@@ -357,18 +434,18 @@ admin = <span class="hljs-keyword">new</span> adminData
   )
   readings = <span class="hljs-keyword">new</span> rtemp
   readings.push(
-    <span class="hljs-keyword">new</span> reading <span class="hljs-attribute">raw</span>: [ <span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>,<span class="hljs-number">4</span>,<span class="hljs-number">5</span>,<span class="hljs-number">6</span>], <span class="hljs-attribute">sensor</span>: <span class="hljs-string">'Test'</span>
+    <span class="hljs-keyword">new</span> reading <span class="hljs-attribute">raw</span>: [ <span class="hljs-number">1</span>,<span class="hljs-number">2</span>,<span class="hljs-number">3</span>,<span class="hljs-number">4</span>,<span class="hljs-number">5</span>,<span class="hljs-number">6</span>], <span class="hljs-attribute">sensor</span>: <span class="hljs-string">'DebugOnly'</span>
     )
   <span class="hljs-keyword">return</span></pre></div></div>
             
         </li>
         
         
-        <li id="section-8">
+        <li id="section-10">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-8">&#182;</a>
+                <a class="pilcrow" href="#section-10">&#182;</a>
               </div>
               <h2 id="section-state-handlers">Section State Handlers</h2>
 
@@ -377,7 +454,7 @@ admin = <span class="hljs-keyword">new</span> adminData
             <div class="content"><div class='highlight'><pre><span class="hljs-function">
 <span class="hljs-title">initAll</span> = -&gt;</span>
   rtemp = <span class="hljs-literal">undefined</span>
-  clearButtons()
+  setButtons()
   clearUserInterface()
   initDataStructures()
   $(<span class="hljs-string">'#TotalReadings'</span>).html <span class="hljs-string">'0'</span>
@@ -386,11 +463,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-9">
+        <li id="section-11">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-9">&#182;</a>
+                <a class="pilcrow" href="#section-11">&#182;</a>
               </div>
               <h3 id="subsection-state-handlers-that-depend-on-the-view">subsection State handlers that depend on the View</h3>
 
@@ -398,6 +475,7 @@ admin = <span class="hljs-keyword">new</span> adminData
             
             <div class="content"><div class='highlight'><pre><span class="hljs-function">
 <span class="hljs-title">keypressHandler</span> = <span class="hljs-params">(data)</span> -&gt;</span>
+  <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
   left = <span class="hljs-number">0</span>
   right = <span class="hljs-number">0</span>
   string = <span class="hljs-literal">undefined</span>
@@ -424,11 +502,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-10">
+        <li id="section-12">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-10">&#182;</a>
+                <a class="pilcrow" href="#section-12">&#182;</a>
               </div>
               <p>Update the value displayed.</p>
 
@@ -442,11 +520,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-11">
+        <li id="section-13">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-11">&#182;</a>
+                <a class="pilcrow" href="#section-13">&#182;</a>
               </div>
               <p>Reset only clears the data — does NOT disconnedt</p>
 
@@ -460,9 +538,9 @@ admin = <span class="hljs-keyword">new</span> adminData
   pageGen.deactivateButtons buttonModelReset,buttonModelUpload
   <span class="hljs-keyword">if</span> connected
     pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
-    pageGen.deactivateButtons buttonModelAdmin
+    pageGen.deactivateButtons buttonValueAdmin
   <span class="hljs-keyword">else</span>
-    pageGen.activateButtons buttonModelAdmin
+    pageGen.activateButtons buttonValueAdmin
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
 <span class="hljs-function">
 <span class="hljs-title">enterConnected</span> = -&gt;</span></pre></div></div>
@@ -470,18 +548,18 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-12">
+        <li id="section-14">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-12">&#182;</a>
+                <a class="pilcrow" href="#section-14">&#182;</a>
               </div>
               <p>enable the recording button</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>  connected = <span class="hljs-literal">true</span>
-  pageGen.deactivateButtons buttonModelAdmin
+  pageGen.deactivateButtons buttonValueAdmin
   pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
 <span class="hljs-function">
@@ -522,11 +600,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-13">
+        <li id="section-15">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-13">&#182;</a>
+                <a class="pilcrow" href="#section-15">&#182;</a>
               </div>
               <p>   eliminate empty uploads per : <a href="https://github.com/jahbini/stagapp/issues/15">https://github.com/jahbini/stagapp/issues/15</a> */</p>
 
@@ -539,9 +617,20 @@ admin = <span class="hljs-keyword">new</span> adminData
     <span class="hljs-attribute">url</span>: <span class="hljs-string">'/trajectory'</span>
     <span class="hljs-attribute">urlRoot</span>: hostUrl
   }
+  <span class="hljs-built_in">console</span>?log <span class="hljs-string">'hostURL='</span> + hostURL
+  <span class="hljs-built_in">console</span>?log sessionInfo
+  alert(<span class="hljs-string">"Upload"</span>)
+  alert(hostUrl)
   brainDump = <span class="hljs-keyword">new</span> hopper 
-    <span class="hljs-attribute">readings</span>: readings
-    <span class="hljs-attribute">session</span>: sessionInfo
+
+  brainDump.set(<span class="hljs-string">'readings'</span>,readings )
+  brainDump.set(<span class="hljs-string">'deviceUUID'</span>,sessionInfo.get(<span class="hljs-string">'deviceUUID'</span>) )
+  brainDump.set(<span class="hljs-string">'patientID'</span>,sessionInfo.get(<span class="hljs-string">'patient'</span>) )
+  brainDump.set(<span class="hljs-string">'user'</span>,sessionInfo.get(<span class="hljs-string">'clinician'</span>) )
+
+  brainDump.set(<span class="hljs-string">'password'</span>,sessionInfo.get(<span class="hljs-string">'password'</span>) )
+  brainDump.set(<span class="hljs-string">'testID'</span>,sessionInfo.get(<span class="hljs-string">'testID'</span>) )
+  brainDump.set(<span class="hljs-string">'hostUrl'</span>,sessionInfo.get(<span class="hljs-string">'hostUrl'</span>) )
 
   brainDump.save()
   pageGen.deactivateButtons buttonModelUpload, buttonModelReset
@@ -552,11 +641,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-14">
+        <li id="section-16">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-14">&#182;</a>
+                <a class="pilcrow" href="#section-16">&#182;</a>
               </div>
               <h3 id="subsection-state-handlers-that-depend-on-the-hardware">Subsection State Handlers that depend on the Hardware</h3>
 
@@ -567,14 +656,15 @@ admin = <span class="hljs-keyword">new</span> adminData
   <span class="hljs-built_in">console</span>.log status
   <span class="hljs-keyword">if</span> <span class="hljs-string">'Sensors online'</span> == status
     enterConnected()
-    sensortag.id? <span class="hljs-built_in">console</span>?.log sensortag.id
   <span class="hljs-keyword">if</span> <span class="hljs-string">'Device data available'</span> == status
     $(<span class="hljs-string">'#FirmwareData'</span>).html sensortag.getFirmwareString()
+    sessionInfo.set <span class="hljs-string">'deviceUUID'</span>, sensortag?.device?.address
+    <span class="hljs-built_in">console</span>?.log sensortag?.device?.address
   $(<span class="hljs-string">'#StatusData'</span>).html status
   <span class="hljs-keyword">return</span>
 <span class="hljs-function">
 <span class="hljs-title">errorHandler</span> = <span class="hljs-params">(error)</span> -&gt;</span>
-  <span class="hljs-built_in">console</span>?.log <span class="hljs-string">'Error: '</span> + error
+  <span class="hljs-built_in">console</span>?log <span class="hljs-string">'Error: '</span> + error
   <span class="hljs-keyword">if</span> <span class="hljs-string">'disconnected'</span> == error
     connected = <span class="hljs-literal">false</span>
     clearUserInterface()</pre></div></div>
@@ -582,11 +672,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-15">
+        <li id="section-17">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-15">&#182;</a>
+                <a class="pilcrow" href="#section-17">&#182;</a>
               </div>
               <p>If disconneted attempt to connect again.</p>
 
@@ -618,11 +708,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-16">
+        <li id="section-18">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-16">&#182;</a>
+                <a class="pilcrow" href="#section-18">&#182;</a>
               </div>
               <p>console.log e.message</p>
 
@@ -660,11 +750,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-17">
+        <li id="section-19">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-17">&#182;</a>
+                <a class="pilcrow" href="#section-19">&#182;</a>
               </div>
               <p>console.log e.message</p>
 
@@ -682,11 +772,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-18">
+        <li id="section-20">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-18">&#182;</a>
+                <a class="pilcrow" href="#section-20">&#182;</a>
               </div>
               <p>console.log e.message</p>
 
@@ -697,11 +787,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-19">
+        <li id="section-21">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-19">&#182;</a>
+                <a class="pilcrow" href="#section-21">&#182;</a>
               </div>
               <h1 id="-readinghandler-">## readingHandler()</h1>
 <h1 id="create-and-return-a-function-to-handle-a-sensor-s-new-data">create and return a function to handle a sensor’s new data</h1>
@@ -718,11 +808,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-20">
+        <li id="section-22">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-20">&#182;</a>
+                <a class="pilcrow" href="#section-22">&#182;</a>
               </div>
               <p>if there is no calibration function, just use a null offset</p>
 
@@ -742,11 +832,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-21">
+        <li id="section-23">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-21">&#182;</a>
+                <a class="pilcrow" href="#section-23">&#182;</a>
               </div>
               <p>console.log o</p>
 
@@ -758,29 +848,43 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-22">
+        <li id="section-24">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-22">&#182;</a>
+                <a class="pilcrow" href="#section-24">&#182;</a>
               </div>
               <p>data points from Evothings library are Seen.Point NOT compatible as sources</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>    <span class="hljs-keyword">try</span>
-      r = o.source(data)
-      p = <span class="hljs-literal">undefined</span>
+      r = o.source(data)</pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-25">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-25">&#182;</a>
+              </div>
+              <p> $(‘#’ + o.htmlID).html  templater(r.x, r.y, r.z, ‘raw’)</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>      p = <span class="hljs-literal">undefined</span>
       m = <span class="hljs-literal">undefined</span></pre></div></div>
             
         </li>
         
         
-        <li id="section-23">
+        <li id="section-26">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-23">&#182;</a>
+                <a class="pilcrow" href="#section-26">&#182;</a>
               </div>
               <p>get the sensor data and pass to conditioner</p>
 
@@ -800,7 +904,6 @@ admin = <span class="hljs-keyword">new</span> adminData
           <span class="hljs-attribute">sensor</span>: o.sensor
           <span class="hljs-attribute">raw</span>: _.toArray(data))
       m = dataCondition.dataHistory
-      $(<span class="hljs-string">'#'</span> + o.htmlID).html  templater(r.x, r.y, r.z, <span class="hljs-string">'raw'</span>)
       o.viewer p.x, p.y, p.z
       <span class="hljs-keyword">return</span>
     <span class="hljs-keyword">catch</span> error
@@ -814,11 +917,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-24">
+        <li id="section-27">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-24">&#182;</a>
+                <a class="pilcrow" href="#section-27">&#182;</a>
               </div>
               <h2 id="-">*</h2>
 <p>Convert byte buffer to hex string.
@@ -870,11 +973,11 @@ admin = <span class="hljs-keyword">new</span> adminData
         </li>
         
         
-        <li id="section-25">
+        <li id="section-28">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-25">&#182;</a>
+                <a class="pilcrow" href="#section-28">&#182;</a>
               </div>
               <h2 id="stoprecording">stopRecording</h2>
 <p>halt the record session — no restart allowed
@@ -920,11 +1023,11 @@ upload button remains enabled, reset button remains enabled</p>
         </li>
         
         
-        <li id="section-26">
+        <li id="section-29">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-26">&#182;</a>
+                <a class="pilcrow" href="#section-29">&#182;</a>
               </div>
               <p>assign alpha to the arrows color</p>
 
@@ -982,11 +1085,11 @@ upload button remains enabled, reset button remains enabled</p>
         </li>
         
         
-        <li id="section-27">
+        <li id="section-30">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-27">&#182;</a>
+                <a class="pilcrow" href="#section-30">&#182;</a>
               </div>
               <h2 id="subsection-state-routines-that-depend-on-hardware-and-update-the-view-or-data-structures">subsection State routines that depend on hardware and update the view or data structures</h2>
 <p>calculations implemented as based on TI wiki pages
@@ -1005,6 +1108,7 @@ upload button remains enabled, reset button remains enabled</p>
   ]
   <span class="hljs-attribute">viewer</span>: viewSensor(<span class="hljs-string">'accel-view'</span>, <span class="hljs-number">0.4</span>)
   <span class="hljs-attribute">htmlID</span>: <span class="hljs-string">'AccelerometerData'</span>)
+
 magnetometerHandler = readingHandler(
   <span class="hljs-attribute">sensor</span>: <span class="hljs-string">'mag'</span>
   <span class="hljs-attribute">debias</span>: <span class="hljs-string">'calibrateMag'</span>
@@ -1016,6 +1120,7 @@ magnetometerHandler = readingHandler(
   <span class="hljs-attribute">units</span>: <span class="hljs-string">'&amp;micro;T'</span>
   <span class="hljs-attribute">viewer</span>: viewSensor(<span class="hljs-string">'magnet-view'</span>, <span class="hljs-number">0.05</span>)
   <span class="hljs-attribute">htmlID</span>: <span class="hljs-string">'MagnetometerData'</span>)
+
 gyroscopeHandler = readingHandler(
   <span class="hljs-attribute">sensor</span>: <span class="hljs-string">'gyro'</span>
   <span class="hljs-attribute">debias</span>: <span class="hljs-string">'calibrateGyro'</span>
@@ -1034,17 +1139,21 @@ deviceIsReady = <span class="hljs-literal">false</span>
     initializeSensorTag()
   initAll()
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
-
+<span class="hljs-function">
+<span class="hljs-title">adminDone</span>= -&gt;</span>
+  buttonValueAdmin = buttonModelLogout
+  setSensor()
+  
 pageGen = <span class="hljs-keyword">new</span> pages.Pages admin, sessionInfo</pre></div></div>
             
         </li>
         
         
-        <li id="section-28">
+        <li id="section-31">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-28">&#182;</a>
+                <a class="pilcrow" href="#section-31">&#182;</a>
               </div>
               <h2 id="this-is-how-seen-exports-things-it-s-clean-we-use-it-as-example">this is how seen exports things — it’s clean.  we use it as example</h2>
 <p>seen = {}
@@ -1057,16 +1166,16 @@ if module?.exports? then module.exports = seen # for node</p>
             </div>
             
             <div class="content"><div class='highlight'><pre><span class="hljs-built_in">window</span>.$=$
-<span class="hljs-built_in">window</span>.pageGen = pageGen</pre></div></div>
+<span class="hljs-built_in">window</span>.sessionInfo = sessionInfo</pre></div></div>
             
         </li>
         
         
-        <li id="section-29">
+        <li id="section-32">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-29">&#182;</a>
+                <a class="pilcrow" href="#section-32">&#182;</a>
               </div>
               <hr>
 
@@ -1075,30 +1184,30 @@ if module?.exports? then module.exports = seen # for node</p>
         </li>
         
         
-        <li id="section-30">
+        <li id="section-33">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-30">&#182;</a>
+                <a class="pilcrow" href="#section-33">&#182;</a>
               </div>
               <p>generated by js2coffee 2.0.1</p>
 
             </div>
             
             <div class="content"><div class='highlight'><pre>
-pageEmpty=<span class="hljs-literal">true</span>
 
 $(<span class="hljs-built_in">document</span>).<span class="hljs-literal">on</span> <span class="hljs-string">'deviceready'</span>, <span class="hljs-function">-&gt;</span>
+  <span class="hljs-keyword">if</span> !deviceIsReady
+    initializeSensorTag()
   deviceIsReady = <span class="hljs-literal">true</span>
 
 $ -&gt;
-  clearButtons()
-  pageGen.renderPage setSensor
-  pageEmpty = <span class="hljs-literal">false</span>
+  setButtons()
+  pageGen.renderPage adminDone
   <span class="hljs-keyword">if</span> $(<span class="hljs-string">'#console-log'</span>)?
     <span class="hljs-built_in">window</span>.<span class="hljs-built_in">console</span>=<span class="hljs-built_in">console</span> = <span class="hljs-keyword">new</span> Console(<span class="hljs-string">'console-log'</span>)
-    <span class="hljs-built_in">console</span>.log <span class="hljs-string">'hello'</span>
     stopDebug()
+  setSensor()
   <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span></pre></div></div>
             
         </li>

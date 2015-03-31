@@ -31,7 +31,14 @@
 
             </div>
             
-            <div class="content"><div class='highlight'><pre><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Pages</span></span>
+            <div class="content"><div class='highlight'><pre><span class="hljs-function">
+<span class="hljs-title">implementing</span> = <span class="hljs-params">(mixins..., classReference)</span> -&gt;</span>
+  <span class="hljs-keyword">for</span> mixin <span class="hljs-keyword">in</span> mixins
+    <span class="hljs-keyword">for</span> key, value <span class="hljs-keyword">of</span> <span class="hljs-attribute">mixin</span>::
+      <span class="hljs-attribute">classReference</span>::[key] = value
+  classReference
+
+<span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Pages</span></span>
   Teacup = <span class="hljs-built_in">require</span>(<span class="hljs-string">'teacup'</span>)
   $=<span class="hljs-built_in">require</span>(<span class="hljs-string">'jquery'</span>)
   tea = <span class="hljs-keyword">new</span> Teacup.Teacup
@@ -41,17 +48,34 @@
 
   <span class="hljs-attribute">admin</span>: {}
 
-  <span class="hljs-attribute">constructor</span>: <span class="hljs-function"><span class="hljs-params">(<span class="hljs-property">@admin</span>,<span class="hljs-property">@sessionInfo</span>)</span> -&gt;</span>
-      Teacup.Teacup.prototype.admin = <span class="hljs-property">@admin</span>
-      Teacup.Teacup.prototype.Page = @
+  <span class="hljs-attribute">getAdmin</span>: <span class="hljs-function"><span class="hljs-params">(kind)</span> =&gt;</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-property">@admin</span>.get(kind).toArray()
 
+  <span class="hljs-attribute">constructor</span>: <span class="hljs-function"><span class="hljs-params">(<span class="hljs-property">@admin</span>,<span class="hljs-property">@sessionInfo</span>)</span> -&gt;</span>
+      tea.getAdmin =  <span class="hljs-property">@getAdmin</span></pre></div></div>
+            
+        </li>
+        
+        
+        <li id="section-2">
+            <div class="annotation">
+              
+              <div class="pilwrap ">
+                <a class="pilcrow" href="#section-2">&#182;</a>
+              </div>
+              <p>Teacup.Teacup.prototype.admin = @admin
+Teacup.Teacup.prototype.Page = @</p>
+
+            </div>
+            
+            <div class="content"><div class='highlight'><pre>
   <span class="hljs-attribute">theBody</span>: renderable (buttons,contents1,contents2)=&gt;
     div <span class="hljs-string">'#capture-display.container'</span>, <span class="hljs-function">-&gt;</span>
       div <span class="hljs-string">'.row'</span>, <span class="hljs-function">-&gt;</span>
         img <span class="hljs-string">"#logo.five.columns"</span>, <span class="hljs-attribute">src</span>: <span class="hljs-string">'./ui/images/logo-final.png'</span>, <span class="hljs-attribute">width</span>: <span class="hljs-string">'100%'</span>
         div <span class="hljs-string">'#dud.one.columns'</span>, <span class="hljs-function">-&gt;</span>
           raw <span class="hljs-string">'&amp;nbsp;'</span>
-        h3 <span class="hljs-string">'.five.columns'</span>, <span class="hljs-string">'Movement data capture'</span>
+        h4 <span class="hljs-string">'.five.columns'</span>, <span class="hljs-string">'Movement data capture'</span>
       buttons()
       contents1()
       hr()
@@ -70,13 +94,13 @@
             label <span class="hljs-string">'Remote Host'</span>
             select <span class="hljs-string">'#desiredHost.u-full-width'</span>, <span class="hljs-attribute">onchange</span>: <span class="hljs-string">""</span> , <span class="hljs-string">'Host'</span>, <span class="hljs-function">-&gt;</span>
               option <span class="hljs-string">"Select ---"</span>
-              <span class="hljs-keyword">for</span> host <span class="hljs-keyword">in</span> <span class="hljs-property">@admin</span>.get(<span class="hljs-string">'host'</span>).toArray()
+              <span class="hljs-keyword">for</span> host <span class="hljs-keyword">in</span> <span class="hljs-property">@getAdmin</span>(<span class="hljs-string">'host'</span>)
                 option <span class="hljs-attribute">value</span>: host.get(<span class="hljs-string">'url'</span>), host.get(<span class="hljs-string">'name'</span>)
           div <span class="hljs-string">'.four.columns'</span>, <span class="hljs-function">-&gt;</span>
             label <span class="hljs-attribute">for</span>: <span class="hljs-string">'clinician'</span>,<span class="hljs-string">'Clinician'</span>
             select <span class="hljs-string">'#clinician.u-full-width'</span>, <span class="hljs-function">-&gt;</span>
               option <span class="hljs-string">"Select ---"</span>
-              <span class="hljs-keyword">for</span> user <span class="hljs-keyword">in</span> <span class="hljs-property">@admin</span>.get(<span class="hljs-string">'user'</span>).toArray() <span class="hljs-keyword">when</span> !user.get(<span class="hljs-string">'patientOnly'</span>)
+              <span class="hljs-keyword">for</span> user <span class="hljs-keyword">in</span> <span class="hljs-property">@getAdmin</span>(<span class="hljs-string">'user'</span>) <span class="hljs-keyword">when</span> !user.get(<span class="hljs-string">'patientOnly'</span>)
                 option <span class="hljs-attribute">value</span>: user.get(<span class="hljs-string">'name'</span>), user.get(<span class="hljs-string">'name'</span>)
             br()
             label <span class="hljs-attribute">for</span>: <span class="hljs-string">"password"</span>, <span class="hljs-string">"Enter Password"</span>
@@ -85,7 +109,7 @@
             label <span class="hljs-attribute">for</span>: <span class="hljs-string">'patient'</span>, <span class="hljs-string">'Client'</span>
             select <span class="hljs-string">'#patient.u-full-width'</span>, <span class="hljs-function">-&gt;</span>
               option <span class="hljs-string">"Select ---"</span>
-              <span class="hljs-keyword">for</span> patient  <span class="hljs-keyword">in</span> <span class="hljs-property">@admin</span>.get(<span class="hljs-string">'user'</span>).toArray()
+              <span class="hljs-keyword">for</span> patient  <span class="hljs-keyword">in</span> <span class="hljs-property">@getAdmin</span>(<span class="hljs-string">'user'</span>)
                 option <span class="hljs-attribute">value</span>: patient.get(<span class="hljs-string">'name'</span>), patient.get(<span class="hljs-string">'name'</span>)
         div <span class="hljs-string">'.row'</span>, <span class="hljs-function">-&gt;</span>
           div <span class="hljs-string">'.nine.columns'</span>, <span class="hljs-function">-&gt;</span>
@@ -94,15 +118,21 @@
 
   <span class="hljs-attribute">modelCheck</span>: <span class="hljs-function"><span class="hljs-params">()</span>=&gt;</span>
     model = <span class="hljs-property">@sessionInfo</span>
-    <span class="hljs-keyword">if</span> (model.get <span class="hljs-string">'TestID'</span>) &amp;&amp; (model.get <span class="hljs-string">'hostUrl'</span>) &amp;&amp; (model.get <span class="hljs-string">'clinician'</span>) &amp;&amp; (model.get <span class="hljs-string">'patient'</span>)
-      <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'activating'</span>)
-      <span class="hljs-property">@activateButtons</span> <span class="hljs-attribute">selector</span>: <span class="hljs-string">"#done"</span>, <span class="hljs-attribute">funct</span>: <span class="hljs-property">@done</span>, <span class="hljs-attribute">text</span>: <span class="hljs-string">"Done"</span>
-    <span class="hljs-keyword">return</span>
+    <span class="hljs-keyword">if</span> (model.get <span class="hljs-string">'testID'</span>) &amp;&amp; 
+      (model.get <span class="hljs-string">'hostUrl'</span>) &amp;&amp; (model.get <span class="hljs-string">'clinician'</span>) &amp;&amp; 
+      (model.get <span class="hljs-string">'patient'</span>) &amp;&amp; (model.get <span class="hljs-string">'password'</span>)
+        <span class="hljs-built_in">console</span>.log(<span class="hljs-string">'activating'</span>)
+        <span class="hljs-property">@activateButtons</span> <span class="hljs-attribute">selector</span>: <span class="hljs-string">"#done"</span>, <span class="hljs-attribute">funct</span>: <span class="hljs-property">@done</span>, <span class="hljs-attribute">text</span>: <span class="hljs-string">"Done"</span>
+        <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>
+    <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+  
+  <span class="hljs-attribute">resetTest</span>: <span class="hljs-function"><span class="hljs-params">()</span> -&gt;</span>
+    $(<span class="hljs-string">'TestID :selected'</span>).val([<span class="hljs-string">''</span>])
 
   <span class="hljs-attribute">wireButtons</span>: <span class="hljs-function">=&gt;</span>
     model = <span class="hljs-property">@sessionInfo</span>
     $(<span class="hljs-string">'#TestID'</span>).change (node)=&gt;
-      model.set <span class="hljs-string">'TestID'</span>,$(<span class="hljs-string">'#TestID option:selected'</span>).val()
+      model.set <span class="hljs-string">'testID'</span>,$(<span class="hljs-string">'#TestID option:selected'</span>).val()
       <span class="hljs-property">@modelCheck</span>()
 
   <span class="hljs-attribute">wireAdmin</span>: <span class="hljs-function">=&gt;</span>
@@ -110,14 +140,32 @@
     $(<span class="hljs-string">'#desiredHost'</span>).change (node) =&gt;
       model.set <span class="hljs-string">'hostUrl'</span>,$(<span class="hljs-string">'#desiredHost option:selected'</span>).val()
       <span class="hljs-property">@modelCheck</span>()
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
     $(<span class="hljs-string">'#clinician'</span>).change (node) =&gt;
       model.set <span class="hljs-string">'clinician'</span>,$(<span class="hljs-string">'#clinician option:selected'</span>).val()
       <span class="hljs-property">@modelCheck</span>()
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
     $(<span class="hljs-string">'#patient'</span>).change (node) =&gt;
       model.set <span class="hljs-string">'patient'</span>, $(<span class="hljs-string">'#patient option:selected'</span>).val()
       <span class="hljs-property">@modelCheck</span>()
+      <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>
+    $(<span class="hljs-string">'#password'</span>).keypress( <span class="hljs-function"><span class="hljs-params">(node)</span>=&gt;</span>
+        <span class="hljs-keyword">if</span> (node.keyCode == <span class="hljs-number">13</span> &amp;&amp; !node.shiftKey)
+          node.preventDefault(); <span class="hljs-comment">#disallow page reload default</span>
 
-  <span class="hljs-attribute">buttons</span>: renderable ()-&gt;
+          <span class="hljs-keyword">if</span> $(<span class="hljs-string">'#password'</span>)?.val
+            model.set <span class="hljs-string">'password'</span>, $(<span class="hljs-string">'#password'</span>).val()
+            <span class="hljs-property">@modelCheck</span>()
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span> <span class="hljs-comment">#stop bubble up</span>
+        <span class="hljs-keyword">return</span>
+       ).<span class="hljs-literal">on</span> <span class="hljs-string">'blur'</span>, <span class="hljs-function"><span class="hljs-params">(node)</span> =&gt;</span>
+          <span class="hljs-keyword">if</span> $(<span class="hljs-string">'#password'</span>)?.val
+            model.set <span class="hljs-string">'password'</span>, $(<span class="hljs-string">'#password'</span>).val()
+            <span class="hljs-property">@modelCheck</span>()
+            <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span> <span class="hljs-comment">#stop bubble up</span>
+    <span class="hljs-keyword">return</span>   <span class="hljs-comment">#otherwise allow bubble-up and default action</span>
+
+  <span class="hljs-attribute">topButtons</span>: renderable ()-&gt;
       div <span class="hljs-string">'.row'</span>, <span class="hljs-function">-&gt;</span>
         button <span class="hljs-string">'#admin.three.columns button-primary'</span>, <span class="hljs-string">'Admin'</span>
         button <span class="hljs-string">'#calibrate.three.columns.disabled'</span>, <span class="hljs-string">'Calibrate'</span>
@@ -131,8 +179,8 @@
           label <span class="hljs-attribute">for</span>: <span class="hljs-string">"TestID"</span>, <span class="hljs-string">'Which Test?'</span>
           select <span class="hljs-string">"#TestID.u-full-width"</span>,  <span class="hljs-function">-&gt;</span>
             option <span class="hljs-string">"Select ---"</span>
-            <span class="hljs-keyword">for</span> k, test <span class="hljs-keyword">of</span> <span class="hljs-property">@admin</span>.get(<span class="hljs-string">'testIDs'</span>)
-              option <span class="hljs-attribute">value</span>: k, test
+            <span class="hljs-keyword">for</span> test <span class="hljs-keyword">in</span> <span class="hljs-property">@getAdmin</span>(<span class="hljs-string">'testIDs'</span>)
+              option <span class="hljs-attribute">value</span>: test.get(<span class="hljs-string">'name'</span>) , test.get(<span class="hljs-string">'Description'</span>)
 
   <span class="hljs-attribute">sensorContents</span>: renderable -&gt;
     div <span class="hljs-string">'#sensorPage.container'</span>, <span class="hljs-function">-&gt;</span>
@@ -146,11 +194,11 @@
         </li>
         
         
-        <li id="section-2">
+        <li id="section-3">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-2">&#182;</a>
+                <a class="pilcrow" href="#section-3">&#182;</a>
               </div>
               <p>button ‘#calibrateGyro.suppress.three columns’, ‘Debias’</p>
 
@@ -164,11 +212,11 @@
         </li>
         
         
-        <li id="section-3">
+        <li id="section-4">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-3">&#182;</a>
+                <a class="pilcrow" href="#section-4">&#182;</a>
               </div>
               <p>button ‘#calibrateAccel.suppress.three columns’, ‘Debias’</p>
 
@@ -182,11 +230,11 @@
         </li>
         
         
-        <li id="section-4">
+        <li id="section-5">
             <div class="annotation">
               
               <div class="pilwrap ">
-                <a class="pilcrow" href="#section-4">&#182;</a>
+                <a class="pilcrow" href="#section-5">&#182;</a>
               </div>
               <p>button ‘#calibrateMag.suppress.three columns’, ‘Debias’</p>
 
@@ -198,14 +246,11 @@
           text <span class="hljs-string">'SensorTag Status:'</span>
           span <span class="hljs-string">'#StatusData'</span>, <span class="hljs-string">'Not ready to connect'</span>
         p <span class="hljs-string">'.three.columns'</span>, <span class="hljs-function">-&gt;</span>
-          text <span class="hljs-string">'SensorTag firmware version:'</span>
+          text <span class="hljs-string">'SensorTag ID:'</span>
           span <span class="hljs-string">'#FirmwareData'</span>, <span class="hljs-string">'?'</span>
         p <span class="hljs-string">'.three.columns'</span>, <span class="hljs-function">-&gt;</span>
           text <span class="hljs-string">'readings captured:'</span>
           span <span class="hljs-string">'#TotalReadings'</span>, <span class="hljs-string">'0'</span>
-        p <span class="hljs-string">'.two.columns'</span>, <span class="hljs-function">-&gt;</span>
-          text <span class="hljs-string">'Keypress:'</span>
-          span <span class="hljs-string">'#KeypressData'</span>, <span class="hljs-string">'[Waiting for value]'</span>
 
   <span class="hljs-attribute">deactivateButtons</span>: <span class="hljs-function"><span class="hljs-params">(buttons...)</span> -&gt;</span>
     <span class="hljs-keyword">for</span> btn <span class="hljs-keyword">in</span>  buttons
@@ -221,10 +266,11 @@
       b.show().fadeTo(<span class="hljs-number">500</span>,<span class="hljs-number">1</span>)
 
   <span class="hljs-attribute">renderPage</span>: <span class="hljs-function"><span class="hljs-params">(<span class="hljs-property">@done</span>)</span> -&gt;</span>
-    bodyHtml = <span class="hljs-property">@theBody</span> <span class="hljs-property">@buttons</span> , <span class="hljs-property">@adminContents</span>, <span class="hljs-property">@sensorContents</span>
+    bodyHtml = <span class="hljs-property">@theBody</span> <span class="hljs-property">@topButtons</span> , <span class="hljs-property">@adminContents</span>, <span class="hljs-property">@sensorContents</span>
     $(<span class="hljs-string">'body'</span>).html bodyHtml
     <span class="hljs-property">@wireButtons</span>()
     <span class="hljs-property">@wireAdmin</span>()
+    <span class="hljs-keyword">return</span>
 
   <span class="hljs-attribute">activateAdminPage</span>: <span class="hljs-function"><span class="hljs-params">(buttonSpec)</span>-&gt;</span>
     $(<span class="hljs-string">'#sensorPage'</span>).hide()

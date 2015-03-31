@@ -23,6 +23,7 @@ reading = undefined
 readings = undefined
 calibrating = false
 calibrate = false
+loggedIn = false
 
 rawSession = Backbone.Model.extend ->
   defaults:
@@ -74,7 +75,6 @@ templater = (x, y, z, sensor='unknown', unit='') ->
 
 pointFormat = (p, unit ='v', precision=2) ->
   unit + ' x=' + (if p.x >= 0 then '+' else '') + p.x.toFixed(precision) + ' -- ' + 'y=' + (if p.y >= 0 then '+' else '') + p.y.toFixed(precision) + ' -- ' + 'z=' + (if p.z >= 0 then '+' else '') + p.z.toFixed(precision)
-
 startRecording= () ->
   enterRecording()
   return false
@@ -84,17 +84,19 @@ startStop= () ->
   return false
 
 startDebug = () ->
-  pageGen.activateButtons buttonModelDebugOn
+  useButton  buttonModelDebugOn
+  setButtons()
   $('#footer').show()
   return false
 
 stopDebug = () ->
-  pageGen.activateButtons buttonModelDebugOff
+  useButton  buttonModelDebugOff
+  setButtons()
   $('#footer').hide()
   return false
 
-startReset = () ->
-  enterReset()
+startClear = () ->
+  enterClear()
   return false
 
 startUpload = () ->
@@ -104,76 +106,136 @@ startUpload = () ->
 startCalibrate = () ->
   enterCalibrate()
   return false
+stopCalibrate = () ->
+  exitCalibrate()
+  return false
 
 startAdmin = () ->
   enterAdmin()
   return false
 
-startLogout = () ->
+stopAdmin = () ->
+  loggedIn = true
   enterLogout()
   return false
+
 enterAdmin = ->
-  clearButtons()
-  pageGen.activateAdminPage buttonModelDebugOff
+  try
+    pageGen.activateAdminPage()
+  catch e
+    console.log e
   return false
 
-buttonModelDebugOn =
-  selector: '#debug'
+aButtonModel = Backbone.Model.extend 
+  defaults: {
+    active: false
+    funct: ->
+    text: '--'
+    selector: 'button'
+  }
+
+
+buttonModelDebugOn = new aButtonModel
+  active: true
+  selector: 'debug'
   text: "Hide Log"
   funct: stopDebug
-buttonModelDebugOff =
-  selector: '#debug'
+buttonModelDebugOff = new aButtonModel
+  active: true
+  selector: 'debug'
   text: "Show Log"
   funct: startDebug
-buttonModelActionRecord =
-  selector: '#action',
+
+buttonModelActionRecord = new aButtonModel
+  active: true
+  selector: 'action',
   text: 'Record',
   funct: startRecording
-
-buttonModelActionStop =
-  selector: '#action',
+buttonModelActionStop = new aButtonModel
+  active: true
+  selector: 'action',
   text: 'Stop',
   funct: startStop
+buttonModelActionDisabled = new aButtonModel
+  selector: 'action',
+  text: 'no connect',
+buttonModelActionRecorded = new aButtonModel
+  selector: 'action',
+  text: 'Recorded',
     
-buttonModelReset =
-  selector: '#reset'
+buttonModelClear = new aButtonModel
+  active: false
+  selector: 'clear'
   text: 'Clear'
-  funct: startReset
+  funct: startClear
 
-buttonModelUpload =
-  selector: '#upload'
+buttonModelUpload = new aButtonModel
+  active: false
+  selector: 'upload'
   text: 'Upload'
   funct: startUpload
 
-buttonModelCalibrate =
-  selector: '#calibrate'
+buttonModelCalibrating = new aButtonModel
+  active: true
+  selector: 'calibrate'
+  text: 'Stop Calib'
+  funct: stopCalibrate
+buttonModelCalibrate = new aButtonModel
+  active: true
+  selector: 'calibrate'
   text: 'Calibrate'
   funct: startCalibrate
+buttonModelCalibrateOff = new aButtonModel
+  selector: 'calibrate'
+  text: 'Calibrate'
 
-buttonModelAdmin =
-  selector: '#admin'
+buttonModelAdmin = new aButtonModel
+  active: true
+  selector: 'admin'
   text: 'Log In'
   funct: startAdmin
 
-buttonModelLogout =
-  selector: '#admin'
-  text: 'Log out'
-  funct: startLogout
+buttonModelAdminDisabled = new aButtonModel
+  selector: 'admin'
+  text: 'Log In'
+  funct: startAdmin
 
-loginLogout = buttonModelAdmin
+buttonModelAdminLogout = new aButtonModel
+  active: true
+  selector: 'admin'
+  text: 'Log out'
+  funct: stopAdmin
+
+buttonCollection = {
+  admin: buttonModelAdminDisabled
+  calibrate: buttonModelCalibrateOff
+  debug: buttonModelDebugOff
+  action: buttonModelActionDisabled
+  upload: buttonModelUpload
+  clear: buttonModelClear
+  }
+  
+useButton= (model) ->
+  key = model.get('selector')
+  buttonCollection[key] = model
+  
 
 enterLogout = () ->
+  loggedIn = false
   sessionInfo.set('password','')
   sessionInfo.set('user','')
   sessionInfo.set('patient','')
   sessionInfo.set('testID','')  
-  loginLogout = buttonModelAdmin
-  pageGen.activateButtons buttonModelAdmin
-
+  useButton buttonModelAdmin
+  setButtons()
+  return false
   
-clearButtons = ->
-  pageGen.deactivateButtons loginLogout, buttonModelDebugOff,
-    buttonModelActionRecord,buttonModelUpload,buttonModelCalibrate,buttonModelReset
+setButtons = (log) ->
+  pageGen.activateButtons buttonCollection
+  if log
+    for key, value of buttonCollection
+      console.log '--' + key
+      console.log value.toJSON()
   return
 
 clearUserInterface = ->
@@ -181,13 +243,9 @@ clearUserInterface = ->
   blank = 'Waiting...'
   $('#StatusData').html 'Ready to connect'
   $('#FirmwareData').html '?'
-  #$('#AccelerometerData').html blank
-  #$('#MagnetometerData').html blank
-  #$('#GyroscopeData').html blank
   $('#TotalReadings').html 0
   # Reset screen color.
-  setBackgroundColor 'white'
-  pageGen.activateButtons loginLogout, buttonModelDebugOff
+  stopDebug()
   return
 
 countReadings = ->
@@ -260,12 +318,20 @@ hosts.push new host(
 )
 tests = new testCollection
 tests.push new test
-  name: 'test1'
-  Description: 'Test 1'
+  name: 'T25FW'
+  Description: 'T25FW'
   
 tests.push new test
-  name: 'test2'
-  Description: 'Test 2'
+  name: '9HPT (dom)'
+  Description: '9HPT (dom)'
+  
+tests.push new test
+  name: '9HPT (non-dom)'
+  Description: '9HPT (non-dom)'
+
+tests.push new test
+  name: 'Other'
+  Description: 'Other'
   
 
 adminData = Backbone.Model.extend
@@ -304,95 +370,68 @@ initDataStructures = ->
 
 initAll = ->
   rtemp = undefined
-  clearButtons()
+  setButtons()
   clearUserInterface()
   initDataStructures()
   $('#TotalReadings').html '0'
   return
 
 # ### subsection State handlers that depend on the View
-
-keypressHandler = (data) ->
-  return false
-  left = 0
-  right = 0
-  string = undefined
-  switch data[0]
-    when 0
-      string = '          '
-    when 1
-      string = '     right'
-      right = 1
-    when 2
-      string = 'left      '
-      left = 1
-    when 3
-      right = 1
-      left = 1
-      string = '   both   '
-  calibrate = left and calibrating
-  if recording
-    readings.push new reading(
-      sensor: 'button'
-      left: left
-      right: right)
-  # Update the value displayed.
-  $('KeypressData').html string
-  return false
-
-enterReset = ->
-  # Reset only clears the data -- does NOT disconnedt
-  reading = false
-  readings = null
-  recording = false
-  initDataStructures()
+enterClear = ->
+  # Clear only clears the data -- does NOT disconnedt
+  readings.reset()
   $('#TotalReadings').html '0'
-  pageGen.deactivateButtons buttonModelReset,buttonModelUpload
-  if connected
-    pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
-    pageGen.deactivateButtons loginLogout
-  else
-    pageGen.activateButtons loginLogout
+  buttonModelClear.set('active',false);
+  buttonModelUpload.set('active',false);
+  useButton buttonModelActionRecord
+  setButtons()
   return false
 
 enterConnected = ->
   # enable the recording button
+  console.log('enterConnected')
   connected = true
-  pageGen.deactivateButtons loginLogout
-  pageGen.activateButtons buttonModelActionRecord,buttonModelCalibrate
+  useButton buttonModelCalibrate
+  useButton buttonModelAdminDisabled
+  useButton buttonModelActionDisabled
+  setButtons(true)
   return false
 
-enterCalibrating = ->
-  pageGen.deactivateButtons buttonModelRecord, buttonModelUpload
-  pageGen.activateButtons {
-    selector: '#calibrate'
-    text: 'Exit Calibrate'
-    funct: exitCalibrating
-  }
+enterCalibrate = ->
+  console.log('enterCalibrate')
   calibrating = true
+  useButton  buttonModelCalibrating
+  setButtons()
   return false
 
-exitCalibrating = ->
+exitCalibrate = ->
+  console.log('exitCalibrate')
   calibrating = false
-  pageGen.activateButtons buttonModelRecord, buttonModelCalibrate 
+  if loggedIn
+    useButton buttonModelActionRecord
+  useButton buttonModelAdmin
+  useButton buttonModelCalibrateOff
+  setButtons()
   return false
 
 enterRecording = ->
-  pageGen.activateButtons buttonModelActionStop
+  console.log('enter Recording')
   recording = true
+  useButton buttonModelActionStop
+  setButtons()
   return
 
 enterStop = ->
-  pageGen.deactivateButtons {
-    selector: '#action'
-    text: 'recorded'
-    funct: () ->
-  }
-  pageGen.activateButtons buttonModelUpload, buttonModelReset
+  console.log('enter Stop')
   recording = false
+  useButton  buttonModelActionRecorded
+  buttonModelUpload.set('active',true)
+  buttonModelClear.set('active',true)
+  setButtons()
   return
 
 enterUpload = ->
+  console.log('enter Upload')
   hopper = undefined
   brainDump = undefined
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */
@@ -405,8 +444,6 @@ enterUpload = ->
   }
   console?log 'hostURL=' + hostURL
   console?log sessionInfo
-  alert("Upload")
-  alert(hostUrl)
   brainDump = new hopper 
 
   brainDump.set('readings',readings )
@@ -419,15 +456,14 @@ enterUpload = ->
   brainDump.set('hostUrl',sessionInfo.get('hostUrl') )
 
   brainDump.save()
-  pageGen.deactivateButtons buttonModelUpload, buttonModelReset
-  readings.reset()
-  enterConnected()
+  enterClear()
   return
 
 #
 # ### Subsection State Handlers that depend on the Hardware
 
 statusHandler = (status) ->
+  console.log "new Sensor Status"
   console.log status
   if 'Sensors online' == status
     enterConnected()
@@ -439,11 +475,11 @@ statusHandler = (status) ->
   return
 
 errorHandler = (error) ->
-  console?log 'Error: ' + error
+  console.log "Sensor error!"
+  console.log 'Error: ' + error
   if 'disconnected' == error
     connected = false
-    clearUserInterface()
-    # If disconneted attempt to connect again.
+    # If disconneted attempt to connect again. (but not to same device)
     setTimeout (->
       sensortag.connectToClosestDevice()
       return
@@ -533,6 +569,7 @@ readingHandler = (o) ->
     # data points from Evothings library are Seen.Point NOT compatible as sources
     try
       r = o.source(data)
+      #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
       p = undefined
       m = undefined
       # get the sensor data and pass to conditioner
@@ -550,16 +587,10 @@ readingHandler = (o) ->
           sensor: o.sensor
           raw: _.toArray(data))
       m = dataCondition.dataHistory
-      #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
       o.viewer p.x, p.y, p.z
       return
     catch error
       console.log error
-
-setBackgroundColor = (color) ->
-  document.documentElement.style.background = color
-  document.body.style.background = color
-  return
 
 ###*
 # Convert byte buffer to hex string.
@@ -607,7 +638,7 @@ byteToHexStr = (d) ->
 
 # ## stopRecording
 # halt the record session -- no restart allowed
-# upload button remains enabled, reset button remains enabled
+# upload button remains enabled, clear button remains enabled
 
 stopRecording = ->
   if recording
@@ -706,6 +737,7 @@ accelerometerHandler = readingHandler(
   ]
   viewer: viewSensor('accel-view', 0.4)
   htmlID: 'AccelerometerData')
+
 magnetometerHandler = readingHandler(
   sensor: 'mag'
   debias: 'calibrateMag'
@@ -717,6 +749,7 @@ magnetometerHandler = readingHandler(
   units: '&micro;T'
   viewer: viewSensor('magnet-view', 0.05)
   htmlID: 'MagnetometerData')
+
 gyroscopeHandler = readingHandler(
   sensor: 'gyro'
   debias: 'calibrateGyro'
@@ -729,19 +762,24 @@ gyroscopeHandler = readingHandler(
   htmlID: 'GyroscopeData')
 
 deviceIsReady = false
+
 setSensor = ->
   pageGen.activateSensorPage()
-  if deviceIsReady
+  if deviceIsReady && !connected
     initializeSensorTag()
-  initAll()
+  setButtons()
   return false
 
 adminDone= ->
-  loginLogout = buttonModelLogout
-  setSensor()
-  
-buttonModelAdmin
+  loggedIn = true 
+  useButton  buttonModelAdminLogout
+  if connected
+    useButton buttonModelActionRecord
+  pageGen.activateSensorPage()
+  setButtons()
+  return false
 
+  
 pageGen = new pages.Pages admin, sessionInfo
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
@@ -752,21 +790,25 @@ pageGen = new pages.Pages admin, sessionInfo
 ###
 window.$=$
 window.sessionInfo = sessionInfo
+window.Pages = pageGen
+window.Me = this
+window.Buttons = buttonCollection
 #---
 # generated by js2coffee 2.0.1
 
 
 $(document).on 'deviceready', ->
-  if !deviceIsReady
+  if !deviceIsReady && ! connected
     initializeSensorTag()
   deviceIsReady = true
 
 $ ->
-  clearButtons()
   pageGen.renderPage adminDone
   if $('#console-log')?
     window.console=console = new Console('console-log')
     stopDebug()
   setSensor()
+  initAll()
+  setButtons()
   return false
 
