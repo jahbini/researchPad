@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({"/Users/bamboo-jim/development/stagapp/app.coffee":[function(require,module,exports){
-var $, Backbone, Seen, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, bufferToHexStr, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearUserInterface, connected, countReadings, deviceIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterLogout, enterRecording, enterStop, enterUpload, errorHandler, evothings, exitCalibrate, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, loggedIn, magnetometerHandler, pageGen, pages, pointFormat, rawSession, reading, readingHandler, readings, recording, sensortag, sessionInfo, setButtons, setSensor, split, startAdmin, startCalibrate, startClear, startDebug, startRecording, startStop, startUpload, statusHandler, stopAdmin, stopCalibrate, stopDebug, stopRecording, templater, test, testCollection, tests, useButton, user, userCollection, users, viewSensor;
+var $, Backbone, Seen, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, bufferToHexStr, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, byteToHexStr, calibrate, calibrating, calibratorAverage, calibratorMid, calibratorSmooth, clearUserInterface, connected, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterLogout, enterRecording, enterStop, enterUpload, errorHandler, evothings, exitCalibrate, gyroscopeHandler, host, hostCollection, hosts, hx, initAll, initDataStructures, initializeSensorTag, loggedIn, magnetometerHandler, pageGen, pages, pointFormat, rawSession, reading, readingHandler, readings, recording, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, split, startAdmin, startCalibrate, startClear, startDebug, startRecording, startStop, startUpload, statusHandler, stopAdmin, stopCalibrate, stopDebug, stopRecording, templater, test, testCollection, tests, useButton, user, userCollection, users, viewSensor;
 
 Backbone = require('backbone');
 
@@ -44,7 +44,7 @@ rawSession = Backbone.Model.extend(function() {
       patient: '',
       testID: '',
       hostUrl: void 0,
-      deviceUUID: '',
+      sensorUUID: '',
       platformUUID: ''
     }
   };
@@ -53,13 +53,31 @@ rawSession = Backbone.Model.extend(function() {
 sessionInfo = new rawSession;
 
 initializeSensorTag = function() {
-  connected = false;
-  sensortag.statusCallback(statusHandler);
-  sensortag.errorCallback(errorHandler);
-  sensortag.accelerometerCallback(accelerometerHandler, 100);
-  sensortag.magnetometerCallback(magnetometerHandler, 100);
-  sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
-  sensortag.connectToClosestDevice();
+  var e, failures, repeat;
+  repeat = false;
+  failures = 0;
+  try {
+    connected = false;
+    sensortag.statusCallback(statusHandler);
+    sensortag.errorCallback(errorHandler);
+    sensortag.accelerometerCallback(accelerometerHandler, 100);
+    sensortag.magnetometerCallback(magnetometerHandler, 100);
+    sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
+    sensortag.connectToClosestDevice();
+  } catch (_error) {
+    e = _error;
+    failures++;
+    console.log("failed to initialize");
+    console.log(e);
+    repeat = window.setInterval(initializeSensorTag, 500);
+    return;
+  }
+  if (repeat != null) {
+    console.log("sensor came on-line after " + failures + " failures");
+    window.clearInterval(repeat);
+  } else {
+    console.log("sensor came on-line immediately");
+  }
 };
 
 templater = function(x, y, z, sensor, unit) {
@@ -287,8 +305,6 @@ setButtons = function(log) {
 };
 
 clearUserInterface = function() {
-  var blank;
-  blank = 'Waiting...';
   $('#StatusData').html('Ready to connect');
   $('#FirmwareData').html('?');
   $('#TotalReadings').html("Items:");
@@ -442,7 +458,6 @@ initDataStructures = function() {
 initAll = function() {
   var rtemp;
   rtemp = void 0;
-  setButtons();
   clearUserInterface();
   initDataStructures();
   $('#TotalReadings').html("Items:");
@@ -529,7 +544,7 @@ enterUpload = function() {
   }
   brainDump = new hopper;
   brainDump.set('readings', readings);
-  brainDump.set('deviceUUID', sessionInfo.get('deviceUUID'));
+  brainDump.set('sensorUUID', sessionInfo.get('sensorUUID'));
   brainDump.set('patientID', sessionInfo.get('patient'));
   brainDump.set('user', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
@@ -550,7 +565,7 @@ statusHandler = function(status) {
   }
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
-    sessionInfo.set('deviceUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+    sessionInfo.set('sensorUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
     $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0);
     if (typeof console !== "undefined" && console !== null) {
       console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
@@ -854,13 +869,8 @@ gyroscopeHandler = readingHandler({
   htmlID: 'GyroscopeData'
 });
 
-deviceIsReady = false;
-
 setSensor = function() {
   pageGen.activateSensorPage();
-  if (deviceIsReady && !connected) {
-    initializeSensorTag();
-  }
   setButtons();
   return false;
 };
@@ -877,6 +887,20 @@ adminDone = function() {
 };
 
 pageGen = new pages.Pages(admin, sessionInfo);
+
+sensorIsReady = false;
+
+domIsReady = false;
+
+rediness = function() {
+  if (sensorIsReady && domIsReady) {
+    sessionInfo.set('platformUUID', window.device.uuid);
+    $("#platformUUID").text(window.device.uuid);
+    if (sensorIsReady && !connected) {
+      return initializeSensorTag();
+    }
+  }
+};
 
 
 /* this is how seen exports things -- it's clean.  we use it as example
@@ -900,25 +924,21 @@ window.Me = this;
 window.Buttons = buttonCollection;
 
 $(document).on('deviceready', function() {
-  if (!deviceIsReady && !connected) {
-    initializeSensorTag();
-  }
-  deviceIsReady = true;
-  alert(window.device.uuid);
-  sessionInfo.set('platformUUID', window.device.uuid);
-  return $("#platformUUID").text(window.device.uuid);
+  sensorIsReady = true;
+  rediness();
 });
 
 $(function() {
   var console;
+  domIsReady = true;
   pageGen.renderPage(adminDone);
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
     stopDebug();
   }
-  setSensor();
   initAll();
-  setButtons();
+  setSensor();
+  rediness();
   return false;
 });
 
@@ -18162,7 +18182,7 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.two.columns', "device --");
+        div('.two.columns', "Sensor --");
         div('.two.columns', function() {
           text('Version:');
           return span('#FirmwareData', '?');

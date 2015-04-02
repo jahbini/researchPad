@@ -33,7 +33,7 @@ class Pages
         h4 '.five.columns', 'Movement data capture'
       buttons()
       div '.row',->
-        div '.two.columns',"device --"
+        div '.two.columns',"Sensor --"
         div '.two.columns', ->
           text 'Version:'
           span '#FirmwareData', '?'
