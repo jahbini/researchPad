@@ -71,7 +71,10 @@ class Pages
               for patient  in @getAdmin('user')
                 option value: patient.get('name'), patient.get('name')
         div '.row', ->
-          div '.nine.columns', ->
+          div '.two.columns',"Platform uuid"
+          div '#platformUUID.six.columns', ->
+            raw '&nbsp;'
+          div '.one.columns', ->
             raw '&nbsp;'
           button '#done.three.columns', disabled: true, "Done"
 

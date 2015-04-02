@@ -32,6 +32,7 @@ rawSession = Backbone.Model.extend ->
     testID: ''
     hostUrl: undefined
     deviceUUID: ''
+    platformUUID: ''
 
 sessionInfo = new rawSession
 
@@ -457,6 +458,7 @@ enterUpload = ->
   brainDump.set('password',sessionInfo.get('password') )
   brainDump.set('testID',sessionInfo.get('testID') )
   brainDump.set('hostUrl',sessionInfo.get('hostUrl') )
+  brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
 
   brainDump.save()
   pageGen.forceTest()
@@ -806,6 +808,9 @@ $(document).on 'deviceready', ->
   if !deviceIsReady && ! connected
     initializeSensorTag()
   deviceIsReady = true
+  alert(window.device.uuid)
+  sessionInfo.set('platformUUID',window.device.uuid)
+  $("#platformUUID").text(window.device.uuid)
 
 $ ->
   pageGen.renderPage adminDone

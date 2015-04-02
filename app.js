@@ -44,7 +44,8 @@ rawSession = Backbone.Model.extend(function() {
       patient: '',
       testID: '',
       hostUrl: void 0,
-      deviceUUID: ''
+      deviceUUID: '',
+      platformUUID: ''
     }
   };
 });
@@ -534,6 +535,7 @@ enterUpload = function() {
   brainDump.set('password', sessionInfo.get('password'));
   brainDump.set('testID', sessionInfo.get('testID'));
   brainDump.set('hostUrl', sessionInfo.get('hostUrl'));
+  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
   brainDump.save();
   pageGen.forceTest();
   enterClear();
@@ -901,7 +903,10 @@ $(document).on('deviceready', function() {
   if (!deviceIsReady && !connected) {
     initializeSensorTag();
   }
-  return deviceIsReady = true;
+  deviceIsReady = true;
+  alert(window.device.uuid);
+  sessionInfo.set('platformUUID', window.device.uuid);
+  return $("#platformUUID").text(window.device.uuid);
 });
 
 $(function() {
@@ -16617,7 +16622,6 @@ jQuery.extend({
 
 		// Get transport
 		transport = inspectPrefiltersOrTransports( transports, s, options, jqXHR );
-console.log(transport);
 		// If no transport, we auto-abort
 		if ( !transport ) {
 			done( -1, "No Transport" );
@@ -17024,7 +17028,6 @@ support.ajax = xhrSupported = !!xhrSupported;
 jQuery.ajaxTransport(function( options ) {
 	var callback;
 
-console.log('at XHR1')
 	// Cross domain only allowed if supported through XMLHttpRequest
 	if ( support.cors || xhrSupported && !options.crossDomain ) {
 		return {
@@ -17032,7 +17035,6 @@ console.log('at XHR1')
 				var i,
 					xhr = options.xhr(),
 					id = ++xhrId;
-console.log('at XHR')
 				xhr.open( options.type, options.url, options.async, options.username, options.password );
 
 				// Apply custom fields if provided
@@ -18246,7 +18248,11 @@ Pages = (function() {
           });
         });
         return div('.row', function() {
-          div('.nine.columns', function() {
+          div('.two.columns', "Platform uuid");
+          div('#platformUUID.six.columns', function() {
+            return raw('&nbsp;');
+          });
+          div('.one.columns', function() {
             return raw('&nbsp;');
           });
           return button('#done.three.columns', {
