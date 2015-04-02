@@ -32,13 +32,17 @@ class Pages
           raw '&nbsp;'
         h4 '.five.columns', 'Movement data capture'
       buttons()
+      div '.row',->
+        div '.two.columns',"device --"
+        div '.two.columns', ->
+          text 'Version:'
+          span '#FirmwareData', '?'
+        div '#uuid.six.columns' , ' '
       contents1()
-      hr()
       contents2()
-      hr()
       div '#footer','style="display:none;"', ->
-        div '#console-log.container', ->
-          h2 'Console'
+        hr()
+        div '#console-log.container'
 
   adminContents: renderable ()->
      div '#adminForm', ->
@@ -85,12 +89,10 @@ class Pages
         return true
     return false
   
-  resetTest: () ->
-    $('TestID :selected').val([''])
-
   wireButtons: =>
     model = @sessionInfo
     $('#TestID').change (node)=>
+      $('#TestSelect').text('Which Test?').css('color','')
       model.set 'testID',$('#TestID option:selected').val()
       @modelCheck()
 
@@ -128,18 +130,27 @@ class Pages
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
         button '#calibrate.three.columns.disabled', 'Calibrate'
-        button '.three.columns.disabled', ''
+        button '.three.columns.disabled', style: "opacity:0.25;", ''
         button '#debug.three.columns.disabled', ''
       div '.row', ->
-        button '#action.three.columns.disabled', ''
-        button '#upload.three.columns.disabled', 'Upload'
-        button '#clear.three.columns.disabled', 'Reset'
         div '.three.columns', ->
-          label for: "TestID", 'Which Test?'
           select "#TestID.u-full-width",  ->
-            option "Select ---"
+            option "Select --"
             for test in @getAdmin('testIDs')
               option value: test.get('name') , test.get('Description')
+          label '#TestSelect', for: "TestID", 'Which Test?'
+        div '.three.columns', ->
+          button '#action.disabled.u-full-width', ''
+          label '#TotalReadings', for: "action", ' 0'
+        div '.three.columns', ->
+          button '#upload.disabled.u-full-width', 'Upload'
+          label '#StatusData',for: "upload", 'No connection'
+        button '#clear.three.columns.disabled', 'Reset'
+
+  forceTest: (color = 'violet') =>
+    $('#TestSelect').text('Must Select Test').css('color',color)
+    $('#TestID').val('Select --')
+    @sessionInfo.set('testID',null)
 
   sensorContents: renderable ->
     div '#sensorPage.container', ->
@@ -160,17 +171,6 @@ class Pages
           canvas '#magnet-view', width: '200', height: '200', style: 'width=100%'
           div '#MagnetometerData.u-full-width.dump', ''
           #button '#calibrateMag.suppress.three columns', 'Debias'
-      hr()
-      div '.row.keys', ->
-        p '.three.columns', ->
-          text 'SensorTag Status:'
-          span '#StatusData', 'Not ready to connect'
-        p '.three.columns', ->
-          text 'SensorTag ID:'
-          span '#FirmwareData', '?'
-        p '.three.columns', ->
-          text 'readings captured:'
-          span '#TotalReadings', '0'
 
   activateButtons: (buttonStruct) ->
     for key, btn of buttonStruct

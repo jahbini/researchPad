@@ -290,12 +290,12 @@ clearUserInterface = function() {
   blank = 'Waiting...';
   $('#StatusData').html('Ready to connect');
   $('#FirmwareData').html('?');
-  $('#TotalReadings').html(0);
+  $('#TotalReadings').html("Items:");
   stopDebug();
 };
 
 countReadings = function() {
-  $('#TotalReadings').html(readings.length);
+  $('#TotalReadings').html("Items:" + readings.length);
 };
 
 user = Backbone.Model.extend({
@@ -444,12 +444,12 @@ initAll = function() {
   setButtons();
   clearUserInterface();
   initDataStructures();
-  $('#TotalReadings').html('0');
+  $('#TotalReadings').html("Items:");
 };
 
 enterClear = function() {
   readings.reset();
-  $('#TotalReadings').html('0');
+  $('#TotalReadings').html("Items:");
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
   useButton(buttonModelActionRecord);
@@ -488,6 +488,10 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
+  if (!sessionInfo.get('testID')) {
+    pageGen.forceTest('red');
+    return;
+  }
   console.log('enter Recording');
   recording = true;
   useButton(buttonModelActionStop);
@@ -531,11 +535,12 @@ enterUpload = function() {
   brainDump.set('testID', sessionInfo.get('testID'));
   brainDump.set('hostUrl', sessionInfo.get('hostUrl'));
   brainDump.save();
+  pageGen.forceTest();
   enterClear();
 };
 
 statusHandler = function(status) {
-  var ref, ref1;
+  var ref, ref1, ref2;
   console.log("new Sensor Status");
   console.log(status);
   if ('Sensors online' === status) {
@@ -544,8 +549,9 @@ statusHandler = function(status) {
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
     sessionInfo.set('deviceUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+    $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0);
     if (typeof console !== "undefined" && console !== null) {
-      console.log(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0);
+      console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
     }
   }
   $('#StatusData').html(status);
@@ -18132,6 +18138,7 @@ Pages = (function() {
     this.admin = admin;
     this.sessionInfo = sessionInfo;
     this.renderPage = bind(this.renderPage, this);
+    this.forceTest = bind(this.forceTest, this);
     this.wireAdmin = bind(this.wireAdmin, this);
     this.wireButtons = bind(this.wireButtons, this);
     this.modelCheck = bind(this.modelCheck, this);
@@ -18152,14 +18159,19 @@ Pages = (function() {
         return h4('.five.columns', 'Movement data capture');
       });
       buttons();
-      contents1();
-      hr();
-      contents2();
-      hr();
-      return div('#footer', 'style="display:none;"', function() {
-        return div('#console-log.container', function() {
-          return h2('Console');
+      div('.row', function() {
+        div('.two.columns', "device --");
+        div('.two.columns', function() {
+          text('Version:');
+          return span('#FirmwareData', '?');
         });
+        return div('#uuid.six.columns', ' ');
+      });
+      contents1();
+      contents2();
+      return div('#footer', 'style="display:none;"', function() {
+        hr();
+        return div('#console-log.container');
       });
     });
   });
@@ -18260,15 +18272,12 @@ Pages = (function() {
     return false;
   };
 
-  Pages.prototype.resetTest = function() {
-    return $('TestID :selected').val(['']);
-  };
-
   Pages.prototype.wireButtons = function() {
     var model;
     model = this.sessionInfo;
     return $('#TestID').change((function(_this) {
       return function(node) {
+        $('#TestSelect').text('Which Test?').css('color', '');
         model.set('testID', $('#TestID option:selected').val());
         return _this.modelCheck();
       };
@@ -18327,20 +18336,16 @@ Pages = (function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#calibrate.three.columns.disabled', 'Calibrate');
-      button('.three.columns.disabled', '');
+      button('.three.columns.disabled', {
+        style: "opacity:0.25;"
+      }, '');
       return button('#debug.three.columns.disabled', '');
     });
     return div('.row', function() {
-      button('#action.three.columns.disabled', '');
-      button('#upload.three.columns.disabled', 'Upload');
-      button('#clear.three.columns.disabled', 'Reset');
-      return div('.three.columns', function() {
-        label({
-          "for": "TestID"
-        }, 'Which Test?');
-        return select("#TestID.u-full-width", function() {
+      div('.three.columns', function() {
+        select("#TestID.u-full-width", function() {
           var i, len, ref1, results, test;
-          option("Select ---");
+          option("Select --");
           ref1 = this.getAdmin('testIDs');
           results = [];
           for (i = 0, len = ref1.length; i < len; i++) {
@@ -18351,14 +18356,39 @@ Pages = (function() {
           }
           return results;
         });
+        return label('#TestSelect', {
+          "for": "TestID"
+        }, 'Which Test?');
       });
+      div('.three.columns', function() {
+        button('#action.disabled.u-full-width', '');
+        return label('#TotalReadings', {
+          "for": "action"
+        }, ' 0');
+      });
+      div('.three.columns', function() {
+        button('#upload.disabled.u-full-width', 'Upload');
+        return label('#StatusData', {
+          "for": "upload"
+        }, 'No connection');
+      });
+      return button('#clear.three.columns.disabled', 'Reset');
     });
   });
+
+  Pages.prototype.forceTest = function(color) {
+    if (color == null) {
+      color = 'violet';
+    }
+    $('#TestSelect').text('Must Select Test').css('color', color);
+    $('#TestID').val('Select --');
+    return this.sessionInfo.set('testID', null);
+  };
 
   Pages.prototype.sensorContents = renderable(function() {
     return div('#sensorPage.container', function() {
       hr();
-      div('.row.readings', function() {
+      return div('.row.readings', function() {
         div('#gyroscope.four.columns', function() {
           h4('Gyroscope');
           canvas('#gyro-view', {
@@ -18385,21 +18415,6 @@ Pages = (function() {
             style: 'width=100%'
           });
           return div('#MagnetometerData.u-full-width.dump', '');
-        });
-      });
-      hr();
-      return div('.row.keys', function() {
-        p('.three.columns', function() {
-          text('SensorTag Status:');
-          return span('#StatusData', 'Not ready to connect');
-        });
-        p('.three.columns', function() {
-          text('SensorTag ID:');
-          return span('#FirmwareData', '?');
-        });
-        return p('.three.columns', function() {
-          text('readings captured:');
-          return span('#TotalReadings', '0');
         });
       });
     });

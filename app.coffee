@@ -243,13 +243,13 @@ clearUserInterface = ->
   blank = 'Waiting...'
   $('#StatusData').html 'Ready to connect'
   $('#FirmwareData').html '?'
-  $('#TotalReadings').html 0
+  $('#TotalReadings').html "Items:"
   # Reset screen color.
   stopDebug()
   return
 
 countReadings = ->
-  $('#TotalReadings').html readings.length
+  $('#TotalReadings').html "Items:" + readings.length
   return
 
 # ## Section: Data Structures
@@ -373,14 +373,14 @@ initAll = ->
   setButtons()
   clearUserInterface()
   initDataStructures()
-  $('#TotalReadings').html '0'
+  $('#TotalReadings').html "Items:"
   return
 
 # ### subsection State handlers that depend on the View
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
   readings.reset()
-  $('#TotalReadings').html '0'
+  $('#TotalReadings').html "Items:"
   buttonModelClear.set('active',false);
   buttonModelUpload.set('active',false);
   useButton buttonModelActionRecord
@@ -415,6 +415,9 @@ exitCalibrate = ->
   return false
 
 enterRecording = ->
+  if !sessionInfo.get('testID')
+    pageGen.forceTest 'red'
+    return
   console.log('enter Recording')
   recording = true
   useButton buttonModelActionStop
@@ -456,6 +459,7 @@ enterUpload = ->
   brainDump.set('hostUrl',sessionInfo.get('hostUrl') )
 
   brainDump.save()
+  pageGen.forceTest()
   enterClear()
   return
 
@@ -470,6 +474,7 @@ statusHandler = (status) ->
   if 'Device data available' == status
     $('#FirmwareData').html sensortag.getFirmwareString()
     sessionInfo.set 'deviceUUID', sensortag?.device?.address
+    $('#uuid').html sensortag?.device?.address
     console?.log sensortag?.device?.address
   $('#StatusData').html status
   return
