@@ -10,7 +10,7 @@ class Pages
   Teacup = require('teacup')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {render,input,renderable,raw,div,img,h2,h3,h4,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {a,render,input,renderable,raw,div,img,h2,h3,h4,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
 
   sessionInfo: {}
 
@@ -27,7 +27,8 @@ class Pages
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
       div '.row', ->
-        img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
+        a href: '/index.html', ->
+          img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
         h4 '.five.columns', 'Movement data capture'

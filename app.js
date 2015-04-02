@@ -18138,7 +18138,7 @@ implementing = function() {
 };
 
 Pages = (function() {
-  var $, Teacup, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
+  var $, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
 
   Teacup = require('teacup');
 
@@ -18146,7 +18146,7 @@ Pages = (function() {
 
   tea = new Teacup.Teacup;
 
-  ref = tea.tags(), render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
 
   Pages.prototype.sessionInfo = {};
 
@@ -18171,9 +18171,13 @@ Pages = (function() {
   Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
     return div('#capture-display.container', function() {
       div('.row', function() {
-        img("#logo.five.columns", {
-          src: './ui/images/logo-final.png',
-          width: '100%'
+        a({
+          href: '/index.html'
+        }, function() {
+          return img("#logo.five.columns", {
+            src: './ui/images/logo-final.png',
+            width: '100%'
+          });
         });
         div('#dud.one.columns', function() {
           return raw('&nbsp;');
