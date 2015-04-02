@@ -389,6 +389,7 @@ initAll = ->
   clearUserInterface()
   initDataStructures()
   $('#TotalReadings').html "Items:"
+  $('#uuid').html("Must connect to sensor").css('color',"violet")
   return
 
 # ### subsection State handlers that depend on the View
@@ -404,11 +405,19 @@ enterClear = ->
 
 enterConnected = ->
   # enable the recording button
+  noCalibration = true #for temporarily
   console.log('enterConnected')
   connected = true
-  useButton buttonModelCalibrate
   useButton buttonModelAdminDisabled
-  useButton buttonModelActionDisabled
+#  eliminate Calibrate button functionality 
+  if noCalibration
+    if loggedIn
+      useButton buttonModelActionRecord
+    else
+      useButton buttonModelAdmin
+  else
+    useButton buttonModelActionDisabled
+    useButton buttonModelCalibrate
   setButtons(true)
   return false
 
@@ -490,7 +499,7 @@ statusHandler = (status) ->
   if 'Device data available' == status
     $('#FirmwareData').html sensortag.getFirmwareString()
     sessionInfo.set 'sensorUUID', sensortag?.device?.address
-    $('#uuid').html sensortag?.device?.address
+    $('#uuid').html(sensortag?.device?.address).css('color','black')
     console?.log sensortag?.device?.address
   $('#StatusData').html status
   return
@@ -500,6 +509,7 @@ errorHandler = (error) ->
   console.log 'Error: ' + error
   if 'disconnected' == error
     connected = false
+    $('#uuid').html("Must connect to sensor").css('color',"red")
     # If disconneted attempt to connect again. (but not to same device)
     setTimeout (->
       sensortag.connectToClosestDevice()

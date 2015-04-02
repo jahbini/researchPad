@@ -461,6 +461,7 @@ initAll = function() {
   clearUserInterface();
   initDataStructures();
   $('#TotalReadings').html("Items:");
+  $('#uuid').html("Must connect to sensor").css('color', "violet");
 };
 
 enterClear = function() {
@@ -474,11 +475,21 @@ enterClear = function() {
 };
 
 enterConnected = function() {
+  var noCalibration;
+  noCalibration = true;
   console.log('enterConnected');
   connected = true;
-  useButton(buttonModelCalibrate);
   useButton(buttonModelAdminDisabled);
-  useButton(buttonModelActionDisabled);
+  if (noCalibration) {
+    if (loggedIn) {
+      useButton(buttonModelActionRecord);
+    } else {
+      useButton(buttonModelAdmin);
+    }
+  } else {
+    useButton(buttonModelActionDisabled);
+    useButton(buttonModelCalibrate);
+  }
   setButtons(true);
   return false;
 };
@@ -566,7 +577,7 @@ statusHandler = function(status) {
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
     sessionInfo.set('sensorUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
-    $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0);
+    $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
     if (typeof console !== "undefined" && console !== null) {
       console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
     }
@@ -579,6 +590,7 @@ errorHandler = function(error) {
   console.log('Error: ' + error);
   if ('disconnected' === error) {
     connected = false;
+    $('#uuid').html("Must connect to sensor").css('color', "red");
     setTimeout((function() {
       sensortag.connectToClosestDevice();
     }), 1000);
@@ -18191,7 +18203,13 @@ Pages = (function() {
           text('Version:');
           return span('#FirmwareData', '?');
         });
-        return div('#uuid.six.columns', ' ');
+        return div('#uuid.five.columns', ' ');
+      });
+      div('.row', function() {
+        div('.four.columns', "Platform uuid");
+        return div('#platformUUID.five.columns', function() {
+          return raw('&nbsp;');
+        });
       });
       contents1();
       contents2();
@@ -18272,12 +18290,8 @@ Pages = (function() {
           });
         });
         return div('.row', function() {
-          div('.two.columns', "Platform uuid");
-          div('#platformUUID.six.columns', function() {
-            return raw('&nbsp;');
-          });
-          div('.one.columns', function() {
-            return raw('&nbsp;');
+          div('.nine.columns', function() {
+            return raw("&nbsp;");
           });
           return button('#done.three.columns', {
             disabled: true
@@ -18290,7 +18304,7 @@ Pages = (function() {
   Pages.prototype.modelCheck = function() {
     var b, model;
     model = this.sessionInfo;
-    if ((model.get('testID')) && (model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && (model.get('password'))) {
+    if ((model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && 'retro2015' === (model.get('password'))) {
       console.log('activating');
       b = $('#done');
       b.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
@@ -18309,7 +18323,7 @@ Pages = (function() {
       return function(node) {
         $('#TestSelect').text('Which Test?').css('color', '');
         model.set('testID', $('#TestID option:selected').val());
-        return _this.modelCheck();
+        return false;
       };
     })(this));
   };
@@ -18365,7 +18379,7 @@ Pages = (function() {
   Pages.prototype.topButtons = renderable(function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
-      button('#calibrate.three.columns.disabled', 'Calibrate');
+      button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
       button('.three.columns.disabled', {
         style: "opacity:0.25;"
       }, '');

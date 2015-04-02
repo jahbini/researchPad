@@ -38,7 +38,12 @@ class Pages
         div '.two.columns', ->
           text 'Version:'
           span '#FirmwareData', '?'
-        div '#uuid.six.columns' , ' '
+        div '#uuid.five.columns' , ' '
+      div '.row', ->
+        div '.four.columns',"Platform uuid"
+        div '#platformUUID.five.columns', ->
+          raw '&nbsp;'
+        
       contents1()
       contents2()
       div '#footer','style="display:none;"', ->
@@ -72,18 +77,14 @@ class Pages
               for patient  in @getAdmin('user')
                 option value: patient.get('name'), patient.get('name')
         div '.row', ->
-          div '.two.columns',"Platform uuid"
-          div '#platformUUID.six.columns', ->
-            raw '&nbsp;'
-          div '.one.columns', ->
-            raw '&nbsp;'
+          div '.nine.columns', ->
+            raw "&nbsp;"
           button '#done.three.columns', disabled: true, "Done"
 
   modelCheck: ()=>
     model = @sessionInfo
-    if (model.get 'testID') && 
-      (model.get 'hostUrl') && (model.get 'clinician') && 
-      (model.get 'patient') && (model.get 'password')
+    if (model.get 'hostUrl') && (model.get 'clinician') && 
+      (model.get 'patient') && 'retro2015' == (model.get 'password')
         console.log('activating')
         b=$('#done')
         b.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
@@ -98,7 +99,7 @@ class Pages
     $('#TestID').change (node)=>
       $('#TestSelect').text('Which Test?').css('color','')
       model.set 'testID',$('#TestID option:selected').val()
-      @modelCheck()
+      return false
 
   wireAdmin: =>
     model = @sessionInfo
@@ -133,7 +134,7 @@ class Pages
   topButtons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
-        button '#calibrate.three.columns.disabled', 'Calibrate'
+        button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
         button '.three.columns.disabled', style: "opacity:0.25;", ''
         button '#debug.three.columns.disabled', ''
       div '.row', ->
