@@ -60,7 +60,11 @@ class Pages
             select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
               option "Select ---"
               for host in @getAdmin('host')
-                option value: host.get('url'), host.get('name')
+                if host.get('name') == 'saal'
+                  option '.forceSelect.selected', selected: 'selected', value: host.get('url'), host.get('name')
+                else
+                  option value: host.get('url'), host.get('name')
+                  
           div '.four.columns', ->
             label for: 'clinician','Clinician'
             select '#clinician.u-full-width', ->
@@ -101,8 +105,21 @@ class Pages
       model.set 'testID',$('#TestID option:selected').val()
       return false
 
+  resetAdmin: =>
+    @sessionInfo.set('user','')
+    @sessionInfo.set('password','')
+    @sessionInfo.set('patientID','')
+    @sessionInfo.set('testID','')
+
+    $('#password').val('')
+    $('option:selected').prop('selected',false)
+    $('option.forceSelect').prop('selected',true)
+    $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
+    @sessionInfo.set 'hostUrl',$('#desiredHost option:selected').val()
+
   wireAdmin: =>
     model = @sessionInfo
+    model.set 'hostUrl',$('#desiredHost option:selected').val()
     $('#desiredHost').change (node) =>
       model.set 'hostUrl',$('#desiredHost option:selected').val()
       @modelCheck()

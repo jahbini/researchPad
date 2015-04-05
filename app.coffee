@@ -239,10 +239,8 @@ useButton= (model) ->
 
 enterLogout = () ->
   loggedIn = false
-  sessionInfo.set('password','')
-  sessionInfo.set('user','')
-  sessionInfo.set('patient','')
-  sessionInfo.set('testID','')  
+  pageGen.resetAdmin()
+  useButton buttonModelActionDisabled
   useButton buttonModelAdmin
   setButtons()
   return false
@@ -299,24 +297,66 @@ testCollection = Backbone.Collection.extend
   url: "/tests_list.json"
 users = new userCollection
 users.push new user(
-    name: 'Jim'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Harry'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Sam'
+    name: 'Client 1'
     password: 'Y'
     patientOnly: true
   )
 users.push new user(
-    name: 'Bob'
+    name: 'client 2'
     password: 'Y'
     patientOnly: true
+  )
+users.push new user(
+    name: 'Client 3'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'Client 4'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'Client 5'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'client 6'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'Client 7'
+    password: 'Y'
+    patientOnly: true
+  )
+users.push new user(
+    name: 'Client 8'
+    password: 'Y'
+    patientOnly: true
+  )
+
+
+users.push new user(
+    name: 'Clinician 1'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Clinician 2'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Clinician 3'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Clinician 4'
+    password: 'Y'
+    patientOnly: false
   )
 
 hosts = new hostCollection

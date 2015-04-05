@@ -283,10 +283,8 @@ useButton = function(model) {
 
 enterLogout = function() {
   loggedIn = false;
-  sessionInfo.set('password', '');
-  sessionInfo.set('user', '');
-  sessionInfo.set('patient', '');
-  sessionInfo.set('testID', '');
+  pageGen.resetAdmin();
+  useButton(buttonModelActionDisabled);
   useButton(buttonModelAdmin);
   setButtons();
   return false;
@@ -355,27 +353,75 @@ testCollection = Backbone.Collection.extend({
 users = new userCollection;
 
 users.push(new user({
-  name: 'Jim',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Harry',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Sam',
+  name: 'Client 1',
   password: 'Y',
   patientOnly: true
 }));
 
 users.push(new user({
-  name: 'Bob',
+  name: 'client 2',
   password: 'Y',
   patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Client 3',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Client 4',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Client 5',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'client 6',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Client 7',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Client 8',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Clinician 1',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Clinician 2',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Clinician 3',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Clinician 4',
+  password: 'Y',
+  patientOnly: false
 }));
 
 hosts = new hostCollection;
@@ -18174,6 +18220,7 @@ Pages = (function() {
     this.renderPage = bind(this.renderPage, this);
     this.forceTest = bind(this.forceTest, this);
     this.wireAdmin = bind(this.wireAdmin, this);
+    this.resetAdmin = bind(this.resetAdmin, this);
     this.wireButtons = bind(this.wireButtons, this);
     this.modelCheck = bind(this.modelCheck, this);
     this.getAdmin = bind(this.getAdmin, this);
@@ -18236,9 +18283,16 @@ Pages = (function() {
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
                 host = ref1[i];
-                results.push(option({
-                  value: host.get('url')
-                }, host.get('name')));
+                if (host.get('name') === 'saal') {
+                  results.push(option('.forceSelect.selected', {
+                    selected: 'selected',
+                    value: host.get('url')
+                  }, host.get('name')));
+                } else {
+                  results.push(option({
+                    value: host.get('url')
+                  }, host.get('name')));
+                }
               }
               return results;
             });
@@ -18328,9 +18382,22 @@ Pages = (function() {
     })(this));
   };
 
+  Pages.prototype.resetAdmin = function() {
+    this.sessionInfo.set('user', '');
+    this.sessionInfo.set('password', '');
+    this.sessionInfo.set('patientID', '');
+    this.sessionInfo.set('testID', '');
+    $('#password').val('');
+    $('option:selected').prop('selected', false);
+    $('option.forceSelect').prop('selected', true);
+    $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
+    return this.sessionInfo.set('hostUrl', $('#desiredHost option:selected').val());
+  };
+
   Pages.prototype.wireAdmin = function() {
     var model;
     model = this.sessionInfo;
+    model.set('hostUrl', $('#desiredHost option:selected').val());
     $('#desiredHost').change((function(_this) {
       return function(node) {
         model.set('hostUrl', $('#desiredHost option:selected').val());
