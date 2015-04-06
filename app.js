@@ -359,7 +359,7 @@ users.push(new user({
 }));
 
 users.push(new user({
-  name: 'client 2',
+  name: 'Client 2',
   password: 'Y',
   patientOnly: true
 }));
@@ -383,7 +383,7 @@ users.push(new user({
 }));
 
 users.push(new user({
-  name: 'client 6',
+  name: 'Client 6',
   password: 'Y',
   patientOnly: true
 }));
@@ -18196,7 +18196,7 @@ implementing = function() {
 };
 
 Pages = (function() {
-  var $, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
+  var $, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
 
   Teacup = require('teacup');
 
@@ -18204,7 +18204,7 @@ Pages = (function() {
 
   tea = new Teacup.Teacup;
 
-  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
 
   Pages.prototype.sessionInfo = {};
 
@@ -18241,7 +18241,7 @@ Pages = (function() {
         div('#dud.one.columns', function() {
           return raw('&nbsp;');
         });
-        return h4('.five.columns', 'Movement data capture');
+        return h5('.five.columns', 'Movement data capture');
       });
       buttons();
       div('.row', function() {
@@ -18329,15 +18329,17 @@ Pages = (function() {
               "for": 'patient'
             }, 'Client');
             return select('#patient.u-full-width', function() {
-              var i, len, patient, ref1, results;
+              var i, len, ref1, results;
               option("Select ---");
               ref1 = this.getAdmin('user');
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
-                patient = ref1[i];
-                results.push(option({
-                  value: patient.get('name')
-                }, patient.get('name')));
+                p = ref1[i];
+                if (p.get('patientOnly')) {
+                  results.push(option({
+                    value: p.get('name')
+                  }, p.get('name')));
+                }
               }
               return results;
             });
@@ -18501,7 +18503,7 @@ Pages = (function() {
       hr();
       return div('.row.readings', function() {
         div('#gyroscope.four.columns', function() {
-          h4('Gyroscope');
+          h5('Gyroscope');
           canvas('#gyro-view', {
             width: '200',
             height: '200',
@@ -18510,7 +18512,7 @@ Pages = (function() {
           return div('#GyroscopeData.u-full-width.dump', ' ');
         });
         div('#acelleration.four.columns', function() {
-          h4('Accelerometer');
+          h5('Accelerometer');
           canvas('#accel-view', {
             width: '200',
             height: '200',
@@ -18519,7 +18521,7 @@ Pages = (function() {
           return div('#AccelerometerData.u-full-width.dump', ' ');
         });
         return div('#magnetometer.four.columns', function() {
-          h4('Magnetometer');
+          h5('Magnetometer');
           canvas('#magnet-view', {
             width: '200',
             height: '200',

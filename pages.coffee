@@ -10,7 +10,7 @@ class Pages
   Teacup = require('teacup')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {a,render,input,renderable,raw,div,img,h2,h3,h4,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
 
   sessionInfo: {}
 
@@ -31,7 +31,7 @@ class Pages
           img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
-        h4 '.five.columns', 'Movement data capture'
+        h5 '.five.columns', 'Movement data capture'
       buttons()
       div '.row',->
         div '.two.columns',"Sensor --"
@@ -78,8 +78,8 @@ class Pages
             label for: 'patient', 'Client'
             select '#patient.u-full-width', ->
               option "Select ---"
-              for patient  in @getAdmin('user')
-                option value: patient.get('name'), patient.get('name')
+              for p in @getAdmin('user') when p.get('patientOnly')
+                option value: p.get('name'), p.get('name')
         div '.row', ->
           div '.nine.columns', ->
             raw "&nbsp;"
@@ -179,17 +179,17 @@ class Pages
       hr()
       div '.row.readings', ->
         div '#gyroscope.four.columns', ->
-          h4 'Gyroscope'
+          h5 'Gyroscope'
           canvas '#gyro-view', width: '200', height: '200', style: 'width=100%'
           div '#GyroscopeData.u-full-width.dump', ' '
           #button '#calibrateGyro.suppress.three columns', 'Debias'
         div '#acelleration.four.columns', ->
-          h4 'Accelerometer'
+          h5 'Accelerometer'
           canvas '#accel-view', width: '200', height: '200', style: 'width=100%'
           div '#AccelerometerData.u-full-width.dump', ' '
           #button '#calibrateAccel.suppress.three columns', 'Debias'
         div '#magnetometer.four.columns', ->
-          h4 'Magnetometer'
+          h5 'Magnetometer'
           canvas '#magnet-view', width: '200', height: '200', style: 'width=100%'
           div '#MagnetometerData.u-full-width.dump', ''
           #button '#calibrateMag.suppress.three columns', 'Debias'

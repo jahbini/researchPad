@@ -302,7 +302,7 @@ users.push new user(
     patientOnly: true
   )
 users.push new user(
-    name: 'client 2'
+    name: 'Client 2'
     password: 'Y'
     patientOnly: true
   )
@@ -322,7 +322,7 @@ users.push new user(
     patientOnly: true
   )
 users.push new user(
-    name: 'client 6'
+    name: 'Client 6'
     password: 'Y'
     patientOnly: true
   )
