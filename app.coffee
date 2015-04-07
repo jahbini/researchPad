@@ -479,7 +479,7 @@ enterConnected = ->
   else
     useButton buttonModelActionDisabled
     useButton buttonModelCalibrate
-  setButtons(true)
+  setButtons()
   return false
 
 enterCalibrate = ->
@@ -531,7 +531,7 @@ enterUpload = ->
     urlRoot: hostUrl
   }
   console?log 'hostURL=' + hostURL
-  console?log sessionInfo
+  #console?log sessionInfo
   brainDump = new hopper 
 
   brainDump.set('readings',readings )

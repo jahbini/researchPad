@@ -562,7 +562,7 @@ enterConnected = function() {
     useButton(buttonModelActionDisabled);
     useButton(buttonModelCalibrate);
   }
-  setButtons(true);
+  setButtons();
   return false;
 };
 
@@ -621,9 +621,6 @@ enterUpload = function() {
   });
   if (typeof console === "function") {
     console(log('hostURL=' + hostURL));
-  }
-  if (typeof console === "function") {
-    console(log(sessionInfo));
   }
   brainDump = new hopper;
   brainDump.set('readings', readings);
