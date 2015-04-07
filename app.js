@@ -286,6 +286,8 @@ enterLogout = function() {
   pageGen.resetAdmin();
   useButton(buttonModelActionDisabled);
   useButton(buttonModelAdmin);
+  buttonModelUpload.set('active', false);
+  buttonModelClear.set('active', false);
   setButtons();
   return false;
 };
@@ -401,25 +403,49 @@ users.push(new user({
 }));
 
 users.push(new user({
-  name: 'Clinician 1',
+  name: 'Other',
+  password: 'Y',
+  patientOnly: true
+}));
+
+users.push(new user({
+  name: 'Tracy Jones, ARNP',
   password: 'Y',
   patientOnly: false
 }));
 
 users.push(new user({
-  name: 'Clinician 2',
+  name: 'Israt Jahan, MD',
   password: 'Y',
   patientOnly: false
 }));
 
 users.push(new user({
-  name: 'Clinician 3',
+  name: 'Jessica Shaw, MPH',
   password: 'Y',
   patientOnly: false
 }));
 
 users.push(new user({
-  name: 'Clinician 4',
+  name: 'Kevin Allison, BS',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Mary Freeman, LPN',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Tanya Aranca, BS',
+  password: 'Y',
+  patientOnly: false
+}));
+
+users.push(new user({
+  name: 'Other',
   password: 'Y',
   patientOnly: false
 }));
@@ -18360,7 +18386,7 @@ Pages = (function() {
   Pages.prototype.modelCheck = function() {
     var b, model;
     model = this.sessionInfo;
-    if ((model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && 'retro2015' === (model.get('password'))) {
+    if ((model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && 'retro2015' === (model.get('password')).slice(0, 9)) {
       console.log('activating');
       b = $('#done');
       b.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
@@ -18385,9 +18411,9 @@ Pages = (function() {
   };
 
   Pages.prototype.resetAdmin = function() {
-    this.sessionInfo.set('user', '');
+    this.sessionInfo.set('clinician', '');
     this.sessionInfo.set('password', '');
-    this.sessionInfo.set('patientID', '');
+    this.sessionInfo.set('patient', '');
     this.sessionInfo.set('testID', '');
     $('#password').val('');
     $('option:selected').prop('selected', false);

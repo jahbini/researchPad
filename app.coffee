@@ -242,6 +242,8 @@ enterLogout = () ->
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
+  buttonModelUpload.set('active',false)
+  buttonModelClear.set('active',false)
   setButtons()
   return false
   
@@ -336,25 +338,44 @@ users.push new user(
     password: 'Y'
     patientOnly: true
   )
+users.push new user(
+    name: 'Other'
+    password: 'Y'
+    patientOnly: true
+  )
 
-
 users.push new user(
-    name: 'Clinician 1'
+    name: 'Tracy Jones, ARNP'
     password: 'Y'
     patientOnly: false
   )
 users.push new user(
-    name: 'Clinician 2'
+    name: 'Israt Jahan, MD'
     password: 'Y'
     patientOnly: false
   )
 users.push new user(
-    name: 'Clinician 3'
+    name: 'Jessica Shaw, MPH'
     password: 'Y'
     patientOnly: false
   )
 users.push new user(
-    name: 'Clinician 4'
+    name: 'Kevin Allison, BS'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Mary Freeman, LPN'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Tanya Aranca, BS'
+    password: 'Y'
+    patientOnly: false
+  )
+users.push new user(
+    name: 'Other'
     password: 'Y'
     patientOnly: false
   )

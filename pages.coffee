@@ -88,7 +88,7 @@ class Pages
   modelCheck: ()=>
     model = @sessionInfo
     if (model.get 'hostUrl') && (model.get 'clinician') && 
-      (model.get 'patient') && 'retro2015' == (model.get 'password')
+      (model.get 'patient') && 'retro2015' == (model.get 'password').slice(0,9)
         console.log('activating')
         b=$('#done')
         b.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
@@ -106,9 +106,9 @@ class Pages
       return false
 
   resetAdmin: =>
-    @sessionInfo.set('user','')
+    @sessionInfo.set('clinician','')
     @sessionInfo.set('password','')
-    @sessionInfo.set('patientID','')
+    @sessionInfo.set('patient','')
     @sessionInfo.set('testID','')
 
     $('#password').val('')
