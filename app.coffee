@@ -239,6 +239,10 @@ useButton= (model) ->
 
 enterLogout = () ->
   loggedIn = false
+  if recording
+    recording = false
+    readings.reset()
+    $('#TotalReadings').html "Items:"
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
@@ -382,16 +386,13 @@ users.push new user(
 
 hosts = new hostCollection
 hosts.push new host(
-  name: 'saal'
-  url: 'http://www.saal.org:3000'
+  force: true
+  name: 'RetroTope Sensor'
+  url: 'http://sensor.retrotope.com:3000'
 )
 hosts.push new host(
-  name: 'local'
+  name: 'Development Only'
   url: 'http://192.168.1.200:3000'
-)
-hosts.push new host(
-  name: 'Cloud 9'
-  url: 'https://stagserv-jahbini.c9.io'
 )
 tests = new testCollection
 tests.push new test

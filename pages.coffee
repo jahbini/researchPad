@@ -55,16 +55,16 @@ class Pages
       hr() 
       form ->
         div '.row', ->
-          div '.two.columns', ->
+          div '.five.columns', ->
             label 'Remote Host'
             select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
               option "Select ---"
               for host in @getAdmin('host')
-                if host.get('name') == 'saal'
+                if host.get('force')
                   option '.forceSelect.selected', selected: 'selected', value: host.get('url'), host.get('name')
                 else
                   option value: host.get('url'), host.get('name')
-                  
+        div '.row', ->
           div '.four.columns', ->
             label for: 'clinician','Clinician'
             select '#clinician.u-full-width', ->

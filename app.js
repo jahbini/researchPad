@@ -283,6 +283,11 @@ useButton = function(model) {
 
 enterLogout = function() {
   loggedIn = false;
+  if (recording) {
+    recording = false;
+    readings.reset();
+    $('#TotalReadings').html("Items:");
+  }
   pageGen.resetAdmin();
   useButton(buttonModelActionDisabled);
   useButton(buttonModelAdmin);
@@ -453,18 +458,14 @@ users.push(new user({
 hosts = new hostCollection;
 
 hosts.push(new host({
-  name: 'saal',
-  url: 'http://www.saal.org:3000'
+  force: true,
+  name: 'RetroTope Sensor',
+  url: 'http://sensor.retrotope.com:3000'
 }));
 
 hosts.push(new host({
-  name: 'local',
+  name: 'Development Only',
   url: 'http://192.168.1.200:3000'
-}));
-
-hosts.push(new host({
-  name: 'Cloud 9',
-  url: 'https://stagserv-jahbini.c9.io'
 }));
 
 tests = new testCollection;
@@ -18295,7 +18296,7 @@ Pages = (function() {
       hr();
       return form(function() {
         div('.row', function() {
-          div('.two.columns', function() {
+          return div('.five.columns', function() {
             label('Remote Host');
             return select('#desiredHost.u-full-width', {
               onchange: ""
@@ -18306,7 +18307,7 @@ Pages = (function() {
               results = [];
               for (i = 0, len = ref1.length; i < len; i++) {
                 host = ref1[i];
-                if (host.get('name') === 'saal') {
+                if (host.get('force')) {
                   results.push(option('.forceSelect.selected', {
                     selected: 'selected',
                     value: host.get('url')
@@ -18320,6 +18321,8 @@ Pages = (function() {
               return results;
             });
           });
+        });
+        div('.row', function() {
           div('.four.columns', function() {
             label({
               "for": 'clinician'
