@@ -459,7 +459,7 @@ hosts = new hostCollection;
 
 hosts.push(new host({
   force: true,
-  name: 'RetroTope Sensor',
+  name: 'RetroTope Server',
   url: 'http://sensor.retrotope.com:3000'
 }));
 
@@ -643,6 +643,7 @@ statusHandler = function(status) {
   console.log(status);
   if ('Sensors online' === status) {
     enterConnected();
+    status = 'Sensor online';
   }
   if ('Device data available' === status) {
     $('#FirmwareData').html(sensortag.getFirmwareString());
@@ -18482,7 +18483,10 @@ Pages = (function() {
     });
     return div('.row', function() {
       div('.three.columns', function() {
-        select("#TestID.u-full-width", function() {
+        label('#TestSelect', {
+          "for": "TestID"
+        }, 'Which Test?');
+        return select("#TestID.u-full-width", function() {
           var i, len, ref1, results, test;
           option("Select --");
           ref1 = this.getAdmin('testIDs');
@@ -18495,9 +18499,6 @@ Pages = (function() {
           }
           return results;
         });
-        return label('#TestSelect', {
-          "for": "TestID"
-        }, 'Which Test?');
       });
       div('.three.columns', function() {
         button('#action.disabled.u-full-width', '');

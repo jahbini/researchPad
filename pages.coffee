@@ -156,11 +156,11 @@ class Pages
         button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
+          label '#TestSelect', for: "TestID", 'Which Test?'
           select "#TestID.u-full-width",  ->
             option "Select --"
             for test in @getAdmin('testIDs')
               option value: test.get('name') , test.get('Description')
-          label '#TestSelect', for: "TestID", 'Which Test?'
         div '.three.columns', ->
           button '#action.disabled.u-full-width', ''
           label '#TotalReadings', for: "action", ' 0'

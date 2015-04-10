@@ -387,7 +387,7 @@ users.push new user(
 hosts = new hostCollection
 hosts.push new host(
   force: true
-  name: 'RetroTope Sensor'
+  name: 'RetroTope Server'
   url: 'http://sensor.retrotope.com:3000'
 )
 hosts.push new host(
@@ -558,6 +558,7 @@ statusHandler = (status) ->
   console.log status
   if 'Sensors online' == status
     enterConnected()
+    status = 'Sensor online'
   if 'Device data available' == status
     $('#FirmwareData').html sensortag.getFirmwareString()
     sessionInfo.set 'sensorUUID', sensortag?.device?.address
