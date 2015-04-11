@@ -459,7 +459,7 @@ hosts = new hostCollection;
 
 hosts.push(new host({
   force: true,
-  name: 'RetroTope Server',
+  name: 'Retrotope Server',
   url: 'http://sensor.retrotope.com:3000'
 }));
 
