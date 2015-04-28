@@ -14,7 +14,7 @@
 if (!window.evothings) { window.evothings = {} }
 
 // Object that holds BLE data and functions.
-evothings.easyble = (function()
+exports.easyble = (function()
 {
 	/** Main object in the EasyBLE API. */
 	var easyble = {};

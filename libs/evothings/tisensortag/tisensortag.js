@@ -9,7 +9,7 @@
 // http://processors.wiki.ti.com/index.php/File:BLE_SensorTag_GATT_Server.pdf
 
 if (!window.evothings) { window.evothings = {} }
-evothings.tisensortag = (function()
+exports.tisensortag = (function()
 {
 	var sensortag = {}
 
