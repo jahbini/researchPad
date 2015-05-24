@@ -10,7 +10,8 @@ class Pages
   Teacup = require('teacup')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,
+    select,form,body,head,doctype,hr,br,password} = tea.tags()
 
   sessionInfo: {}
 
@@ -50,20 +51,31 @@ class Pages
         hr()
         div '#console-log.container'
 
+  clinicContents: renderable (clinics) ->
+    for clinic in clinics
+      option value: clinic.get('location'), clinic.get('name')
+
+  clinicianContents: renderable(clinicians)->
+    for clinician in clinicians
+      option value: clinician.get('name'), clinician.get('name')
+ 
+  clientContents: renderable(clients)->
+    for client in clients
+      option value: client.get('name'), client.get('name')
+  clinicContents: renderable (clinics) ->
+    for clinic in clinics
+      option value: clinic.get('location'), clinic.get('name')
+
   adminContents: renderable ()->
      div '#adminForm', ->
       hr() 
       form ->
         div '.row', ->
           div '.five.columns', ->
-            label 'Remote Host'
-            select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
+            label 'Clinic'
+            select '#desiredClinic.u-full-width', onchange: "" , 'Clinic', ->
               option "Select ---"
-              for host in @getAdmin('host')
-                if host.get('force')
-                  option '.forceSelect.selected', selected: 'selected', value: host.get('url'), host.get('name')
-                else
-                  option value: host.get('url'), host.get('name')
+              clinicContents @sessionInfo.get('clinics')
         div '.row', ->
           div '.four.columns', ->
             label for: 'clinician','Clinician'
