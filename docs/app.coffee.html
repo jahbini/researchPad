@@ -1,4 +1,4 @@
-<!DOCTYPE html><html><head><title>app.coffee</title><meta http-equiv="Content-Type" content="text/html" charset="UTF-8"><link rel="stylesheet" media="all" href="./docco.css"></head><body><div id="container"><div id="background"></div><div id="jump_to">Jump To &hellip;<div id="jump_wrapper"><div id="jump_page"><a href="./index.html" class="source"><span class="file_name">README</span></a><a href="./app.coffee.html" class="source selected"><span class="base_path">. / </span><span class="file_name">app.coffee</span></a><a href="./libs/evothings/easyble/easyble.js.html" class="source "><span class="base_path">libs / evothings / easyble / </span><span class="file_name">easyble.js</span></a><a href="./libs/evothings/tisensortag/tisensortag.js.html" class="source "><span class="base_path">libs / evothings / tisensortag / </span><span class="file_name">tisensortag.js</span></a><a href="./libs/evothings/util/util.js.html" class="source "><span class="base_path">libs / evothings / util / </span><span class="file_name">util.js</span></a><a href="./pages.coffee.html" class="source "><span class="base_path">. / </span><span class="file_name">pages.coffee</span></a></div></div></div><table cellpadding="0" cellspacing="0"><thead><tr><th class="docs"><h1>app.coffee</h1><div class="filepath">./</div></th><th class="code"></th></tr></thead><tbody><tr id="section-1"><td class="docs"><div class="pilwrap"><a href="#section-1" class="pilcrow">&#182;</a></div><h1>stagapp</h1>
+<!DOCTYPE html><html><head><title>app.coffee</title><meta http-equiv="Content-Type" content="text/html" charset="UTF-8"><link rel="stylesheet" media="all" href="./docco.css"></head><body><div id="container"><div id="background"></div><div id="jump_to">Jump To &hellip;<div id="jump_wrapper"><div id="jump_page"><a href="./index.html" class="source"><span class="file_name">README</span></a><a href="./app.coffee.html" class="source selected"><span class="base_path">. / </span><span class="file_name">app.coffee</span></a></div></div></div><table cellpadding="0" cellspacing="0"><thead><tr><th class="docs"><h1>app.coffee</h1><div class="filepath">./</div></th><th class="code"></th></tr></thead><tbody><tr id="section-1"><td class="docs"><div class="pilwrap"><a href="#section-1" class="pilcrow">&#182;</a></div><h1>stagapp</h1>
 
 <p>vim: et:ts=2:sw=2:sts=2</p>
 
@@ -9,7 +9,6 @@
 <span class="nv">_ = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;underscore&#39;</span><span class="p">)</span>
 <span class="nx">require</span><span class="p">(</span><span class="s">&#39;./libs/dbg/console&#39;</span><span class="p">)</span>
 <span class="nv">Backbone.$ = $ = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;jquery&#39;</span><span class="p">)</span>
-<span class="nv">Seen = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./libs/dbg/seen&#39;</span><span class="p">)</span>
 <span class="nv">pages = </span><span class="nx">require</span> <span class="s">&#39;./pages.coffee&#39;</span>
 
 
@@ -17,15 +16,82 @@
 <span class="nv">evothings.util = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./libs/evothings/util/util&#39;</span><span class="p">).</span><span class="nx">util</span>
 <span class="nx">evothings</span><span class="p">.</span><span class="nx">easyble</span> <span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./libs/evothings/easyble/easyble&#39;</span><span class="p">).</span><span class="nx">easyble</span>
 <span class="nx">evothings</span><span class="p">.</span><span class="nx">tisensortag</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./libs/evothings/tisensortag/tisensortag&#39;</span><span class="p">).</span><span class="nx">tisensortag</span>
-<span class="nv">sensortag = </span><span class="nx">evothings</span><span class="p">.</span><span class="nx">tisensortag</span><span class="p">.</span><span class="nx">createInstance</span><span class="p">()</span>
+<span class="nv">sensortag = </span><span class="nx">evothings</span><span class="p">.</span><span class="nx">tisensortag</span><span class="p">.</span><span class="nx">createInstance</span><span class="p">()</span></pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nv">Section: </span><span class="nx">Data</span> <span class="nx">Structures</span>
+ <span class="nx">Routines</span> <span class="nx">to</span> <span class="nx">create</span> <span class="o">and</span> <span class="nx">handle</span> <span class="nx">data</span> <span class="nx">structures</span> <span class="o">and</span> <span class="nx">interfaces</span> <span class="nx">to</span> <span class="nx">them</span></pre></div></td></tr><tr id="section-3"><td class="docs"><div class="pilwrap"><a href="#section-3" class="pilcrow">&#182;</a></div><h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nv">systemCommunicator = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">calibrating: </span><span class="kc">false</span>
+    <span class="nv">recording: </span><span class="kc">false</span>
+    <span class="nv">connected: </span><span class="kc">false</span>
+    <span class="nv">calibrate: </span><span class="kc">false</span>
+    <span class="nv">loggedIn: </span> <span class="kc">false</span>
 
-<span class="nv">recording = </span><span class="kc">false</span>
-<span class="nv">connected = </span><span class="kc">false</span>
-<span class="nv">reading = </span><span class="kc">undefined</span>
-<span class="nv">readings = </span><span class="kc">undefined</span>
-<span class="nv">calibrating = </span><span class="kc">false</span>
-<span class="nv">calibrate = </span><span class="kc">false</span>
-<span class="nv">loggedIn = </span><span class="kc">false</span>
+<span class="nv">globalState = </span><span class="k">new</span> <span class="nx">systemCommunicator</span>
+
+
+<span class="nv">clinics = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">()</span>
+
+<span class="nv">clinicCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">clinics</span>
+  <span class="nv">url: </span><span class="s">&#39;/clinics&#39;</span>
+
+
+<span class="nv">host = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">hostUrl: </span><span class="s">&#39;Text&#39;</span>
+    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
+<span class="nv">hostCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">host</span>
+  <span class="nx">url</span><span class="o">:</span><span class="s">&quot;/host_list.json&quot;</span>
+<span class="nv">hosts = </span><span class="k">new</span> <span class="nx">hostCollection</span>
+
+<span class="nv">user = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
+    <span class="nv">password: </span><span class="s">&#39;Password&#39;</span>
+    <span class="nv">patientOnly: </span><span class="s">&#39;Boolean&#39;</span>
+<span class="nv">userCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">user</span>
+  <span class="nv">url: </span><span class="s">&#39;/users&#39;</span>
+<span class="nv">users = </span><span class="k">new</span> <span class="nx">userCollection</span>
+
+<span class="nv">test = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">name: </span><span class="s">&quot;test 0&quot;</span>
+    <span class="nv">Description: </span><span class="s">&quot;Test 0&quot;</span>
+<span class="nv">testCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">test</span>
+  <span class="nv">url: </span><span class="s">&quot;/tests_list.json&quot;</span>
+<span class="nv">tests = </span><span class="k">new</span> <span class="nx">testCollection</span>
+
+<span class="nv">adminData = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">host: </span><span class="nx">hosts</span>
+    <span class="nv">user: </span><span class="nx">users</span>
+    <span class="nv">testIDs: </span><span class="nx">tests</span>
+
+<span class="nv">admin = </span><span class="k">new</span> <span class="nx">adminData</span>
+
+<span class="nv">reading = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">sensor: </span><span class="s">&#39;gyro&#39;</span>
+  <span class="nv">initialize: </span><span class="nf">-&gt;</span>
+    <span class="nv">d = </span><span class="k">new</span> <span class="nb">Date</span>
+    <span class="nx">@set</span> <span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span>
+  
+<span class="nv">readingCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">reading</span>
+  <span class="nv">initialize: </span><span class="nf">-&gt;</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;remove&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+
+<span class="nv">readings = </span><span class="k">new</span> <span class="nx">readingCollection</span></pre></div></td></tr><tr id="section-4"><td class="docs"><div class="pilwrap"><a href="#section-4" class="pilcrow">&#182;</a></div><p>debug -- should show up on server</p>
+</td><td class="code"><div class="highlight"><pre><span class="nx">readings</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">reading</span>
+ <span class="nv">raw: </span><span class="p">[</span> <span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span>
+ <span class="nv">sensor: </span><span class="s">&#39;DebugOnly&#39;</span>
+
 
 <span class="nv">rawSession = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span> <span class="nf">-&gt;</span>
   <span class="nv">defaults:</span>
@@ -36,13 +102,39 @@
     <span class="nv">sensorUUID: </span><span class="s">&#39;&#39;</span>
     <span class="nv">platformUUID: </span><span class="s">&#39;&#39;</span>
 
-<span class="nv">sessionInfo = </span><span class="k">new</span> <span class="nx">rawSession</span></pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><h2>Hardware</h2>
+<span class="nv">sessionInfo = </span><span class="k">new</span> <span class="nx">rawSession</span></pre></div></td></tr><tr id="section-5"><td class="docs"><div class="pilwrap"><a href="#section-5" class="pilcrow">&#182;</a></div><h2>Hardware</h2>
 
 <p>external communications to Hardware</p>
 
 <p>set up the sensorTag and configure to recieve
 accelerometer, magnetometer and gyro data</p>
-</td><td class="code"><div class="highlight"><pre><span class="nv">initializeSensorTag = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-3"><td class="docs"><div class="pilwrap"><a href="#section-3" class="pilcrow">&#182;</a></div><p>Here sensors are set up.</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">statusHandler = </span><span class="nf">(status) -&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;new Sensor Status&quot;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">status</span>
+  <span class="k">if</span> <span class="s">&#39;Sensors online&#39;</span> <span class="o">==</span> <span class="nx">status</span>
+    <span class="nx">enterConnected</span><span class="p">()</span>
+    <span class="nv">status = </span><span class="s">&#39;Sensor online&#39;</span>
+  <span class="k">if</span> <span class="s">&#39;Device data available&#39;</span> <span class="o">==</span> <span class="nx">status</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#FirmwareData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="nx">sensortag</span><span class="p">.</span><span class="nx">getFirmwareString</span><span class="p">()</span>
+    <span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;sensorUUID&#39;</span><span class="p">,</span> <span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
+    <span class="nx">console</span><span class="o">?</span><span class="p">.</span><span class="nx">log</span> <span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#StatusData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="nx">status</span>
+  <span class="k">return</span>
+
+<span class="nv">errorHandler = </span><span class="nf">(error) -&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Sensor error!&quot;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&#39;Error: &#39;</span> <span class="o">+</span> <span class="nx">error</span>
+  <span class="k">if</span> <span class="s">&#39;disconnected&#39;</span> <span class="o">==</span> <span class="nx">error</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;connected&#39;</span><span class="p">,</span> <span class="kc">false</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s">&quot;Must connect to sensor&quot;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&quot;red&quot;</span><span class="p">)</span></pre></div></td></tr><tr id="section-6"><td class="docs"><div class="pilwrap"><a href="#section-6" class="pilcrow">&#182;</a></div><p>If disconneted attempt to connect again. (but not to same device)</p>
+</td><td class="code"><div class="highlight"><pre>    <span class="nx">setTimeout</span> <span class="p">(</span><span class="nf">-&gt;</span>
+      <span class="nx">sensortag</span><span class="p">.</span><span class="nx">connectToClosestDevice</span><span class="p">()</span>
+      <span class="k">return</span>
+    <span class="p">),</span> <span class="mi">1000</span>
+  <span class="k">return</span>
+    
+<span class="nv">initializeSensorTag = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-7"><td class="docs"><div class="pilwrap"><a href="#section-7" class="pilcrow">&#182;</a></div><p>Here sensors are set up.</p>
 
 <p>If you wish to use only one or a few sensors, just set up
 the ones you wish to use.</p>
@@ -55,26 +147,29 @@ Gyroscope takes the axes to enable as the third parameter:
 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nv">repeat = </span><span class="kc">false</span>
   <span class="nx">failures</span> <span class="o">=</span><span class="mi">0</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;initialize Sensor Communication&quot;</span>
   <span class="k">try</span>
-    <span class="nv">connected = </span><span class="kc">false</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;connected&#39;</span><span class="p">,</span> <span class="kc">false</span>
     <span class="nx">sensortag</span><span class="p">.</span><span class="nx">statusCallback</span><span class="p">(</span><span class="nx">statusHandler</span><span class="p">)</span>
-    <span class="nx">sensortag</span><span class="p">.</span><span class="nx">errorCallback</span><span class="p">(</span><span class="nx">errorHandler</span><span class="p">)</span></pre></div></td></tr><tr id="section-4"><td class="docs"><div class="pilwrap"><a href="#section-4" class="pilcrow">&#182;</a></div><p>sensortag.keypressCallback(keypressHandler)</p>
+    <span class="nx">sensortag</span><span class="p">.</span><span class="nx">errorCallback</span><span class="p">(</span><span class="nx">errorHandler</span><span class="p">)</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Status and error handlers OK&quot;</span></pre></div></td></tr><tr id="section-8"><td class="docs"><div class="pilwrap"><a href="#section-8" class="pilcrow">&#182;</a></div><p>sensortag.keypressCallback(keypressHandler)</p>
 </td><td class="code"><div class="highlight"><pre>    <span class="nx">sensortag</span><span class="p">.</span><span class="nx">accelerometerCallback</span><span class="p">(</span><span class="nx">accelerometerHandler</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
     <span class="nx">sensortag</span><span class="p">.</span><span class="nx">magnetometerCallback</span><span class="p">(</span><span class="nx">magnetometerHandler</span><span class="p">,</span> <span class="mi">100</span><span class="p">)</span>
     <span class="nx">sensortag</span><span class="p">.</span><span class="nx">gyroscopeCallback</span><span class="p">(</span><span class="nx">gyroscopeHandler</span><span class="p">,</span> <span class="mi">100</span><span class="p">,</span> <span class="mi">7</span><span class="p">)</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Device Sensors OK&quot;</span>
     <span class="nx">sensortag</span><span class="p">.</span><span class="nx">connectToClosestDevice</span><span class="p">()</span>
   <span class="k">catch</span> <span class="nx">e</span>
     <span class="nx">failures</span><span class="o">++</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;failed to initialize&quot;</span>
-    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-5"><td class="docs"><div class="pilwrap"><a href="#section-5" class="pilcrow">&#182;</a></div><p>try again after 1/2 second</p>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-9"><td class="docs"><div class="pilwrap"><a href="#section-9" class="pilcrow">&#182;</a></div><p>try again after 1/2 second</p>
 </td><td class="code"><div class="highlight"><pre>    <span class="nv">repeat = </span><span class="nb">window</span><span class="p">.</span><span class="nx">setInterval</span><span class="p">(</span><span class="nx">initializeSensorTag</span><span class="p">,</span><span class="mi">500</span><span class="p">)</span>
-    <span class="k">return</span></pre></div></td></tr><tr id="section-6"><td class="docs"><div class="pilwrap"><a href="#section-6" class="pilcrow">&#182;</a></div><p>when the try finishes without a catch, clear the retry timer</p>
+    <span class="k">return</span></pre></div></td></tr><tr id="section-10"><td class="docs"><div class="pilwrap"><a href="#section-10" class="pilcrow">&#182;</a></div><p>when the try finishes without a catch, clear the retry timer</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="nx">repeat</span><span class="o">?</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;sensor came on-line after &quot;</span> <span class="o">+</span> <span class="nx">failures</span> <span class="o">+</span> <span class="s">&quot; failures&quot;</span>
     <span class="nb">window</span><span class="p">.</span><span class="nx">clearInterval</span> <span class="nx">repeat</span>
   <span class="k">else</span>
     <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;sensor came on-line immediately&quot;</span>
-  <span class="k">return</span></pre></div></td></tr><tr id="section-7"><td class="docs"><div class="pilwrap"><a href="#section-7" class="pilcrow">&#182;</a></div><h2>section: View</h2>
+  <span class="k">return</span></pre></div></td></tr><tr id="section-11"><td class="docs"><div class="pilwrap"><a href="#section-11" class="pilcrow">&#182;</a></div><h2>section: View</h2>
 
 <p>routines to control or coordinate with user</p>
 </td><td class="code"><div class="highlight"><pre><span class="nv">templater = </span><span class="nf">(x, y, z, sensor=&#39;unknown&#39;, unit=&#39;&#39;) -&gt;</span>
@@ -122,7 +217,7 @@ Gyroscope takes the axes to enable as the third parameter:
   <span class="k">return</span> <span class="kc">false</span>
 
 <span class="nv">stopAdmin = </span><span class="nf">() -&gt;</span>
-  <span class="nv">loggedIn = </span><span class="kc">true</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span> <span class="kc">true</span>
   <span class="nx">enterLogout</span><span class="p">()</span>
   <span class="k">return</span> <span class="kc">false</span>
 
@@ -228,9 +323,9 @@ Gyroscope takes the axes to enable as the third parameter:
   
 
 <span class="nv">enterLogout = </span><span class="nf">() -&gt;</span>
-  <span class="nv">loggedIn = </span><span class="kc">false</span>
-  <span class="k">if</span> <span class="nx">recording</span>
-    <span class="nv">recording = </span><span class="kc">false</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span> <span class="kc">false</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;recording&#39;</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span> <span class="kc">false</span>
     <span class="nx">readings</span><span class="p">.</span><span class="nx">reset</span><span class="p">()</span>
     <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
   <span class="nx">pageGen</span><span class="p">.</span><span class="nx">resetAdmin</span><span class="p">()</span>
@@ -249,44 +344,17 @@ Gyroscope takes the axes to enable as the third parameter:
       <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">value</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">()</span>
   <span class="k">return</span>
 
-<span class="nv">clearUserInterface = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-8"><td class="docs"><div class="pilwrap"><a href="#section-8" class="pilcrow">&#182;</a></div><p>Clear current values.</p>
+<span class="nv">clearUserInterface = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-12"><td class="docs"><div class="pilwrap"><a href="#section-12" class="pilcrow">&#182;</a></div><p>Clear current values.</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#StatusData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&#39;Ready to connect&#39;</span>
   <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#FirmwareData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&#39;?&#39;</span>
-  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span></pre></div></td></tr><tr id="section-9"><td class="docs"><div class="pilwrap"><a href="#section-9" class="pilcrow">&#182;</a></div><p>start with the logging info suppressed</p>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span></pre></div></td></tr><tr id="section-13"><td class="docs"><div class="pilwrap"><a href="#section-13" class="pilcrow">&#182;</a></div><p>start with the logging info suppressed</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nx">stopDebug</span><span class="p">()</span>
   <span class="k">return</span>
 
 <span class="nv">countReadings = </span><span class="nf">-&gt;</span>
   <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span> <span class="o">+</span> <span class="nx">readings</span><span class="p">.</span><span class="nx">length</span>
-  <span class="k">return</span></pre></div></td></tr><tr id="section-10"><td class="docs"><div class="pilwrap"><a href="#section-10" class="pilcrow">&#182;</a></div><h2>Section: Data Structures</h2>
+  <span class="k">return</span>
 
-<p>Routines to create and handle data structures and interfaces to them</p>
-</td><td class="code"><div class="highlight"><pre><span class="nv">user = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">defaults:</span>
-    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
-    <span class="nv">password: </span><span class="s">&#39;Password&#39;</span>
-    <span class="nv">patientOnly: </span><span class="s">&#39;Boolean&#39;</span>
-<span class="nv">host = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">defaults:</span>
-    <span class="nv">hostUrl: </span><span class="s">&#39;Text&#39;</span>
-    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
-<span class="nv">test = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">defaults:</span>
-    <span class="nv">name: </span><span class="s">&quot;test 0&quot;</span>
-    <span class="nv">Description: </span><span class="s">&quot;Test 0&quot;</span>
-
-<span class="nv">userCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">model: </span><span class="nx">user</span>
-  <span class="nv">url: </span><span class="s">&#39;/users&#39;</span>
-
-<span class="nv">hostCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">model: </span><span class="nx">host</span>
-  <span class="nx">url</span><span class="o">:</span><span class="s">&quot;/host_list.json&quot;</span>
-
-<span class="nv">testCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">model: </span><span class="nx">test</span>
-  <span class="nv">url: </span><span class="s">&quot;/tests_list.json&quot;</span>
-<span class="nv">users = </span><span class="k">new</span> <span class="nx">userCollection</span>
 <span class="nx">users</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">user</span><span class="p">(</span>
     <span class="nv">name: </span><span class="s">&#39;Client 1&#39;</span>
     <span class="nv">password: </span><span class="s">&#39;Y&#39;</span>
@@ -369,7 +437,6 @@ Gyroscope takes the axes to enable as the third parameter:
     <span class="nv">patientOnly: </span><span class="kc">false</span>
   <span class="p">)</span>
 
-<span class="nv">hosts = </span><span class="k">new</span> <span class="nx">hostCollection</span>
 <span class="nx">hosts</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">host</span><span class="p">(</span>
   <span class="nv">force: </span><span class="kc">true</span>
   <span class="nv">name: </span><span class="s">&#39;Retrotope Server&#39;</span>
@@ -379,7 +446,6 @@ Gyroscope takes the axes to enable as the third parameter:
   <span class="nv">name: </span><span class="s">&#39;Development Only&#39;</span>
   <span class="nv">url: </span><span class="s">&#39;http://192.168.1.200:3000&#39;</span>
 <span class="p">)</span>
-<span class="nv">tests = </span><span class="k">new</span> <span class="nx">testCollection</span>
 <span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
   <span class="nv">name: </span><span class="s">&#39;T25FW&#39;</span>
   <span class="nv">Description: </span><span class="s">&#39;T25FW&#39;</span>
@@ -395,47 +461,14 @@ Gyroscope takes the axes to enable as the third parameter:
 <span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
   <span class="nv">name: </span><span class="s">&#39;Other&#39;</span>
   <span class="nv">Description: </span><span class="s">&#39;Other&#39;</span>
-  
-
-<span class="nv">adminData = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
-  <span class="nv">defaults:</span>
-    <span class="nv">host: </span><span class="nx">hosts</span>
-    <span class="nv">user: </span><span class="nx">users</span>
-    <span class="nv">testIDs: </span><span class="nx">tests</span>
-
-<span class="nv">admin = </span><span class="k">new</span> <span class="nx">adminData</span>
-
-<span class="nv">initDataStructures = </span><span class="nf">-&gt;</span>
-  <span class="nv">rtemp = </span><span class="kc">undefined</span>
-  <span class="nv">reading = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span>
-    <span class="nv">defaults:</span>
-      <span class="nv">sensor: </span><span class="s">&#39;gyro&#39;</span>
-    <span class="nv">initialize: </span><span class="nf">-&gt;</span>
-      <span class="nv">d = </span><span class="k">new</span> <span class="nb">Date</span>
-      <span class="nx">@set</span> <span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span>
-      <span class="k">return</span>
-  <span class="p">)</span>
-  <span class="nv">rtemp = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span><span class="p">(</span>
-    <span class="nv">model: </span><span class="s">&#39;reading&#39;</span>
-    <span class="nv">initialize: </span><span class="nf">-&gt;</span>
-      <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
-      <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;remove&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
-      <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
-      <span class="k">return</span>
-  <span class="p">)</span>
-  <span class="nv">readings = </span><span class="k">new</span> <span class="nx">rtemp</span>
-  <span class="nx">readings</span><span class="p">.</span><span class="nx">push</span><span class="p">(</span>
-    <span class="k">new</span> <span class="nx">reading</span> <span class="nv">raw: </span><span class="p">[</span> <span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">],</span> <span class="nv">sensor: </span><span class="s">&#39;DebugOnly&#39;</span>
-    <span class="p">)</span>
-  <span class="k">return</span></pre></div></td></tr><tr id="section-11"><td class="docs"><div class="pilwrap"><a href="#section-11" class="pilcrow">&#182;</a></div><h2>Section State Handlers</h2>
+  </pre></div></td></tr><tr id="section-14"><td class="docs"><div class="pilwrap"><a href="#section-14" class="pilcrow">&#182;</a></div><h2>Section State Handlers</h2>
 </td><td class="code"><div class="highlight"><pre><span class="nv">initAll = </span><span class="nf">-&gt;</span>
   <span class="nv">rtemp = </span><span class="kc">undefined</span>
   <span class="nx">clearUserInterface</span><span class="p">()</span>
-  <span class="nx">initDataStructures</span><span class="p">()</span>
   <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
   <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s">&quot;Must connect to sensor&quot;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&quot;violet&quot;</span><span class="p">)</span>
-  <span class="k">return</span></pre></div></td></tr><tr id="section-12"><td class="docs"><div class="pilwrap"><a href="#section-12" class="pilcrow">&#182;</a></div><h3>subsection State handlers that depend on the View</h3>
-</td><td class="code"><div class="highlight"><pre><span class="nv">enterClear = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-13"><td class="docs"><div class="pilwrap"><a href="#section-13" class="pilcrow">&#182;</a></div><p>Clear only clears the data -- does NOT disconnedt</p>
+  <span class="k">return</span></pre></div></td></tr><tr id="section-15"><td class="docs"><div class="pilwrap"><a href="#section-15" class="pilcrow">&#182;</a></div><h3>subsection State handlers that depend on the View</h3>
+</td><td class="code"><div class="highlight"><pre><span class="nv">enterClear = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-16"><td class="docs"><div class="pilwrap"><a href="#section-16" class="pilcrow">&#182;</a></div><p>Clear only clears the data -- does NOT disconnedt</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nx">readings</span><span class="p">.</span><span class="nx">reset</span><span class="p">()</span>
   <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
   <span class="nx">buttonModelClear</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">false</span><span class="p">);</span>
@@ -444,13 +477,13 @@ Gyroscope takes the axes to enable as the third parameter:
   <span class="nx">setButtons</span><span class="p">()</span>
   <span class="k">return</span> <span class="kc">false</span>
 
-<span class="nv">enterConnected = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-14"><td class="docs"><div class="pilwrap"><a href="#section-14" class="pilcrow">&#182;</a></div><p>enable the recording button</p>
+<span class="nv">enterConnected = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-17"><td class="docs"><div class="pilwrap"><a href="#section-17" class="pilcrow">&#182;</a></div><p>enable the recording button</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nv">noCalibration = </span><span class="kc">true</span> <span class="c1">#for temporarily</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enterConnected&#39;</span><span class="p">)</span>
-  <span class="nv">connected = </span><span class="kc">true</span>
-  <span class="nx">useButton</span> <span class="nx">buttonModelAdminDisabled</span></pre></div></td></tr><tr id="section-15"><td class="docs"><div class="pilwrap"><a href="#section-15" class="pilcrow">&#182;</a></div><p>eliminate Calibrate button functionality </p>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;connected&#39;</span><span class="p">,</span> <span class="kc">true</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelAdminDisabled</span></pre></div></td></tr><tr id="section-18"><td class="docs"><div class="pilwrap"><a href="#section-18" class="pilcrow">&#182;</a></div><p>eliminate Calibrate button functionality </p>
 </td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="nx">noCalibration</span>
-    <span class="k">if</span> <span class="nx">loggedIn</span>
+    <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;loggedIn&#39;</span>
       <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
     <span class="k">else</span>
       <span class="nx">useButton</span> <span class="nx">buttonModelAdmin</span>
@@ -470,7 +503,7 @@ Gyroscope takes the axes to enable as the third parameter:
 <span class="nv">exitCalibrate = </span><span class="nf">-&gt;</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;exitCalibrate&#39;</span><span class="p">)</span>
   <span class="nv">calibrating = </span><span class="kc">false</span>
-  <span class="k">if</span> <span class="nx">loggedIn</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;loggedIn&#39;</span>
     <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
   <span class="nx">useButton</span> <span class="nx">buttonModelAdmin</span>
   <span class="nx">useButton</span> <span class="nx">buttonModelCalibrateOff</span>
@@ -482,14 +515,14 @@ Gyroscope takes the axes to enable as the third parameter:
     <span class="nx">pageGen</span><span class="p">.</span><span class="nx">forceTest</span> <span class="s">&#39;red&#39;</span>
     <span class="k">return</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Recording&#39;</span><span class="p">)</span>
-  <span class="nv">recording = </span><span class="kc">true</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span>  <span class="kc">true</span>
   <span class="nx">useButton</span> <span class="nx">buttonModelActionStop</span>
   <span class="nx">setButtons</span><span class="p">()</span>
   <span class="k">return</span>
 
 <span class="nv">enterStop = </span><span class="nf">-&gt;</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Stop&#39;</span><span class="p">)</span>
-  <span class="nv">recording = </span><span class="kc">false</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span>  <span class="kc">false</span>
   <span class="nx">useButton</span>  <span class="nx">buttonModelActionRecorded</span>
   <span class="nx">buttonModelUpload</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
   <span class="nx">buttonModelClear</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
@@ -499,7 +532,7 @@ Gyroscope takes the axes to enable as the third parameter:
 <span class="nv">enterUpload = </span><span class="nf">-&gt;</span>
   <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Upload&#39;</span><span class="p">)</span>
   <span class="nv">hopper = </span><span class="kc">undefined</span>
-  <span class="nv">brainDump = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-16"><td class="docs"><div class="pilwrap"><a href="#section-16" class="pilcrow">&#182;</a></div><p>eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */</p>
+  <span class="nv">brainDump = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-19"><td class="docs"><div class="pilwrap"><a href="#section-19" class="pilcrow">&#182;</a></div><p>eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 */</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="o">!</span><span class="nx">readings</span><span class="p">.</span><span class="nx">length</span>
    <span class="k">return</span> 
   <span class="nv">hostUrl= </span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;hostUrl&#39;</span>
@@ -507,7 +540,7 @@ Gyroscope takes the axes to enable as the third parameter:
     <span class="nv">url: </span><span class="s">&#39;/trajectory&#39;</span>
     <span class="nv">urlRoot: </span><span class="nx">hostUrl</span>
   <span class="p">}</span>
-  <span class="nx">console</span><span class="o">?</span><span class="nx">log</span> <span class="s">&#39;hostURL=&#39;</span> <span class="o">+</span> <span class="nx">hostURL</span></pre></div></td></tr><tr id="section-17"><td class="docs"><div class="pilwrap"><a href="#section-17" class="pilcrow">&#182;</a></div><p>console?log sessionInfo</p>
+  <span class="nx">console</span><span class="o">?</span><span class="nx">log</span> <span class="s">&#39;hostURL=&#39;</span> <span class="o">+</span> <span class="nx">hostURL</span></pre></div></td></tr><tr id="section-20"><td class="docs"><div class="pilwrap"><a href="#section-20" class="pilcrow">&#182;</a></div><p>console?log sessionInfo</p>
 </td><td class="code"><div class="highlight"><pre>  <span class="nv">brainDump = </span><span class="k">new</span> <span class="nx">hopper</span> 
 
   <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;readings&#39;</span><span class="p">,</span><span class="nx">readings</span> <span class="p">)</span>
@@ -523,291 +556,52 @@ Gyroscope takes the axes to enable as the third parameter:
   <span class="nx">brainDump</span><span class="p">.</span><span class="nx">save</span><span class="p">()</span>
   <span class="nx">pageGen</span><span class="p">.</span><span class="nx">forceTest</span><span class="p">()</span>
   <span class="nx">enterClear</span><span class="p">()</span>
-  <span class="k">return</span></pre></div></td></tr><tr id="section-18"><td class="docs"><div class="pilwrap"><a href="#section-18" class="pilcrow">&#182;</a></div><h3>Subsection State Handlers that depend on the Hardware</h3>
-</td><td class="code"><div class="highlight"><pre><span class="nv">statusHandler = </span><span class="nf">(status) -&gt;</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;new Sensor Status&quot;</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">status</span>
-  <span class="k">if</span> <span class="s">&#39;Sensors online&#39;</span> <span class="o">==</span> <span class="nx">status</span>
-    <span class="nx">enterConnected</span><span class="p">()</span>
-    <span class="nv">status = </span><span class="s">&#39;Sensor online&#39;</span>
-  <span class="k">if</span> <span class="s">&#39;Device data available&#39;</span> <span class="o">==</span> <span class="nx">status</span>
-    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#FirmwareData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="nx">sensortag</span><span class="p">.</span><span class="nx">getFirmwareString</span><span class="p">()</span>
-    <span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;sensorUUID&#39;</span><span class="p">,</span> <span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span>
-    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&#39;black&#39;</span><span class="p">)</span>
-    <span class="nx">console</span><span class="o">?</span><span class="p">.</span><span class="nx">log</span> <span class="nx">sensortag</span><span class="o">?</span><span class="p">.</span><span class="nx">device</span><span class="o">?</span><span class="p">.</span><span class="nx">address</span>
-  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#StatusData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="nx">status</span>
-  <span class="k">return</span>
-
-<span class="nv">errorHandler = </span><span class="nf">(error) -&gt;</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Sensor error!&quot;</span>
-  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&#39;Error: &#39;</span> <span class="o">+</span> <span class="nx">error</span>
-  <span class="k">if</span> <span class="s">&#39;disconnected&#39;</span> <span class="o">==</span> <span class="nx">error</span>
-    <span class="nv">connected = </span><span class="kc">false</span>
-    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s">&quot;Must connect to sensor&quot;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&quot;red&quot;</span><span class="p">)</span></pre></div></td></tr><tr id="section-19"><td class="docs"><div class="pilwrap"><a href="#section-19" class="pilcrow">&#182;</a></div><p>If disconneted attempt to connect again. (but not to same device)</p>
-</td><td class="code"><div class="highlight"><pre>    <span class="nx">setTimeout</span> <span class="p">(</span><span class="nf">-&gt;</span>
-      <span class="nx">sensortag</span><span class="p">.</span><span class="nx">connectToClosestDevice</span><span class="p">()</span>
-      <span class="k">return</span>
-    <span class="p">),</span> <span class="mi">1000</span>
-  <span class="k">return</span>
-
-<span class="nv">calibratorAverage = </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
-  <span class="k">try</span>
-    <span class="nv">tH = </span><span class="kc">undefined</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">grandTotal</span> <span class="o">==</span> <span class="kc">undefined</span>
-      <span class="nv">dataCondition.dataHistory.grandTotal = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-      <span class="nv">dataCondition.dataHistory.grandAverage = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-      <span class="nv">dataCondition.dataHistory.totalReadings = </span><span class="mi">1</span>
-    <span class="nv">tH = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
-    <span class="k">if</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span> <span class="o">==</span> <span class="mi">1000</span>
-      <span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">subtract</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">grandAverage</span>
-      <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="o">--</span>
-    <span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">add</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">curValue</span>
-    <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="o">++</span>
-    <span class="nv">tH.grandAverage = </span><span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">divide</span><span class="p">(</span><span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="p">)</span>
-    <span class="nv">dataCondition.cookedValue = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">curValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">tH</span><span class="p">.</span><span class="nx">grandAverage</span><span class="p">)</span>
-  <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-20"><td class="docs"><div class="pilwrap"><a href="#section-20" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
-</td><td class="code"><div class="highlight"><pre>  <span class="k">return</span>
-
-<span class="nv">split = </span><span class="nf">(raw, lo, hi) -&gt;</span>
-  <span class="nx">raw</span> <span class="o">-</span> <span class="p">((</span><span class="nx">hi</span> <span class="o">+</span> <span class="nx">lo</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
-
-<span class="nv">calibratorMid = </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
-  <span class="k">try</span>
-    <span class="nv">tH = </span><span class="kc">undefined</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">max</span> <span class="o">==</span> <span class="kc">undefined</span>
-      <span class="nv">dataCondition.dataHistory.max = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-      <span class="nv">dataCondition.dataHistory.min = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-    <span class="nv">tH = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">x</span>
-      <span class="nv">tH.max.x = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">y</span>
-      <span class="nv">tH.max.y = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">z</span>
-      <span class="nv">tH.max.z = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">x</span>
-      <span class="nv">tH.min.x = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">y</span>
-      <span class="nv">tH.min.y = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">z</span>
-      <span class="nv">tH.min.z = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span>
-    <span class="nv">dataCondition.cookedValue.x = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">x</span><span class="p">)</span>
-    <span class="nv">dataCondition.cookedValue.y = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">y</span><span class="p">)</span>
-    <span class="nv">dataCondition.cookedValue.z = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">z</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">z</span><span class="p">)</span>
-  <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-21"><td class="docs"><div class="pilwrap"><a href="#section-21" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
-</td><td class="code"><div class="highlight"><pre>  <span class="k">return</span>
-
-<span class="nv">calibratorSmooth = </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
-  <span class="k">try</span>
-    <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">runniongSum</span> <span class="o">==</span> <span class="kc">undefined</span>
-      <span class="nv">dataCondition.dataHistory.runningSum = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-    <span class="nv">dataCondition.cookedValue = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">runningSum</span><span class="p">.</span><span class="nx">multiply</span><span class="p">(</span><span class="mf">0.75</span><span class="p">).</span><span class="nx">add</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">multiply</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)).</span><span class="nx">copy</span><span class="p">()</span>
-  <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-22"><td class="docs"><div class="pilwrap"><a href="#section-22" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
-</td><td class="code"><div class="highlight"><pre>  <span class="k">return</span></pre></div></td></tr><tr id="section-23"><td class="docs"><div class="pilwrap"><a href="#section-23" class="pilcrow">&#182;</a></div><h1>## readingHandler()</h1>
-
-<h1>create and return a function to handle a sensor's new data</h1>
-</td><td class="code"><div class="highlight"><pre><span class="nv">readingHandler = </span><span class="nf">(o) -&gt;</span>
-  <span class="nv">dataCondition =</span>
-    <span class="nv">curValue: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="nv">cookedValue: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="nv">dataHistory: </span><span class="p">{}</span></pre></div></td></tr><tr id="section-24"><td class="docs"><div class="pilwrap"><a href="#section-24" class="pilcrow">&#182;</a></div><p>if there is no calibration function, just use a null offset</p>
-</td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="o">!</span><span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span>
-    <span class="nv">o.calibrator = </span><span class="nf">(d) -&gt;</span>
-      <span class="nv">d.cookedValue = </span><span class="nx">d</span><span class="p">.</span><span class="nx">curValue</span>
-      <span class="k">return</span>
-
-  <span class="k">if</span> <span class="o">!</span><span class="nx">o</span><span class="p">.</span><span class="nx">units</span>
-    <span class="nv">o.units = </span><span class="s">&#39;&#39;</span>
-  <span class="nv">o.bias = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#&#39;</span> <span class="o">+</span> <span class="nx">o</span><span class="p">.</span><span class="nx">debias</span><span class="p">).</span><span class="nx">click</span> <span class="nf">-&gt;</span>
-    <span class="nv">o.bias = </span><span class="nx">o</span><span class="p">.</span><span class="nx">cookedValue</span></pre></div></td></tr><tr id="section-25"><td class="docs"><div class="pilwrap"><a href="#section-25" class="pilcrow">&#182;</a></div><p>console.log o</p>
-</td><td class="code"><div class="highlight"><pre>    <span class="k">return</span>
-  <span class="nf">(data) -&gt;</span></pre></div></td></tr><tr id="section-26"><td class="docs"><div class="pilwrap"><a href="#section-26" class="pilcrow">&#182;</a></div><p>data points from Evothings library are Seen.Point NOT compatible as sources</p>
-</td><td class="code"><div class="highlight"><pre>    <span class="k">try</span>
-      <span class="nv">r = </span><span class="nx">o</span><span class="p">.</span><span class="nx">source</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span></pre></div></td></tr><tr id="section-27"><td class="docs"><div class="pilwrap"><a href="#section-27" class="pilcrow">&#182;</a></div><p>$('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')</p>
-</td><td class="code"><div class="highlight"><pre>      <span class="nv">p = </span><span class="kc">undefined</span>
-      <span class="nv">m = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-28"><td class="docs"><div class="pilwrap"><a href="#section-28" class="pilcrow">&#182;</a></div><p>get the sensor data and pass to conditioner</p>
-</td><td class="code"><div class="highlight"><pre>      <span class="nv">r = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">z</span><span class="p">)</span>
-      <span class="nx">r</span><span class="p">.</span><span class="nx">subtract</span> <span class="nx">o</span><span class="p">.</span><span class="nx">bias</span>
-      <span class="nv">dataCondition.curValue = </span><span class="nx">r</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-      <span class="nv">dataCondition.cookedValue = </span><span class="nx">r</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-      <span class="nv">i = </span><span class="mi">0</span>
-      <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span><span class="p">.</span><span class="nx">length</span>
-        <span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="nx">dataCondition</span><span class="p">,</span> <span class="nx">calibrate</span><span class="p">,</span> <span class="nx">calibrating</span>
-        <span class="nx">i</span><span class="o">++</span>
-      <span class="nv">p = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span>
-      <span class="k">if</span> <span class="nx">recording</span>
-        <span class="nx">readings</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">reading</span><span class="p">(</span>
-          <span class="nv">sensor: </span><span class="nx">o</span><span class="p">.</span><span class="nx">sensor</span>
-          <span class="nv">raw: </span><span class="nx">_</span><span class="p">.</span><span class="nx">toArray</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span>
-      <span class="nv">m = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
-      <span class="nx">o</span><span class="p">.</span><span class="nx">viewer</span> <span class="nx">p</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">z</span>
-      <span class="k">return</span>
-    <span class="k">catch</span> <span class="nx">error</span>
-      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">error</span></pre></div></td></tr><tr id="section-29"><td class="docs"><div class="pilwrap"><a href="#section-29" class="pilcrow">&#182;</a></div><h2>*</h2>
-
-<p>Convert byte buffer to hex string.
-@param buffer - an Uint8Array
-@param offset - byte offset
-@param numBytes - number of bytes to read
-@return string with hex representation of bytes</p>
-
-<h1>#</h1>
-</td><td class="code"><div class="highlight"><pre><span class="nv">hx = </span><span class="p">[</span>
-  <span class="s">&#39;0&#39;</span>
-  <span class="s">&#39;1&#39;</span>
-  <span class="s">&#39;2&#39;</span>
-  <span class="s">&#39;3&#39;</span>
-  <span class="s">&#39;4&#39;</span>
-  <span class="s">&#39;5&#39;</span>
-  <span class="s">&#39;6&#39;</span>
-  <span class="s">&#39;7&#39;</span>
-  <span class="s">&#39;8&#39;</span>
-  <span class="s">&#39;9&#39;</span>
-  <span class="s">&#39;A&#39;</span>
-  <span class="s">&#39;B&#39;</span>
-  <span class="s">&#39;C&#39;</span>
-  <span class="s">&#39;D&#39;</span>
-  <span class="s">&#39;E&#39;</span>
-  <span class="s">&#39;F&#39;</span>
-<span class="p">]</span>
-
-
-<span class="nv">bufferToHexStr = </span><span class="nf">(buffer, offset, numBytes) -&gt;</span>
-  <span class="nv">hex = </span><span class="s">&#39;&#39;</span>
-  <span class="k">if</span> <span class="o">!</span><span class="nx">numBytes</span>
-    <span class="nv">numBytes = </span><span class="nx">buffer</span><span class="p">.</span><span class="nx">length</span>
-  <span class="k">if</span> <span class="o">!</span><span class="nx">offset</span>
-    <span class="nv">offset = </span><span class="mi">0</span>
-  <span class="nv">i = </span><span class="mi">0</span>
-  <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">numBytes</span>
-    <span class="nx">hex</span> <span class="o">+=</span> <span class="nx">byteToHexStr</span><span class="p">(</span><span class="nx">buffer</span><span class="p">[</span><span class="nx">offset</span> <span class="o">+</span> <span class="nx">i</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39; &#39;</span>
-    <span class="o">++</span><span class="nx">i</span>
-  <span class="nx">hex</span>
-
-<span class="nv">byteToHexStr = </span><span class="nf">(d) -&gt;</span>
-  <span class="nv">lo = </span><span class="nx">hx</span><span class="p">[</span><span class="nx">d</span> <span class="o">&amp;</span> <span class="mh">0xf</span><span class="p">]</span>
-  <span class="nv">hi = </span><span class="nx">hx</span><span class="p">[(</span><span class="nx">d</span> <span class="o">&amp;</span> <span class="mh">0xf0</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">]</span>
-  <span class="nx">hi</span> <span class="o">+</span> <span class="nx">lo</span></pre></div></td></tr><tr id="section-30"><td class="docs"><div class="pilwrap"><a href="#section-30" class="pilcrow">&#182;</a></div><h2>stopRecording</h2>
+  <span class="k">return</span></pre></div></td></tr><tr id="section-21"><td class="docs"><div class="pilwrap"><a href="#section-21" class="pilcrow">&#182;</a></div><h3>Subsection State Handlers that depend on the Hardware</h3>
+</td><td class="code"><div class="highlight"><pre><span class="nv">visualHandler = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./visual.coffee&#39;</span><span class="p">)</span>
+<span class="nv">smoother = </span><span class="k">new</span> <span class="nx">visualHandler</span><span class="p">(</span><span class="nx">globalState</span><span class="p">)</span></pre></div></td></tr><tr id="section-22"><td class="docs"><div class="pilwrap"><a href="#section-22" class="pilcrow">&#182;</a></div><h2>stopRecording</h2>
 
 <p>halt the record session -- no restart allowed
 upload button remains enabled, clear button remains enabled</p>
 </td><td class="code"><div class="highlight"><pre><span class="nv">stopRecording = </span><span class="nf">-&gt;</span>
-  <span class="k">if</span> <span class="nx">recording</span>
-    <span class="nv">recording = </span><span class="kc">false</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;recording&#39;</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span> <span class="kc">false</span>
     <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#record&#39;</span><span class="p">).</span><span class="nx">prop</span><span class="p">(</span><span class="s">&#39;disabled&#39;</span><span class="p">,</span> <span class="kc">true</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s">&#39;finished&#39;</span><span class="p">).</span><span class="nx">fadeTo</span> <span class="mi">200</span><span class="p">,</span> <span class="mf">0.3</span>
-  <span class="k">return</span>
-
-<span class="nv">viewSensor = </span><span class="nf">(viewport, scaleFactor) -&gt;</span>
-  <span class="nv">height = </span><span class="mi">200</span>
-  <span class="nv">width = </span><span class="mi">200</span>
-  <span class="nv">model = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Models</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">]()</span>
-  <span class="nv">scene = </span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Scene</span><span class="p">)(</span>
-    <span class="nv">model: </span><span class="nx">model</span>
-    <span class="nv">viewport: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Viewports</span><span class="p">.</span><span class="nx">center</span><span class="p">(</span><span class="nx">width</span><span class="p">,</span> <span class="nx">height</span><span class="p">))</span>
-  <span class="nv">cubie = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">cube</span><span class="p">().</span><span class="nx">scale</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
-
-  <span class="nv">spearPool = </span><span class="nf">(many) -&gt;</span>
-    <span class="nv">i = </span><span class="kc">undefined</span>
-    <span class="nv">j = </span><span class="kc">undefined</span>
-    <span class="nv">shapes = </span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="nx">many</span><span class="p">)</span>
-    <span class="nv">count = </span><span class="o">-</span><span class="mi">1</span>
-    <span class="nv">colors = </span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="nx">many</span><span class="p">)</span>
-
-    <span class="nv">newArrow = </span><span class="nf">(model, x, y, z) -&gt;</span>
-      <span class="nv">alphaDecay = </span><span class="mi">255</span>
-      <span class="nv">count = </span><span class="nx">count</span> <span class="o">+</span> <span class="mi">1</span>
-      <span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="nx">many</span>
-        <span class="nv">count = </span><span class="mi">0</span>
-      <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
-        <span class="nx">model</span><span class="p">.</span><span class="nx">remove</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span> <span class="o">=</span> <span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">arrow</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">height</span> <span class="o">*</span> <span class="mf">0.025</span><span class="p">)</span>
-      <span class="nx">model</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">])</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">].</span><span class="nx">bake</span><span class="p">()</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">].</span><span class="nx">reset</span><span class="p">()</span></pre></div></td></tr><tr id="section-31"><td class="docs"><div class="pilwrap"><a href="#section-31" class="pilcrow">&#182;</a></div><p>assign alpha to the arrows color</p>
-</td><td class="code"><div class="highlight"><pre>      <span class="nv">j = </span><span class="mi">0</span>
-      <span class="nv">i = </span><span class="nx">count</span>
-      <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">many</span>
-        <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
-          <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">fill</span> <span class="nx">colors</span><span class="p">[</span><span class="nx">j</span><span class="o">++</span><span class="p">]</span>
-        <span class="nx">i</span><span class="o">++</span>
-      <span class="nv">i = </span><span class="mi">0</span>
-      <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">count</span>
-        <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
-          <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">fill</span> <span class="nx">colors</span><span class="p">[</span><span class="nx">j</span><span class="o">++</span><span class="p">]</span>
-        <span class="nx">i</span><span class="o">++</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
-
-    <span class="nv">i = </span><span class="mi">0</span>
-    <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">many</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">arrow</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">height</span> <span class="o">*</span> <span class="mf">0.025</span><span class="p">)</span>
-      <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">bake</span><span class="p">()</span>
-      <span class="nx">colors</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span> <span class="o">-</span> <span class="mi">250</span> <span class="o">/</span> <span class="nx">many</span> <span class="o">*</span> <span class="nx">i</span><span class="p">))</span>
-      <span class="nx">i</span><span class="o">++</span>
-    <span class="nx">newArrow</span>
-
-  <span class="nv">newValue = </span><span class="nf">(x, y, z) -&gt;</span>
-    <span class="nv">p1 = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">y</span><span class="p">,</span> <span class="nx">z</span><span class="p">)</span>
-    <span class="nv">spear = </span><span class="kc">undefined</span>
-    <span class="nv">pOriginal = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
-    <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
-    <span class="nv">m = </span><span class="kc">undefined</span>
-    <span class="nv">q = </span><span class="kc">undefined</span>
-    <span class="nv">cross = </span><span class="kc">undefined</span>
-    <span class="nv">dot = </span><span class="kc">undefined</span>
-    <span class="nv">leng = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">magnitude</span><span class="p">()</span>
-    <span class="nv">p1 = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
-    <span class="nx">pBar</span><span class="p">.</span><span class="nx">add</span> <span class="nx">p1</span>
-    <span class="k">if</span> <span class="nx">pBar</span><span class="p">.</span><span class="nx">magnitude</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.000001</span>
-      <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># this is a 180 degree rotation, so use y axis as rotation vector ###</span>
-    <span class="nx">pBar</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
-    <span class="nv">q = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Quaternion</span><span class="p">.</span><span class="nx">pointAngle</span><span class="p">(</span><span class="nx">pBar</span><span class="p">,</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">PI</span><span class="p">)</span>
-    <span class="nv">m = </span><span class="nx">q</span><span class="p">.</span><span class="nx">toMatrix</span><span class="p">()</span>
-    <span class="nv">spear = </span><span class="nx">spearFromPool</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">x</span><span class="p">,</span> <span class="nx">y</span><span class="p">,</span> <span class="nx">z</span><span class="p">).</span><span class="nx">transform</span><span class="p">(</span><span class="nx">m</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">scaleFactor</span> <span class="o">*</span> <span class="nx">leng</span><span class="p">)</span>
-    <span class="nx">spear</span><span class="p">.</span><span class="nx">fill</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
-    <span class="nv">context = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Context</span><span class="p">(</span><span class="nx">viewport</span><span class="p">,</span> <span class="nx">scene</span><span class="p">)</span> <span class="k">if</span> <span class="o">!</span><span class="nx">context</span>
-    <span class="nx">context</span><span class="p">.</span><span class="nx">render</span><span class="p">()</span>
-    <span class="k">return</span>
-
-  <span class="nv">spearFromPool = </span><span class="k">new</span> <span class="nx">spearPool</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
-  <span class="nx">cubie</span><span class="p">.</span><span class="nx">fill</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
-  <span class="nx">model</span><span class="p">.</span><span class="nx">add</span> <span class="nx">cubie</span>
-  <span class="nx">newValue</span></pre></div></td></tr><tr id="section-32"><td class="docs"><div class="pilwrap"><a href="#section-32" class="pilcrow">&#182;</a></div><h2>subsection State routines that depend on hardware and update the view or data structures</h2>
-
-<p>calculations implemented as based on TI wiki pages
+  <span class="k">return</span></pre></div></td></tr><tr id="section-23"><td class="docs"><div class="pilwrap"><a href="#section-23" class="pilcrow">&#182;</a></div><h2>subsection State routines that depend on hardware and update the view or data structures</h2>
+</td><td class="code"><div class="highlight"><pre></pre></div></td></tr><tr id="section-24"><td class="docs"><div class="pilwrap"><a href="#section-24" class="pilcrow">&#182;</a></div><p>calculations implemented as based on TI wiki pages
 http://processors.wiki.ti.com/index.php/SensorTag<em>User</em>Guide</p>
-</td><td class="code"><div class="highlight"><pre><span class="nv">accelerometerHandler = </span><span class="nx">readingHandler</span><span class="p">(</span>
+</td><td class="code"><div class="highlight"><pre><span class="nv">accelerometerHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
   <span class="nv">sensor: </span><span class="s">&#39;accel&#39;</span>
   <span class="nv">debias: </span><span class="s">&#39;calibrateAccel&#39;</span>
   <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getAccelerometerValues</span>
   <span class="nv">units: </span><span class="s">&#39;G&#39;</span>
   <span class="nv">calibrator: </span><span class="p">[</span>
-    <span class="nx">calibratorAverage</span>
-    <span class="nx">calibratorSmooth</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
   <span class="p">]</span>
-  <span class="nv">viewer: </span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;accel-view&#39;</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;accel-view&#39;</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)</span>
   <span class="nv">htmlID: </span><span class="s">&#39;AccelerometerData&#39;</span><span class="p">)</span>
 
-<span class="nv">magnetometerHandler = </span><span class="nx">readingHandler</span><span class="p">(</span>
+<span class="nv">magnetometerHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
   <span class="nv">sensor: </span><span class="s">&#39;mag&#39;</span>
   <span class="nv">debias: </span><span class="s">&#39;calibrateMag&#39;</span>
   <span class="nv">calibrator: </span><span class="p">[</span>
-    <span class="nx">calibratorAverage</span>
-    <span class="nx">calibratorSmooth</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
   <span class="p">]</span>
   <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getMagnetometerValues</span>
   <span class="nv">units: </span><span class="s">&#39;&amp;micro;T&#39;</span>
-  <span class="nv">viewer: </span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;magnet-view&#39;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;magnet-view&#39;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
   <span class="nv">htmlID: </span><span class="s">&#39;MagnetometerData&#39;</span><span class="p">)</span>
 
-<span class="nv">gyroscopeHandler = </span><span class="nx">readingHandler</span><span class="p">(</span>
+<span class="nv">gyroscopeHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
   <span class="nv">sensor: </span><span class="s">&#39;gyro&#39;</span>
   <span class="nv">debias: </span><span class="s">&#39;calibrateGyro&#39;</span>
   <span class="nv">calibrator: </span><span class="p">[</span>
-    <span class="nx">calibratorAverage</span>
-    <span class="nx">calibratorSmooth</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
   <span class="p">]</span>
   <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getGyroscopeValues</span>
-  <span class="nv">viewer: </span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;gyro-view&#39;</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;gyro-view&#39;</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>
   <span class="nv">htmlID: </span><span class="s">&#39;GyroscopeData&#39;</span><span class="p">)</span>
 
 
@@ -817,9 +611,9 @@ http://processors.wiki.ti.com/index.php/SensorTag<em>User</em>Guide</p>
   <span class="k">return</span> <span class="kc">false</span>
 
 <span class="nv">adminDone= </span><span class="nf">-&gt;</span>
-  <span class="nv">loggedIn = </span><span class="kc">true</span> 
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span>  <span class="kc">true</span> 
   <span class="nx">useButton</span>  <span class="nx">buttonModelAdminLogout</span>
-  <span class="k">if</span> <span class="nx">connected</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;connected&#39;</span>
     <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
   <span class="nx">pageGen</span><span class="p">.</span><span class="nx">activateSensorPage</span><span class="p">()</span>
   <span class="nx">setButtons</span><span class="p">()</span>
@@ -835,9 +629,19 @@ http://processors.wiki.ti.com/index.php/SensorTag<em>User</em>Guide</p>
   <span class="k">if</span> <span class="nx">sensorIsReady</span> <span class="o">&amp;&amp;</span> <span class="nx">domIsReady</span>
     <span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;platformUUID&#39;</span><span class="p">,</span><span class="nb">window</span><span class="p">.</span><span class="nx">device</span><span class="p">.</span><span class="nx">uuid</span><span class="p">)</span>
     <span class="nx">$</span><span class="p">(</span><span class="s">&quot;#platformUUID&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">device</span><span class="p">.</span><span class="nx">uuid</span><span class="p">)</span>
-    <span class="k">if</span> <span class="nx">sensorIsReady</span> <span class="o">&amp;&amp;</span> <span class="o">!</span><span class="nx">connected</span>
+    <span class="k">if</span> <span class="nx">sensorIsReady</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="p">(</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;connected&#39;</span> <span class="p">)</span>
       <span class="nx">initializeSensorTag</span><span class="p">()</span>
-  </pre></div></td></tr><tr id="section-33"><td class="docs"><div class="pilwrap"><a href="#section-33" class="pilcrow">&#182;</a></div><h2>this is how seen exports things -- it's clean.  we use it as example</h2>
+    <span class="nx">clinicCollection</span><span class="p">.</span><span class="nx">fetch</span> 
+      <span class="nv">success: </span><span class="nf">(model,response,options)-&gt;</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;success&quot;</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">response</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">model</span>
+      <span class="nv">error: </span><span class="nf">(model,response,options)-&gt;</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;error from server&quot;</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">response</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">model</span>
+        
+  </pre></div></td></tr><tr id="section-25"><td class="docs"><div class="pilwrap"><a href="#section-25" class="pilcrow">&#182;</a></div><h2>this is how seen exports things -- it's clean.  we use it as example</h2>
 
 <p>seen = {}
 if window? then window.seen = seen # for the web
@@ -852,7 +656,7 @@ if module?.exports? then module.exports = seen # for node</p>
 <span class="nb">window</span><span class="p">.</span><span class="nv">sessionInfo = </span><span class="nx">sessionInfo</span>
 <span class="nb">window</span><span class="p">.</span><span class="nv">Pages = </span><span class="nx">pageGen</span>
 <span class="nb">window</span><span class="p">.</span><span class="nv">Me = </span><span class="k">this</span>
-<span class="nb">window</span><span class="p">.</span><span class="nv">Buttons = </span><span class="nx">buttonCollection</span></pre></div></td></tr><tr id="section-34"><td class="docs"><div class="pilwrap"><a href="#section-34" class="pilcrow">&#182;</a></div><hr />
+<span class="nb">window</span><span class="p">.</span><span class="nv">Buttons = </span><span class="nx">buttonCollection</span></pre></div></td></tr><tr id="section-26"><td class="docs"><div class="pilwrap"><a href="#section-26" class="pilcrow">&#182;</a></div><hr />
 
 <p>generated by js2coffee 2.0.1</p>
 </td><td class="code"><div class="highlight"><pre><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">on</span> <span class="s">&#39;deviceready&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
@@ -871,4 +675,4 @@ if module?.exports? then module.exports = seen # for node</p>
   <span class="nx">rediness</span><span class="p">()</span>
   <span class="k">return</span> <span class="kc">false</span>
 
-</pre></div></td></tr></tbody></table><div id="generated">generated Sun Apr 26 2015 14:18:06 GMT+1000 (ChST)  </div><div id="projectname"><a href="./index.html">Stag App</a></div></div></body></html>
+</pre></div></td></tr></tbody></table><div id="generated">generated Sun May 31 2015 16:05:50 GMT+1000 (ChST)  </div></div></body></html>

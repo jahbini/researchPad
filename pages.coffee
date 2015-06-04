@@ -17,12 +17,39 @@ class Pages
   admin: {}
 
   getAdmin: (kind) =>
-    return @admin.get(kind).toArray()
+    t = @admin.get(kind)
+    if t
+       return t.toArray(0)
+    else
+      console.log 'no element named ' + kind + 'in Admin'
+      return []
 
   constructor: (@admin,@sessionInfo) ->
       tea.getAdmin =  @getAdmin
       #Teacup.Teacup.prototype.admin = @admin
       #Teacup.Teacup.prototype.Page = @
+
+
+  showClinics: =>
+    $(@el).html render =>
+      option "Select ---"
+      for clinic in @getAdmin('clinics')
+        if clinic.get('force')
+          option '.forceSelect.selected', selected: 'selected', value: host.get('name'), host.get('location')
+        else
+          option value: host.get('name'), host.get('location')
+
+  showClinicians: =>
+    $('#clinician').html render =>
+      option "Select ---"
+      for user in @getAdmin('user') when !user.get('patientOnly')
+        option value: user.get('name'), user.get('name')
+
+  showClients: =>
+    $('#patient').html render =>
+      option "Select ---"
+      for p in @getAdmin('user') when p.get('patientOnly')
+        option value: p.get('name'), p.get('name')
 
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
@@ -50,20 +77,20 @@ class Pages
         hr()
         div '#console-log.container'
 
-  adminContents: renderable ()->
+  adminContents: renderable ()=>
      div '#adminForm', ->
       hr() 
       form ->
         div '.row', ->
           div '.five.columns', ->
-            label 'Remote Host'
+            label 'Clinic'
             select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
               option "Select ---"
-              for host in @getAdmin('host')
-                if host.get('force')
-                  option '.forceSelect.selected', selected: 'selected', value: host.get('url'), host.get('name')
+              for clinic in @getAdmin('clinics')
+                if clinic.get('force')
+                  option '.forceSelect.selected', selected: 'selected', value: clinic.get('name'), clinic.get('name')
                 else
-                  option value: host.get('url'), host.get('name')
+                  option value: clinic.get('name'), clinic.get('name')
         div '.row', ->
           div '.four.columns', ->
             label for: 'clinician','Clinician'
