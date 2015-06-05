@@ -6,15 +6,13 @@ implementing = (mixins..., classReference) ->
       classReference::[key] = value
   classReference
 
+
 class Pages
   Teacup = require('teacup')
+  Backbone = require('Backbone')
   $=require('jquery')
   tea = new Teacup.Teacup
   {a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
-
-  sessionInfo: {}
-
-  admin: {}
 
   getAdmin: (kind) =>
     t = @admin.get(kind)
@@ -24,32 +22,89 @@ class Pages
       console.log 'no element named ' + kind + 'in Admin'
       return []
 
-  constructor: (@admin,@sessionInfo) ->
-      tea.getAdmin =  @getAdmin
       #Teacup.Teacup.prototype.admin = @admin
       #Teacup.Teacup.prototype.Page = @
+  constructor: (@admin,@sessionInfo) ->
+      tea.getAdmin =  @getAdmin
 
+      testViewTemplate = Backbone.View.extend
+        el: '#testID'
+        model: @admin.get('tests')
+        session: @sessionInfo
+        initialize: ->
+          @listenTo @model, 'change:tests', @render
+        events: 
+          'change': =>
+            @session.set 'testID',$('option:selected').val()
+            @modelCheck()
+            return false
+        render: ->
+          $el.html render =>
+            option "Select ---"
+            for test in @model
+              if test.get('force')
+                option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
+              else
+                option value: test.get('testID'), host.get('testID')
 
-  showClinics: =>
-    $(@el).html render =>
-      option "Select ---"
-      for clinic in @getAdmin('clinics')
-        if clinic.get('force')
-          option '.forceSelect.selected', selected: 'selected', value: host.get('name'), host.get('location')
-        else
-          option value: host.get('name'), host.get('location')
+      clinicViewTemplate = Backbone.View.extend
+        el: '#desiredClinic'
+        model: @admin.get('clinics')
+        session: @sessionInfo
+        initialize: ->
+          @listenTo @model, 'change:clinics', @render
+        events: 
+          'change': =>
+            @session.set 'clinic',$('option:selected').val()
+            @modelCheck()
+            return false
+        render: ->
+          $el.html render =>
+            option "Select ---"
+            for clinic in @model
+              if clinic.get('force')
+                option '.forceSelect.selected', selected: 'selected', value: host.get('name'), host.get('location')
+              else
+                option value: host.get('name'), host.get('location')
 
-  showClinicians: =>
-    $('#clinician').html render =>
-      option "Select ---"
-      for user in @getAdmin('user') when !user.get('patientOnly')
-        option value: user.get('name'), user.get('name')
+      clinicianViewTemplate = Backbone.View.extend
+        el: '#desiredClinician'
+        model: @admin.get('users')
+        session: @sessionInfo
+        initialize: ->
+          @listenTo @model, 'change', @render
+        events: 
+          'change': =>
+            @session.set 'clinician',$('#clinician option:selected').val()
+            @modelCheck()
+            return false
+        render: =>
+          $el.html render =>
+            option "Select ---"
+            for user in @model when !user.get('patientOnly')
+              option value: user.get('name'), user.get('name')
 
-  showClients: =>
-    $('#patient').html render =>
-      option "Select ---"
-      for p in @getAdmin('user') when p.get('patientOnly')
-        option value: p.get('name'), p.get('name')
+      clientViewTemplate = Backbone.View.extend
+        el: '#desiredClient'
+        model: @admin.get('clients')
+        session: @sessionInfo
+        initialize: ->
+          @listenTo @model, 'change', @render
+        events: 
+          'change': =>
+            @session.set 'clinician',$('#clinician option:selected').val()
+            @modelCheck()
+            return false
+        render: =>
+          $el.html render =>
+            option "Select ---"
+            for p in @getAdmin('user') when p.get('patientOnly')
+              option value: p.get('name'), p.get('name')
+
+      clientView = new clientViewTemplate
+      clinicView = new clinicViewTemplate
+      clinicianView = new clinicianViewTemplate
+      testView = new testViewTemplate
 
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
@@ -84,29 +139,18 @@ class Pages
         div '.row', ->
           div '.five.columns', ->
             label 'Clinic'
-            select '#desiredHost.u-full-width', onchange: "" , 'Host', ->
-              option "Select ---"
-              for clinic in @getAdmin('clinics')
-                if clinic.get('force')
-                  option '.forceSelect.selected', selected: 'selected', value: clinic.get('name'), clinic.get('name')
-                else
-                  option value: clinic.get('name'), clinic.get('name')
+            select '#desiredClinic.u-full-width', 'Clinic', ''
         div '.row', ->
           div '.four.columns', ->
             label for: 'clinician','Clinician'
-            select '#clinician.u-full-width', ->
-              option "Select ---"
-              for user in @getAdmin('user') when !user.get('patientOnly')
-                option value: user.get('name'), user.get('name')
+            select '#clinician.u-full-width'
             br()
             label for: "password", "Enter Password"
             input "#password", type: 'password'
           div '.four.columns', ->
             label for: 'patient', 'Client'
-            select '#patient.u-full-width', ->
-              option "Select ---"
-              for p in @getAdmin('user') when p.get('patientOnly')
-                option value: p.get('name'), p.get('name')
+            select '#patient.u-full-width'
+
         div '.row', ->
           div '.nine.columns', ->
             raw "&nbsp;"
@@ -146,19 +190,6 @@ class Pages
 
   wireAdmin: =>
     model = @sessionInfo
-    model.set 'hostUrl',$('#desiredHost option:selected').val()
-    $('#desiredHost').change (node) =>
-      model.set 'hostUrl',$('#desiredHost option:selected').val()
-      @modelCheck()
-      return false
-    $('#clinician').change (node) =>
-      model.set 'clinician',$('#clinician option:selected').val()
-      @modelCheck()
-      return false
-    $('#patient').change (node) =>
-      model.set 'patient', $('#patient option:selected').val()
-      @modelCheck()
-      return false
     $('#password').keypress( (node)=>
         if (node.keyCode == 13 && !node.shiftKey)
           node.preventDefault(); #disallow page reload default

@@ -69,8 +69,8 @@ tests = new testCollection
 adminData = Backbone.Model.extend()
 admin = new adminData
     clinics: clinics
-    user: users
-    testIDs: tests
+    users: users
+    tests: tests
 
 reading = Backbone.Model.extend
   defaults:
