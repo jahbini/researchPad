@@ -25,86 +25,124 @@ class Pages
       #Teacup.Teacup.prototype.admin = @admin
       #Teacup.Teacup.prototype.Page = @
   constructor: (@admin,@sessionInfo) ->
-      tea.getAdmin =  @getAdmin
+    tea.getAdmin =  @getAdmin
 
-      testViewTemplate = Backbone.View.extend
-        el: '#testID'
-        model: @admin.get('tests')
+  inspectAdminPage: ()->
+    clinicViewTemplate = Backbone.View.extend
+      el: '#desiredClinic'
+      collection: @admin.get('clinics')
+      attributes: 
+        admin:  @admin
         session: @sessionInfo
-        initialize: ->
-          @listenTo @model, 'change:tests', @render
-        events: 
-          'change': =>
-            @session.set 'testID',$('option:selected').val()
-            @modelCheck()
-            return false
-        render: ->
-          $el.html render =>
-            option "Select ---"
-            for test in @model
-              if test.get('force')
-                option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
-              else
-                option value: test.get('testID'), host.get('testID')
+      initialize: ->
+        @listenTo @collection, 'change', @render
+      events: 
+        'change': ->
+          theOptionCid = @$el.val()
+          theClinic = @collection.get( theOptionCid )
+          @attributes.session.set 'clinic',theClinic
+          temp = @attributes.admin.get('clinicians')
+          temp.reset()
+          temp.add theClinic.get('clinicians')
+          temp.trigger('change')
+          temp = @attributes.admin.get('clients')
+          temp.reset()
+          temp.add theClinic.get('clients')
+          temp.trigger('change')
+          return false
+      render: ->
+        @$el.html render =>
+          option "Select ---"
+          for clinic in @collection.models
+            if clinic.get('force')
+              option '.forceSelect.selected', selected: 'selected', value: clinic.cid, clinic.get('name')
+            else
+              option value: clinic.cid, clinic.get('name')
+        return this
 
-      clinicViewTemplate = Backbone.View.extend
-        el: '#desiredClinic'
-        model: @admin.get('clinics')
+    clinicianViewTemplate = Backbone.View.extend
+      el: '#desiredClinician'
+      collection: @admin.get('clinicians')
+      attributes: 
         session: @sessionInfo
-        initialize: ->
-          @listenTo @model, 'change:clinics', @render
-        events: 
-          'change': =>
-            @session.set 'clinic',$('option:selected').val()
-            @modelCheck()
-            return false
-        render: ->
-          $el.html render =>
-            option "Select ---"
-            for clinic in @model
-              if clinic.get('force')
-                option '.forceSelect.selected', selected: 'selected', value: host.get('name'), host.get('location')
-              else
-                option value: host.get('name'), host.get('location')
+      initialize: ->
+        @listenTo @collection, 'change', @render
+      events: 
+        'change': ->
+          @attributes.session.set 'clinician',@$el.val()
+          return false
+      render: ->
+        temp = render =>
+          option "Select ---"
+          for user in @collection.models 
+            option value: user.get('name'), user.get('name')
+        @$el.html temp
+        return this
 
-      clinicianViewTemplate = Backbone.View.extend
-        el: '#desiredClinician'
-        model: @admin.get('users')
+    clientViewTemplate = Backbone.View.extend
+      el: '#desiredClient'
+      collection: @admin.get('clients')
+      attributes:
         session: @sessionInfo
-        initialize: ->
-          @listenTo @model, 'change', @render
-        events: 
-          'change': =>
-            @session.set 'clinician',$('#clinician option:selected').val()
-            @modelCheck()
-            return false
-        render: =>
-          $el.html render =>
-            option "Select ---"
-            for user in @model when !user.get('patientOnly')
-              option value: user.get('name'), user.get('name')
+      initialize: ->
+        @listenTo @collection, 'change', @render
+      events: 
+        'change': ->
+          @attributes.session.set 'client',@$el.val()
+          return false
+      render: ->
+        @$el.html render =>
+          option "Select ---"
+          for p in @collection.models 
+            option value: p.get('name'), p.get('name')
+        return this
 
-      clientViewTemplate = Backbone.View.extend
-        el: '#desiredClient'
-        model: @admin.get('clients')
+    doneViewTemplate = Backbone.View.extend
+      el: '#done'
+      model: @sessionInfo
+      initialize: ->
+        @listenTo @model, 'change', @render
+      events: 
+        'change': ->
+          @attributes.session.set 'testID',@$el.val()
+          @modelCheck()
+          return false
+      render: ->
+        if (@model.get 'hostUrl') && (@model.get 'clinician') && 
+            (@model.get 'patient') && 'retro2015' == (@model.get 'password').slice(0,9)
+          console.log('activating')
+          @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
+          @$el.on 'click', @done
+          @$el.text "Done"
+          @$el.show().fadeTo(500,1)
+        return this
+
+    testViewTemplate = Backbone.View.extend
+      el: '#testID'
+      collection: @admin.get('tests')
+      attributes: 
         session: @sessionInfo
-        initialize: ->
-          @listenTo @model, 'change', @render
-        events: 
-          'change': =>
-            @session.set 'clinician',$('#clinician option:selected').val()
-            @modelCheck()
-            return false
-        render: =>
-          $el.html render =>
-            option "Select ---"
-            for p in @getAdmin('user') when p.get('patientOnly')
-              option value: p.get('name'), p.get('name')
+      initialize: ->
+        @listenTo @collection, 'change', @render
+      events: 
+        'change': ->
+          @attributes.session.set 'testID',@$el.val()
+          return false
+      render: ->
+        @$el.html render =>
+          option "Select ---"
+          for test in @collection.models
+            if test.get('force')
+              option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
+            else
+              option value: test.get('testID'), test.get('testID')
+        return this
 
-      clientView = new clientViewTemplate
-      clinicView = new clinicViewTemplate
-      clinicianView = new clinicianViewTemplate
-      testView = new testViewTemplate
+    @doneView = new doneViewTemplate
+    @clientView = new clientViewTemplate
+    @clinicView = new clinicViewTemplate
+    @clinicianView = new clinicianViewTemplate
+    @testView = new testViewTemplate
 
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
@@ -142,33 +180,19 @@ class Pages
             select '#desiredClinic.u-full-width', 'Clinic', ''
         div '.row', ->
           div '.four.columns', ->
-            label for: 'clinician','Clinician'
-            select '#clinician.u-full-width'
+            label for: 'desiredClinician','Clinician'
+            select '#desiredClinician.u-full-width'
             br()
             label for: "password", "Enter Password"
             input "#password", type: 'password'
           div '.four.columns', ->
-            label for: 'patient', 'Client'
-            select '#patient.u-full-width'
+            label for: 'desiredClient', 'Client'
+            select '#desiredClient.u-full-width'
 
         div '.row', ->
           div '.nine.columns', ->
             raw "&nbsp;"
           button '#done.three.columns', disabled: true, "Done"
-
-  modelCheck: ()=>
-    model = @sessionInfo
-    if (model.get 'hostUrl') && (model.get 'clinician') && 
-      (model.get 'patient') && 'retro2015' == (model.get 'password').slice(0,9)
-        console.log('activating')
-        b=$('#done')
-        b.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
-        b.on 'click', @done
-        b.text "Done"
-        b.show().fadeTo(500,1)
-        return true
-    return false
-  
   wireButtons: =>
     model = @sessionInfo
     $('#TestID').change (node)=>
@@ -276,6 +300,7 @@ class Pages
   activateAdminPage: (buttonSpec)->
     $('#sensorPage').hide()
     $('#adminForm').show()
+    @inspectAdminPage()
     @activateButtons buttonSpec if buttonSpec?
 
   activateSensorPage: (buttonSpec)->

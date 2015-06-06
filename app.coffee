@@ -38,24 +38,33 @@ systemCommunicator = Backbone.Model.extend
 globalState = new systemCommunicator
 
 
-clinic = Backbone.Model.extend()
+clinicModel = Backbone.Model.extend()
 
 clinicCollection = Backbone.Collection.extend
-  model: clinic
+  model: clinicModel
   url: '/clinics'
 
 clinics = new clinicCollection
 
 
-user = Backbone.Model.extend
+clinicianModel = Backbone.Model.extend
   defaults:
     name: 'Text'
     password: 'Password'
-    patientOnly: 'Boolean'
-userCollection = Backbone.Collection.extend
-  model: user
+clinicianCollection = Backbone.Collection.extend
+  model: clinicianModel
   url: '/users'
-users = new userCollection
+clinicians = new clinicianCollection
+
+
+clientModel = Backbone.Model.extend
+  defaults:
+    name: 'Text'
+    patientOnly: 'Boolean'
+clientCollection = Backbone.Collection.extend
+  model: clientModel
+  url: '/users'
+clients = new clientCollection
 
 test = Backbone.Model.extend
   defaults:
@@ -69,7 +78,8 @@ tests = new testCollection
 adminData = Backbone.Model.extend()
 admin = new adminData
     clinics: clinics
-    users: users
+    clinicians: clinicians
+    clients: clients
     tests: tests
 
 reading = Backbone.Model.extend
@@ -361,88 +371,6 @@ countReadings = ->
   $('#TotalReadings').html "Items:" + readings.length
   return
 
-users.push new user(
-    name: 'Client 1'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 2'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 3'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 4'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 5'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 6'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 7'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Client 8'
-    password: 'Y'
-    patientOnly: true
-  )
-users.push new user(
-    name: 'Other'
-    password: 'Y'
-    patientOnly: true
-  )
-
-users.push new user(
-    name: 'Tracy Jones, ARNP'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Israt Jahan, MD'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Jessica Shaw, MPH'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Kevin Allison, BS'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Mary Freeman, LPN'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Tanya Aranca, BS'
-    password: 'Y'
-    patientOnly: false
-  )
-users.push new user(
-    name: 'Other'
-    password: 'Y'
-    patientOnly: false
-  )
-
 tests.push new test
   name: 'T25FW'
   Description: 'T25FW'
@@ -634,6 +562,9 @@ adminDone= ->
   return false
 
   
+clinics.on 'change', ()->
+  console.log "got the change!"
+
 pageGen = new pages.Pages admin, sessionInfo
 
 sensorIsReady = false
@@ -641,11 +572,14 @@ domIsReady = false
 
 rediness = ->
   enterAdmin()
+  clinics.on 'change', ()->
+    console.log "got BIG change!"
   clinics.fetch 
     success: (model,response,options)->
       console.log "clinic request success"
       console.log response
       console.log model
+      model.trigger 'change'
     error: (model,response,options)->
       console.log "clinic request error from server"
       console.log response

@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clinic, clinicCollection, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, errorHandler, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, initializeSensorTag, magnetometerHandler, mainHost, pageGen, pages, pointFormat, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, statusHandler, stopRecording, systemCommunicator, templater, test, testCollection, tests, useButton, user, userCollection, users, visualHandler;
+var $, Backbone, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, errorHandler, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, initializeSensorTag, magnetometerHandler, mainHost, pageGen, pages, pointFormat, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, statusHandler, stopRecording, systemCommunicator, templater, test, testCollection, tests, useButton, visualHandler;
 
 Backbone = require('backbone');
 
@@ -45,29 +45,42 @@ systemCommunicator = Backbone.Model.extend({
 
 globalState = new systemCommunicator;
 
-clinic = Backbone.Model.extend();
+clinicModel = Backbone.Model.extend();
 
 clinicCollection = Backbone.Collection.extend({
-  model: clinic,
+  model: clinicModel,
   url: '/clinics'
 });
 
 clinics = new clinicCollection;
 
-user = Backbone.Model.extend({
+clinicianModel = Backbone.Model.extend({
   defaults: {
     name: 'Text',
-    password: 'Password',
+    password: 'Password'
+  }
+});
+
+clinicianCollection = Backbone.Collection.extend({
+  model: clinicianModel,
+  url: '/users'
+});
+
+clinicians = new clinicianCollection;
+
+clientModel = Backbone.Model.extend({
+  defaults: {
+    name: 'Text',
     patientOnly: 'Boolean'
   }
 });
 
-userCollection = Backbone.Collection.extend({
-  model: user,
+clientCollection = Backbone.Collection.extend({
+  model: clientModel,
   url: '/users'
 });
 
-users = new userCollection;
+clients = new clientCollection;
 
 test = Backbone.Model.extend({
   defaults: {
@@ -87,7 +100,8 @@ adminData = Backbone.Model.extend();
 
 admin = new adminData({
   clinics: clinics,
-  users: users,
+  clinicians: clinicians,
+  clients: clients,
   tests: tests
 });
 
@@ -415,102 +429,6 @@ countReadings = function() {
   $('#TotalReadings').html("Items:" + readings.length);
 };
 
-users.push(new user({
-  name: 'Client 1',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 2',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 3',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 4',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 5',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 6',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 7',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Client 8',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Other',
-  password: 'Y',
-  patientOnly: true
-}));
-
-users.push(new user({
-  name: 'Tracy Jones, ARNP',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Israt Jahan, MD',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Jessica Shaw, MPH',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Kevin Allison, BS',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Mary Freeman, LPN',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Tanya Aranca, BS',
-  password: 'Y',
-  patientOnly: false
-}));
-
-users.push(new user({
-  name: 'Other',
-  password: 'Y',
-  patientOnly: false
-}));
-
 tests.push(new test({
   name: 'T25FW',
   Description: 'T25FW'
@@ -700,6 +618,10 @@ adminDone = function() {
   return false;
 };
 
+clinics.on('change', function() {
+  return console.log("got the change!");
+});
+
 pageGen = new pages.Pages(admin, sessionInfo);
 
 sensorIsReady = false;
@@ -708,11 +630,15 @@ domIsReady = false;
 
 rediness = function() {
   enterAdmin();
+  clinics.on('change', function() {
+    return console.log("got BIG change!");
+  });
   clinics.fetch({
     success: function(model, response, options) {
       console.log("clinic request success");
       console.log(response);
-      return console.log(model);
+      console.log(model);
+      return model.trigger('change');
     },
     error: function(model, response, options) {
       console.log("clinic request error from server");
@@ -18277,7 +18203,6 @@ Pages = (function() {
   };
 
   function Pages(admin, sessionInfo) {
-    var clientView, clientViewTemplate, clinicView, clinicViewTemplate, clinicianView, clinicianViewTemplate, testView, testViewTemplate;
     this.admin = admin;
     this.sessionInfo = sessionInfo;
     this.renderPage = bind(this.renderPage, this);
@@ -18285,31 +18210,180 @@ Pages = (function() {
     this.wireAdmin = bind(this.wireAdmin, this);
     this.resetAdmin = bind(this.resetAdmin, this);
     this.wireButtons = bind(this.wireButtons, this);
-    this.modelCheck = bind(this.modelCheck, this);
     this.getAdmin = bind(this.getAdmin, this);
     tea.getAdmin = this.getAdmin;
-    testViewTemplate = Backbone.View.extend({
-      el: '#testID',
-      model: this.admin.get('tests'),
-      session: this.sessionInfo,
+  }
+
+  Pages.prototype.inspectAdminPage = function() {
+    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate, testViewTemplate;
+    clinicViewTemplate = Backbone.View.extend({
+      el: '#desiredClinic',
+      collection: this.admin.get('clinics'),
+      attributes: {
+        admin: this.admin,
+        session: this.sessionInfo
+      },
       initialize: function() {
-        return this.listenTo(this.model, 'change:tests', this.render);
+        return this.listenTo(this.collection, 'change', this.render);
       },
       events: {
-        'change': (function(_this) {
-          return function() {
-            _this.session.set('testID', $('option:selected').val());
-            _this.modelCheck();
-            return false;
-          };
-        })(this)
+        'change': function() {
+          var temp, theClinic, theOptionCid;
+          theOptionCid = this.$el.val();
+          theClinic = this.collection.get(theOptionCid);
+          this.attributes.session.set('clinic', theClinic);
+          temp = this.attributes.admin.get('clinicians');
+          temp.reset();
+          temp.add(theClinic.get('clinicians'));
+          temp.trigger('change');
+          temp = this.attributes.admin.get('clients');
+          temp.reset();
+          temp.add(theClinic.get('clients'));
+          temp.trigger('change');
+          return false;
+        }
       },
       render: function() {
-        return $el.html(render((function(_this) {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var clinic, i, len, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              clinic = ref1[i];
+              if (clinic.get('force')) {
+                results.push(option('.forceSelect.selected', {
+                  selected: 'selected',
+                  value: clinic.cid
+                }, clinic.get('name')));
+              } else {
+                results.push(option({
+                  value: clinic.cid
+                }, clinic.get('name')));
+              }
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    clinicianViewTemplate = Backbone.View.extend({
+      el: '#desiredClinician',
+      collection: this.admin.get('clinicians'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('clinician', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        var temp;
+        temp = render((function(_this) {
+          return function() {
+            var i, len, ref1, results, user;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              user = ref1[i];
+              results.push(option({
+                value: user.get('name')
+              }, user.get('name')));
+            }
+            return results;
+          };
+        })(this));
+        this.$el.html(temp);
+        return this;
+      }
+    });
+    clientViewTemplate = Backbone.View.extend({
+      el: '#desiredClient',
+      collection: this.admin.get('clients'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('client', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var i, len, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              p = ref1[i];
+              results.push(option({
+                value: p.get('name')
+              }, p.get('name')));
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    doneViewTemplate = Backbone.View.extend({
+      el: '#done',
+      model: this.sessionInfo,
+      initialize: function() {
+        return this.listenTo(this.model, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('testID', this.$el.val());
+          this.modelCheck();
+          return false;
+        }
+      },
+      render: function() {
+        if ((this.model.get('hostUrl')) && (this.model.get('clinician')) && (this.model.get('patient')) && 'retro2015' === (this.model.get('password')).slice(0, 9)) {
+          console.log('activating');
+          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
+          this.$el.on('click', this.done);
+          this.$el.text("Done");
+          this.$el.show().fadeTo(500, 1);
+        }
+        return this;
+      }
+    });
+    testViewTemplate = Backbone.View.extend({
+      el: '#testID',
+      collection: this.admin.get('tests'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('testID', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
           return function() {
             var i, len, ref1, results, test;
             option("Select ---");
-            ref1 = _this.model;
+            ref1 = _this.collection.models;
             results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
               test = ref1[i];
@@ -18321,132 +18395,21 @@ Pages = (function() {
               } else {
                 results.push(option({
                   value: test.get('testID')
-                }, host.get('testID')));
+                }, test.get('testID')));
               }
             }
             return results;
           };
         })(this)));
+        return this;
       }
     });
-    clinicViewTemplate = Backbone.View.extend({
-      el: '#desiredClinic',
-      model: this.admin.get('clinics'),
-      session: this.sessionInfo,
-      initialize: function() {
-        return this.listenTo(this.model, 'change:clinics', this.render);
-      },
-      events: {
-        'change': (function(_this) {
-          return function() {
-            _this.session.set('clinic', $('option:selected').val());
-            _this.modelCheck();
-            return false;
-          };
-        })(this)
-      },
-      render: function() {
-        return $el.html(render((function(_this) {
-          return function() {
-            var clinic, i, len, ref1, results;
-            option("Select ---");
-            ref1 = _this.model;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              clinic = ref1[i];
-              if (clinic.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: host.get('name')
-                }, host.get('location')));
-              } else {
-                results.push(option({
-                  value: host.get('name')
-                }, host.get('location')));
-              }
-            }
-            return results;
-          };
-        })(this)));
-      }
-    });
-    clinicianViewTemplate = Backbone.View.extend({
-      el: '#desiredClinician',
-      model: this.admin.get('users'),
-      session: this.sessionInfo,
-      initialize: function() {
-        return this.listenTo(this.model, 'change', this.render);
-      },
-      events: {
-        'change': (function(_this) {
-          return function() {
-            _this.session.set('clinician', $('#clinician option:selected').val());
-            _this.modelCheck();
-            return false;
-          };
-        })(this)
-      },
-      render: (function(_this) {
-        return function() {
-          return $el.html(render(function() {
-            var i, len, ref1, results, user;
-            option("Select ---");
-            ref1 = _this.model;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              user = ref1[i];
-              if (!user.get('patientOnly')) {
-                results.push(option({
-                  value: user.get('name')
-                }, user.get('name')));
-              }
-            }
-            return results;
-          }));
-        };
-      })(this)
-    });
-    clientViewTemplate = Backbone.View.extend({
-      el: '#desiredClient',
-      model: this.admin.get('clients'),
-      session: this.sessionInfo,
-      initialize: function() {
-        return this.listenTo(this.model, 'change', this.render);
-      },
-      events: {
-        'change': (function(_this) {
-          return function() {
-            _this.session.set('clinician', $('#clinician option:selected').val());
-            _this.modelCheck();
-            return false;
-          };
-        })(this)
-      },
-      render: (function(_this) {
-        return function() {
-          return $el.html(render(function() {
-            var i, len, ref1, results;
-            option("Select ---");
-            ref1 = _this.getAdmin('user');
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              p = ref1[i];
-              if (p.get('patientOnly')) {
-                results.push(option({
-                  value: p.get('name')
-                }, p.get('name')));
-              }
-            }
-            return results;
-          }));
-        };
-      })(this)
-    });
-    clientView = new clientViewTemplate;
-    clinicView = new clinicViewTemplate;
-    clinicianView = new clinicianViewTemplate;
-    testView = new testViewTemplate;
-  }
+    this.doneView = new doneViewTemplate;
+    this.clientView = new clientViewTemplate;
+    this.clinicView = new clinicViewTemplate;
+    this.clinicianView = new clinicianViewTemplate;
+    return this.testView = new testViewTemplate;
+  };
 
   Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
     return div('#capture-display.container', function() {
@@ -18501,9 +18464,9 @@ Pages = (function() {
         div('.row', function() {
           div('.four.columns', function() {
             label({
-              "for": 'clinician'
+              "for": 'desiredClinician'
             }, 'Clinician');
-            select('#clinician.u-full-width');
+            select('#desiredClinician.u-full-width');
             br();
             label({
               "for": "password"
@@ -18514,9 +18477,9 @@ Pages = (function() {
           });
           return div('.four.columns', function() {
             label({
-              "for": 'patient'
+              "for": 'desiredClient'
             }, 'Client');
-            return select('#patient.u-full-width');
+            return select('#desiredClient.u-full-width');
           });
         });
         return div('.row', function() {
@@ -18530,21 +18493,6 @@ Pages = (function() {
       });
     });
   });
-
-  Pages.prototype.modelCheck = function() {
-    var b, model;
-    model = this.sessionInfo;
-    if ((model.get('hostUrl')) && (model.get('clinician')) && (model.get('patient')) && 'retro2015' === (model.get('password')).slice(0, 9)) {
-      console.log('activating');
-      b = $('#done');
-      b.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
-      b.on('click', this.done);
-      b.text("Done");
-      b.show().fadeTo(500, 1);
-      return true;
-    }
-    return false;
-  };
 
   Pages.prototype.wireButtons = function() {
     var model;
@@ -18724,6 +18672,7 @@ Pages = (function() {
   Pages.prototype.activateAdminPage = function(buttonSpec) {
     $('#sensorPage').hide();
     $('#adminForm').show();
+    this.inspectAdminPage();
     if (buttonSpec != null) {
       return this.activateButtons(buttonSpec);
     }
