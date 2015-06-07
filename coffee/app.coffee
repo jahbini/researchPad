@@ -5,15 +5,15 @@
 
 Backbone = require ('backbone')
 _ = require('underscore')
-require('./libs/dbg/console')
+require('../libs/dbg/console')
 Backbone.$ = $ = require('jquery')
 pages = require './pages.coffee'
 
 
 evothings = window.evothings ={}
-evothings.util = require('./libs/evothings/util/util').util
-evothings.easyble =require('./libs/evothings/easyble/easyble').easyble
-evothings.tisensortag=require('./libs/evothings/tisensortag/tisensortag').tisensortag
+evothings.util = require('../libs/evothings/util/util').util
+evothings.easyble =require('../libs/evothings/easyble/easyble').easyble
+evothings.tisensortag=require('../libs/evothings/tisensortag/tisensortag').tisensortag
 sensortag = evothings.tisensortag.createInstance()
 
 # Host we communicate with
@@ -106,101 +106,11 @@ readings.push new reading
 
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
-    user: ''
-    patient: ''
-    testID: ''
-    sensorUUID: ''
-    platformUUID: ''
-
-
-
-# ## Hardware
-# external communications to Hardware
-#
-# set up the sensorTag and configure to recieve
-# accelerometer, magnetometer and gyro data
-#
-
-
-statusHandler = (status) ->
-  console.log "new Sensor Status"
-  console.log status
-  if 'Sensors online' == status
-    enterConnected()
-    status = 'Sensor online'
-  if 'Device data available' == status
-    $('#FirmwareData').html sensortag.getFirmwareString()
-    sessionInfo.set 'sensorUUID', sensortag?.device?.address
-    $('#uuid').html(sensortag?.device?.address).css('color','black')
-    console?.log sensortag?.device?.address
-  $('#StatusData').html status
-  return
-
-errorHandler = (error) ->
-  console.log "Sensor error!"
-  console.log 'Error: ' + error
-  if 'disconnected' == error
-    globalState.set 'connected', false
-    $('#uuid').html("Must connect to sensor").css('color',"red")
-    # If disconneted attempt to connect again. (but not to same device)
-    setTimeout (->
-      sensortag.connectToClosestDevice()
-      return
-    ), 1000
-  return
-    
-initializeSensorTag = ->
-  # Here sensors are set up.
-  #
-  # If you wish to use only one or a few sensors, just set up
-  # the ones you wish to use.
-  #
-  # First parameter to sensor function is the callback function.
-  # Several of the sensors take a millisecond update interval
-  # as the second parameter.
-  # Gyroscope takes the axes to enable as the third parameter:
-  # 1 to enable X axis only, 2 to enable Y axis only, 3 = X and Y,
-  # 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.
-  #
-  repeat = false
-  failures =0
-  console.log "initialize Sensor Communication"
-  try
-    globalState.set 'connected', false
-    sensortag.statusCallback(statusHandler)
-    sensortag.errorCallback(errorHandler)
-    console.log "Status and error handlers OK"
-#  sensortag.keypressCallback(keypressHandler)
-    sensortag.accelerometerCallback(accelerometerHandler, 100)
-    sensortag.magnetometerCallback(magnetometerHandler, 100)
-    sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7)
-    console.log "Device Sensors OK"
-    sensortag.connectToClosestDevice()
-  catch e
-    failures++
-    console.log "failed to initialize"
-    console.log e
-    # try again after 1/2 second
-    repeat = window.setInterval(initializeSensorTag,500)
-    return
-  # when the try finishes without a catch, clear the retry timer
-  if repeat?
-    console.log "sensor came on-line after " + failures + " failures"
-    window.clearInterval repeat
-  else
-    console.log "sensor came on-line immediately"
-  return
-
-## section: View
-# routines to control or coordinate with user
-#
-
-templater = (x, y, z, sensor='unknown', unit='') ->
-  sensor + ' x=' + (if x >= 0 then '+' else '') + x.toFixed(2) + unit + ' -- ' + 'y=' + (if y >= 0 then '+' else '') + y.toFixed(2) + unit + ' -- ' + 'z=' + (if z >= 0 then '+' else '') + z.toFixed(2) + unit
-
-pointFormat = (p, unit ='v', precision=2) ->
-  unit + ' x=' + (if p.x >= 0 then '+' else '') + p.x.toFixed(precision) + ' -- ' + 'y=' + (if p.y >= 0 then '+' else '') + p.y.toFixed(precision) + ' -- ' + 'z=' + (if p.z >= 0 then '+' else '') + p.z.toFixed(precision)
-
+  user: ''
+  patient: ''
+  testID: ''
+  sensorUUID: ''
+  platformUUID: ''
 
 enterDebug = () ->
   useButton  buttonModelDebugOn
@@ -227,13 +137,11 @@ enterAdmin = ->
   return false
 
 aButtonModel = Backbone.Model.extend 
-  defaults: {
+  defaults:
     active: false
     funct: ->
     text: '--'
     selector: 'button'
-  }
-
 
 buttonModelDebugOn = new aButtonModel
   active: true
@@ -496,6 +404,9 @@ enterUpload = ->
 visualHandler = require('./visual.coffee')
 smoother = new visualHandler(globalState)
 
+TiHandlerDef = require('./TiHandler.coffee')
+TiHandler = new TiHandlerDef globalState, reading, sessionInfo
+
 # ## stopRecording
 # halt the record session -- no restart allowed
 # upload button remains enabled, clear button remains enabled
@@ -577,8 +488,6 @@ rediness = ->
   clinics.fetch 
     success: (model,response,options)->
       console.log "clinic request success"
-      console.log response
-      console.log model
       model.trigger 'change'
     error: (model,response,options)->
       console.log "clinic request error from server"
@@ -589,7 +498,15 @@ rediness = ->
     sessionInfo.set('platformUUID',window.device.uuid)
     $("#platformUUID").text(window.device.uuid)
     if sensorIsReady && ! ( globalState.get 'connected' )
-      initializeSensorTag()
+      console.log "Activating sensor attempt"
+      try
+        TiHandler.initializeSensorTag accelerometerHandler,
+          magnetometerHandler, gyroscopeHandler
+        console.log "TiHandler initialized"
+      catch e
+        console.log "error from TiHandler"
+        console.log e
+    console.log "Activating sensor exit"
   
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}

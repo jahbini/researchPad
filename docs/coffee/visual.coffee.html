@@ -1,0 +1,240 @@
+<!DOCTYPE html><html><head><title>visual.coffee</title><meta http-equiv="Content-Type" content="text/html" charset="UTF-8"><link rel="stylesheet" media="all" href="../docco.css"></head><body><div id="container"><div id="background"></div><div id="jump_to">Jump To &hellip;<div id="jump_wrapper"><div id="jump_page"><a href="../index.html" class="source"><span class="file_name">README</span></a><a href="../coffee/TiHandler.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">TiHandler.coffee</span></a><a href="../coffee/app.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">app.coffee</span></a><a href="../coffee/pages.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">pages.coffee</span></a><a href="../coffee/visual.coffee.html" class="source selected"><span class="base_path">coffee / </span><span class="file_name">visual.coffee</span></a></div></div></div><table cellpadding="0" cellspacing="0"><thead><tr><th class="docs"><h1>visual.coffee</h1><div class="filepath">coffee/</div></th><th class="code"></th></tr></thead><tbody><tr id="section-1"><td class="docs"><div class="pilwrap"><a href="#section-1" class="pilcrow">&#182;</a></div><p>vim: et:ts=2:sw=2:sts=2</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">Seen = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/dbg/seen&#39;</span><span class="p">)</span>
+<span class="nx">$</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;jquery&#39;</span><span class="p">)</span>
+  </pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><h1>#</h1>
+
+<p>globalStatus looks like this:
+systemCommunicator = Backbone.Model.extend
+ defaults:
+   calibrating: false
+   recording: false
+   connected: false
+   calibrate: false</p>
+
+<p>globalState = new systemCommunicator</p>
+
+<h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="k">class</span> <span class="nx">visual</span>
+  <span class="nv">constructor: </span><span class="nf">(@globalState,@readings) -&gt;</span>
+
+  <span class="nv">calibratorAverage: </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
+    <span class="k">try</span>
+      <span class="nv">tH = </span><span class="kc">undefined</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">grandTotal</span> <span class="o">==</span> <span class="kc">undefined</span>
+        <span class="nv">dataCondition.dataHistory.grandTotal = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="nv">dataCondition.dataHistory.grandAverage = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+        <span class="nv">dataCondition.dataHistory.totalReadings = </span><span class="mi">1</span>
+      <span class="nv">tH = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
+      <span class="k">if</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span> <span class="o">==</span> <span class="mi">1000</span>
+        <span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">subtract</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">grandAverage</span>
+        <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="o">--</span>
+      <span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">add</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">curValue</span>
+      <span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="o">++</span>
+      <span class="nv">tH.grandAverage = </span><span class="nx">tH</span><span class="p">.</span><span class="nx">grandTotal</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">divide</span><span class="p">(</span><span class="nx">tH</span><span class="p">.</span><span class="nx">totalReadings</span><span class="p">)</span>
+      <span class="nv">dataCondition.cookedValue = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">curValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">subtract</span><span class="p">(</span><span class="nx">tH</span><span class="p">.</span><span class="nx">grandAverage</span><span class="p">)</span>
+    <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-3"><td class="docs"><div class="pilwrap"><a href="#section-3" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
+</td><td class="code"><div class="highlight"><pre>    <span class="k">return</span>
+
+  <span class="nv">split = </span><span class="nf">(raw, lo, hi) -&gt;</span>
+    <span class="nx">raw</span> <span class="o">-</span> <span class="p">((</span><span class="nx">hi</span> <span class="o">+</span> <span class="nx">lo</span><span class="p">)</span> <span class="o">/</span> <span class="mf">2.0</span><span class="p">)</span>
+
+  <span class="nv">calibratorMid: </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
+    <span class="k">try</span>
+      <span class="nv">tH = </span><span class="kc">undefined</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">max</span> <span class="o">==</span> <span class="kc">undefined</span>
+        <span class="nv">dataCondition.dataHistory.max = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+        <span class="nv">dataCondition.dataHistory.min = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+      <span class="nv">tH = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">x</span>
+        <span class="nv">tH.max.x = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">y</span>
+        <span class="nv">tH.max.y = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span> <span class="o">&gt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">z</span>
+        <span class="nv">tH.max.z = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">x</span>
+        <span class="nv">tH.min.x = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">y</span>
+        <span class="nv">tH.min.y = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span> <span class="o">&lt;</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">z</span>
+        <span class="nv">tH.min.z = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span>
+      <span class="nv">dataCondition.cookedValue.x = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">x</span><span class="p">)</span>
+      <span class="nv">dataCondition.cookedValue.y = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">y</span><span class="p">)</span>
+      <span class="nv">dataCondition.cookedValue.z = </span><span class="nx">split</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">z</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">min</span><span class="p">.</span><span class="nx">z</span><span class="p">,</span> <span class="nx">tH</span><span class="p">.</span><span class="nx">max</span><span class="p">.</span><span class="nx">z</span><span class="p">)</span>
+    <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-4"><td class="docs"><div class="pilwrap"><a href="#section-4" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
+</td><td class="code"><div class="highlight"><pre>    <span class="k">return</span>
+
+  <span class="nv">calibratorSmooth: </span><span class="nf">(dataCondition, calibrate, calibrating) -&gt;</span>
+    <span class="k">try</span>
+      <span class="k">if</span> <span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">runniongSum</span> <span class="o">==</span> <span class="kc">undefined</span>
+        <span class="nv">dataCondition.dataHistory.runningSum = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+      <span class="nv">dataCondition.cookedValue = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span><span class="p">.</span><span class="nx">runningSum</span><span class="p">.</span><span class="nx">multiply</span><span class="p">(</span><span class="mf">0.75</span><span class="p">).</span><span class="nx">add</span><span class="p">(</span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span><span class="p">.</span><span class="nx">copy</span><span class="p">().</span><span class="nx">multiply</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)).</span><span class="nx">copy</span><span class="p">()</span>
+    <span class="k">catch</span> <span class="nx">e</span></pre></div></td></tr><tr id="section-5"><td class="docs"><div class="pilwrap"><a href="#section-5" class="pilcrow">&#182;</a></div><p>console.log e.message</p>
+</td><td class="code"><div class="highlight"><pre>    <span class="k">return</span></pre></div></td></tr><tr id="section-6"><td class="docs"><div class="pilwrap"><a href="#section-6" class="pilcrow">&#182;</a></div><p>readingHandler()
+create and return a function to handle a sensor's new data</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nv">readingHandler: </span><span class="nf">(o) -&gt;</span>
+    <span class="nv">dataCondition =</span>
+      <span class="nv">curValue: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="nv">cookedValue: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="nv">dataHistory: </span><span class="p">{}</span></pre></div></td></tr><tr id="section-7"><td class="docs"><div class="pilwrap"><a href="#section-7" class="pilcrow">&#182;</a></div><p>if there is no calibration function, just use a null offset</p>
+</td><td class="code"><div class="highlight"><pre>    <span class="k">if</span> <span class="o">!</span><span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span>
+      <span class="nv">o.calibrator = </span><span class="nf">(d) -&gt;</span>
+        <span class="nv">d.cookedValue = </span><span class="nx">d</span><span class="p">.</span><span class="nx">curValue</span>
+        <span class="k">return</span>
+
+    <span class="k">if</span> <span class="o">!</span><span class="nx">o</span><span class="p">.</span><span class="nx">units</span>
+      <span class="nv">o.units = </span><span class="s">&#39;&#39;</span>
+    <span class="nv">o.bias = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#&#39;</span> <span class="o">+</span> <span class="nx">o</span><span class="p">.</span><span class="nx">debias</span><span class="p">).</span><span class="nx">click</span> <span class="nf">-&gt;</span>
+      <span class="nv">o.bias = </span><span class="nx">o</span><span class="p">.</span><span class="nx">cookedValue</span></pre></div></td></tr><tr id="section-8"><td class="docs"><div class="pilwrap"><a href="#section-8" class="pilcrow">&#182;</a></div><p>console.log o</p>
+</td><td class="code"><div class="highlight"><pre>      <span class="k">return</span>
+    <span class="nf">(data) =&gt;</span></pre></div></td></tr><tr id="section-9"><td class="docs"><div class="pilwrap"><a href="#section-9" class="pilcrow">&#182;</a></div><p>data points from Evothings library are Seen.Point NOT compatible as sources</p>
+</td><td class="code"><div class="highlight"><pre>      <span class="k">try</span>
+        <span class="nv">r = </span><span class="nx">o</span><span class="p">.</span><span class="nx">source</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span></pre></div></td></tr><tr id="section-10"><td class="docs"><div class="pilwrap"><a href="#section-10" class="pilcrow">&#182;</a></div><p>$('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')</p>
+</td><td class="code"><div class="highlight"><pre>        <span class="nv">p = </span><span class="kc">undefined</span>
+        <span class="nv">m = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-11"><td class="docs"><div class="pilwrap"><a href="#section-11" class="pilcrow">&#182;</a></div><p>get the sensor data and pass to conditioner</p>
+</td><td class="code"><div class="highlight"><pre>        <span class="nv">r = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="nx">r</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">r</span><span class="p">.</span><span class="nx">z</span><span class="p">)</span>
+        <span class="nx">r</span><span class="p">.</span><span class="nx">subtract</span> <span class="nx">o</span><span class="p">.</span><span class="nx">bias</span>
+        <span class="nv">dataCondition.curValue = </span><span class="nx">r</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+        <span class="nv">dataCondition.cookedValue = </span><span class="nx">r</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+        <span class="nv">i = </span><span class="mi">0</span>
+        <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span><span class="p">.</span><span class="nx">length</span>
+          <span class="nx">o</span><span class="p">.</span><span class="nx">calibrator</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="nx">dataCondition</span><span class="p">,</span> <span class="nx">@globalState</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;calibrate&#39;</span><span class="p">),</span> <span class="nx">@globalState</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;calibrating&#39;</span><span class="p">)</span>
+          <span class="nx">i</span><span class="o">++</span>
+        <span class="nv">p = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">cookedValue</span>
+        <span class="k">if</span> <span class="nx">@globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;recording&#39;</span>
+          <span class="nx">@readings</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">reading</span><span class="p">(</span>
+            <span class="nv">sensor: </span><span class="nx">o</span><span class="p">.</span><span class="nx">sensor</span>
+            <span class="nv">raw: </span><span class="nx">_</span><span class="p">.</span><span class="nx">toArray</span><span class="p">(</span><span class="nx">data</span><span class="p">))</span>
+        <span class="nv">m = </span><span class="nx">dataCondition</span><span class="p">.</span><span class="nx">dataHistory</span>
+        <span class="nx">o</span><span class="p">.</span><span class="nx">viewer</span> <span class="nx">p</span><span class="p">.</span><span class="nx">x</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">y</span><span class="p">,</span> <span class="nx">p</span><span class="p">.</span><span class="nx">z</span>
+        <span class="k">return</span>
+      <span class="k">catch</span> <span class="nx">error</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">error</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;in readinghandler&quot;</span></pre></div></td></tr><tr id="section-12"><td class="docs"><div class="pilwrap"><a href="#section-12" class="pilcrow">&#182;</a></div><h1>#</h1>
+
+<p>Convert byte buffer to hex string.
+@param buffer - an Uint8Array
+@param offset - byte offset
+@param numBytes - number of bytes to read
+@return string with hex representation of bytes</p>
+
+<h1>#</h1>
+</td><td class="code"><div class="highlight"><pre>  <span class="nv">hx = </span><span class="p">[</span>
+    <span class="s">&#39;0&#39;</span>
+    <span class="s">&#39;1&#39;</span>
+    <span class="s">&#39;2&#39;</span>
+    <span class="s">&#39;3&#39;</span>
+    <span class="s">&#39;4&#39;</span>
+    <span class="s">&#39;5&#39;</span>
+    <span class="s">&#39;6&#39;</span>
+    <span class="s">&#39;7&#39;</span>
+    <span class="s">&#39;8&#39;</span>
+    <span class="s">&#39;9&#39;</span>
+    <span class="s">&#39;A&#39;</span>
+    <span class="s">&#39;B&#39;</span>
+    <span class="s">&#39;C&#39;</span>
+    <span class="s">&#39;D&#39;</span>
+    <span class="s">&#39;E&#39;</span>
+    <span class="s">&#39;F&#39;</span>
+  <span class="p">]</span>
+
+
+  <span class="nv">bufferToHexStr = </span><span class="nf">(buffer, offset, numBytes) -&gt;</span>
+    <span class="nv">hex = </span><span class="s">&#39;&#39;</span>
+    <span class="k">if</span> <span class="o">!</span><span class="nx">numBytes</span>
+      <span class="nv">numBytes = </span><span class="nx">buffer</span><span class="p">.</span><span class="nx">length</span>
+    <span class="k">if</span> <span class="o">!</span><span class="nx">offset</span>
+      <span class="nv">offset = </span><span class="mi">0</span>
+    <span class="nv">i = </span><span class="mi">0</span>
+    <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">numBytes</span>
+      <span class="nx">hex</span> <span class="o">+=</span> <span class="nx">byteToHexStr</span><span class="p">(</span><span class="nx">buffer</span><span class="p">[</span><span class="nx">offset</span> <span class="o">+</span> <span class="nx">i</span><span class="p">])</span> <span class="o">+</span> <span class="s">&#39; &#39;</span>
+      <span class="o">++</span><span class="nx">i</span>
+    <span class="nx">hex</span>
+
+  <span class="nv">byteToHexStr = </span><span class="nf">(d) -&gt;</span>
+    <span class="nv">lo = </span><span class="nx">hx</span><span class="p">[</span><span class="nx">d</span> <span class="o">&amp;</span> <span class="mh">0xf</span><span class="p">]</span>
+    <span class="nv">hi = </span><span class="nx">hx</span><span class="p">[(</span><span class="nx">d</span> <span class="o">&amp;</span> <span class="mh">0xf0</span><span class="p">)</span> <span class="o">&gt;&gt;</span> <span class="mi">4</span><span class="p">]</span>
+    <span class="nx">hi</span> <span class="o">+</span> <span class="nx">lo</span>
+
+
+  <span class="nv">viewSensor: </span><span class="nf">(viewport, scaleFactor) -&gt;</span>
+    <span class="nv">height = </span><span class="mi">200</span>
+    <span class="nv">width = </span><span class="mi">200</span>
+    <span class="nv">model = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Models</span><span class="p">[</span><span class="s">&#39;default&#39;</span><span class="p">]()</span>
+    <span class="nv">scene = </span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Scene</span><span class="p">)(</span>
+      <span class="nv">model: </span><span class="nx">model</span>
+      <span class="nv">viewport: </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Viewports</span><span class="p">.</span><span class="nx">center</span><span class="p">(</span><span class="nx">width</span><span class="p">,</span> <span class="nx">height</span><span class="p">))</span>
+    <span class="nv">cubie = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">cube</span><span class="p">().</span><span class="nx">scale</span><span class="p">(</span><span class="mf">0.25</span><span class="p">)</span>
+
+    <span class="nv">spearPool = </span><span class="nf">(many) -&gt;</span>
+      <span class="nv">i = </span><span class="kc">undefined</span>
+      <span class="nv">j = </span><span class="kc">undefined</span>
+      <span class="nv">shapes = </span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="nx">many</span><span class="p">)</span>
+      <span class="nv">count = </span><span class="o">-</span><span class="mi">1</span>
+      <span class="nv">colors = </span><span class="k">new</span> <span class="nb">Array</span><span class="p">(</span><span class="nx">many</span><span class="p">)</span>
+
+      <span class="nv">newArrow = </span><span class="nf">(model, x, y, z) -&gt;</span>
+        <span class="nv">alphaDecay = </span><span class="mi">255</span>
+        <span class="nv">count = </span><span class="nx">count</span> <span class="o">+</span> <span class="mi">1</span>
+        <span class="k">if</span> <span class="nx">count</span> <span class="o">==</span> <span class="nx">many</span>
+          <span class="nv">count = </span><span class="mi">0</span>
+        <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
+          <span class="nx">model</span><span class="p">.</span><span class="nx">remove</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span> <span class="o">=</span> <span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">arrow</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">height</span> <span class="o">*</span> <span class="mf">0.025</span><span class="p">)</span>
+        <span class="nx">model</span><span class="p">.</span><span class="nx">add</span><span class="p">(</span><span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">])</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">].</span><span class="nx">bake</span><span class="p">()</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">].</span><span class="nx">reset</span><span class="p">()</span></pre></div></td></tr><tr id="section-13"><td class="docs"><div class="pilwrap"><a href="#section-13" class="pilcrow">&#182;</a></div><p>assign alpha to the arrows color</p>
+</td><td class="code"><div class="highlight"><pre>        <span class="nv">j = </span><span class="mi">0</span>
+        <span class="nv">i = </span><span class="nx">count</span>
+        <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">many</span>
+          <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+            <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">fill</span> <span class="nx">colors</span><span class="p">[</span><span class="nx">j</span><span class="o">++</span><span class="p">]</span>
+          <span class="nx">i</span><span class="o">++</span>
+        <span class="nv">i = </span><span class="mi">0</span>
+        <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">count</span>
+          <span class="k">if</span> <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span>
+            <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">fill</span> <span class="nx">colors</span><span class="p">[</span><span class="nx">j</span><span class="o">++</span><span class="p">]</span>
+          <span class="nx">i</span><span class="o">++</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">count</span><span class="p">]</span>
+
+      <span class="nv">i = </span><span class="mi">0</span>
+      <span class="k">while</span> <span class="nx">i</span> <span class="o">&lt;</span> <span class="nx">many</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="nx">Seen</span><span class="p">.</span><span class="nx">Shapes</span><span class="p">.</span><span class="nx">arrow</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">18</span><span class="p">,</span> <span class="mf">0.5</span><span class="p">,</span> <span class="mi">2</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">1</span><span class="p">).</span><span class="nx">translate</span><span class="p">(</span><span class="mi">20</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">height</span> <span class="o">*</span> <span class="mf">0.025</span><span class="p">)</span>
+        <span class="nx">shapes</span><span class="p">[</span><span class="nx">i</span><span class="p">].</span><span class="nx">bake</span><span class="p">()</span>
+        <span class="nx">colors</span><span class="p">[</span><span class="nx">i</span><span class="p">]</span> <span class="o">=</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">255</span><span class="p">,</span> <span class="mi">255</span> <span class="o">-</span> <span class="mi">250</span> <span class="o">/</span> <span class="nx">many</span> <span class="o">*</span> <span class="nx">i</span><span class="p">))</span>
+        <span class="nx">i</span><span class="o">++</span>
+      <span class="nx">newArrow</span>
+
+    <span class="nv">newValue = </span><span class="nf">(x, y, z) -&gt;</span>
+      <span class="nv">p1 = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="nx">x</span><span class="p">,</span> <span class="nx">y</span><span class="p">,</span> <span class="nx">z</span><span class="p">)</span>
+      <span class="nv">spear = </span><span class="kc">undefined</span>
+      <span class="nv">pOriginal = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">copy</span><span class="p">()</span>
+      <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span>
+      <span class="nv">m = </span><span class="kc">undefined</span>
+      <span class="nv">q = </span><span class="kc">undefined</span>
+      <span class="nv">cross = </span><span class="kc">undefined</span>
+      <span class="nv">dot = </span><span class="kc">undefined</span>
+      <span class="nv">leng = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">magnitude</span><span class="p">()</span>
+      <span class="nv">p1 = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
+      <span class="nx">pBar</span><span class="p">.</span><span class="nx">add</span> <span class="nx">p1</span>
+      <span class="k">if</span> <span class="nx">pBar</span><span class="p">.</span><span class="nx">magnitude</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.000001</span>
+        <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># this is a 180 degree rotation, so use y axis as rotation vector </span>
+      <span class="nx">pBar</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
+      <span class="nv">q = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Quaternion</span><span class="p">.</span><span class="nx">pointAngle</span><span class="p">(</span><span class="nx">pBar</span><span class="p">,</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">PI</span><span class="p">)</span>
+      <span class="nv">m = </span><span class="nx">q</span><span class="p">.</span><span class="nx">toMatrix</span><span class="p">()</span>
+      <span class="nv">spear = </span><span class="nx">spearFromPool</span><span class="p">(</span><span class="nx">model</span><span class="p">,</span> <span class="nx">x</span><span class="p">,</span> <span class="nx">y</span><span class="p">,</span> <span class="nx">z</span><span class="p">).</span><span class="nx">transform</span><span class="p">(</span><span class="nx">m</span><span class="p">).</span><span class="nx">scale</span><span class="p">(</span><span class="nx">scaleFactor</span> <span class="o">*</span> <span class="nx">leng</span><span class="p">)</span>
+      <span class="nx">spear</span><span class="p">.</span><span class="nx">fill</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">255</span><span class="p">,</span> <span class="mi">80</span><span class="p">,</span> <span class="mi">255</span><span class="p">))</span>
+      <span class="nv">context = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Context</span><span class="p">(</span><span class="nx">viewport</span><span class="p">,</span> <span class="nx">scene</span><span class="p">)</span> <span class="k">if</span> <span class="o">!</span><span class="nx">context</span>
+      <span class="nx">context</span><span class="p">.</span><span class="nx">render</span><span class="p">()</span>
+      <span class="k">return</span>
+
+    <span class="nv">spearFromPool = </span><span class="k">new</span> <span class="nx">spearPool</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="nx">cubie</span><span class="p">.</span><span class="nx">fill</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
+    <span class="nx">model</span><span class="p">.</span><span class="nx">add</span> <span class="nx">cubie</span>
+    <span class="nx">newValue</span></pre></div></td></tr><tr id="section-14"><td class="docs"><div class="pilwrap"><a href="#section-14" class="pilcrow">&#182;</a></div>
+</td><td class="code"><div class="highlight"><pre><span class="k">if</span> <span class="nb">window</span><span class="o">?</span> <span class="k">then</span> <span class="nv">base= </span><span class="nb">window</span>
+<span class="k">if</span> <span class="nx">module</span><span class="o">?</span><span class="p">.</span><span class="nx">exports</span><span class="o">?</span> <span class="k">then</span> <span class="nv">base = </span><span class="nx">module</span>
+
+<span class="nv">base.exports = </span><span class="nx">visual</span>
+
+</pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 08 2015 09:21:50 GMT+1000 (ChST)  </div></div></body></html>

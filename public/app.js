@@ -1,11 +1,166 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, errorHandler, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, initializeSensorTag, magnetometerHandler, mainHost, pageGen, pages, pointFormat, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, statusHandler, stopRecording, systemCommunicator, templater, test, testCollection, tests, useButton, visualHandler;
+var $, Backbone, TiHandler, _, base;
 
 Backbone = require('backbone');
 
 _ = require('underscore');
 
-require('./libs/dbg/console');
+require('../libs/dbg/console');
+
+$ = require('jquery');
+
+TiHandler = (function() {
+  var errorHandler, evothings, sensortag, statusHandler;
+
+  evothings = window.evothings = {};
+
+  evothings.util = require('../libs/evothings/util/util').util;
+
+  evothings.easyble = require('../libs/evothings/easyble/easyble').easyble;
+
+  evothings.tisensortag = require('../libs/evothings/tisensortag/tisensortag').tisensortag;
+
+  sensortag = evothings.tisensortag.createInstance();
+
+
+  /*
+  Section: Data Structures
+   Major data structures and interfaces to them
+  
+  systemCommunicator = Backbone.Model.extend
+    defaults:
+      calibrating: false
+      recording: false
+      connected: false
+      calibrate: false
+      loggedIn:  false
+  
+  globalState = new systemCommunicator
+  
+  reading = Backbone.Model.extend
+    defaults:
+      sensor: 'gyro'
+    initialize: ->
+      d = new Date
+      @set 'time', d.getTime()
+    
+  
+  rawSession = Backbone.Model.extend()
+  sessionInfo = new rawSession
+      user: ''
+      patient: ''
+      testID: ''
+      sensorUUID: ''
+      platformUUID: ''
+   */
+
+  function TiHandler(globalState, reading, sessionInfo1) {
+    this.globalState = globalState;
+    this.reading = reading;
+    this.sessionInfo = sessionInfo1;
+  }
+
+
+  /*
+   * debuging -- should show up on server
+  readings.push new reading
+   raw: [ 1,2,3,4,5,6]
+   sensor: 'DebugOnly'
+  
+   * ## Hardware
+   * external communications to Hardware
+  #
+   * set up the sensorTag and configure to recieve
+   * accelerometer, magnetometer and gyro data
+  #
+   */
+
+  statusHandler = function(status) {
+    var ref, ref1, ref2;
+    console.log("new Sensor Status");
+    console.log(status);
+    if ('Sensors online' === status) {
+      enterConnected();
+      status = 'Sensor online';
+    }
+    if ('Device data available' === status) {
+      $('#FirmwareData').html(sensortag.getFirmwareString());
+      sessionInfo.set('sensorUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+      $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
+      if (typeof console !== "undefined" && console !== null) {
+        console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
+      }
+    }
+    $('#StatusData').html(status);
+  };
+
+  errorHandler = function(error) {
+    console.log("Sensor error!");
+    console.log('Error: ' + error);
+    if ('disconnected' === error) {
+      this.globalState.set('connected', false);
+      $('#uuid').html("Must connect to sensor").css('color', "red");
+      setTimeout((function() {
+        sensortag.connectToClosestDevice();
+      }), 1000);
+    }
+  };
+
+  TiHandler.prototype.initializeSensorTag = function(accelerometerHandler, magnetometerHandler, gyroscopeHandler) {
+    var e, failures, repeat;
+    repeat = false;
+    failures = 0;
+    console.log("initialize Sensor Communication");
+    try {
+      this.globalState.set('connected', false);
+      sensortag.statusCallback(statusHandler);
+      sensortag.errorCallback(errorHandler);
+      console.log("Status and error handlers OK");
+      sensortag.accelerometerCallback(accelerometerHandler, 100);
+      sensortag.magnetometerCallback(magnetometerHandler, 100);
+      sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
+      console.log("Device Sensors OK");
+      sensortag.connectToClosestDevice();
+    } catch (_error) {
+      e = _error;
+      failures++;
+      console.log("failed to initialize");
+      console.log(e);
+      repeat = window.setInterval(initializeSensorTag, 500);
+      return;
+    }
+    if (repeat != null) {
+      console.log("sensor came on-line after " + failures + " failures");
+      window.clearInterval(repeat);
+    } else {
+      console.log("sensor came on-line immediately");
+    }
+  };
+
+  return TiHandler;
+
+})();
+
+if (typeof window !== "undefined" && window !== null) {
+  base = window;
+}
+
+if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+  base = module;
+}
+
+base.exports = TiHandler;
+
+
+
+},{"../libs/dbg/console":5,"../libs/evothings/easyble/easyble":7,"../libs/evothings/tisensortag/tisensortag":8,"../libs/evothings/util/util":9,"backbone":12,"jquery":14,"underscore":13}],2:[function(require,module,exports){
+var $, Backbone, TiHandler, TiHandlerDef, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
+
+Backbone = require('backbone');
+
+_ = require('underscore');
+
+require('../libs/dbg/console');
 
 Backbone.$ = $ = require('jquery');
 
@@ -13,11 +168,11 @@ pages = require('./pages.coffee');
 
 evothings = window.evothings = {};
 
-evothings.util = require('./libs/evothings/util/util').util;
+evothings.util = require('../libs/evothings/util/util').util;
 
-evothings.easyble = require('./libs/evothings/easyble/easyble').easyble;
+evothings.easyble = require('../libs/evothings/easyble/easyble').easyble;
 
-evothings.tisensortag = require('./libs/evothings/tisensortag/tisensortag').tisensortag;
+evothings.tisensortag = require('../libs/evothings/tisensortag/tisensortag').tisensortag;
 
 sensortag = evothings.tisensortag.createInstance();
 
@@ -141,88 +296,6 @@ sessionInfo = new rawSession({
   sensorUUID: '',
   platformUUID: ''
 });
-
-statusHandler = function(status) {
-  var ref, ref1, ref2;
-  console.log("new Sensor Status");
-  console.log(status);
-  if ('Sensors online' === status) {
-    enterConnected();
-    status = 'Sensor online';
-  }
-  if ('Device data available' === status) {
-    $('#FirmwareData').html(sensortag.getFirmwareString());
-    sessionInfo.set('sensorUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
-    $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
-    if (typeof console !== "undefined" && console !== null) {
-      console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
-    }
-  }
-  $('#StatusData').html(status);
-};
-
-errorHandler = function(error) {
-  console.log("Sensor error!");
-  console.log('Error: ' + error);
-  if ('disconnected' === error) {
-    globalState.set('connected', false);
-    $('#uuid').html("Must connect to sensor").css('color', "red");
-    setTimeout((function() {
-      sensortag.connectToClosestDevice();
-    }), 1000);
-  }
-};
-
-initializeSensorTag = function() {
-  var e, failures, repeat;
-  repeat = false;
-  failures = 0;
-  console.log("initialize Sensor Communication");
-  try {
-    globalState.set('connected', false);
-    sensortag.statusCallback(statusHandler);
-    sensortag.errorCallback(errorHandler);
-    console.log("Status and error handlers OK");
-    sensortag.accelerometerCallback(accelerometerHandler, 100);
-    sensortag.magnetometerCallback(magnetometerHandler, 100);
-    sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7);
-    console.log("Device Sensors OK");
-    sensortag.connectToClosestDevice();
-  } catch (_error) {
-    e = _error;
-    failures++;
-    console.log("failed to initialize");
-    console.log(e);
-    repeat = window.setInterval(initializeSensorTag, 500);
-    return;
-  }
-  if (repeat != null) {
-    console.log("sensor came on-line after " + failures + " failures");
-    window.clearInterval(repeat);
-  } else {
-    console.log("sensor came on-line immediately");
-  }
-};
-
-templater = function(x, y, z, sensor, unit) {
-  if (sensor == null) {
-    sensor = 'unknown';
-  }
-  if (unit == null) {
-    unit = '';
-  }
-  return sensor + ' x=' + (x >= 0 ? '+' : '') + x.toFixed(2) + unit + ' -- ' + 'y=' + (y >= 0 ? '+' : '') + y.toFixed(2) + unit + ' -- ' + 'z=' + (z >= 0 ? '+' : '') + z.toFixed(2) + unit;
-};
-
-pointFormat = function(p, unit, precision) {
-  if (unit == null) {
-    unit = 'v';
-  }
-  if (precision == null) {
-    precision = 2;
-  }
-  return unit + ' x=' + (p.x >= 0 ? '+' : '') + p.x.toFixed(precision) + ' -- ' + 'y=' + (p.y >= 0 ? '+' : '') + p.y.toFixed(precision) + ' -- ' + 'z=' + (p.z >= 0 ? '+' : '') + p.z.toFixed(precision);
-};
 
 enterDebug = function() {
   useButton(buttonModelDebugOn);
@@ -565,6 +638,10 @@ visualHandler = require('./visual.coffee');
 
 smoother = new visualHandler(globalState);
 
+TiHandlerDef = require('./TiHandler.coffee');
+
+TiHandler = new TiHandlerDef(globalState, reading, sessionInfo);
+
 stopRecording = function() {
   if (globalState.get('recording')) {
     globalState.set('recording', false);
@@ -629,6 +706,7 @@ sensorIsReady = false;
 domIsReady = false;
 
 rediness = function() {
+  var e;
   enterAdmin();
   clinics.on('change', function() {
     return console.log("got BIG change!");
@@ -636,8 +714,6 @@ rediness = function() {
   clinics.fetch({
     success: function(model, response, options) {
       console.log("clinic request success");
-      console.log(response);
-      console.log(model);
       return model.trigger('change');
     },
     error: function(model, response, options) {
@@ -650,8 +726,17 @@ rediness = function() {
     sessionInfo.set('platformUUID', window.device.uuid);
     $("#platformUUID").text(window.device.uuid);
     if (sensorIsReady && !(globalState.get('connected'))) {
-      return initializeSensorTag();
+      console.log("Activating sensor attempt");
+      try {
+        TiHandler.initializeSensorTag(accelerometerHandler, magnetometerHandler, gyroscopeHandler);
+        console.log("TiHandler initialized");
+      } catch (_error) {
+        e = _error;
+        console.log("error from TiHandler");
+        console.log(e);
+      }
     }
+    return console.log("Activating sensor exit");
   }
 };
 
@@ -697,7 +782,823 @@ $(function() {
 
 
 
-},{"./libs/dbg/console":2,"./libs/evothings/easyble/easyble":4,"./libs/evothings/tisensortag/tisensortag":5,"./libs/evothings/util/util":6,"./pages.coffee":13,"./visual.coffee":14,"backbone":9,"jquery":11,"underscore":10}],2:[function(require,module,exports){
+},{"../libs/dbg/console":5,"../libs/evothings/easyble/easyble":7,"../libs/evothings/tisensortag/tisensortag":8,"../libs/evothings/util/util":9,"./TiHandler.coffee":1,"./pages.coffee":3,"./visual.coffee":4,"backbone":12,"jquery":14,"underscore":13}],3:[function(require,module,exports){
+var Pages, implementing,
+  slice = [].slice,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+Pages = (function() {
+  var $, Backbone, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
+
+  Teacup = require('teacup');
+
+  Backbone = require('Backbone');
+
+  $ = require('jquery');
+
+  tea = new Teacup.Teacup;
+
+  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+
+  Pages.prototype.getAdmin = function(kind) {
+    var t;
+    t = this.admin.get(kind);
+    if (t) {
+      return t.toArray(0);
+    } else {
+      console.log('no element named ' + kind + 'in Admin');
+      return [];
+    }
+  };
+
+  function Pages(admin, sessionInfo) {
+    this.admin = admin;
+    this.sessionInfo = sessionInfo;
+    this.renderPage = bind(this.renderPage, this);
+    this.forceTest = bind(this.forceTest, this);
+    this.wireAdmin = bind(this.wireAdmin, this);
+    this.resetAdmin = bind(this.resetAdmin, this);
+    this.wireButtons = bind(this.wireButtons, this);
+    this.getAdmin = bind(this.getAdmin, this);
+    tea.getAdmin = this.getAdmin;
+  }
+
+  Pages.prototype.inspectAdminPage = function() {
+    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
+    clinicViewTemplate = Backbone.View.extend({
+      el: '#desiredClinic',
+      collection: this.admin.get('clinics'),
+      attributes: {
+        admin: this.admin,
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          var temp, theClinic, theOptionCid;
+          theOptionCid = this.$el.val();
+          theClinic = this.collection.get(theOptionCid);
+          this.attributes.session.set('clinic', theClinic);
+          temp = this.attributes.admin.get('clinicians');
+          temp.reset();
+          temp.add(theClinic.get('clinicians'));
+          temp.trigger('change');
+          temp = this.attributes.admin.get('clients');
+          temp.reset();
+          temp.add(theClinic.get('clients'));
+          temp.trigger('change');
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var clinic, i, len, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              clinic = ref1[i];
+              if (clinic.get('force')) {
+                results.push(option('.forceSelect.selected', {
+                  selected: 'selected',
+                  value: clinic.cid
+                }, clinic.get('name')));
+              } else {
+                results.push(option({
+                  value: clinic.cid
+                }, clinic.get('name')));
+              }
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    clinicianViewTemplate = Backbone.View.extend({
+      el: '#desiredClinician',
+      collection: this.admin.get('clinicians'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('clinician', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        var temp;
+        temp = render((function(_this) {
+          return function() {
+            var i, len, n, ref1, results, user;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              user = ref1[i];
+              n = user.get('name');
+              results.push(option({
+                value: user.get('_id')
+              }, n.first + ' ' + n.last));
+            }
+            return results;
+          };
+        })(this));
+        this.$el.html(temp);
+        return this;
+      }
+    });
+    clientViewTemplate = Backbone.View.extend({
+      el: '#desiredClient',
+      collection: this.admin.get('clients'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('client', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var i, len, n, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              p = ref1[i];
+              n = p.get('name');
+              results.push(option({
+                value: p.get('_id')
+              }, n.first + ' ' + n.last));
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    doneViewTemplate = Backbone.View.extend({
+      el: '#done',
+      model: this.sessionInfo,
+      initialize: function() {
+        return this.listenTo(this.model, 'change', this.render);
+      },
+      events: {
+        'click': this.adminDone
+      },
+      render: function() {
+        var ref1;
+        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
+          console.log('activating');
+          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
+          this.$el.text("Done");
+          this.$el.show().fadeTo(500, 1);
+        }
+        return this;
+      }
+    });
+    this.doneView = new doneViewTemplate;
+    this.clientView = new clientViewTemplate;
+    this.clinicView = new clinicViewTemplate;
+    this.clinicianView = new clinicianViewTemplate;
+  };
+
+  Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
+    return div('#capture-display.container', function() {
+      div('.row', function() {
+        a({
+          href: '/index.html'
+        }, function() {
+          return img("#logo.five.columns", {
+            src: './ui/images/logo-final.png',
+            width: '100%'
+          });
+        });
+        div('#dud.one.columns', function() {
+          return raw('&nbsp;');
+        });
+        return h5('.five.columns', 'Movement data capture');
+      });
+      buttons();
+      div('.row', function() {
+        div('.two.columns', "Sensor --");
+        div('.two.columns', function() {
+          text('Version:');
+          return span('#FirmwareData', '?');
+        });
+        return div('#uuid.five.columns', ' ');
+      });
+      div('.row', function() {
+        div('.four.columns', "Platform uuid");
+        return div('#platformUUID.five.columns', function() {
+          return raw('&nbsp;');
+        });
+      });
+      contents1();
+      contents2();
+      return div('#footer', 'style="display:none;"', function() {
+        hr();
+        return div('#console-log.container');
+      });
+    });
+  });
+
+  Pages.prototype.adminContents = renderable(function() {
+    return div('#adminForm', function() {
+      hr();
+      return form(function() {
+        div('.row', function() {
+          return div('.five.columns', function() {
+            label('Clinic');
+            return select('#desiredClinic.u-full-width', 'Clinic', '');
+          });
+        });
+        div('.row', function() {
+          div('.four.columns', function() {
+            label({
+              "for": 'desiredClinician'
+            }, 'Clinician');
+            select('#desiredClinician.u-full-width');
+            br();
+            label({
+              "for": "password"
+            }, "Enter Password");
+            return input("#password", {
+              type: 'password'
+            });
+          });
+          return div('.four.columns', function() {
+            label({
+              "for": 'desiredClient'
+            }, 'Client');
+            return select('#desiredClient.u-full-width');
+          });
+        });
+        return div('.row', function() {
+          div('.nine.columns', function() {
+            return raw("&nbsp;");
+          });
+          return button('#done.three.columns', {
+            disabled: true
+          }, "Done");
+        });
+      });
+    });
+  });
+
+  Pages.prototype.wireButtons = function() {
+    var model;
+    model = this.sessionInfo;
+    return $('#TestID').change((function(_this) {
+      return function(node) {
+        $('#TestSelect').text('Which Test?').css('color', '');
+        model.set('testID', $('#TestID option:selected').val());
+        return false;
+      };
+    })(this));
+  };
+
+  Pages.prototype.resetAdmin = function() {
+    this.sessionInfo.set('clinic', '');
+    this.sessionInfo.set('clinician', '');
+    this.sessionInfo.set('password', '');
+    this.sessionInfo.set('client', '');
+    this.sessionInfo.set('testID', '');
+    $('#password').val('');
+    $('option:selected').prop('selected', false);
+    $('option.forceSelect').prop('selected', true);
+    $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
+    return this.sessionInfo.set('hostUrl', $('#desiredHost option:selected').val());
+  };
+
+  Pages.prototype.wireAdmin = function() {
+    var model;
+    model = this.sessionInfo;
+    $('#password').keypress((function(_this) {
+      return function(node) {
+        var ref1;
+        if (node.keyCode === 13 && !node.shiftKey) {
+          node.preventDefault();
+          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+            model.set('password', $('#password').val());
+            return false;
+          }
+        }
+      };
+    })(this)).on('blur', (function(_this) {
+      return function(node) {
+        var ref1;
+        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+          model.set('password', $('#password').val());
+          return false;
+        }
+      };
+    })(this));
+  };
+
+  Pages.prototype.topButtons = renderable(function() {
+    div('.row', function() {
+      button('#admin.three.columns button-primary', 'Admin');
+      button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
+      button('.three.columns.disabled', {
+        style: "opacity:0.25;"
+      }, '');
+      return button('#debug.three.columns.disabled', '');
+    });
+    return div('.row', function() {
+      div('.three.columns', function() {
+        label('#TestSelect', {
+          "for": "TestID"
+        }, 'Which Test?');
+        return select("#TestID.u-full-width");
+      });
+      div('.three.columns', function() {
+        button('#action.disabled.u-full-width', '');
+        return label('#TotalReadings', {
+          "for": "action"
+        }, ' 0');
+      });
+      div('.three.columns', function() {
+        button('#upload.disabled.u-full-width', 'Upload');
+        return label('#StatusData', {
+          "for": "upload"
+        }, 'No connection');
+      });
+      return button('#clear.three.columns.disabled', 'Reset');
+    });
+  });
+
+  Pages.prototype.forceTest = function(color) {
+    if (color == null) {
+      color = 'violet';
+    }
+    $('#TestSelect').text('Must Select Test').css('color', color);
+    $('#TestID').val('Select --');
+    return this.sessionInfo.set('testID', null);
+  };
+
+  Pages.prototype.sensorContents = renderable(function() {
+    return div('#sensorPage.container', function() {
+      hr();
+      return div('.row.readings', function() {
+        div('#gyroscope.four.columns', function() {
+          h5('Gyroscope');
+          canvas('#gyro-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#GyroscopeData.u-full-width.dump', ' ');
+        });
+        div('#acelleration.four.columns', function() {
+          h5('Accelerometer');
+          canvas('#accel-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#AccelerometerData.u-full-width.dump', ' ');
+        });
+        return div('#magnetometer.four.columns', function() {
+          h5('Magnetometer');
+          canvas('#magnet-view', {
+            width: '200',
+            height: '200',
+            style: 'width=100%'
+          });
+          return div('#MagnetometerData.u-full-width.dump', '');
+        });
+      });
+    });
+  });
+
+  Pages.prototype.activateButtons = function(buttonStruct) {
+    var b, btn, key, results, selector;
+    results = [];
+    for (key in buttonStruct) {
+      btn = buttonStruct[key];
+      btn = btn.toJSON();
+      selector = '#' + btn.selector;
+      if (btn.active) {
+        b = $(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click');
+        if (btn.funct != null) {
+          b.on('click', btn.funct);
+        }
+        if (btn.text != null) {
+          b.text(btn.text);
+        }
+        results.push(b.show().fadeTo(500, 1));
+      } else {
+        b = $(selector).removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
+        if (btn.text != null) {
+          b.text(btn.text);
+        }
+        results.push(b.fadeTo(500, 0.25));
+      }
+    }
+    return results;
+  };
+
+  Pages.prototype.renderPage = function(adminDone) {
+    var bodyHtml, testViewTemplate;
+    this.adminDone = adminDone;
+    bodyHtml = this.theBody(this.topButtons, this.adminContents, this.sensorContents);
+    $('body').html(bodyHtml);
+    this.wireButtons();
+    testViewTemplate = Backbone.View.extend({
+      el: '#TestID',
+      collection: this.admin.get('tests'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        this.listenTo(this.collection, 'change', this.render);
+        return this.render();
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('testID', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var i, len, ref1, results, test;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              test = ref1[i];
+              if (test.get('force')) {
+                results.push(option('.forceSelect.selected', {
+                  selected: 'selected',
+                  value: test.get('testID')
+                }, test.get('testID')));
+              } else {
+                results.push(option({
+                  value: test.get('name')
+                }, test.get('Description')));
+              }
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    this.testView = new testViewTemplate;
+    this.wireAdmin();
+  };
+
+  Pages.prototype.activateAdminPage = function(buttonSpec) {
+    $('#sensorPage').hide();
+    $('#adminForm').show();
+    this.inspectAdminPage();
+    if (buttonSpec != null) {
+      return this.activateButtons(buttonSpec);
+    }
+  };
+
+  Pages.prototype.activateSensorPage = function(buttonSpec) {
+    $('#adminForm').hide();
+    $('#sensorPage').show();
+    if (buttonSpec != null) {
+      return this.activateButtons(buttonSpec);
+    }
+  };
+
+  return Pages;
+
+})();
+
+exports.Pages = Pages;
+
+
+
+},{"Backbone":10,"jquery":14,"teacup":15}],4:[function(require,module,exports){
+var $, Seen, base, visual;
+
+Seen = require('../libs/dbg/seen');
+
+$ = require('jquery');
+
+
+/*
+#globalStatus looks like this:
+#systemCommunicator = Backbone.Model.extend
+ *  defaults:
+ *    calibrating: false
+ *    recording: false
+ *    connected: false
+ *    calibrate: false
+#
+#globalState = new systemCommunicator
+ */
+
+visual = (function() {
+  var bufferToHexStr, byteToHexStr, hx, split;
+
+  function visual(globalState, readings) {
+    this.globalState = globalState;
+    this.readings = readings;
+  }
+
+  visual.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
+    var e, tH;
+    try {
+      tH = void 0;
+      if (dataCondition.dataHistory.grandTotal === void 0) {
+        dataCondition.dataHistory.grandTotal = Seen.P(0, 0, 0);
+        dataCondition.dataHistory.grandAverage = Seen.P(0, 0, 0);
+        dataCondition.dataHistory.totalReadings = 1;
+      }
+      tH = dataCondition.dataHistory;
+      if (tH.totalReadings === 1000) {
+        tH.grandTotal.subtract(tH.grandAverage);
+        tH.totalReadings--;
+      }
+      tH.grandTotal.add(dataCondition.curValue);
+      tH.totalReadings++;
+      tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings);
+      dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
+    } catch (_error) {
+      e = _error;
+    }
+  };
+
+  split = function(raw, lo, hi) {
+    return raw - ((hi + lo) / 2.0);
+  };
+
+  visual.prototype.calibratorMid = function(dataCondition, calibrate, calibrating) {
+    var e, tH;
+    try {
+      tH = void 0;
+      if (dataCondition.dataHistory.max === void 0) {
+        dataCondition.dataHistory.max = dataCondition.cookedValue.copy();
+        dataCondition.dataHistory.min = dataCondition.cookedValue.copy();
+      }
+      tH = dataCondition.dataHistory;
+      if (dataCondition.cookedValue.x > tH.max.x) {
+        tH.max.x = dataCondition.cookedValue.x;
+      }
+      if (dataCondition.cookedValue.y > tH.max.y) {
+        tH.max.y = dataCondition.cookedValue.y;
+      }
+      if (dataCondition.cookedValue.z > tH.max.z) {
+        tH.max.z = dataCondition.cookedValue.z;
+      }
+      if (dataCondition.cookedValue.x < tH.min.x) {
+        tH.min.x = dataCondition.cookedValue.x;
+      }
+      if (dataCondition.cookedValue.y < tH.min.y) {
+        tH.min.y = dataCondition.cookedValue.y;
+      }
+      if (dataCondition.cookedValue.z < tH.min.z) {
+        tH.min.z = dataCondition.cookedValue.z;
+      }
+      dataCondition.cookedValue.x = split(dataCondition.cookedValue.x, tH.min.x, tH.max.x);
+      dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y);
+      dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z);
+    } catch (_error) {
+      e = _error;
+    }
+  };
+
+  visual.prototype.calibratorSmooth = function(dataCondition, calibrate, calibrating) {
+    var e;
+    try {
+      if (dataCondition.dataHistory.runniongSum === void 0) {
+        dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy();
+      }
+      dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
+    } catch (_error) {
+      e = _error;
+    }
+  };
+
+  visual.prototype.readingHandler = function(o) {
+    var dataCondition;
+    dataCondition = {
+      curValue: Seen.P(0, 0, 0),
+      cookedValue: Seen.P(0, 0, 0),
+      dataHistory: {}
+    };
+    if (!o.calibrator) {
+      o.calibrator = function(d) {
+        d.cookedValue = d.curValue;
+      };
+    }
+    if (!o.units) {
+      o.units = '';
+    }
+    o.bias = Seen.P(0, 0, 0);
+    $('#' + o.debias).click(function() {
+      o.bias = o.cookedValue;
+    });
+    return (function(_this) {
+      return function(data) {
+        var error, i, m, p, r;
+        try {
+          r = o.source(data);
+          p = void 0;
+          m = void 0;
+          r = Seen.P(r.x, r.y, r.z);
+          r.subtract(o.bias);
+          dataCondition.curValue = r.copy();
+          dataCondition.cookedValue = r.copy();
+          i = 0;
+          while (i < o.calibrator.length) {
+            o.calibrator[i](dataCondition, _this.globalState.get('calibrate'), _this.globalState.get('calibrating'));
+            i++;
+          }
+          p = dataCondition.cookedValue;
+          if (_this.globalState.get('recording')) {
+            _this.readings.push(new reading({
+              sensor: o.sensor,
+              raw: _.toArray(data)
+            }));
+          }
+          m = dataCondition.dataHistory;
+          o.viewer(p.x, p.y, p.z);
+        } catch (_error) {
+          error = _error;
+          console.log(error);
+          return console.log("in readinghandler");
+        }
+      };
+    })(this);
+  };
+
+
+  /*
+   * Convert byte buffer to hex string.
+   * @param buffer - an Uint8Array
+   * @param offset - byte offset
+   * @param numBytes - number of bytes to read
+   * @return string with hex representation of bytes
+   */
+
+  hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+
+  bufferToHexStr = function(buffer, offset, numBytes) {
+    var hex, i;
+    hex = '';
+    if (!numBytes) {
+      numBytes = buffer.length;
+    }
+    if (!offset) {
+      offset = 0;
+    }
+    i = 0;
+    while (i < numBytes) {
+      hex += byteToHexStr(buffer[offset + i]) + ' ';
+      ++i;
+    }
+    return hex;
+  };
+
+  byteToHexStr = function(d) {
+    var hi, lo;
+    lo = hx[d & 0xf];
+    hi = hx[(d & 0xf0) >> 4];
+    return hi + lo;
+  };
+
+  visual.prototype.viewSensor = function(viewport, scaleFactor) {
+    var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
+    height = 200;
+    width = 200;
+    model = Seen.Models['default']();
+    scene = new Seen.Scene({
+      model: model,
+      viewport: Seen.Viewports.center(width, height)
+    });
+    cubie = Seen.Shapes.cube().scale(0.25);
+    spearPool = function(many) {
+      var colors, count, i, j, newArrow, shapes;
+      i = void 0;
+      j = void 0;
+      shapes = new Array(many);
+      count = -1;
+      colors = new Array(many);
+      newArrow = function(model, x, y, z) {
+        var alphaDecay;
+        alphaDecay = 255;
+        count = count + 1;
+        if (count === many) {
+          count = 0;
+        }
+        if (shapes[count]) {
+          model.remove(shapes[count]);
+        }
+        shapes[count] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
+        model.add(shapes[count]);
+        shapes[count].bake();
+        shapes[count].reset();
+        j = 0;
+        i = count;
+        while (i < many) {
+          if (shapes[i]) {
+            shapes[i].fill(colors[j++]);
+          }
+          i++;
+        }
+        i = 0;
+        while (i < count) {
+          if (shapes[i]) {
+            shapes[i].fill(colors[j++]);
+          }
+          i++;
+        }
+        return shapes[count];
+      };
+      i = 0;
+      while (i < many) {
+        shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
+        shapes[i].bake();
+        colors[i] = new Seen.Material(new Seen.Color(255, 80, 255, 255 - 250 / many * i));
+        i++;
+      }
+      return newArrow;
+    };
+    newValue = function(x, y, z) {
+      var context, cross, dot, leng, m, p1, pBar, pOriginal, q, spear;
+      p1 = Seen.P(x, y, z);
+      spear = void 0;
+      pOriginal = p1.copy();
+      pBar = Seen.P(1, 0, 0);
+      m = void 0;
+      q = void 0;
+      cross = void 0;
+      dot = void 0;
+      leng = p1.magnitude();
+      p1 = p1.normalize();
+      pBar.add(p1);
+      if (pBar.magnitude() < 0.000001) {
+        pBar = Seen.P(0, 1, 0);
+      }
+      pBar.normalize();
+      q = Seen.Quaternion.pointAngle(pBar, Math.PI);
+      m = q.toMatrix();
+      spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
+      spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
+      if (!context) {
+        context = Seen.Context(viewport, scene);
+      }
+      context.render();
+    };
+    spearFromPool = new spearPool(10);
+    cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
+    model.add(cubie);
+    return newValue;
+  };
+
+  return visual;
+
+})();
+
+if (typeof window !== "undefined" && window !== null) {
+  base = window;
+}
+
+if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+  base = module;
+}
+
+base.exports = visual;
+
+
+
+},{"../libs/dbg/seen":6,"jquery":14}],5:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -979,7 +1880,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],3:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -3791,7 +4692,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],4:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * File: easyble.js
  * Description: Library for making BLE programming easier.
@@ -4286,7 +5187,7 @@ exports.easyble = (function()
 	return easyble;
 })();
 
-},{}],5:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * File: tisensortag.js
  * Description: JavaScript library for the TI SensorTag.
@@ -5070,7 +5971,7 @@ exports.tisensortag = (function()
 
 
 
-},{}],6:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 /**
  * File: util.js
  * Description: Utilities for byte arrays.
@@ -5109,7 +6010,7 @@ exports.util = (function()
 	return funs
 })()
 
-},{}],7:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.0
 
@@ -6981,7 +7882,7 @@ exports.util = (function()
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":11,"underscore":8}],8:[function(require,module,exports){
+},{"jquery":14,"underscore":11}],11:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8531,11 +9432,11 @@ exports.util = (function()
   }
 }.call(this));
 
-},{}],9:[function(require,module,exports){
-arguments[4][7][0].apply(exports,arguments)
-},{"dup":7,"jquery":11,"underscore":10}],10:[function(require,module,exports){
-arguments[4][8][0].apply(exports,arguments)
-},{"dup":8}],11:[function(require,module,exports){
+},{}],12:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"dup":10,"jquery":14,"underscore":13}],13:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"dup":11}],14:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -17747,7 +18648,7 @@ return jQuery;
 
 }));
 
-},{}],12:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.1
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, i, j, l, len, len1, len2, merge_elements, ref, ref1, ref2, tagName,
@@ -18159,820 +19060,4 @@ return jQuery;
 
 }).call(this);
 
-},{}],13:[function(require,module,exports){
-var Pages, implementing,
-  slice = [].slice,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-implementing = function() {
-  var classReference, i, j, key, len, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
-  for (j = 0, len = mixins.length; j < len; j++) {
-    mixin = mixins[j];
-    ref = mixin.prototype;
-    for (key in ref) {
-      value = ref[key];
-      classReference.prototype[key] = value;
-    }
-  }
-  return classReference;
-};
-
-Pages = (function() {
-  var $, Backbone, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
-
-  Teacup = require('teacup');
-
-  Backbone = require('Backbone');
-
-  $ = require('jquery');
-
-  tea = new Teacup.Teacup;
-
-  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
-
-  Pages.prototype.getAdmin = function(kind) {
-    var t;
-    t = this.admin.get(kind);
-    if (t) {
-      return t.toArray(0);
-    } else {
-      console.log('no element named ' + kind + 'in Admin');
-      return [];
-    }
-  };
-
-  function Pages(admin, sessionInfo) {
-    this.admin = admin;
-    this.sessionInfo = sessionInfo;
-    this.renderPage = bind(this.renderPage, this);
-    this.forceTest = bind(this.forceTest, this);
-    this.wireAdmin = bind(this.wireAdmin, this);
-    this.resetAdmin = bind(this.resetAdmin, this);
-    this.wireButtons = bind(this.wireButtons, this);
-    this.getAdmin = bind(this.getAdmin, this);
-    tea.getAdmin = this.getAdmin;
-  }
-
-  Pages.prototype.inspectAdminPage = function() {
-    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
-    clinicViewTemplate = Backbone.View.extend({
-      el: '#desiredClinic',
-      collection: this.admin.get('clinics'),
-      attributes: {
-        admin: this.admin,
-        session: this.sessionInfo
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          var temp, theClinic, theOptionCid;
-          theOptionCid = this.$el.val();
-          theClinic = this.collection.get(theOptionCid);
-          this.attributes.session.set('clinic', theClinic);
-          temp = this.attributes.admin.get('clinicians');
-          temp.reset();
-          temp.add(theClinic.get('clinicians'));
-          temp.trigger('change');
-          temp = this.attributes.admin.get('clients');
-          temp.reset();
-          temp.add(theClinic.get('clients'));
-          temp.trigger('change');
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var clinic, i, len, ref1, results;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              clinic = ref1[i];
-              if (clinic.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: clinic.cid
-                }, clinic.get('name')));
-              } else {
-                results.push(option({
-                  value: clinic.cid
-                }, clinic.get('name')));
-              }
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    clinicianViewTemplate = Backbone.View.extend({
-      el: '#desiredClinician',
-      collection: this.admin.get('clinicians'),
-      attributes: {
-        session: this.sessionInfo
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('clinician', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        var temp;
-        temp = render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results, user;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              user = ref1[i];
-              n = user.get('name');
-              results.push(option({
-                value: user.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this));
-        this.$el.html(temp);
-        return this;
-      }
-    });
-    clientViewTemplate = Backbone.View.extend({
-      el: '#desiredClient',
-      collection: this.admin.get('clients'),
-      attributes: {
-        session: this.sessionInfo
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('client', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              p = ref1[i];
-              n = p.get('name');
-              results.push(option({
-                value: p.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    doneViewTemplate = Backbone.View.extend({
-      el: '#done',
-      model: this.sessionInfo,
-      initialize: function() {
-        return this.listenTo(this.model, 'change', this.render);
-      },
-      events: {
-        'click': this.adminDone
-      },
-      render: function() {
-        var ref1;
-        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
-          console.log('activating');
-          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
-          this.$el.text("Done");
-          this.$el.show().fadeTo(500, 1);
-        }
-        return this;
-      }
-    });
-    this.doneView = new doneViewTemplate;
-    this.clientView = new clientViewTemplate;
-    this.clinicView = new clinicViewTemplate;
-    this.clinicianView = new clinicianViewTemplate;
-  };
-
-  Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
-    return div('#capture-display.container', function() {
-      div('.row', function() {
-        a({
-          href: '/index.html'
-        }, function() {
-          return img("#logo.five.columns", {
-            src: './ui/images/logo-final.png',
-            width: '100%'
-          });
-        });
-        div('#dud.one.columns', function() {
-          return raw('&nbsp;');
-        });
-        return h5('.five.columns', 'Movement data capture');
-      });
-      buttons();
-      div('.row', function() {
-        div('.two.columns', "Sensor --");
-        div('.two.columns', function() {
-          text('Version:');
-          return span('#FirmwareData', '?');
-        });
-        return div('#uuid.five.columns', ' ');
-      });
-      div('.row', function() {
-        div('.four.columns', "Platform uuid");
-        return div('#platformUUID.five.columns', function() {
-          return raw('&nbsp;');
-        });
-      });
-      contents1();
-      contents2();
-      return div('#footer', 'style="display:none;"', function() {
-        hr();
-        return div('#console-log.container');
-      });
-    });
-  });
-
-  Pages.prototype.adminContents = renderable(function() {
-    return div('#adminForm', function() {
-      hr();
-      return form(function() {
-        div('.row', function() {
-          return div('.five.columns', function() {
-            label('Clinic');
-            return select('#desiredClinic.u-full-width', 'Clinic', '');
-          });
-        });
-        div('.row', function() {
-          div('.four.columns', function() {
-            label({
-              "for": 'desiredClinician'
-            }, 'Clinician');
-            select('#desiredClinician.u-full-width');
-            br();
-            label({
-              "for": "password"
-            }, "Enter Password");
-            return input("#password", {
-              type: 'password'
-            });
-          });
-          return div('.four.columns', function() {
-            label({
-              "for": 'desiredClient'
-            }, 'Client');
-            return select('#desiredClient.u-full-width');
-          });
-        });
-        return div('.row', function() {
-          div('.nine.columns', function() {
-            return raw("&nbsp;");
-          });
-          return button('#done.three.columns', {
-            disabled: true
-          }, "Done");
-        });
-      });
-    });
-  });
-
-  Pages.prototype.wireButtons = function() {
-    var model;
-    model = this.sessionInfo;
-    return $('#TestID').change((function(_this) {
-      return function(node) {
-        $('#TestSelect').text('Which Test?').css('color', '');
-        model.set('testID', $('#TestID option:selected').val());
-        return false;
-      };
-    })(this));
-  };
-
-  Pages.prototype.resetAdmin = function() {
-    this.sessionInfo.set('clinic', '');
-    this.sessionInfo.set('clinician', '');
-    this.sessionInfo.set('password', '');
-    this.sessionInfo.set('client', '');
-    this.sessionInfo.set('testID', '');
-    $('#password').val('');
-    $('option:selected').prop('selected', false);
-    $('option.forceSelect').prop('selected', true);
-    $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-    return this.sessionInfo.set('hostUrl', $('#desiredHost option:selected').val());
-  };
-
-  Pages.prototype.wireAdmin = function() {
-    var model;
-    model = this.sessionInfo;
-    $('#password').keypress((function(_this) {
-      return function(node) {
-        var ref1;
-        if (node.keyCode === 13 && !node.shiftKey) {
-          node.preventDefault();
-          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-            model.set('password', $('#password').val());
-            return false;
-          }
-        }
-      };
-    })(this)).on('blur', (function(_this) {
-      return function(node) {
-        var ref1;
-        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-          model.set('password', $('#password').val());
-          return false;
-        }
-      };
-    })(this));
-  };
-
-  Pages.prototype.topButtons = renderable(function() {
-    div('.row', function() {
-      button('#admin.three.columns button-primary', 'Admin');
-      button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
-      button('.three.columns.disabled', {
-        style: "opacity:0.25;"
-      }, '');
-      return button('#debug.three.columns.disabled', '');
-    });
-    return div('.row', function() {
-      div('.three.columns', function() {
-        label('#TestSelect', {
-          "for": "TestID"
-        }, 'Which Test?');
-        return select("#TestID.u-full-width");
-      });
-      div('.three.columns', function() {
-        button('#action.disabled.u-full-width', '');
-        return label('#TotalReadings', {
-          "for": "action"
-        }, ' 0');
-      });
-      div('.three.columns', function() {
-        button('#upload.disabled.u-full-width', 'Upload');
-        return label('#StatusData', {
-          "for": "upload"
-        }, 'No connection');
-      });
-      return button('#clear.three.columns.disabled', 'Reset');
-    });
-  });
-
-  Pages.prototype.forceTest = function(color) {
-    if (color == null) {
-      color = 'violet';
-    }
-    $('#TestSelect').text('Must Select Test').css('color', color);
-    $('#TestID').val('Select --');
-    return this.sessionInfo.set('testID', null);
-  };
-
-  Pages.prototype.sensorContents = renderable(function() {
-    return div('#sensorPage.container', function() {
-      hr();
-      return div('.row.readings', function() {
-        div('#gyroscope.four.columns', function() {
-          h5('Gyroscope');
-          canvas('#gyro-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#GyroscopeData.u-full-width.dump', ' ');
-        });
-        div('#acelleration.four.columns', function() {
-          h5('Accelerometer');
-          canvas('#accel-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#AccelerometerData.u-full-width.dump', ' ');
-        });
-        return div('#magnetometer.four.columns', function() {
-          h5('Magnetometer');
-          canvas('#magnet-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#MagnetometerData.u-full-width.dump', '');
-        });
-      });
-    });
-  });
-
-  Pages.prototype.activateButtons = function(buttonStruct) {
-    var b, btn, key, results, selector;
-    results = [];
-    for (key in buttonStruct) {
-      btn = buttonStruct[key];
-      btn = btn.toJSON();
-      selector = '#' + btn.selector;
-      if (btn.active) {
-        b = $(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click');
-        if (btn.funct != null) {
-          b.on('click', btn.funct);
-        }
-        if (btn.text != null) {
-          b.text(btn.text);
-        }
-        results.push(b.show().fadeTo(500, 1));
-      } else {
-        b = $(selector).removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-        if (btn.text != null) {
-          b.text(btn.text);
-        }
-        results.push(b.fadeTo(500, 0.25));
-      }
-    }
-    return results;
-  };
-
-  Pages.prototype.renderPage = function(adminDone) {
-    var bodyHtml, testViewTemplate;
-    this.adminDone = adminDone;
-    bodyHtml = this.theBody(this.topButtons, this.adminContents, this.sensorContents);
-    $('body').html(bodyHtml);
-    this.wireButtons();
-    testViewTemplate = Backbone.View.extend({
-      el: '#TestID',
-      collection: this.admin.get('tests'),
-      attributes: {
-        session: this.sessionInfo
-      },
-      initialize: function() {
-        this.listenTo(this.collection, 'change', this.render);
-        return this.render();
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('testID', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var i, len, ref1, results, test;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              test = ref1[i];
-              if (test.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: test.get('testID')
-                }, test.get('testID')));
-              } else {
-                results.push(option({
-                  value: test.get('name')
-                }, test.get('Description')));
-              }
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    this.testView = new testViewTemplate;
-    this.wireAdmin();
-  };
-
-  Pages.prototype.activateAdminPage = function(buttonSpec) {
-    $('#sensorPage').hide();
-    $('#adminForm').show();
-    this.inspectAdminPage();
-    if (buttonSpec != null) {
-      return this.activateButtons(buttonSpec);
-    }
-  };
-
-  Pages.prototype.activateSensorPage = function(buttonSpec) {
-    $('#adminForm').hide();
-    $('#sensorPage').show();
-    if (buttonSpec != null) {
-      return this.activateButtons(buttonSpec);
-    }
-  };
-
-  return Pages;
-
-})();
-
-exports.Pages = Pages;
-
-
-
-},{"Backbone":7,"jquery":11,"teacup":12}],14:[function(require,module,exports){
-var $, Seen, base, visual;
-
-Seen = require('./libs/dbg/seen');
-
-$ = require('jquery');
-
-
-/*
-#globalStatus looks like this:
-#systemCommunicator = Backbone.Model.extend
- *  defaults:
- *    calibrating: false
- *    recording: false
- *    connected: false
- *    calibrate: false
-#
-#globalState = new systemCommunicator
- */
-
-visual = (function() {
-  var bufferToHexStr, byteToHexStr, hx, split;
-
-  function visual(globalState, readings) {
-    this.globalState = globalState;
-    this.readings = readings;
-  }
-
-  visual.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
-    var e, tH;
-    try {
-      tH = void 0;
-      if (dataCondition.dataHistory.grandTotal === void 0) {
-        dataCondition.dataHistory.grandTotal = Seen.P(0, 0, 0);
-        dataCondition.dataHistory.grandAverage = Seen.P(0, 0, 0);
-        dataCondition.dataHistory.totalReadings = 1;
-      }
-      tH = dataCondition.dataHistory;
-      if (tH.totalReadings === 1000) {
-        tH.grandTotal.subtract(tH.grandAverage);
-        tH.totalReadings--;
-      }
-      tH.grandTotal.add(dataCondition.curValue);
-      tH.totalReadings++;
-      tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings);
-      dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
-    } catch (_error) {
-      e = _error;
-    }
-  };
-
-  split = function(raw, lo, hi) {
-    return raw - ((hi + lo) / 2.0);
-  };
-
-  visual.prototype.calibratorMid = function(dataCondition, calibrate, calibrating) {
-    var e, tH;
-    try {
-      tH = void 0;
-      if (dataCondition.dataHistory.max === void 0) {
-        dataCondition.dataHistory.max = dataCondition.cookedValue.copy();
-        dataCondition.dataHistory.min = dataCondition.cookedValue.copy();
-      }
-      tH = dataCondition.dataHistory;
-      if (dataCondition.cookedValue.x > tH.max.x) {
-        tH.max.x = dataCondition.cookedValue.x;
-      }
-      if (dataCondition.cookedValue.y > tH.max.y) {
-        tH.max.y = dataCondition.cookedValue.y;
-      }
-      if (dataCondition.cookedValue.z > tH.max.z) {
-        tH.max.z = dataCondition.cookedValue.z;
-      }
-      if (dataCondition.cookedValue.x < tH.min.x) {
-        tH.min.x = dataCondition.cookedValue.x;
-      }
-      if (dataCondition.cookedValue.y < tH.min.y) {
-        tH.min.y = dataCondition.cookedValue.y;
-      }
-      if (dataCondition.cookedValue.z < tH.min.z) {
-        tH.min.z = dataCondition.cookedValue.z;
-      }
-      dataCondition.cookedValue.x = split(dataCondition.cookedValue.x, tH.min.x, tH.max.x);
-      dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y);
-      dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z);
-    } catch (_error) {
-      e = _error;
-    }
-  };
-
-  visual.prototype.calibratorSmooth = function(dataCondition, calibrate, calibrating) {
-    var e;
-    try {
-      if (dataCondition.dataHistory.runniongSum === void 0) {
-        dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy();
-      }
-      dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
-    } catch (_error) {
-      e = _error;
-    }
-  };
-
-  visual.prototype.readingHandler = function(o) {
-    var dataCondition;
-    dataCondition = {
-      curValue: Seen.P(0, 0, 0),
-      cookedValue: Seen.P(0, 0, 0),
-      dataHistory: {}
-    };
-    if (!o.calibrator) {
-      o.calibrator = function(d) {
-        d.cookedValue = d.curValue;
-      };
-    }
-    if (!o.units) {
-      o.units = '';
-    }
-    o.bias = Seen.P(0, 0, 0);
-    $('#' + o.debias).click(function() {
-      o.bias = o.cookedValue;
-    });
-    return (function(_this) {
-      return function(data) {
-        var error, i, m, p, r;
-        try {
-          r = o.source(data);
-          p = void 0;
-          m = void 0;
-          r = Seen.P(r.x, r.y, r.z);
-          r.subtract(o.bias);
-          dataCondition.curValue = r.copy();
-          dataCondition.cookedValue = r.copy();
-          i = 0;
-          while (i < o.calibrator.length) {
-            o.calibrator[i](dataCondition, _this.globalState.get('calibrate'), _this.globalState.get('calibrating'));
-            i++;
-          }
-          p = dataCondition.cookedValue;
-          if (_this.globalState.get('recording')) {
-            _this.readings.push(new reading({
-              sensor: o.sensor,
-              raw: _.toArray(data)
-            }));
-          }
-          m = dataCondition.dataHistory;
-          o.viewer(p.x, p.y, p.z);
-        } catch (_error) {
-          error = _error;
-          console.log(error);
-          return console.log("in readinghandler");
-        }
-      };
-    })(this);
-  };
-
-
-  /*
-   * Convert byte buffer to hex string.
-   * @param buffer - an Uint8Array
-   * @param offset - byte offset
-   * @param numBytes - number of bytes to read
-   * @return string with hex representation of bytes
-   */
-
-  hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-
-  bufferToHexStr = function(buffer, offset, numBytes) {
-    var hex, i;
-    hex = '';
-    if (!numBytes) {
-      numBytes = buffer.length;
-    }
-    if (!offset) {
-      offset = 0;
-    }
-    i = 0;
-    while (i < numBytes) {
-      hex += byteToHexStr(buffer[offset + i]) + ' ';
-      ++i;
-    }
-    return hex;
-  };
-
-  byteToHexStr = function(d) {
-    var hi, lo;
-    lo = hx[d & 0xf];
-    hi = hx[(d & 0xf0) >> 4];
-    return hi + lo;
-  };
-
-  visual.prototype.viewSensor = function(viewport, scaleFactor) {
-    var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
-    height = 200;
-    width = 200;
-    model = Seen.Models['default']();
-    scene = new Seen.Scene({
-      model: model,
-      viewport: Seen.Viewports.center(width, height)
-    });
-    cubie = Seen.Shapes.cube().scale(0.25);
-    spearPool = function(many) {
-      var colors, count, i, j, newArrow, shapes;
-      i = void 0;
-      j = void 0;
-      shapes = new Array(many);
-      count = -1;
-      colors = new Array(many);
-      newArrow = function(model, x, y, z) {
-        var alphaDecay;
-        alphaDecay = 255;
-        count = count + 1;
-        if (count === many) {
-          count = 0;
-        }
-        if (shapes[count]) {
-          model.remove(shapes[count]);
-        }
-        shapes[count] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
-        model.add(shapes[count]);
-        shapes[count].bake();
-        shapes[count].reset();
-        j = 0;
-        i = count;
-        while (i < many) {
-          if (shapes[i]) {
-            shapes[i].fill(colors[j++]);
-          }
-          i++;
-        }
-        i = 0;
-        while (i < count) {
-          if (shapes[i]) {
-            shapes[i].fill(colors[j++]);
-          }
-          i++;
-        }
-        return shapes[count];
-      };
-      i = 0;
-      while (i < many) {
-        shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
-        shapes[i].bake();
-        colors[i] = new Seen.Material(new Seen.Color(255, 80, 255, 255 - 250 / many * i));
-        i++;
-      }
-      return newArrow;
-    };
-    newValue = function(x, y, z) {
-      var context, cross, dot, leng, m, p1, pBar, pOriginal, q, spear;
-      p1 = Seen.P(x, y, z);
-      spear = void 0;
-      pOriginal = p1.copy();
-      pBar = Seen.P(1, 0, 0);
-      m = void 0;
-      q = void 0;
-      cross = void 0;
-      dot = void 0;
-      leng = p1.magnitude();
-      p1 = p1.normalize();
-      pBar.add(p1);
-      if (pBar.magnitude() < 0.000001) {
-        pBar = Seen.P(0, 1, 0);
-      }
-      pBar.normalize();
-      q = Seen.Quaternion.pointAngle(pBar, Math.PI);
-      m = q.toMatrix();
-      spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
-      spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
-      if (!context) {
-        context = Seen.Context(viewport, scene);
-      }
-      context.render();
-    };
-    spearFromPool = new spearPool(10);
-    cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
-    model.add(cubie);
-    return newValue;
-  };
-
-  return visual;
-
-})();
-
-if (typeof window !== "undefined" && window !== null) {
-  base = window;
-}
-
-if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
-  base = module;
-}
-
-base.exports = visual;
-
-
-
-},{"./libs/dbg/seen":3,"jquery":11}]},{},[1]);
+},{}]},{},[2]);

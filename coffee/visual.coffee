@@ -1,7 +1,7 @@
 #
 # vim: et:ts=2:sw=2:sts=2
 
-Seen = require('./libs/dbg/seen')
+Seen = require('../libs/dbg/seen')
 $=require('jquery')
   
 ###

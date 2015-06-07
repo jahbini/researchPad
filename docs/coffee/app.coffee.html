@@ -1,0 +1,518 @@
+<!DOCTYPE html><html><head><title>app.coffee</title><meta http-equiv="Content-Type" content="text/html" charset="UTF-8"><link rel="stylesheet" media="all" href="../docco.css"></head><body><div id="container"><div id="background"></div><div id="jump_to">Jump To &hellip;<div id="jump_wrapper"><div id="jump_page"><a href="../index.html" class="source"><span class="file_name">README</span></a><a href="../coffee/TiHandler.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">TiHandler.coffee</span></a><a href="../coffee/app.coffee.html" class="source selected"><span class="base_path">coffee / </span><span class="file_name">app.coffee</span></a><a href="../coffee/pages.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">pages.coffee</span></a><a href="../coffee/visual.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">visual.coffee</span></a></div></div></div><table cellpadding="0" cellspacing="0"><thead><tr><th class="docs"><h1>app.coffee</h1><div class="filepath">coffee/</div></th><th class="code"></th></tr></thead><tbody><tr id="section-1"><td class="docs"><div class="pilwrap"><a href="#section-1" class="pilcrow">&#182;</a></div><h1>stagapp</h1>
+
+<p>vim: et:ts=2:sw=2:sts=2</p>
+
+<h2>data handler for clinical recording of SensorTag data</h2>
+
+<p>SensorTag object.</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">Backbone = </span><span class="nx">require</span> <span class="p">(</span><span class="s">&#39;backbone&#39;</span><span class="p">)</span>
+<span class="nv">_ = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;underscore&#39;</span><span class="p">)</span>
+<span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/dbg/console&#39;</span><span class="p">)</span>
+<span class="nv">Backbone.$ = $ = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;jquery&#39;</span><span class="p">)</span>
+<span class="nv">pages = </span><span class="nx">require</span> <span class="s">&#39;./pages.coffee&#39;</span>
+
+
+<span class="nv">evothings = </span><span class="nb">window</span><span class="p">.</span><span class="nx">evothings</span> <span class="o">=</span><span class="p">{}</span>
+<span class="nv">evothings.util = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/evothings/util/util&#39;</span><span class="p">).</span><span class="nx">util</span>
+<span class="nx">evothings</span><span class="p">.</span><span class="nx">easyble</span> <span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/evothings/easyble/easyble&#39;</span><span class="p">).</span><span class="nx">easyble</span>
+<span class="nx">evothings</span><span class="p">.</span><span class="nx">tisensortag</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/evothings/tisensortag/tisensortag&#39;</span><span class="p">).</span><span class="nx">tisensortag</span>
+<span class="nv">sensortag = </span><span class="nx">evothings</span><span class="p">.</span><span class="nx">tisensortag</span><span class="p">.</span><span class="nx">createInstance</span><span class="p">()</span></pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><p>Host we communicate with</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">mainHost = </span>
+  <span class="nv">iP: </span><span class="s">&quot;192.168.1.200&quot;</span>
+  <span class="nv">port: </span><span class="mi">3000</span>
+  <span class="nv">protocol: </span><span class="s">&quot;http&quot;</span></pre></div></td></tr><tr id="section-3"><td class="docs"><div class="pilwrap"><a href="#section-3" class="pilcrow">&#182;</a></div><h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nv">Section: </span><span class="nx">Data</span> <span class="nx">Structures</span>
+ <span class="nx">Routines</span> <span class="nx">to</span> <span class="nx">create</span> <span class="o">and</span> <span class="nx">handle</span> <span class="nx">data</span> <span class="nx">structures</span> <span class="o">and</span> <span class="nx">interfaces</span> <span class="nx">to</span> <span class="nx">them</span></pre></div></td></tr><tr id="section-4"><td class="docs"><div class="pilwrap"><a href="#section-4" class="pilcrow">&#182;</a></div><h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nv">systemCommunicator = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">calibrating: </span><span class="kc">false</span>
+    <span class="nv">recording: </span><span class="kc">false</span>
+    <span class="nv">connected: </span><span class="kc">false</span>
+    <span class="nv">calibrate: </span><span class="kc">false</span>
+    <span class="nv">loggedIn: </span> <span class="kc">false</span>
+
+<span class="nv">globalState = </span><span class="k">new</span> <span class="nx">systemCommunicator</span>
+
+
+<span class="nv">clinicModel = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">()</span>
+
+<span class="nv">clinicCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">clinicModel</span>
+  <span class="nv">url: </span><span class="s">&#39;/clinics&#39;</span>
+
+<span class="nv">clinics = </span><span class="k">new</span> <span class="nx">clinicCollection</span>
+
+
+<span class="nv">clinicianModel = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
+    <span class="nv">password: </span><span class="s">&#39;Password&#39;</span>
+<span class="nv">clinicianCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">clinicianModel</span>
+  <span class="nv">url: </span><span class="s">&#39;/users&#39;</span>
+<span class="nv">clinicians = </span><span class="k">new</span> <span class="nx">clinicianCollection</span>
+
+
+<span class="nv">clientModel = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">name: </span><span class="s">&#39;Text&#39;</span>
+    <span class="nv">patientOnly: </span><span class="s">&#39;Boolean&#39;</span>
+<span class="nv">clientCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">clientModel</span>
+  <span class="nv">url: </span><span class="s">&#39;/users&#39;</span>
+<span class="nv">clients = </span><span class="k">new</span> <span class="nx">clientCollection</span>
+
+<span class="nv">test = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">name: </span><span class="s">&quot;test 0&quot;</span>
+    <span class="nv">Description: </span><span class="s">&quot;Test 0&quot;</span>
+<span class="nv">testCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">test</span>
+  <span class="nv">url: </span><span class="s">&quot;/tests_list.json&quot;</span>
+<span class="nv">tests = </span><span class="k">new</span> <span class="nx">testCollection</span>
+
+<span class="nv">adminData = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">()</span>
+<span class="nv">admin = </span><span class="k">new</span> <span class="nx">adminData</span>
+    <span class="nv">clinics: </span><span class="nx">clinics</span>
+    <span class="nv">clinicians: </span><span class="nx">clinicians</span>
+    <span class="nv">clients: </span><span class="nx">clients</span>
+    <span class="nv">tests: </span><span class="nx">tests</span>
+
+<span class="nv">reading = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">defaults:</span>
+    <span class="nv">sensor: </span><span class="s">&#39;gyro&#39;</span>
+  <span class="nv">initialize: </span><span class="nf">-&gt;</span>
+    <span class="nv">d = </span><span class="k">new</span> <span class="nb">Date</span>
+    <span class="nx">@set</span> <span class="s">&#39;time&#39;</span><span class="p">,</span> <span class="nx">d</span><span class="p">.</span><span class="nx">getTime</span><span class="p">()</span>
+  
+<span class="nv">readingCollection = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Collection</span><span class="p">.</span><span class="nx">extend</span>
+  <span class="nv">model: </span><span class="nx">reading</span>
+  <span class="nv">initialize: </span><span class="nf">-&gt;</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;add&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;remove&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+    <span class="nx">@</span><span class="kc">on</span> <span class="s">&#39;reset&#39;</span><span class="p">,</span> <span class="nx">countReadings</span>
+
+<span class="nv">readings = </span><span class="k">new</span> <span class="nx">readingCollection</span></pre></div></td></tr><tr id="section-5"><td class="docs"><div class="pilwrap"><a href="#section-5" class="pilcrow">&#182;</a></div><p>debug -- should show up on server</p>
+</td><td class="code"><div class="highlight"><pre><span class="nx">readings</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">reading</span>
+ <span class="nv">raw: </span><span class="p">[</span> <span class="mi">1</span><span class="p">,</span><span class="mi">2</span><span class="p">,</span><span class="mi">3</span><span class="p">,</span><span class="mi">4</span><span class="p">,</span><span class="mi">5</span><span class="p">,</span><span class="mi">6</span><span class="p">]</span>
+ <span class="nv">sensor: </span><span class="s">&#39;DebugOnly&#39;</span>
+
+
+<span class="nv">rawSession = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span><span class="p">()</span>
+<span class="nv">sessionInfo = </span><span class="k">new</span> <span class="nx">rawSession</span>
+  <span class="nv">user: </span><span class="s">&#39;&#39;</span>
+  <span class="nv">patient: </span><span class="s">&#39;&#39;</span>
+  <span class="nv">testID: </span><span class="s">&#39;&#39;</span>
+  <span class="nv">sensorUUID: </span><span class="s">&#39;&#39;</span>
+  <span class="nv">platformUUID: </span><span class="s">&#39;&#39;</span>
+
+<span class="nv">enterDebug = </span><span class="nf">() -&gt;</span>
+  <span class="nx">useButton</span>  <span class="nx">buttonModelDebugOn</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#footer&#39;</span><span class="p">).</span><span class="nx">show</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">exitDebug = </span><span class="nf">() -&gt;</span>
+  <span class="nx">useButton</span>  <span class="nx">buttonModelDebugOff</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#footer&#39;</span><span class="p">).</span><span class="nx">hide</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">exitAdmin = </span><span class="nf">() -&gt;</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span> <span class="kc">true</span>
+  <span class="nx">enterLogout</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterAdmin = </span><span class="nf">-&gt;</span>
+  <span class="k">try</span>
+    <span class="nx">pageGen</span><span class="p">.</span><span class="nx">activateAdminPage</span><span class="p">()</span>
+  <span class="k">catch</span> <span class="nx">e</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">e</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">aButtonModel = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span> 
+  <span class="nv">defaults:</span>
+    <span class="nv">active: </span><span class="kc">false</span>
+    <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nv">text: </span><span class="s">&#39;--&#39;</span>
+    <span class="nv">selector: </span><span class="s">&#39;button&#39;</span>
+
+<span class="nv">buttonModelDebugOn = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;debug&#39;</span>
+  <span class="nv">text: </span><span class="s">&quot;Hide Log&quot;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">exitDebug</span><span class="p">()</span>
+
+<span class="nv">buttonModelDebugOff = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;debug&#39;</span>
+  <span class="nv">text: </span><span class="s">&quot;Show Log&quot;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterDebug</span><span class="p">()</span>
+
+<span class="nv">buttonModelActionRecord = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;action&#39;</span><span class="p">,</span>
+  <span class="nv">text: </span><span class="s">&#39;Record&#39;</span><span class="p">,</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterRecording</span><span class="p">()</span>
+
+<span class="nv">buttonModelActionStop = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;action&#39;</span><span class="p">,</span>
+  <span class="nv">text: </span><span class="s">&#39;Stop&#39;</span><span class="p">,</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterStop</span><span class="p">()</span>
+
+<span class="nv">buttonModelActionDisabled = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">selector: </span><span class="s">&#39;action&#39;</span><span class="p">,</span>
+  <span class="nv">text: </span><span class="s">&#39;no connect&#39;</span><span class="p">,</span>
+
+<span class="nv">buttonModelActionRecorded = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">selector: </span><span class="s">&#39;action&#39;</span><span class="p">,</span>
+  <span class="nv">text: </span><span class="s">&#39;Recorded&#39;</span><span class="p">,</span>
+    
+<span class="nv">buttonModelClear = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">false</span>
+  <span class="nv">selector: </span><span class="s">&#39;clear&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Clear&#39;</span>
+  <span class="nv">funct: </span><span class="nf">()-&gt;</span>
+    <span class="nx">enterClear</span><span class="p">()</span>
+
+<span class="nv">buttonModelUpload = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">false</span>
+  <span class="nv">selector: </span><span class="s">&#39;upload&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Upload&#39;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterUpload</span><span class="p">()</span>
+
+<span class="nv">buttonModelCalibrating = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;calibrate&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Stop Calib&#39;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">exitCalibrate</span><span class="p">()</span>
+
+<span class="nv">buttonModelCalibrate = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;calibrate&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Calibrate&#39;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterCalibrate</span><span class="p">()</span>
+
+<span class="nv">buttonModelCalibrateOff = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">selector: </span><span class="s">&#39;calibrate&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Calibrate&#39;</span>
+
+<span class="nv">buttonModelAdmin = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;admin&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Log In&#39;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">enterAdmin</span><span class="p">()</span>
+
+<span class="nv">buttonModelAdminDisabled = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">false</span>
+  <span class="nv">selector: </span><span class="s">&#39;admin&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Log In&#39;</span>
+
+<span class="nv">buttonModelAdminLogout = </span><span class="k">new</span> <span class="nx">aButtonModel</span>
+  <span class="nv">active: </span><span class="kc">true</span>
+  <span class="nv">selector: </span><span class="s">&#39;admin&#39;</span>
+  <span class="nv">text: </span><span class="s">&#39;Log out&#39;</span>
+  <span class="nv">funct: </span><span class="nf">-&gt;</span>
+    <span class="nx">exitAdmin</span><span class="p">()</span>
+
+<span class="nv">buttonCollection = </span><span class="p">{</span>
+  <span class="nv">admin: </span><span class="nx">buttonModelAdminDisabled</span>
+  <span class="nv">calibrate: </span><span class="nx">buttonModelCalibrateOff</span>
+  <span class="nv">debug: </span><span class="nx">buttonModelDebugOff</span>
+  <span class="nv">action: </span><span class="nx">buttonModelActionDisabled</span>
+  <span class="nv">upload: </span><span class="nx">buttonModelUpload</span>
+  <span class="nv">clear: </span><span class="nx">buttonModelClear</span>
+  <span class="p">}</span>
+  
+<span class="nv">useButton= </span><span class="nf">(model) -&gt;</span>
+  <span class="nv">key = </span><span class="nx">model</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;selector&#39;</span><span class="p">)</span>
+  <span class="nx">buttonCollection</span><span class="p">[</span><span class="nx">key</span><span class="p">]</span> <span class="o">=</span> <span class="nx">model</span>
+  
+
+<span class="nv">enterLogout = </span><span class="nf">() -&gt;</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span> <span class="kc">false</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;recording&#39;</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span> <span class="kc">false</span>
+    <span class="nx">readings</span><span class="p">.</span><span class="nx">reset</span><span class="p">()</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">resetAdmin</span><span class="p">()</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelActionDisabled</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelAdmin</span>
+  <span class="nx">buttonModelUpload</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">false</span><span class="p">)</span>
+  <span class="nx">buttonModelClear</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">false</span><span class="p">)</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+  
+<span class="nv">setButtons = </span><span class="nf">(log) -&gt;</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">activateButtons</span> <span class="nx">buttonCollection</span>
+  <span class="k">if</span> <span class="nx">log</span>
+    <span class="k">for</span> <span class="nx">key</span><span class="p">,</span> <span class="nx">value</span> <span class="k">of</span> <span class="nx">buttonCollection</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&#39;--&#39;</span> <span class="o">+</span> <span class="nx">key</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">value</span><span class="p">.</span><span class="nx">toJSON</span><span class="p">()</span>
+  <span class="k">return</span>
+
+<span class="nv">clearUserInterface = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-6"><td class="docs"><div class="pilwrap"><a href="#section-6" class="pilcrow">&#182;</a></div><p>Clear current values.</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#StatusData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&#39;Ready to connect&#39;</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#FirmwareData&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&#39;?&#39;</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span></pre></div></td></tr><tr id="section-7"><td class="docs"><div class="pilwrap"><a href="#section-7" class="pilcrow">&#182;</a></div><p>start with the logging info suppressed</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nx">exitDebug</span><span class="p">()</span>
+  <span class="k">return</span>
+
+<span class="nv">countReadings = </span><span class="nf">-&gt;</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span> <span class="o">+</span> <span class="nx">readings</span><span class="p">.</span><span class="nx">length</span>
+  <span class="k">return</span>
+
+<span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
+  <span class="nv">name: </span><span class="s">&#39;T25FW&#39;</span>
+  <span class="nv">Description: </span><span class="s">&#39;T25FW&#39;</span>
+  
+<span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
+  <span class="nv">name: </span><span class="s">&#39;9HPT (dom)&#39;</span>
+  <span class="nv">Description: </span><span class="s">&#39;9HPT (dom)&#39;</span>
+  
+<span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
+  <span class="nv">name: </span><span class="s">&#39;9HPT (non-dom)&#39;</span>
+  <span class="nv">Description: </span><span class="s">&#39;9HPT (non-dom)&#39;</span>
+
+<span class="nx">tests</span><span class="p">.</span><span class="nx">push</span> <span class="k">new</span> <span class="nx">test</span>
+  <span class="nv">name: </span><span class="s">&#39;Other&#39;</span>
+  <span class="nv">Description: </span><span class="s">&#39;Other&#39;</span>
+  </pre></div></td></tr><tr id="section-8"><td class="docs"><div class="pilwrap"><a href="#section-8" class="pilcrow">&#182;</a></div><h2>Section State Handlers</h2>
+</td><td class="code"><div class="highlight"><pre><span class="nv">initAll = </span><span class="nf">-&gt;</span>
+  <span class="nv">rtemp = </span><span class="kc">undefined</span>
+  <span class="nx">clearUserInterface</span><span class="p">()</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#uuid&#39;</span><span class="p">).</span><span class="nx">html</span><span class="p">(</span><span class="s">&quot;Must connect to sensor&quot;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="s">&quot;violet&quot;</span><span class="p">)</span>
+  <span class="k">return</span></pre></div></td></tr><tr id="section-9"><td class="docs"><div class="pilwrap"><a href="#section-9" class="pilcrow">&#182;</a></div><h1>subsection State handlers that depend on the View</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nv">enterClear = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-10"><td class="docs"><div class="pilwrap"><a href="#section-10" class="pilcrow">&#182;</a></div><p>Clear only clears the data -- does NOT disconnedt</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nx">readings</span><span class="p">.</span><span class="nx">reset</span><span class="p">()</span>
+  <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TotalReadings&#39;</span><span class="p">).</span><span class="nx">html</span> <span class="s">&quot;Items:&quot;</span>
+  <span class="nx">buttonModelClear</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">false</span><span class="p">);</span>
+  <span class="nx">buttonModelUpload</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">false</span><span class="p">);</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterConnected = </span><span class="nf">-&gt;</span></pre></div></td></tr><tr id="section-11"><td class="docs"><div class="pilwrap"><a href="#section-11" class="pilcrow">&#182;</a></div><p>enable the recording button</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nv">noCalibration = </span><span class="kc">true</span> <span class="c1">#for temporarily</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enterConnected&#39;</span><span class="p">)</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;connected&#39;</span><span class="p">,</span> <span class="kc">true</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelAdminDisabled</span></pre></div></td></tr><tr id="section-12"><td class="docs"><div class="pilwrap"><a href="#section-12" class="pilcrow">&#182;</a></div><p>eliminate Calibrate button functionality </p>
+</td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="nx">noCalibration</span>
+    <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;loggedIn&#39;</span>
+      <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
+    <span class="k">else</span>
+      <span class="nx">useButton</span> <span class="nx">buttonModelAdmin</span>
+  <span class="k">else</span>
+    <span class="nx">useButton</span> <span class="nx">buttonModelActionDisabled</span>
+    <span class="nx">useButton</span> <span class="nx">buttonModelCalibrate</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterCalibrate = </span><span class="nf">-&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enterCalibrate&#39;</span><span class="p">)</span>
+  <span class="nv">calibrating = </span><span class="kc">true</span>
+  <span class="nx">useButton</span>  <span class="nx">buttonModelCalibrating</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">exitCalibrate = </span><span class="nf">-&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;exitCalibrate&#39;</span><span class="p">)</span>
+  <span class="nv">calibrating = </span><span class="kc">false</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;loggedIn&#39;</span>
+    <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelAdmin</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelCalibrateOff</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterRecording = </span><span class="nf">-&gt;</span>
+  <span class="k">if</span> <span class="o">!</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;testID&#39;</span><span class="p">)</span>
+    <span class="nx">pageGen</span><span class="p">.</span><span class="nx">forceTest</span> <span class="s">&#39;red&#39;</span>
+    <span class="k">return</span> <span class="kc">false</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Recording&#39;</span><span class="p">)</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span>  <span class="kc">true</span>
+  <span class="nx">useButton</span> <span class="nx">buttonModelActionStop</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterStop = </span><span class="nf">-&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Stop&#39;</span><span class="p">)</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span>  <span class="kc">false</span>
+  <span class="nx">useButton</span>  <span class="nx">buttonModelActionRecorded</span>
+  <span class="nx">buttonModelUpload</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
+  <span class="nx">buttonModelClear</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;active&#39;</span><span class="p">,</span><span class="kc">true</span><span class="p">)</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">enterUpload = </span><span class="nf">-&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;enter Upload&#39;</span><span class="p">)</span>
+  <span class="nv">hopper = </span><span class="kc">undefined</span>
+  <span class="nv">brainDump = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-13"><td class="docs"><div class="pilwrap"><a href="#section-13" class="pilcrow">&#182;</a></div><p>eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 </p>
+</td><td class="code"><div class="highlight"><pre>  <span class="k">if</span> <span class="o">!</span><span class="nx">readings</span><span class="p">.</span><span class="nx">length</span>
+   <span class="k">return</span> <span class="kc">false</span>
+  <span class="nv">hostUrl = </span><span class="s">&#39;192.168.1.200:3000&#39;</span>
+  <span class="nv">hopper = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">Model</span><span class="p">.</span><span class="nx">extend</span> <span class="p">{</span>
+    <span class="nv">url: </span><span class="s">&#39;/trajectory&#39;</span>
+    <span class="nv">urlRoot: </span><span class="nx">hostUrl</span>
+  <span class="p">}</span>
+  <span class="nx">console</span><span class="o">?</span><span class="nx">log</span> <span class="s">&#39;hostURL=&#39;</span> <span class="o">+</span> <span class="nx">hostURL</span></pre></div></td></tr><tr id="section-14"><td class="docs"><div class="pilwrap"><a href="#section-14" class="pilcrow">&#182;</a></div><p>console?log sessionInfo</p>
+</td><td class="code"><div class="highlight"><pre>  <span class="nv">brainDump = </span><span class="k">new</span> <span class="nx">hopper</span> 
+
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;readings&#39;</span><span class="p">,</span><span class="nx">readings</span> <span class="p">)</span>
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;sensorUUID&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;sensorUUID&#39;</span><span class="p">)</span> <span class="p">)</span>
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;patientID&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;patient&#39;</span><span class="p">)</span> <span class="p">)</span>
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;user&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;clinician&#39;</span><span class="p">)</span> <span class="p">)</span>
+
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;password&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;password&#39;</span><span class="p">)</span> <span class="p">)</span>
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;testID&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;testID&#39;</span><span class="p">)</span> <span class="p">)</span>
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;platformUUID&#39;</span><span class="p">,</span><span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;platformUUID&#39;</span><span class="p">)</span> <span class="p">)</span>
+
+  <span class="nx">brainDump</span><span class="p">.</span><span class="nx">save</span><span class="p">()</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">forceTest</span><span class="p">()</span>
+  <span class="nx">enterClear</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span></pre></div></td></tr><tr id="section-15"><td class="docs"><div class="pilwrap"><a href="#section-15" class="pilcrow">&#182;</a></div><h3>Subsection State Handlers that depend on the Hardware</h3>
+</td><td class="code"><div class="highlight"><pre><span class="nv">visualHandler = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./visual.coffee&#39;</span><span class="p">)</span>
+<span class="nv">smoother = </span><span class="k">new</span> <span class="nx">visualHandler</span><span class="p">(</span><span class="nx">globalState</span><span class="p">)</span>
+
+<span class="nv">TiHandlerDef = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;./TiHandler.coffee&#39;</span><span class="p">)</span>
+<span class="nv">TiHandler = </span><span class="k">new</span> <span class="nx">TiHandlerDef</span> <span class="nx">globalState</span><span class="p">,</span> <span class="nx">reading</span><span class="p">,</span> <span class="nx">sessionInfo</span></pre></div></td></tr><tr id="section-16"><td class="docs"><div class="pilwrap"><a href="#section-16" class="pilcrow">&#182;</a></div><h2>stopRecording</h2>
+
+<p>halt the record session -- no restart allowed
+upload button remains enabled, clear button remains enabled</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">stopRecording = </span><span class="nf">-&gt;</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;recording&#39;</span>
+    <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;recording&#39;</span><span class="p">,</span> <span class="kc">false</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#record&#39;</span><span class="p">).</span><span class="nx">prop</span><span class="p">(</span><span class="s">&#39;disabled&#39;</span><span class="p">,</span> <span class="kc">true</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s">&#39;finished&#39;</span><span class="p">).</span><span class="nx">fadeTo</span> <span class="mi">200</span><span class="p">,</span> <span class="mf">0.3</span>
+  <span class="k">return</span></pre></div></td></tr><tr id="section-17"><td class="docs"><div class="pilwrap"><a href="#section-17" class="pilcrow">&#182;</a></div><h2>subsection State routines that depend on hardware and update the view or data structures</h2>
+</td><td class="code"><div class="highlight"><pre></pre></div></td></tr><tr id="section-18"><td class="docs"><div class="pilwrap"><a href="#section-18" class="pilcrow">&#182;</a></div><p>calculations implemented as based on TI wiki pages
+http://processors.wiki.ti.com/index.php/SensorTag<em>User</em>Guide</p>
+</td><td class="code"><div class="highlight"><pre><span class="nv">accelerometerHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
+  <span class="nv">sensor: </span><span class="s">&#39;accel&#39;</span>
+  <span class="nv">debias: </span><span class="s">&#39;calibrateAccel&#39;</span>
+  <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getAccelerometerValues</span>
+  <span class="nv">units: </span><span class="s">&#39;G&#39;</span>
+  <span class="nv">calibrator: </span><span class="p">[</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
+  <span class="p">]</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;accel-view&#39;</span><span class="p">,</span> <span class="mf">0.4</span><span class="p">)</span>
+  <span class="nv">htmlID: </span><span class="s">&#39;AccelerometerData&#39;</span><span class="p">)</span>
+
+<span class="nv">magnetometerHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
+  <span class="nv">sensor: </span><span class="s">&#39;mag&#39;</span>
+  <span class="nv">debias: </span><span class="s">&#39;calibrateMag&#39;</span>
+  <span class="nv">calibrator: </span><span class="p">[</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
+  <span class="p">]</span>
+  <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getMagnetometerValues</span>
+  <span class="nv">units: </span><span class="s">&#39;&amp;micro;T&#39;</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;magnet-view&#39;</span><span class="p">,</span> <span class="mf">0.05</span><span class="p">)</span>
+  <span class="nv">htmlID: </span><span class="s">&#39;MagnetometerData&#39;</span><span class="p">)</span>
+
+<span class="nv">gyroscopeHandler = </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">readingHandler</span><span class="p">(</span>
+  <span class="nv">sensor: </span><span class="s">&#39;gyro&#39;</span>
+  <span class="nv">debias: </span><span class="s">&#39;calibrateGyro&#39;</span>
+  <span class="nv">calibrator: </span><span class="p">[</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorAverage</span>
+    <span class="nx">smoother</span><span class="p">.</span><span class="nx">calibratorSmooth</span>
+  <span class="p">]</span>
+  <span class="nv">source: </span><span class="nx">sensortag</span><span class="p">.</span><span class="nx">getGyroscopeValues</span>
+  <span class="nv">viewer: </span><span class="nx">smoother</span><span class="p">.</span><span class="nx">viewSensor</span><span class="p">(</span><span class="s">&#39;gyro-view&#39;</span><span class="p">,</span> <span class="mf">0.005</span><span class="p">)</span>
+  <span class="nv">htmlID: </span><span class="s">&#39;GyroscopeData&#39;</span><span class="p">)</span>
+
+
+<span class="nv">setSensor = </span><span class="nf">-&gt;</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">activateSensorPage</span><span class="p">()</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+<span class="nv">adminDone= </span><span class="nf">-&gt;</span>
+  <span class="nx">globalState</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;loggedIn&#39;</span><span class="p">,</span>  <span class="kc">true</span> 
+  <span class="nx">useButton</span>  <span class="nx">buttonModelAdminLogout</span>
+  <span class="k">if</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;connected&#39;</span>
+    <span class="nx">useButton</span> <span class="nx">buttonModelActionRecord</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">activateSensorPage</span><span class="p">()</span>
+  <span class="nx">setButtons</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+  
+<span class="nx">clinics</span><span class="p">.</span><span class="nx">on</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nf">()-&gt;</span>
+  <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;got the change!&quot;</span>
+
+<span class="nv">pageGen = </span><span class="k">new</span> <span class="nx">pages</span><span class="p">.</span><span class="nx">Pages</span> <span class="nx">admin</span><span class="p">,</span> <span class="nx">sessionInfo</span>
+
+<span class="nv">sensorIsReady = </span><span class="kc">false</span>
+<span class="nv">domIsReady = </span><span class="kc">false</span>
+
+<span class="nv">rediness = </span><span class="nf">-&gt;</span>
+  <span class="nx">enterAdmin</span><span class="p">()</span>
+  <span class="nx">clinics</span><span class="p">.</span><span class="nx">on</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nf">()-&gt;</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;got BIG change!&quot;</span>
+  <span class="nx">clinics</span><span class="p">.</span><span class="nx">fetch</span> 
+    <span class="nv">success: </span><span class="nf">(model,response,options)-&gt;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;clinic request success&quot;</span>
+      <span class="nx">model</span><span class="p">.</span><span class="nx">trigger</span> <span class="s">&#39;change&#39;</span>
+    <span class="nv">error: </span><span class="nf">(model,response,options)-&gt;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;clinic request error from server&quot;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">response</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">model</span>
+        
+  <span class="k">if</span> <span class="nx">sensorIsReady</span> <span class="o">&amp;&amp;</span> <span class="nx">domIsReady</span>
+    <span class="nx">sessionInfo</span><span class="p">.</span><span class="nx">set</span><span class="p">(</span><span class="s">&#39;platformUUID&#39;</span><span class="p">,</span><span class="nb">window</span><span class="p">.</span><span class="nx">device</span><span class="p">.</span><span class="nx">uuid</span><span class="p">)</span>
+    <span class="nx">$</span><span class="p">(</span><span class="s">&quot;#platformUUID&quot;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="nb">window</span><span class="p">.</span><span class="nx">device</span><span class="p">.</span><span class="nx">uuid</span><span class="p">)</span>
+    <span class="k">if</span> <span class="nx">sensorIsReady</span> <span class="o">&amp;&amp;</span> <span class="o">!</span> <span class="p">(</span> <span class="nx">globalState</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;connected&#39;</span> <span class="p">)</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Activating sensor attempt&quot;</span>
+      <span class="k">try</span>
+        <span class="nx">TiHandler</span><span class="p">.</span><span class="nx">initializeSensorTag</span> <span class="nx">accelerometerHandler</span><span class="p">,</span>
+          <span class="nx">magnetometerHandler</span><span class="p">,</span> <span class="nx">gyroscopeHandler</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;TiHandler initialized&quot;</span>
+      <span class="k">catch</span> <span class="nx">e</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;error from TiHandler&quot;</span>
+        <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">e</span>
+    <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;Activating sensor exit&quot;</span>
+  </pre></div></td></tr><tr id="section-19"><td class="docs"><div class="pilwrap"><a href="#section-19" class="pilcrow">&#182;</a></div><h2>this is how seen exports things -- it's clean.  we use it as example</h2>
+
+<p>seen = {}
+if window? then window.seen = seen # for the web
+if module?.exports? then module.exports = seen # for node</p>
+
+<h1>#</h1>
+
+<h2>And since we are in a browser ---</h2>
+
+<h1>#</h1>
+</td><td class="code"><div class="highlight"><pre><span class="nb">window</span><span class="p">.</span><span class="nx">$</span><span class="o">=</span><span class="nx">$</span>
+<span class="nb">window</span><span class="p">.</span><span class="nv">sessionInfo = </span><span class="nx">sessionInfo</span>
+<span class="nb">window</span><span class="p">.</span><span class="nv">Pages = </span><span class="nx">pageGen</span>
+<span class="nb">window</span><span class="p">.</span><span class="nv">Me = </span><span class="k">this</span>
+<span class="nb">window</span><span class="p">.</span><span class="nv">Buttons = </span><span class="nx">buttonCollection</span></pre></div></td></tr><tr id="section-20"><td class="docs"><div class="pilwrap"><a href="#section-20" class="pilcrow">&#182;</a></div><hr />
+
+<p>generated by js2coffee 2.0.1</p>
+</td><td class="code"><div class="highlight"><pre><span class="nx">$</span><span class="p">(</span><span class="nb">document</span><span class="p">).</span><span class="nx">on</span> <span class="s">&#39;deviceready&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
+  <span class="nv">sensorIsReady = </span><span class="kc">true</span>
+  <span class="nx">rediness</span><span class="p">()</span>
+  <span class="k">return</span>
+
+<span class="nx">$</span> <span class="nf">-&gt;</span>
+  <span class="nv">domIsReady = </span><span class="kc">true</span>
+  <span class="nx">pageGen</span><span class="p">.</span><span class="nx">renderPage</span> <span class="nx">adminDone</span>
+  <span class="k">if</span> <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#console-log&#39;</span><span class="p">)</span><span class="o">?</span>
+    <span class="nb">window</span><span class="p">.</span><span class="nx">console</span><span class="o">=</span><span class="nv">console = </span><span class="k">new</span> <span class="nx">Console</span><span class="p">(</span><span class="s">&#39;console-log&#39;</span><span class="p">)</span>
+    <span class="nx">exitDebug</span><span class="p">()</span>
+  <span class="nx">initAll</span><span class="p">()</span>
+  <span class="nx">setSensor</span><span class="p">()</span>
+  <span class="nx">rediness</span><span class="p">()</span>
+  <span class="k">return</span> <span class="kc">false</span>
+
+</pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 08 2015 09:21:50 GMT+1000 (ChST)  </div></div></body></html>
