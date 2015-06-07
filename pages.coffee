@@ -75,7 +75,8 @@ class Pages
         temp = render =>
           option "Select ---"
           for user in @collection.models 
-            option value: user.get('name'), user.get('name')
+            n= user.get('name')
+            option value: user.get('_id'), n.first + ' ' + n.last
         @$el.html temp
         return this
 
@@ -94,7 +95,8 @@ class Pages
         @$el.html render =>
           option "Select ---"
           for p in @collection.models 
-            option value: p.get('name'), p.get('name')
+            n=p.get('name')
+            option value: p.get('_id'), n.first + ' ' + n.last
         return this
 
     doneViewTemplate = Backbone.View.extend
@@ -103,47 +105,20 @@ class Pages
       initialize: ->
         @listenTo @model, 'change', @render
       events: 
-        'change': ->
-          @attributes.session.set 'testID',@$el.val()
-          @modelCheck()
-          return false
+        'click': @adminDone
       render: ->
-        if (@model.get 'hostUrl') && (@model.get 'clinician') && 
-            (@model.get 'patient') && 'retro2015' == (@model.get 'password').slice(0,9)
+        if (@model.get 'clinic') && (@model.get 'clinician') && 
+            (@model.get 'client') && 'retro2015' == (@model.get 'password')?.slice(0,9)
           console.log('activating')
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
-          @$el.on 'click', @done
           @$el.text "Done"
           @$el.show().fadeTo(500,1)
         return this
-
-    testViewTemplate = Backbone.View.extend
-      el: '#testID'
-      collection: @admin.get('tests')
-      attributes: 
-        session: @sessionInfo
-      initialize: ->
-        @listenTo @collection, 'change', @render
-      events: 
-        'change': ->
-          @attributes.session.set 'testID',@$el.val()
-          return false
-      render: ->
-        @$el.html render =>
-          option "Select ---"
-          for test in @collection.models
-            if test.get('force')
-              option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
-            else
-              option value: test.get('testID'), test.get('testID')
-        return this
-
     @doneView = new doneViewTemplate
     @clientView = new clientViewTemplate
     @clinicView = new clinicViewTemplate
     @clinicianView = new clinicianViewTemplate
-    @testView = new testViewTemplate
-
+    return
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
       div '.row', ->
@@ -201,9 +176,10 @@ class Pages
       return false
 
   resetAdmin: =>
+    @sessionInfo.set('clinic','')
     @sessionInfo.set('clinician','')
     @sessionInfo.set('password','')
-    @sessionInfo.set('patient','')
+    @sessionInfo.set('client','')
     @sessionInfo.set('testID','')
 
     $('#password').val('')
@@ -220,13 +196,11 @@ class Pages
 
           if $('#password')?.val
             model.set 'password', $('#password').val()
-            @modelCheck()
             return false #stop bubble up
         return
        ).on 'blur', (node) =>
           if $('#password')?.val
             model.set 'password', $('#password').val()
-            @modelCheck()
             return false #stop bubble up
     return   #otherwise allow bubble-up and default action
 
@@ -239,10 +213,7 @@ class Pages
       div '.row', ->
         div '.three.columns', ->
           label '#TestSelect', for: "TestID", 'Which Test?'
-          select "#TestID.u-full-width",  ->
-            option "Select --"
-            for test in @getAdmin('testIDs')
-              option value: test.get('name') , test.get('Description')
+          select "#TestID.u-full-width"
         div '.three.columns', ->
           button '#action.disabled.u-full-width', ''
           label '#TotalReadings', for: "action", ' 0'
@@ -290,10 +261,34 @@ class Pages
         if btn.text? then b.text(btn.text)
         b.fadeTo(500,0.25)
 
-  renderPage: (@done) =>
+  renderPage: (@adminDone) =>
     bodyHtml = @theBody @topButtons , @adminContents, @sensorContents
     $('body').html bodyHtml
     @wireButtons()
+
+    testViewTemplate = Backbone.View.extend
+      el: '#TestID'
+      collection: @admin.get('tests')
+      attributes: 
+        session: @sessionInfo
+      initialize: ->
+        @listenTo @collection, 'change', @render
+        @render()
+      events: 
+        'change': ->
+          @attributes.session.set 'testID',@$el.val()
+          return false
+      render: ->
+        @$el.html render =>
+          option "Select ---"
+          for test in @collection.models
+            if test.get('force')
+              option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
+            else
+              option value: test.get('name'), test.get('Description')
+        return this
+    @testView = new testViewTemplate
+
     @wireAdmin()
     return
 
@@ -302,6 +297,7 @@ class Pages
     $('#adminForm').show()
     @inspectAdminPage()
     @activateButtons buttonSpec if buttonSpec?
+
 
   activateSensorPage: (buttonSpec)->
     $('#adminForm').hide()

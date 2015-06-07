@@ -18215,7 +18215,7 @@ Pages = (function() {
   }
 
   Pages.prototype.inspectAdminPage = function() {
-    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate, testViewTemplate;
+    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
     clinicViewTemplate = Backbone.View.extend({
       el: '#desiredClinic',
       collection: this.admin.get('clinics'),
@@ -18288,15 +18288,16 @@ Pages = (function() {
         var temp;
         temp = render((function(_this) {
           return function() {
-            var i, len, ref1, results, user;
+            var i, len, n, ref1, results, user;
             option("Select ---");
             ref1 = _this.collection.models;
             results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
               user = ref1[i];
+              n = user.get('name');
               results.push(option({
-                value: user.get('name')
-              }, user.get('name')));
+                value: user.get('_id')
+              }, n.first + ' ' + n.last));
             }
             return results;
           };
@@ -18323,15 +18324,16 @@ Pages = (function() {
       render: function() {
         this.$el.html(render((function(_this) {
           return function() {
-            var i, len, ref1, results;
+            var i, len, n, ref1, results;
             option("Select ---");
             ref1 = _this.collection.models;
             results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
               p = ref1[i];
+              n = p.get('name');
               results.push(option({
-                value: p.get('name')
-              }, p.get('name')));
+                value: p.get('_id')
+              }, n.first + ' ' + n.last));
             }
             return results;
           };
@@ -18346,61 +18348,16 @@ Pages = (function() {
         return this.listenTo(this.model, 'change', this.render);
       },
       events: {
-        'change': function() {
-          this.attributes.session.set('testID', this.$el.val());
-          this.modelCheck();
-          return false;
-        }
+        'click': this.adminDone
       },
       render: function() {
-        if ((this.model.get('hostUrl')) && (this.model.get('clinician')) && (this.model.get('patient')) && 'retro2015' === (this.model.get('password')).slice(0, 9)) {
+        var ref1;
+        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
           console.log('activating');
           this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
-          this.$el.on('click', this.done);
           this.$el.text("Done");
           this.$el.show().fadeTo(500, 1);
         }
-        return this;
-      }
-    });
-    testViewTemplate = Backbone.View.extend({
-      el: '#testID',
-      collection: this.admin.get('tests'),
-      attributes: {
-        session: this.sessionInfo
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('testID', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var i, len, ref1, results, test;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              test = ref1[i];
-              if (test.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: test.get('testID')
-                }, test.get('testID')));
-              } else {
-                results.push(option({
-                  value: test.get('testID')
-                }, test.get('testID')));
-              }
-            }
-            return results;
-          };
-        })(this)));
         return this;
       }
     });
@@ -18408,7 +18365,6 @@ Pages = (function() {
     this.clientView = new clientViewTemplate;
     this.clinicView = new clinicViewTemplate;
     this.clinicianView = new clinicianViewTemplate;
-    return this.testView = new testViewTemplate;
   };
 
   Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
@@ -18507,9 +18463,10 @@ Pages = (function() {
   };
 
   Pages.prototype.resetAdmin = function() {
+    this.sessionInfo.set('clinic', '');
     this.sessionInfo.set('clinician', '');
     this.sessionInfo.set('password', '');
-    this.sessionInfo.set('patient', '');
+    this.sessionInfo.set('client', '');
     this.sessionInfo.set('testID', '');
     $('#password').val('');
     $('option:selected').prop('selected', false);
@@ -18528,7 +18485,6 @@ Pages = (function() {
           node.preventDefault();
           if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
             model.set('password', $('#password').val());
-            _this.modelCheck();
             return false;
           }
         }
@@ -18538,7 +18494,6 @@ Pages = (function() {
         var ref1;
         if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
           model.set('password', $('#password').val());
-          _this.modelCheck();
           return false;
         }
       };
@@ -18559,19 +18514,7 @@ Pages = (function() {
         label('#TestSelect', {
           "for": "TestID"
         }, 'Which Test?');
-        return select("#TestID.u-full-width", function() {
-          var i, len, ref1, results, test;
-          option("Select --");
-          ref1 = this.getAdmin('testIDs');
-          results = [];
-          for (i = 0, len = ref1.length; i < len; i++) {
-            test = ref1[i];
-            results.push(option({
-              value: test.get('name')
-            }, test.get('Description')));
-          }
-          return results;
-        });
+        return select("#TestID.u-full-width");
       });
       div('.three.columns', function() {
         button('#action.disabled.u-full-width', '');
@@ -18660,12 +18603,55 @@ Pages = (function() {
     return results;
   };
 
-  Pages.prototype.renderPage = function(done) {
-    var bodyHtml;
-    this.done = done;
+  Pages.prototype.renderPage = function(adminDone) {
+    var bodyHtml, testViewTemplate;
+    this.adminDone = adminDone;
     bodyHtml = this.theBody(this.topButtons, this.adminContents, this.sensorContents);
     $('body').html(bodyHtml);
     this.wireButtons();
+    testViewTemplate = Backbone.View.extend({
+      el: '#TestID',
+      collection: this.admin.get('tests'),
+      attributes: {
+        session: this.sessionInfo
+      },
+      initialize: function() {
+        this.listenTo(this.collection, 'change', this.render);
+        return this.render();
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('testID', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var i, len, ref1, results, test;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              test = ref1[i];
+              if (test.get('force')) {
+                results.push(option('.forceSelect.selected', {
+                  selected: 'selected',
+                  value: test.get('testID')
+                }, test.get('testID')));
+              } else {
+                results.push(option({
+                  value: test.get('name')
+                }, test.get('Description')));
+              }
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    this.testView = new testViewTemplate;
     this.wireAdmin();
   };
 
