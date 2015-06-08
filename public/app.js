@@ -35,6 +35,10 @@ TiHandler = (function() {
       calibrate: false
       loggedIn:  false
   
+  getMagnetometerValues = sensortag.getMagnetometerValues
+  getAccelerometerValues = sensortag.getAccelerometerValues
+  getGyroscopeValues = sensortag.getGyroscopeValues
+  
   globalState = new systemCommunicator
   
   reading = Backbone.Model.extend
@@ -69,10 +73,10 @@ TiHandler = (function() {
   
    * ## Hardware
    * external communications to Hardware
-  #
+   *
    * set up the sensorTag and configure to recieve
    * accelerometer, magnetometer and gyro data
-  #
+   *
    */
 
   statusHandler = function(status) {
@@ -152,637 +156,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 base.exports = TiHandler;
 
 
-
-},{"../libs/dbg/console":5,"../libs/evothings/easyble/easyble":7,"../libs/evothings/tisensortag/tisensortag":8,"../libs/evothings/util/util":9,"backbone":12,"jquery":14,"underscore":13}],2:[function(require,module,exports){
-var $, Backbone, TiHandler, TiHandlerDef, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
-
-Backbone = require('backbone');
-
-_ = require('underscore');
-
-require('../libs/dbg/console');
-
-Backbone.$ = $ = require('jquery');
-
-pages = require('./pages.coffee');
-
-evothings = window.evothings = {};
-
-evothings.util = require('../libs/evothings/util/util').util;
-
-evothings.easyble = require('../libs/evothings/easyble/easyble').easyble;
-
-evothings.tisensortag = require('../libs/evothings/tisensortag/tisensortag').tisensortag;
-
-sensortag = evothings.tisensortag.createInstance();
-
-mainHost = {
-  iP: "192.168.1.200",
-  port: 3000,
-  protocol: "http"
-};
-
-
-/*
-Section: Data Structures
- Routines to create and handle data structures and interfaces to them
- */
-
-systemCommunicator = Backbone.Model.extend({
-  defaults: {
-    calibrating: false,
-    recording: false,
-    connected: false,
-    calibrate: false,
-    loggedIn: false
-  }
-});
-
-globalState = new systemCommunicator;
-
-clinicModel = Backbone.Model.extend();
-
-clinicCollection = Backbone.Collection.extend({
-  model: clinicModel,
-  url: '/clinics'
-});
-
-clinics = new clinicCollection;
-
-clinicianModel = Backbone.Model.extend({
-  defaults: {
-    name: 'Text',
-    password: 'Password'
-  }
-});
-
-clinicianCollection = Backbone.Collection.extend({
-  model: clinicianModel,
-  url: '/users'
-});
-
-clinicians = new clinicianCollection;
-
-clientModel = Backbone.Model.extend({
-  defaults: {
-    name: 'Text',
-    patientOnly: 'Boolean'
-  }
-});
-
-clientCollection = Backbone.Collection.extend({
-  model: clientModel,
-  url: '/users'
-});
-
-clients = new clientCollection;
-
-test = Backbone.Model.extend({
-  defaults: {
-    name: "test 0",
-    Description: "Test 0"
-  }
-});
-
-testCollection = Backbone.Collection.extend({
-  model: test,
-  url: "/tests_list.json"
-});
-
-tests = new testCollection;
-
-adminData = Backbone.Model.extend();
-
-admin = new adminData({
-  clinics: clinics,
-  clinicians: clinicians,
-  clients: clients,
-  tests: tests
-});
-
-reading = Backbone.Model.extend({
-  defaults: {
-    sensor: 'gyro'
-  },
-  initialize: function() {
-    var d;
-    d = new Date;
-    return this.set('time', d.getTime());
-  }
-});
-
-readingCollection = Backbone.Collection.extend({
-  model: reading,
-  initialize: function() {
-    this.on('add', countReadings);
-    this.on('remove', countReadings);
-    return this.on('reset', countReadings);
-  }
-});
-
-readings = new readingCollection;
-
-readings.push(new reading({
-  raw: [1, 2, 3, 4, 5, 6],
-  sensor: 'DebugOnly'
-}));
-
-rawSession = Backbone.Model.extend();
-
-sessionInfo = new rawSession({
-  user: '',
-  patient: '',
-  testID: '',
-  sensorUUID: '',
-  platformUUID: ''
-});
-
-enterDebug = function() {
-  useButton(buttonModelDebugOn);
-  setButtons();
-  $('#footer').show();
-  return false;
-};
-
-exitDebug = function() {
-  useButton(buttonModelDebugOff);
-  setButtons();
-  $('#footer').hide();
-  return false;
-};
-
-exitAdmin = function() {
-  globalState.set('loggedIn', true);
-  enterLogout();
-  return false;
-};
-
-enterAdmin = function() {
-  var e;
-  try {
-    pageGen.activateAdminPage();
-  } catch (_error) {
-    e = _error;
-    console.log(e);
-  }
-  return false;
-};
-
-aButtonModel = Backbone.Model.extend({
-  defaults: {
-    active: false,
-    funct: function() {},
-    text: '--',
-    selector: 'button'
-  }
-});
-
-buttonModelDebugOn = new aButtonModel({
-  active: true,
-  selector: 'debug',
-  text: "Hide Log",
-  funct: function() {
-    return exitDebug();
-  }
-});
-
-buttonModelDebugOff = new aButtonModel({
-  active: true,
-  selector: 'debug',
-  text: "Show Log",
-  funct: function() {
-    return enterDebug();
-  }
-});
-
-buttonModelActionRecord = new aButtonModel({
-  active: true,
-  selector: 'action',
-  text: 'Record',
-  funct: function() {
-    return enterRecording();
-  }
-});
-
-buttonModelActionStop = new aButtonModel({
-  active: true,
-  selector: 'action',
-  text: 'Stop',
-  funct: function() {
-    return enterStop();
-  }
-});
-
-buttonModelActionDisabled = new aButtonModel({
-  selector: 'action',
-  text: 'no connect'
-});
-
-buttonModelActionRecorded = new aButtonModel({
-  selector: 'action',
-  text: 'Recorded'
-});
-
-buttonModelClear = new aButtonModel({
-  active: false,
-  selector: 'clear',
-  text: 'Clear',
-  funct: function() {
-    return enterClear();
-  }
-});
-
-buttonModelUpload = new aButtonModel({
-  active: false,
-  selector: 'upload',
-  text: 'Upload',
-  funct: function() {
-    return enterUpload();
-  }
-});
-
-buttonModelCalibrating = new aButtonModel({
-  active: true,
-  selector: 'calibrate',
-  text: 'Stop Calib',
-  funct: function() {
-    return exitCalibrate();
-  }
-});
-
-buttonModelCalibrate = new aButtonModel({
-  active: true,
-  selector: 'calibrate',
-  text: 'Calibrate',
-  funct: function() {
-    return enterCalibrate();
-  }
-});
-
-buttonModelCalibrateOff = new aButtonModel({
-  selector: 'calibrate',
-  text: 'Calibrate'
-});
-
-buttonModelAdmin = new aButtonModel({
-  active: true,
-  selector: 'admin',
-  text: 'Log In',
-  funct: function() {
-    return enterAdmin();
-  }
-});
-
-buttonModelAdminDisabled = new aButtonModel({
-  active: false,
-  selector: 'admin',
-  text: 'Log In'
-});
-
-buttonModelAdminLogout = new aButtonModel({
-  active: true,
-  selector: 'admin',
-  text: 'Log out',
-  funct: function() {
-    return exitAdmin();
-  }
-});
-
-buttonCollection = {
-  admin: buttonModelAdminDisabled,
-  calibrate: buttonModelCalibrateOff,
-  debug: buttonModelDebugOff,
-  action: buttonModelActionDisabled,
-  upload: buttonModelUpload,
-  clear: buttonModelClear
-};
-
-useButton = function(model) {
-  var key;
-  key = model.get('selector');
-  return buttonCollection[key] = model;
-};
-
-enterLogout = function() {
-  globalState.set('loggedIn', false);
-  if (globalState.get('recording')) {
-    globalState.set('recording', false);
-    readings.reset();
-    $('#TotalReadings').html("Items:");
-  }
-  pageGen.resetAdmin();
-  useButton(buttonModelActionDisabled);
-  useButton(buttonModelAdmin);
-  buttonModelUpload.set('active', false);
-  buttonModelClear.set('active', false);
-  setButtons();
-  return false;
-};
-
-setButtons = function(log) {
-  var key, value;
-  pageGen.activateButtons(buttonCollection);
-  if (log) {
-    for (key in buttonCollection) {
-      value = buttonCollection[key];
-      console.log('--' + key);
-      console.log(value.toJSON());
-    }
-  }
-};
-
-clearUserInterface = function() {
-  $('#StatusData').html('Ready to connect');
-  $('#FirmwareData').html('?');
-  $('#TotalReadings').html("Items:");
-  exitDebug();
-};
-
-countReadings = function() {
-  $('#TotalReadings').html("Items:" + readings.length);
-};
-
-tests.push(new test({
-  name: 'T25FW',
-  Description: 'T25FW'
-}));
-
-tests.push(new test({
-  name: '9HPT (dom)',
-  Description: '9HPT (dom)'
-}));
-
-tests.push(new test({
-  name: '9HPT (non-dom)',
-  Description: '9HPT (non-dom)'
-}));
-
-tests.push(new test({
-  name: 'Other',
-  Description: 'Other'
-}));
-
-initAll = function() {
-  var rtemp;
-  rtemp = void 0;
-  clearUserInterface();
-  $('#TotalReadings').html("Items:");
-  $('#uuid').html("Must connect to sensor").css('color', "violet");
-};
-
-enterClear = function() {
-  readings.reset();
-  $('#TotalReadings').html("Items:");
-  buttonModelClear.set('active', false);
-  buttonModelUpload.set('active', false);
-  useButton(buttonModelActionRecord);
-  setButtons();
-  return false;
-};
-
-enterConnected = function() {
-  var noCalibration;
-  noCalibration = true;
-  console.log('enterConnected');
-  globalState.set('connected', true);
-  useButton(buttonModelAdminDisabled);
-  if (noCalibration) {
-    if (globalState.get('loggedIn')) {
-      useButton(buttonModelActionRecord);
-    } else {
-      useButton(buttonModelAdmin);
-    }
-  } else {
-    useButton(buttonModelActionDisabled);
-    useButton(buttonModelCalibrate);
-  }
-  setButtons();
-  return false;
-};
-
-enterCalibrate = function() {
-  var calibrating;
-  console.log('enterCalibrate');
-  calibrating = true;
-  useButton(buttonModelCalibrating);
-  setButtons();
-  return false;
-};
-
-exitCalibrate = function() {
-  var calibrating;
-  console.log('exitCalibrate');
-  calibrating = false;
-  if (globalState.get('loggedIn')) {
-    useButton(buttonModelActionRecord);
-  }
-  useButton(buttonModelAdmin);
-  useButton(buttonModelCalibrateOff);
-  setButtons();
-  return false;
-};
-
-enterRecording = function() {
-  if (!sessionInfo.get('testID')) {
-    pageGen.forceTest('red');
-    return false;
-  }
-  console.log('enter Recording');
-  globalState.set('recording', true);
-  useButton(buttonModelActionStop);
-  setButtons();
-  return false;
-};
-
-enterStop = function() {
-  console.log('enter Stop');
-  globalState.set('recording', false);
-  useButton(buttonModelActionRecorded);
-  buttonModelUpload.set('active', true);
-  buttonModelClear.set('active', true);
-  setButtons();
-  return false;
-};
-
-enterUpload = function() {
-  var brainDump, hopper, hostUrl;
-  console.log('enter Upload');
-  hopper = void 0;
-  brainDump = void 0;
-  if (!readings.length) {
-    return false;
-  }
-  hostUrl = '192.168.1.200:3000';
-  hopper = Backbone.Model.extend({
-    url: '/trajectory',
-    urlRoot: hostUrl
-  });
-  if (typeof console === "function") {
-    console(log('hostURL=' + hostURL));
-  }
-  brainDump = new hopper;
-  brainDump.set('readings', readings);
-  brainDump.set('sensorUUID', sessionInfo.get('sensorUUID'));
-  brainDump.set('patientID', sessionInfo.get('patient'));
-  brainDump.set('user', sessionInfo.get('clinician'));
-  brainDump.set('password', sessionInfo.get('password'));
-  brainDump.set('testID', sessionInfo.get('testID'));
-  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  brainDump.save();
-  pageGen.forceTest();
-  enterClear();
-  return false;
-};
-
-visualHandler = require('./visual.coffee');
-
-smoother = new visualHandler(globalState);
-
-TiHandlerDef = require('./TiHandler.coffee');
-
-TiHandler = new TiHandlerDef(globalState, reading, sessionInfo);
-
-stopRecording = function() {
-  if (globalState.get('recording')) {
-    globalState.set('recording', false);
-    $('#record').prop('disabled', true).text('finished').fadeTo(200, 0.3);
-  }
-};
-
-accelerometerHandler = smoother.readingHandler({
-  sensor: 'accel',
-  debias: 'calibrateAccel',
-  source: sensortag.getAccelerometerValues,
-  units: 'G',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  viewer: smoother.viewSensor('accel-view', 0.4),
-  htmlID: 'AccelerometerData'
-});
-
-magnetometerHandler = smoother.readingHandler({
-  sensor: 'mag',
-  debias: 'calibrateMag',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: sensortag.getMagnetometerValues,
-  units: '&micro;T',
-  viewer: smoother.viewSensor('magnet-view', 0.05),
-  htmlID: 'MagnetometerData'
-});
-
-gyroscopeHandler = smoother.readingHandler({
-  sensor: 'gyro',
-  debias: 'calibrateGyro',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: sensortag.getGyroscopeValues,
-  viewer: smoother.viewSensor('gyro-view', 0.005),
-  htmlID: 'GyroscopeData'
-});
-
-setSensor = function() {
-  pageGen.activateSensorPage();
-  setButtons();
-  return false;
-};
-
-adminDone = function() {
-  globalState.set('loggedIn', true);
-  useButton(buttonModelAdminLogout);
-  if (globalState.get('connected')) {
-    useButton(buttonModelActionRecord);
-  }
-  pageGen.activateSensorPage();
-  setButtons();
-  return false;
-};
-
-clinics.on('change', function() {
-  return console.log("got the change!");
-});
-
-pageGen = new pages.Pages(admin, sessionInfo);
-
-sensorIsReady = false;
-
-domIsReady = false;
-
-rediness = function() {
-  var e;
-  enterAdmin();
-  clinics.on('change', function() {
-    return console.log("got BIG change!");
-  });
-  clinics.fetch({
-    success: function(model, response, options) {
-      console.log("clinic request success");
-      return model.trigger('change');
-    },
-    error: function(model, response, options) {
-      console.log("clinic request error from server");
-      console.log(response);
-      return console.log(model);
-    }
-  });
-  if (sensorIsReady && domIsReady) {
-    sessionInfo.set('platformUUID', window.device.uuid);
-    $("#platformUUID").text(window.device.uuid);
-    if (sensorIsReady && !(globalState.get('connected'))) {
-      console.log("Activating sensor attempt");
-      try {
-        TiHandler.initializeSensorTag(accelerometerHandler, magnetometerHandler, gyroscopeHandler);
-        console.log("TiHandler initialized");
-      } catch (_error) {
-        e = _error;
-        console.log("error from TiHandler");
-        console.log(e);
-      }
-    }
-    return console.log("Activating sensor exit");
-  }
-};
-
-
-/* this is how seen exports things -- it's clean.  we use it as example
-#seen = {}
-#if window? then window.seen = seen # for the web
-#if module?.exports? then module.exports = seen # for node
- */
-
-
-/*  And since we are in a browser ---
- */
-
-window.$ = $;
-
-window.sessionInfo = sessionInfo;
-
-window.Pages = pageGen;
-
-window.Me = this;
-
-window.Buttons = buttonCollection;
-
-$(document).on('deviceready', function() {
-  sensorIsReady = true;
-  rediness();
-});
-
-$(function() {
-  var console;
-  domIsReady = true;
-  pageGen.renderPage(adminDone);
-  if ($('#console-log') != null) {
-    window.console = console = new Console('console-log');
-    exitDebug();
-  }
-  initAll();
-  setSensor();
-  rediness();
-  return false;
-});
-
-
-
-},{"../libs/dbg/console":5,"../libs/evothings/easyble/easyble":7,"../libs/evothings/tisensortag/tisensortag":8,"../libs/evothings/util/util":9,"./TiHandler.coffee":1,"./pages.coffee":3,"./visual.coffee":4,"backbone":12,"jquery":14,"underscore":13}],3:[function(require,module,exports){
+},{"../libs/dbg/console":4,"../libs/evothings/easyble/easyble":6,"../libs/evothings/tisensortag/tisensortag":7,"../libs/evothings/util/util":8,"backbone":11,"jquery":13,"underscore":12}],2:[function(require,module,exports){
 var Pages, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1302,8 +676,7 @@ Pages = (function() {
 exports.Pages = Pages;
 
 
-
-},{"Backbone":10,"jquery":14,"teacup":15}],4:[function(require,module,exports){
+},{"Backbone":9,"jquery":13,"teacup":14}],3:[function(require,module,exports){
 var $, Seen, base, visual;
 
 Seen = require('../libs/dbg/seen');
@@ -1319,7 +692,7 @@ $ = require('jquery');
  *    recording: false
  *    connected: false
  *    calibrate: false
-#
+ *
 #globalState = new systemCommunicator
  */
 
@@ -1597,8 +970,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 base.exports = visual;
 
 
-
-},{"../libs/dbg/seen":6,"jquery":14}],5:[function(require,module,exports){
+},{"../libs/dbg/seen":5,"jquery":13}],4:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1880,7 +1252,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],6:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -4692,7 +4064,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],7:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 /**
  * File: easyble.js
  * Description: Library for making BLE programming easier.
@@ -5187,7 +4559,7 @@ exports.easyble = (function()
 	return easyble;
 })();
 
-},{}],8:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 /**
  * File: tisensortag.js
  * Description: JavaScript library for the TI SensorTag.
@@ -5971,7 +5343,7 @@ exports.tisensortag = (function()
 
 
 
-},{}],9:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /**
  * File: util.js
  * Description: Utilities for byte arrays.
@@ -6010,7 +5382,7 @@ exports.util = (function()
 	return funs
 })()
 
-},{}],10:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.0
 
@@ -7882,7 +7254,7 @@ exports.util = (function()
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":14,"underscore":11}],11:[function(require,module,exports){
+},{"jquery":13,"underscore":10}],10:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -9432,11 +8804,11 @@ exports.util = (function()
   }
 }.call(this));
 
-},{}],12:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
+arguments[4][9][0].apply(exports,arguments)
+},{"dup":9,"jquery":13,"underscore":12}],12:[function(require,module,exports){
 arguments[4][10][0].apply(exports,arguments)
-},{"dup":10,"jquery":14,"underscore":13}],13:[function(require,module,exports){
-arguments[4][11][0].apply(exports,arguments)
-},{"dup":11}],14:[function(require,module,exports){
+},{"dup":10}],13:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -18648,7 +18020,7 @@ return jQuery;
 
 }));
 
-},{}],15:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.1
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, i, j, l, len, len1, len2, merge_elements, ref, ref1, ref2, tagName,
@@ -19060,4 +18432,632 @@ return jQuery;
 
 }).call(this);
 
-},{}]},{},[2]);
+},{}],15:[function(require,module,exports){
+var $, Backbone, TiHandler, TiHandlerDef, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, evothings, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sensortag, sessionInfo, setButtons, setSensor, smoother, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
+
+Backbone = require('backbone');
+
+_ = require('underscore');
+
+require('../libs/dbg/console');
+
+Backbone.$ = $ = require('jquery');
+
+pages = require('./pages.coffee');
+
+evothings = window.evothings = {};
+
+evothings.util = require('../libs/evothings/util/util').util;
+
+evothings.easyble = require('../libs/evothings/easyble/easyble').easyble;
+
+evothings.tisensortag = require('../libs/evothings/tisensortag/tisensortag').tisensortag;
+
+sensortag = evothings.tisensortag.createInstance();
+
+mainHost = {
+  iP: "192.168.1.200",
+  port: 3000,
+  protocol: "http"
+};
+
+
+/*
+Section: Data Structures
+ Routines to create and handle data structures and interfaces to them
+ */
+
+systemCommunicator = Backbone.Model.extend({
+  defaults: {
+    calibrating: false,
+    recording: false,
+    connected: false,
+    calibrate: false,
+    loggedIn: false
+  }
+});
+
+globalState = new systemCommunicator;
+
+clinicModel = Backbone.Model.extend();
+
+clinicCollection = Backbone.Collection.extend({
+  model: clinicModel,
+  url: '/clinics'
+});
+
+clinics = new clinicCollection;
+
+clinicianModel = Backbone.Model.extend({
+  defaults: {
+    name: 'Text',
+    password: 'Password'
+  }
+});
+
+clinicianCollection = Backbone.Collection.extend({
+  model: clinicianModel,
+  url: '/users'
+});
+
+clinicians = new clinicianCollection;
+
+clientModel = Backbone.Model.extend({
+  defaults: {
+    name: 'Text',
+    patientOnly: 'Boolean'
+  }
+});
+
+clientCollection = Backbone.Collection.extend({
+  model: clientModel,
+  url: '/users'
+});
+
+clients = new clientCollection;
+
+test = Backbone.Model.extend({
+  defaults: {
+    name: "test 0",
+    Description: "Test 0"
+  }
+});
+
+testCollection = Backbone.Collection.extend({
+  model: test,
+  url: "/tests_list.json"
+});
+
+tests = new testCollection;
+
+adminData = Backbone.Model.extend();
+
+admin = new adminData({
+  clinics: clinics,
+  clinicians: clinicians,
+  clients: clients,
+  tests: tests
+});
+
+reading = Backbone.Model.extend({
+  defaults: {
+    sensor: 'gyro'
+  },
+  initialize: function() {
+    var d;
+    d = new Date;
+    return this.set('time', d.getTime());
+  }
+});
+
+readingCollection = Backbone.Collection.extend({
+  model: reading,
+  initialize: function() {
+    this.on('add', countReadings);
+    this.on('remove', countReadings);
+    return this.on('reset', countReadings);
+  }
+});
+
+readings = new readingCollection;
+
+readings.push(new reading({
+  raw: [1, 2, 3, 4, 5, 6],
+  sensor: 'DebugOnly'
+}));
+
+rawSession = Backbone.Model.extend();
+
+sessionInfo = new rawSession({
+  user: '',
+  patient: '',
+  testID: '',
+  sensorUUID: '',
+  platformUUID: ''
+});
+
+enterDebug = function() {
+  useButton(buttonModelDebugOn);
+  setButtons();
+  $('#footer').show();
+  return false;
+};
+
+exitDebug = function() {
+  useButton(buttonModelDebugOff);
+  setButtons();
+  $('#footer').hide();
+  return false;
+};
+
+exitAdmin = function() {
+  globalState.set('loggedIn', true);
+  enterLogout();
+  return false;
+};
+
+enterAdmin = function() {
+  var e;
+  try {
+    pageGen.activateAdminPage();
+  } catch (_error) {
+    e = _error;
+    console.log(e);
+  }
+  return false;
+};
+
+aButtonModel = Backbone.Model.extend({
+  defaults: {
+    active: false,
+    funct: function() {},
+    text: '--',
+    selector: 'button'
+  }
+});
+
+buttonModelDebugOn = new aButtonModel({
+  active: true,
+  selector: 'debug',
+  text: "Hide Log",
+  funct: function() {
+    return exitDebug();
+  }
+});
+
+buttonModelDebugOff = new aButtonModel({
+  active: true,
+  selector: 'debug',
+  text: "Show Log",
+  funct: function() {
+    return enterDebug();
+  }
+});
+
+buttonModelActionRecord = new aButtonModel({
+  active: true,
+  selector: 'action',
+  text: 'Record',
+  funct: function() {
+    return enterRecording();
+  }
+});
+
+buttonModelActionStop = new aButtonModel({
+  active: true,
+  selector: 'action',
+  text: 'Stop',
+  funct: function() {
+    return enterStop();
+  }
+});
+
+buttonModelActionDisabled = new aButtonModel({
+  selector: 'action',
+  text: 'no connect'
+});
+
+buttonModelActionRecorded = new aButtonModel({
+  selector: 'action',
+  text: 'Recorded'
+});
+
+buttonModelClear = new aButtonModel({
+  active: false,
+  selector: 'clear',
+  text: 'Clear',
+  funct: function() {
+    return enterClear();
+  }
+});
+
+buttonModelUpload = new aButtonModel({
+  active: false,
+  selector: 'upload',
+  text: 'Upload',
+  funct: function() {
+    return enterUpload();
+  }
+});
+
+buttonModelCalibrating = new aButtonModel({
+  active: true,
+  selector: 'calibrate',
+  text: 'Stop Calib',
+  funct: function() {
+    return exitCalibrate();
+  }
+});
+
+buttonModelCalibrate = new aButtonModel({
+  active: true,
+  selector: 'calibrate',
+  text: 'Calibrate',
+  funct: function() {
+    return enterCalibrate();
+  }
+});
+
+buttonModelCalibrateOff = new aButtonModel({
+  selector: 'calibrate',
+  text: 'Calibrate'
+});
+
+buttonModelAdmin = new aButtonModel({
+  active: true,
+  selector: 'admin',
+  text: 'Log In',
+  funct: function() {
+    return enterAdmin();
+  }
+});
+
+buttonModelAdminDisabled = new aButtonModel({
+  active: false,
+  selector: 'admin',
+  text: 'Log In'
+});
+
+buttonModelAdminLogout = new aButtonModel({
+  active: true,
+  selector: 'admin',
+  text: 'Log out',
+  funct: function() {
+    return exitAdmin();
+  }
+});
+
+buttonCollection = {
+  admin: buttonModelAdminDisabled,
+  calibrate: buttonModelCalibrateOff,
+  debug: buttonModelDebugOff,
+  action: buttonModelActionDisabled,
+  upload: buttonModelUpload,
+  clear: buttonModelClear
+};
+
+useButton = function(model) {
+  var key;
+  key = model.get('selector');
+  return buttonCollection[key] = model;
+};
+
+enterLogout = function() {
+  globalState.set('loggedIn', false);
+  if (globalState.get('recording')) {
+    globalState.set('recording', false);
+    readings.reset();
+    $('#TotalReadings').html("Items:");
+  }
+  pageGen.resetAdmin();
+  useButton(buttonModelActionDisabled);
+  useButton(buttonModelAdmin);
+  buttonModelUpload.set('active', false);
+  buttonModelClear.set('active', false);
+  setButtons();
+  return false;
+};
+
+setButtons = function(log) {
+  var key, value;
+  pageGen.activateButtons(buttonCollection);
+  if (log) {
+    for (key in buttonCollection) {
+      value = buttonCollection[key];
+      console.log('--' + key);
+      console.log(value.toJSON());
+    }
+  }
+};
+
+clearUserInterface = function() {
+  $('#StatusData').html('Ready to connect');
+  $('#FirmwareData').html('?');
+  $('#TotalReadings').html("Items:");
+  exitDebug();
+};
+
+countReadings = function() {
+  $('#TotalReadings').html("Items:" + readings.length);
+};
+
+tests.push(new test({
+  name: 'T25FW',
+  Description: 'T25FW'
+}));
+
+tests.push(new test({
+  name: '9HPT (dom)',
+  Description: '9HPT (dom)'
+}));
+
+tests.push(new test({
+  name: '9HPT (non-dom)',
+  Description: '9HPT (non-dom)'
+}));
+
+tests.push(new test({
+  name: 'Other',
+  Description: 'Other'
+}));
+
+initAll = function() {
+  var rtemp;
+  rtemp = void 0;
+  clearUserInterface();
+  $('#TotalReadings').html("Items:");
+  $('#uuid').html("Must connect to sensor").css('color', "violet");
+};
+
+enterClear = function() {
+  readings.reset();
+  $('#TotalReadings').html("Items:");
+  buttonModelClear.set('active', false);
+  buttonModelUpload.set('active', false);
+  useButton(buttonModelActionRecord);
+  setButtons();
+  return false;
+};
+
+enterConnected = function() {
+  var noCalibration;
+  noCalibration = true;
+  console.log('enterConnected');
+  globalState.set('connected', true);
+  useButton(buttonModelAdminDisabled);
+  if (noCalibration) {
+    if (globalState.get('loggedIn')) {
+      useButton(buttonModelActionRecord);
+    } else {
+      useButton(buttonModelAdmin);
+    }
+  } else {
+    useButton(buttonModelActionDisabled);
+    useButton(buttonModelCalibrate);
+  }
+  setButtons();
+  return false;
+};
+
+enterCalibrate = function() {
+  var calibrating;
+  console.log('enterCalibrate');
+  calibrating = true;
+  useButton(buttonModelCalibrating);
+  setButtons();
+  return false;
+};
+
+exitCalibrate = function() {
+  var calibrating;
+  console.log('exitCalibrate');
+  calibrating = false;
+  if (globalState.get('loggedIn')) {
+    useButton(buttonModelActionRecord);
+  }
+  useButton(buttonModelAdmin);
+  useButton(buttonModelCalibrateOff);
+  setButtons();
+  return false;
+};
+
+enterRecording = function() {
+  if (!sessionInfo.get('testID')) {
+    pageGen.forceTest('red');
+    return false;
+  }
+  console.log('enter Recording');
+  globalState.set('recording', true);
+  useButton(buttonModelActionStop);
+  setButtons();
+  return false;
+};
+
+enterStop = function() {
+  console.log('enter Stop');
+  globalState.set('recording', false);
+  useButton(buttonModelActionRecorded);
+  buttonModelUpload.set('active', true);
+  buttonModelClear.set('active', true);
+  setButtons();
+  return false;
+};
+
+enterUpload = function() {
+  var brainDump, hopper, hostUrl;
+  console.log('enter Upload');
+  hopper = void 0;
+  brainDump = void 0;
+  if (!readings.length) {
+    return false;
+  }
+  hostUrl = '192.168.1.200:3000';
+  hopper = Backbone.Model.extend({
+    url: '/trajectory',
+    urlRoot: hostUrl
+  });
+  if (typeof console === "function") {
+    console(log('hostURL=' + hostURL));
+  }
+  brainDump = new hopper;
+  brainDump.set('readings', readings);
+  brainDump.set('sensorUUID', sessionInfo.get('sensorUUID'));
+  brainDump.set('patientID', sessionInfo.get('patient'));
+  brainDump.set('user', sessionInfo.get('clinician'));
+  brainDump.set('password', sessionInfo.get('password'));
+  brainDump.set('testID', sessionInfo.get('testID'));
+  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
+  brainDump.save();
+  pageGen.forceTest();
+  enterClear();
+  return false;
+};
+
+visualHandler = require('./visual.coffee');
+
+smoother = new visualHandler(globalState);
+
+TiHandlerDef = require('./TiHandler.coffee');
+
+TiHandler = new TiHandlerDef(globalState, reading, sessionInfo);
+
+stopRecording = function() {
+  if (globalState.get('recording')) {
+    globalState.set('recording', false);
+    $('#record').prop('disabled', true).text('finished').fadeTo(200, 0.3);
+  }
+};
+
+accelerometerHandler = smoother.readingHandler({
+  sensor: 'accel',
+  debias: 'calibrateAccel',
+  source: sensortag.getAccelerometerValues,
+  units: 'G',
+  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+  viewer: smoother.viewSensor('accel-view', 0.4),
+  htmlID: 'AccelerometerData'
+});
+
+magnetometerHandler = smoother.readingHandler({
+  sensor: 'mag',
+  debias: 'calibrateMag',
+  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+  source: sensortag.getMagnetometerValues,
+  units: '&micro;T',
+  viewer: smoother.viewSensor('magnet-view', 0.05),
+  htmlID: 'MagnetometerData'
+});
+
+gyroscopeHandler = smoother.readingHandler({
+  sensor: 'gyro',
+  debias: 'calibrateGyro',
+  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+  source: sensortag.getGyroscopeValues,
+  viewer: smoother.viewSensor('gyro-view', 0.005),
+  htmlID: 'GyroscopeData'
+});
+
+setSensor = function() {
+  pageGen.activateSensorPage();
+  setButtons();
+  return false;
+};
+
+adminDone = function() {
+  globalState.set('loggedIn', true);
+  useButton(buttonModelAdminLogout);
+  if (globalState.get('connected')) {
+    useButton(buttonModelActionRecord);
+  }
+  pageGen.activateSensorPage();
+  setButtons();
+  return false;
+};
+
+clinics.on('change', function() {
+  return console.log("got the change!");
+});
+
+pageGen = new pages.Pages(admin, sessionInfo);
+
+sensorIsReady = false;
+
+domIsReady = false;
+
+rediness = function() {
+  var e;
+  enterAdmin();
+  clinics.on('change', function() {
+    return console.log("got BIG change!");
+  });
+  clinics.fetch({
+    success: function(model, response, options) {
+      console.log("clinic request success");
+      return model.trigger('change');
+    },
+    error: function(model, response, options) {
+      console.log("clinic request error from server");
+      console.log(response);
+      return console.log(model);
+    }
+  });
+  if (sensorIsReady && domIsReady) {
+    sessionInfo.set('platformUUID', window.device.uuid);
+    $("#platformUUID").text(window.device.uuid);
+    if (sensorIsReady && !(globalState.get('connected'))) {
+      console.log("Activating sensor attempt");
+      try {
+        TiHandler.initializeSensorTag(accelerometerHandler, magnetometerHandler, gyroscopeHandler);
+        console.log("TiHandler initialized");
+      } catch (_error) {
+        e = _error;
+        console.log("error from TiHandler");
+        console.log(e);
+      }
+    }
+    return console.log("Activating sensor exit");
+  }
+};
+
+
+/* this is how seen exports things -- it's clean.  we use it as example
+#seen = {}
+#if window? then window.seen = seen # for the web
+#if module?.exports? then module.exports = seen # for node
+ */
+
+
+/*  And since we are in a browser ---
+ */
+
+window.$ = $;
+
+window.sessionInfo = sessionInfo;
+
+window.Pages = pageGen;
+
+window.Me = this;
+
+window.Buttons = buttonCollection;
+
+$(document).on('deviceready', function() {
+  sensorIsReady = true;
+  rediness();
+});
+
+$(function() {
+  var console;
+  domIsReady = true;
+  pageGen.renderPage(adminDone);
+  if ($('#console-log') != null) {
+    window.console = console = new Console('console-log');
+    exitDebug();
+  }
+  initAll();
+  setSensor();
+  rediness();
+  return false;
+});
+
+
+},{"../libs/dbg/console":4,"../libs/evothings/easyble/easyble":6,"../libs/evothings/tisensortag/tisensortag":7,"../libs/evothings/util/util":8,"./TiHandler.coffee":1,"./pages.coffee":2,"./visual.coffee":3,"backbone":11,"jquery":13,"underscore":12}]},{},[15]);

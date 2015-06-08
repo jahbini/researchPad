@@ -27,6 +27,10 @@ class TiHandler
       calibrate: false
       loggedIn:  false
 
+  getMagnetometerValues = sensortag.getMagnetometerValues
+  getAccelerometerValues = sensortag.getAccelerometerValues
+  getGyroscopeValues = sensortag.getGyroscopeValues
+
   globalState = new systemCommunicator
 
   reading = Backbone.Model.extend
