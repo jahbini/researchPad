@@ -27,10 +27,6 @@ class TiHandler
       calibrate: false
       loggedIn:  false
 
-  getMagnetometerValues = sensortag.getMagnetometerValues
-  getAccelerometerValues = sensortag.getAccelerometerValues
-  getGyroscopeValues = sensortag.getGyroscopeValues
-
   globalState = new systemCommunicator
 
   reading = Backbone.Model.extend
@@ -50,7 +46,11 @@ class TiHandler
       platformUUID: ''
 
   ###
+
   constructor: (@globalState,@reading,@sessionInfo) ->
+    @getMagnetometerValues = sensortag.getMagnetometerValues
+    @getAccelerometerValues = sensortag.getAccelerometerValues
+    @getGyroscopeValues = sensortag.getGyroscopeValues
 
   ###
   # debuging -- should show up on server
@@ -92,7 +92,11 @@ class TiHandler
         return
       ), 1000
     return
-      
+
+  debugReading = (data)->
+    console.log "got reading"
+    console.log data
+
   initializeSensorTag: (accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
     # Here sensors are set up.
     #
@@ -109,13 +113,16 @@ class TiHandler
     repeat = false
     failures =0
     console.log "initialize Sensor Communication"
+    console.log accelerometerHandler
+    accelerometerHandler [ 24, 50,40,50,60,33]
     try
       @globalState.set 'connected', false
       sensortag.statusCallback(statusHandler)
       sensortag.errorCallback(errorHandler)
       console.log "Status and error handlers OK"
   #  sensortag.keypressCallback(keypressHandler)
-      sensortag.accelerometerCallback(accelerometerHandler, 100)
+      #sensortag.accelerometerCallback(accelerometerHandler, 100)
+      sensortag.accelerometerCallback(debugReading, 100)
       sensortag.magnetometerCallback(magnetometerHandler, 100)
       sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7)
       console.log "Device Sensors OK"
@@ -136,7 +143,6 @@ class TiHandler
     return
     
 
-if window? then base= window
-if module?.exports? then base = module
+if window? then window.exports = TiHandler
+if module?.exports? then module.exports = TiHandler
 
-base.exports = TiHandler

@@ -100,6 +100,8 @@ class visual
       return
     (data) =>
       # data points from Evothings library are Seen.Point NOT compatible as sources
+      console.log "in readinghandler"
+      console.log data
       try
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
@@ -250,7 +252,5 @@ class visual
 
 
   #
-if window? then base= window
-if module?.exports? then base = module
-
-base.exports = visual
+if window? then window.exports = visual
+if module?.exports? then module.exports = visual

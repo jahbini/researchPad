@@ -10,12 +10,6 @@ Backbone.$ = $ = require('jquery')
 pages = require './pages.coffee'
 
 
-evothings = window.evothings ={}
-evothings.util = require('../libs/evothings/util/util').util
-evothings.easyble =require('../libs/evothings/easyble/easyble').easyble
-evothings.tisensortag=require('../libs/evothings/tisensortag/tisensortag').tisensortag
-sensortag = evothings.tisensortag.createInstance()
-
 # Host we communicate with
 mainHost = 
   iP: "192.168.1.200"
@@ -398,15 +392,6 @@ enterUpload = ->
   pageGen.forceTest()
   enterClear()
   return false
-
-#
-# ### Subsection State Handlers that depend on the Hardware
-visualHandler = require('./visual.coffee')
-smoother = new visualHandler(globalState)
-
-TiHandlerDef = require('./TiHandler.coffee')
-TiHandler = new TiHandlerDef globalState, reading, sessionInfo
-
 # ## stopRecording
 # halt the record session -- no restart allowed
 # upload button remains enabled, clear button remains enabled
@@ -417,15 +402,19 @@ stopRecording = ->
     $('#record').prop('disabled', true).text('finished').fadeTo 200, 0.3
   return
 
-# ## subsection State routines that depend on hardware and update the view or data structures
 
-# calculations implemented as based on TI wiki pages
-# http://processors.wiki.ti.com/index.php/SensorTag_User_Guide
+#
+# ### Subsection State Handlers that depend on the Hardware
 
+TiHandlerDef = require('./TiHandler.coffee')
+TiHandler = new TiHandlerDef globalState, reading, sessionInfo
+
+visualHandler = require('./visual.coffee')
+smoother = new visualHandler(globalState)
 accelerometerHandler = smoother.readingHandler(
   sensor: 'accel'
   debias: 'calibrateAccel'
-  source: sensortag.getAccelerometerValues
+  source: TiHandler.getAccelerometerValues
   units: 'G'
   calibrator: [
     smoother.calibratorAverage
@@ -441,7 +430,7 @@ magnetometerHandler = smoother.readingHandler(
     smoother.calibratorAverage
     smoother.calibratorSmooth
   ]
-  source: sensortag.getMagnetometerValues
+  source: TiHandler.getMagnetometerValues
   units: '&micro;T'
   viewer: smoother.viewSensor('magnet-view', 0.05)
   htmlID: 'MagnetometerData')
@@ -453,7 +442,7 @@ gyroscopeHandler = smoother.readingHandler(
     smoother.calibratorAverage
     smoother.calibratorSmooth
   ]
-  source: sensortag.getGyroscopeValues
+  source: TiHandler.getGyroscopeValues
   viewer: smoother.viewSensor('gyro-view', 0.005)
   htmlID: 'GyroscopeData')
 
@@ -482,7 +471,6 @@ sensorIsReady = false
 domIsReady = false
 
 rediness = ->
-  enterAdmin()
   clinics.on 'change', ()->
     console.log "got BIG change!"
   clinics.fetch 

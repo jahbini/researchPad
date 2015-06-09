@@ -305,3 +305,5 @@ class Pages
     @activateButtons buttonSpec if buttonSpec?
 
 exports.Pages = Pages
+if window? then window.exports = Pages
+if module?.exports? then module.exports = Pages
