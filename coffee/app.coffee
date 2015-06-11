@@ -11,7 +11,7 @@ pages = require './pages.coffee'
 
 
 # Host we communicate with
-mainHost = 
+mainHost =
   iP: "192.168.1.200"
   port: 3000
   protocol: "http"
@@ -36,7 +36,7 @@ clinicModel = Backbone.Model.extend()
 
 clinicCollection = Backbone.Collection.extend
   model: clinicModel
-  url: '/clinics'
+  url: 'http://192.168.1.200:3000/clinics'
 
 clinics = new clinicCollection
 
@@ -82,7 +82,7 @@ reading = Backbone.Model.extend
   initialize: ->
     d = new Date
     @set 'time', d.getTime()
-  
+
 readingCollection = Backbone.Collection.extend
   model: reading
   initialize: ->
@@ -130,7 +130,7 @@ enterAdmin = ->
     console.log e
   return false
 
-aButtonModel = Backbone.Model.extend 
+aButtonModel = Backbone.Model.extend
   defaults:
     active: false
     funct: ->
@@ -172,7 +172,7 @@ buttonModelActionDisabled = new aButtonModel
 buttonModelActionRecorded = new aButtonModel
   selector: 'action',
   text: 'Recorded',
-    
+
 buttonModelClear = new aButtonModel
   active: false
   selector: 'clear'
@@ -232,11 +232,11 @@ buttonCollection = {
   upload: buttonModelUpload
   clear: buttonModelClear
   }
-  
+
 useButton= (model) ->
   key = model.get('selector')
   buttonCollection[key] = model
-  
+
 
 enterLogout = () ->
   globalState.set 'loggedIn', false
@@ -251,7 +251,7 @@ enterLogout = () ->
   buttonModelClear.set('active',false)
   setButtons()
   return false
-  
+
 setButtons = (log) ->
   pageGen.activateButtons buttonCollection
   if log
@@ -276,11 +276,11 @@ countReadings = ->
 tests.push new test
   name: 'T25FW'
   Description: 'T25FW'
-  
+
 tests.push new test
   name: '9HPT (dom)'
   Description: '9HPT (dom)'
-  
+
 tests.push new test
   name: '9HPT (non-dom)'
   Description: '9HPT (non-dom)'
@@ -288,7 +288,7 @@ tests.push new test
 tests.push new test
   name: 'Other'
   Description: 'Other'
-  
+
 # ## Section State Handlers
 
 initAll = ->
@@ -315,7 +315,7 @@ enterConnected = ->
   console.log('enterConnected')
   globalState.set 'connected', true
   useButton buttonModelAdminDisabled
-#  eliminate Calibrate button functionality 
+#  eliminate Calibrate button functionality
   if noCalibration
     if globalState.get 'loggedIn'
       useButton buttonModelActionRecord
@@ -367,7 +367,7 @@ enterUpload = ->
   console.log('enter Upload')
   hopper = undefined
   brainDump = undefined
-  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15 
+  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
   if !readings.length
    return false
   hostUrl = '192.168.1.200:3000'
@@ -377,7 +377,7 @@ enterUpload = ->
   }
   console?log 'hostURL=' + hostURL
   #console?log sessionInfo
-  brainDump = new hopper 
+  brainDump = new hopper
 
   brainDump.set('readings',readings )
   brainDump.set('sensorUUID',sessionInfo.get('sensorUUID') )
@@ -407,8 +407,9 @@ stopRecording = ->
 # ### Subsection State Handlers that depend on the Hardware
 
 TiHandlerDef = require('./TiHandler.coffee')
-TiHandler = new TiHandlerDef globalState, reading, sessionInfo
+TiHandler = new TiHandlerDef globalState, reading, sessionInfo, enterConnected
 
+window.TiHandler = TiHandler
 visualHandler = require('./visual.coffee')
 smoother = new visualHandler(globalState)
 accelerometerHandler = smoother.readingHandler(
@@ -453,7 +454,7 @@ setSensor = ->
   return false
 
 adminDone= ->
-  globalState.set 'loggedIn',  true 
+  globalState.set 'loggedIn',  true
   useButton  buttonModelAdminLogout
   if globalState.get 'connected'
     useButton buttonModelActionRecord
@@ -461,7 +462,7 @@ adminDone= ->
   setButtons()
   return false
 
-  
+
 clinics.on 'change', ()->
   console.log "got the change!"
 
@@ -473,7 +474,7 @@ domIsReady = false
 rediness = ->
   clinics.on 'change', ()->
     console.log "got BIG change!"
-  clinics.fetch 
+  clinics.fetch
     success: (model,response,options)->
       console.log "clinic request success"
       model.trigger 'change'
@@ -481,7 +482,7 @@ rediness = ->
       console.log "clinic request error from server"
       console.log response
       console.log model
-        
+
   if sensorIsReady && domIsReady
     sessionInfo.set('platformUUID',window.device.uuid)
     $("#platformUUID").text(window.device.uuid)
@@ -495,7 +496,7 @@ rediness = ->
         console.log "error from TiHandler"
         console.log e
     console.log "Activating sensor exit"
-  
+
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web
@@ -526,4 +527,3 @@ $ ->
   setSensor()
   rediness()
   return false
-

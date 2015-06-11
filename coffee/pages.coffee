@@ -31,12 +31,12 @@ class Pages
     clinicViewTemplate = Backbone.View.extend
       el: '#desiredClinic'
       collection: @admin.get('clinics')
-      attributes: 
+      attributes:
         admin:  @admin
         session: @sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
-      events: 
+      events:
         'change': ->
           theOptionCid = @$el.val()
           theClinic = @collection.get( theOptionCid )
@@ -63,18 +63,18 @@ class Pages
     clinicianViewTemplate = Backbone.View.extend
       el: '#desiredClinician'
       collection: @admin.get('clinicians')
-      attributes: 
+      attributes:
         session: @sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
-      events: 
+      events:
         'change': ->
           @attributes.session.set 'clinician',@$el.val()
           return false
       render: ->
         temp = render =>
           option "Select ---"
-          for user in @collection.models 
+          for user in @collection.models
             n= user.get('name')
             option value: user.get('_id'), n.first + ' ' + n.last
         @$el.html temp
@@ -87,14 +87,14 @@ class Pages
         session: @sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
-      events: 
+      events:
         'change': ->
           @attributes.session.set 'client',@$el.val()
           return false
       render: ->
         @$el.html render =>
           option "Select ---"
-          for p in @collection.models 
+          for p in @collection.models
             n=p.get('name')
             option value: p.get('_id'), n.first + ' ' + n.last
         return this
@@ -104,10 +104,10 @@ class Pages
       model: @sessionInfo
       initialize: ->
         @listenTo @model, 'change', @render
-      events: 
+      events:
         'click': @adminDone
       render: ->
-        if (@model.get 'clinic') && (@model.get 'clinician') && 
+        if (@model.get 'clinic') && (@model.get 'clinician') &&
             (@model.get 'client') && 'retro2015' == (@model.get 'password')?.slice(0,9)
           console.log('activating')
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
@@ -138,7 +138,7 @@ class Pages
         div '.four.columns',"Platform uuid"
         div '#platformUUID.five.columns', ->
           raw '&nbsp;'
-        
+
       contents1()
       contents2()
       div '#footer','style="display:none;"', ->
@@ -147,7 +147,7 @@ class Pages
 
   adminContents: renderable ()=>
      div '#adminForm', ->
-      hr() 
+      hr()
       form ->
         div '.row', ->
           div '.five.columns', ->
@@ -269,12 +269,12 @@ class Pages
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
       collection: @admin.get('tests')
-      attributes: 
+      attributes:
         session: @sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
         @render()
-      events: 
+      events:
         'change': ->
           @attributes.session.set 'testID',@$el.val()
           return false
@@ -305,5 +305,5 @@ class Pages
     @activateButtons buttonSpec if buttonSpec?
 
 exports.Pages = Pages
-if window? then window.exports = Pages
-if module?.exports? then module.exports = Pages
+#if window? then window.exports = Pages
+#if module?.exports? then module.exports = Pages

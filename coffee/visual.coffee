@@ -3,7 +3,7 @@
 
 Seen = require('../libs/dbg/seen')
 $=require('jquery')
-  
+
 ###
 #globalStatus looks like this:
 #systemCommunicator = Backbone.Model.extend
@@ -235,7 +235,7 @@ class visual
       p1 = p1.normalize()
       pBar.add p1
       if pBar.magnitude() < 0.000001
-        pBar = Seen.P(0, 1, 0) # this is a 180 degree rotation, so use y axis as rotation vector 
+        pBar = Seen.P(0, 1, 0) # this is a 180 degree rotation, so use y axis as rotation vector
       pBar.normalize()
       q = Seen.Quaternion.pointAngle(pBar, Math.PI)
       m = q.toMatrix()
@@ -251,6 +251,7 @@ class visual
     newValue
 
 
-  #
-if window? then window.exports = visual
-if module?.exports? then module.exports = visual
+if window? then base= window
+if module?.exports? then base = module
+
+base.exports = visual

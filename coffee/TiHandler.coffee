@@ -9,10 +9,7 @@ require('../libs/dbg/console')
 $ = require('jquery')
 
 class TiHandler
-  evothings = window.evothings ={}
-  evothings.util = require('../libs/evothings/util/util').util
-  evothings.easyble =require('../libs/evothings/easyble/easyble').easyble
-  evothings.tisensortag=require('../libs/evothings/tisensortag/tisensortag').tisensortag
+  evothings = window.evothings
   sensortag = evothings.tisensortag.createInstance()
 
   ###
@@ -35,7 +32,7 @@ class TiHandler
     initialize: ->
       d = new Date
       @set 'time', d.getTime()
-    
+
 
   rawSession = Backbone.Model.extend()
   sessionInfo = new rawSession
@@ -47,7 +44,9 @@ class TiHandler
 
   ###
 
-  constructor: (@globalState,@reading,@sessionInfo) ->
+  enterConnected = false
+  constructor: (@globalState,@reading,@sessionInfo,ec) ->
+    enterConnected = ec
     @getMagnetometerValues = sensortag.getMagnetometerValues
     @getAccelerometerValues = sensortag.getAccelerometerValues
     @getGyroscopeValues = sensortag.getGyroscopeValues
@@ -66,11 +65,18 @@ class TiHandler
   #
   ###
 
-  statusHandler = (status) ->
+  statusHandler= (status)->
     console.log "new Sensor Status"
     console.log status
     if 'Sensors online' == status
-      enterConnected()
+      try
+        if ! enterConnected
+          console.log "enterConnected does not exist"
+        enterConnected()
+      catch e
+        console.log "error setting connection"
+        console.log e
+        console.log enterConnected
       status = 'Sensor online'
     if 'Device data available' == status
       $('#FirmwareData').html sensortag.getFirmwareString()
@@ -80,11 +86,14 @@ class TiHandler
     $('#StatusData').html status
     return
 
-  errorHandler = (error) ->
+  errorHandler=  (error,that)->
     console.log "Sensor error!"
     console.log 'Error: ' + error
     if 'disconnected' == error
-      @globalState.set 'connected', false
+      if !that.globalState
+        console.log("ERROR no globalState")
+      else
+        that.globalState.set 'connected', false
       $('#uuid').html("Must connect to sensor").css('color',"red")
       # If disconneted attempt to connect again. (but not to same device)
       setTimeout (->
@@ -118,13 +127,21 @@ class TiHandler
     try
       @globalState.set 'connected', false
       sensortag.statusCallback(statusHandler)
-      sensortag.errorCallback(errorHandler)
+      sensortag.errorCallback (error)=>
+#change this to globalState
+        errorHandler error,this
       console.log "Status and error handlers OK"
   #  sensortag.keypressCallback(keypressHandler)
-      #sensortag.accelerometerCallback(accelerometerHandler, 100)
-      sensortag.accelerometerCallback(debugReading, 100)
-      sensortag.magnetometerCallback(magnetometerHandler, 100)
-      sensortag.gyroscopeCallback(gyroscopeHandler, 100, 7)
+  #    sensortag.accelerometerCallback (data)=> 
+  #        accelerometerHandler data
+  #      ,100
+      sensortag.magnetometerCallback (data)=>
+          magnetometerHandler data
+        ,100
+      sensortag.gyroscopeCallback (data)=>
+          gyroscopeHandler data
+        ,100
+        ,7
       console.log "Device Sensors OK"
       sensortag.connectToClosestDevice()
     catch e
@@ -141,8 +158,7 @@ class TiHandler
     else
       console.log "sensor came on-line immediately"
     return
-    
+
 
 if window? then window.exports = TiHandler
 if module?.exports? then module.exports = TiHandler
-
