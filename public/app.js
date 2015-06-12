@@ -14,7 +14,7 @@ TiHandler = (function() {
 
   evothings = window.evothings;
 
-  sensortag = evothings.tisensortag.createInstance();
+  sensortag = evothings.tisensortag.createInstance(evothings.tisensortag.CC2650_BLUETOOTH_SMART);
 
 
   /*

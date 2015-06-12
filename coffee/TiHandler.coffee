@@ -10,7 +10,7 @@ $ = require('jquery')
 
 class TiHandler
   evothings = window.evothings
-  sensortag = evothings.tisensortag.createInstance()
+  sensortag = evothings.tisensortag.createInstance(evothings.tisensortag.CC2650_BLUETOOTH_SMART)
 
   ###
   Section: Data Structures
