@@ -1,7 +1,6 @@
 <!DOCTYPE html><html><head><title>visual.coffee</title><meta http-equiv="Content-Type" content="text/html" charset="UTF-8"><link rel="stylesheet" media="all" href="../docco.css"></head><body><div id="container"><div id="background"></div><div id="jump_to">Jump To &hellip;<div id="jump_wrapper"><div id="jump_page"><a href="../index.html" class="source"><span class="file_name">README</span></a><a href="../coffee/TiHandler.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">TiHandler.coffee</span></a><a href="../coffee/app.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">app.coffee</span></a><a href="../coffee/pages.coffee.html" class="source "><span class="base_path">coffee / </span><span class="file_name">pages.coffee</span></a><a href="../coffee/visual.coffee.html" class="source selected"><span class="base_path">coffee / </span><span class="file_name">visual.coffee</span></a></div></div></div><table cellpadding="0" cellspacing="0"><thead><tr><th class="docs"><h1>visual.coffee</h1><div class="filepath">coffee/</div></th><th class="code"></th></tr></thead><tbody><tr id="section-1"><td class="docs"><div class="pilwrap"><a href="#section-1" class="pilcrow">&#182;</a></div><p>vim: et:ts=2:sw=2:sts=2</p>
 </td><td class="code"><div class="highlight"><pre><span class="nv">Seen = </span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;../libs/dbg/seen&#39;</span><span class="p">)</span>
-<span class="nx">$</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;jquery&#39;</span><span class="p">)</span>
-  </pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><h1>#</h1>
+<span class="nx">$</span><span class="o">=</span><span class="nx">require</span><span class="p">(</span><span class="s">&#39;jquery&#39;</span><span class="p">)</span></pre></div></td></tr><tr id="section-2"><td class="docs"><div class="pilwrap"><a href="#section-2" class="pilcrow">&#182;</a></div><h1>#</h1>
 
 <p>globalStatus looks like this:
 systemCommunicator = Backbone.Model.extend
@@ -88,7 +87,9 @@ create and return a function to handle a sensor's new data</p>
       <span class="nv">o.bias = </span><span class="nx">o</span><span class="p">.</span><span class="nx">cookedValue</span></pre></div></td></tr><tr id="section-8"><td class="docs"><div class="pilwrap"><a href="#section-8" class="pilcrow">&#182;</a></div><p>console.log o</p>
 </td><td class="code"><div class="highlight"><pre>      <span class="k">return</span>
     <span class="nf">(data) =&gt;</span></pre></div></td></tr><tr id="section-9"><td class="docs"><div class="pilwrap"><a href="#section-9" class="pilcrow">&#182;</a></div><p>data points from Evothings library are Seen.Point NOT compatible as sources</p>
-</td><td class="code"><div class="highlight"><pre>      <span class="k">try</span>
+</td><td class="code"><div class="highlight"><pre>      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="s">&quot;in readinghandler&quot;</span>
+      <span class="nx">console</span><span class="p">.</span><span class="nx">log</span> <span class="nx">data</span>
+      <span class="k">try</span>
         <span class="nv">r = </span><span class="nx">o</span><span class="p">.</span><span class="nx">source</span><span class="p">(</span><span class="nx">data</span><span class="p">)</span></pre></div></td></tr><tr id="section-10"><td class="docs"><div class="pilwrap"><a href="#section-10" class="pilcrow">&#182;</a></div><p>$('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')</p>
 </td><td class="code"><div class="highlight"><pre>        <span class="nv">p = </span><span class="kc">undefined</span>
         <span class="nv">m = </span><span class="kc">undefined</span></pre></div></td></tr><tr id="section-11"><td class="docs"><div class="pilwrap"><a href="#section-11" class="pilcrow">&#182;</a></div><p>get the sensor data and pass to conditioner</p>
@@ -218,7 +219,7 @@ create and return a function to handle a sensor's new data</p>
       <span class="nv">p1 = </span><span class="nx">p1</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
       <span class="nx">pBar</span><span class="p">.</span><span class="nx">add</span> <span class="nx">p1</span>
       <span class="k">if</span> <span class="nx">pBar</span><span class="p">.</span><span class="nx">magnitude</span><span class="p">()</span> <span class="o">&lt;</span> <span class="mf">0.000001</span>
-        <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># this is a 180 degree rotation, so use y axis as rotation vector </span>
+        <span class="nv">pBar = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">P</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span> <span class="mi">1</span><span class="p">,</span> <span class="mi">0</span><span class="p">)</span> <span class="c1"># this is a 180 degree rotation, so use y axis as rotation vector</span>
       <span class="nx">pBar</span><span class="p">.</span><span class="nx">normalize</span><span class="p">()</span>
       <span class="nv">q = </span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Quaternion</span><span class="p">.</span><span class="nx">pointAngle</span><span class="p">(</span><span class="nx">pBar</span><span class="p">,</span> <span class="nb">Math</span><span class="p">.</span><span class="nx">PI</span><span class="p">)</span>
       <span class="nv">m = </span><span class="nx">q</span><span class="p">.</span><span class="nx">toMatrix</span><span class="p">()</span>
@@ -231,10 +232,12 @@ create and return a function to handle a sensor's new data</p>
     <span class="nv">spearFromPool = </span><span class="k">new</span> <span class="nx">spearPool</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
     <span class="nx">cubie</span><span class="p">.</span><span class="nx">fill</span> <span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Material</span><span class="p">)(</span><span class="k">new</span> <span class="p">(</span><span class="nx">Seen</span><span class="p">.</span><span class="nx">Color</span><span class="p">)(</span><span class="mi">25</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">200</span><span class="p">,</span> <span class="mi">100</span><span class="p">))</span>
     <span class="nx">model</span><span class="p">.</span><span class="nx">add</span> <span class="nx">cubie</span>
-    <span class="nx">newValue</span></pre></div></td></tr><tr id="section-14"><td class="docs"><div class="pilwrap"><a href="#section-14" class="pilcrow">&#182;</a></div>
-</td><td class="code"><div class="highlight"><pre><span class="k">if</span> <span class="nb">window</span><span class="o">?</span> <span class="k">then</span> <span class="nv">base= </span><span class="nb">window</span>
+    <span class="nx">newValue</span>
+
+
+<span class="k">if</span> <span class="nb">window</span><span class="o">?</span> <span class="k">then</span> <span class="nv">base= </span><span class="nb">window</span>
 <span class="k">if</span> <span class="nx">module</span><span class="o">?</span><span class="p">.</span><span class="nx">exports</span><span class="o">?</span> <span class="k">then</span> <span class="nv">base = </span><span class="nx">module</span>
 
 <span class="nv">base.exports = </span><span class="nx">visual</span>
 
-</pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 08 2015 09:21:50 GMT+1000 (ChST)  </div></div></body></html>
+</pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 15 2015 10:39:43 GMT+1000 (ChST)  </div></div></body></html>

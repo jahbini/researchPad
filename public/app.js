@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, TiHandler, _;
+var $, Backbone, Pylon, PylonTemplate, TiHandler, _, pView;
 
 Backbone = require('backbone');
 
@@ -9,12 +9,63 @@ require('../libs/dbg/console');
 
 $ = require('jquery');
 
+PylonTemplate = Backbone.Model.extend({
+  scan: false
+});
+
+Pylon = new PylonTemplate;
+
+if (typeof window !== "undefined" && window !== null) {
+  window.Pylon = window.exports = Pylon;
+}
+
+if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+  module.exports = Pylon;
+}
+
+pView = Backbone.View.extend({
+  el: '#tagSelect',
+  model: Pylon,
+  initialize: function() {
+    return this.listenTo(this.model, 'change respondingDevices', function(devices) {
+      console.log("change in respondingDevices");
+      this.render();
+      return this;
+    });
+  },
+  events: {
+    "click": "changer"
+  },
+  changer: function() {
+    console.log("click!");
+    Pylon.set('scan', true);
+  },
+  render: function() {
+    $('#tagScanReport').html(Pylon.get('pageGen').scanContents(this.model));
+  }
+});
+
+Pylon.set('viewer', new pView);
+
 TiHandler = (function() {
-  var debugReading, enterConnected, errorHandler, evothings, sensortag, statusHandler;
+  var debugReading, enterConnected, errorHandler, evothings, sensorScanner, statusHandler;
 
   evothings = window.evothings;
 
-  sensortag = evothings.tisensortag.createInstance(evothings.tisensortag.CC2650_BLUETOOTH_SMART);
+  sensorScanner = evothings.tisensortag.createGenericInstance();
+
+  evothings.tisensortag.ble.addInstanceMethods(sensorScanner);
+
+  Pylon.on("scan change", function() {
+    if (Pylon.get('scan')) {
+      return sensorScanner.startScanningForDevices(function(device) {
+        console.log("got a response");
+        return console.log(device);
+      });
+    } else {
+      return sensorScanner.stopScanningForDevices();
+    }
+  });
 
 
   /*
@@ -37,6 +88,7 @@ TiHandler = (function() {
     initialize: ->
       d = new Date
       @set 'time', d.getTime()
+      return @
   
   
   rawSession = Backbone.Model.extend()
@@ -55,9 +107,6 @@ TiHandler = (function() {
     this.reading = reading;
     this.sessionInfo = sessionInfo1;
     enterConnected = ec;
-    this.getMagnetometerValues = sensortag.getMagnetometerValues;
-    this.getAccelerometerValues = sensortag.getAccelerometerValues;
-    this.getGyroscopeValues = sensortag.getGyroscopeValues;
   }
 
 
@@ -76,10 +125,11 @@ TiHandler = (function() {
    */
 
   statusHandler = function(status) {
-    var e, ref, ref1, ref2;
+    var e, ref, ref1, ref2, statusList;
     console.log("new Sensor Status");
     console.log(status);
-    if ('Sensors online' === status) {
+    statusList = evothings.tisensortag.ble.status;
+    if (statusList.SENSORTAG_ONLINE === status) {
       try {
         if (!enterConnected) {
           console.log("enterConnected does not exist");
@@ -93,12 +143,12 @@ TiHandler = (function() {
       }
       status = 'Sensor online';
     }
-    if ('Device data available' === status) {
+    if (statusList.DEVICE_INFO_AVAILABLE === status) {
       $('#FirmwareData').html(sensortag.getFirmwareString());
-      sessionInfo.set('sensorUUID', sensortag != null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
-      $('#uuid').html(sensortag != null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
+      sessionInfo.set('sensorUUID', typeof sensortag !== "undefined" && sensortag !== null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+      $('#uuid').html(typeof sensortag !== "undefined" && sensortag !== null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
       if (typeof console !== "undefined" && console !== null) {
-        console.log(sensortag != null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
+        console.log(typeof sensortag !== "undefined" && sensortag !== null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
       }
     }
     $('#StatusData').html(status);
@@ -115,7 +165,7 @@ TiHandler = (function() {
       }
       $('#uuid').html("Must connect to sensor").css('color', "red");
       setTimeout((function() {
-        sensortag.connectToClosestDevice();
+        sensortag.connectToClosestDevice(20000);
       }), 1000);
     }
   };
@@ -141,18 +191,7 @@ TiHandler = (function() {
         };
       })(this));
       console.log("Status and error handlers OK");
-      sensortag.magnetometerCallback((function(_this) {
-        return function(data) {
-          return magnetometerHandler(data);
-        };
-      })(this), 100);
-      sensortag.gyroscopeCallback((function(_this) {
-        return function(data) {
-          return gyroscopeHandler(data);
-        };
-      })(this), 100, 7);
-      console.log("Device Sensors OK");
-      sensortag.connectToClosestDevice();
+      sensortag.connectToClosestDevice(20000);
     } catch (_error) {
       e = _error;
       failures++;
@@ -167,6 +206,31 @@ TiHandler = (function() {
     } else {
       console.log("sensor came on-line immediately");
     }
+  };
+
+  TiHandler.prototype.connectSensor = function(device, accelerometerHandler, magnetometerHandler, gyroscopeHandler) {
+    var sensorInstance;
+    sensorInstance = evothings.tisensortag.createInstance(device.type);
+    this.getMagnetometerValues = sensorScaner.getMagnetometerValues;
+    this.getAccelerometerValues = sensorScaner.getAccelerometerValues;
+    this.getGyroscopeValues = sensorScaner.getGyroscopeValues;
+    sensorInstance.accelerometerCallback((function(_this) {
+      return function(data) {
+        return accelerometerHandler(data);
+      };
+    })(this), 100);
+    sensorInstance.magnetometerCallback((function(_this) {
+      return function(data) {
+        return magnetometerHandler(data);
+      };
+    })(this), 100);
+    sensorInstance.gyroscopeCallback((function(_this) {
+      return function(data) {
+        return gyroscopeHandler(data);
+      };
+    })(this), 100, 7);
+    sensorInstance.connectToDevice(device);
+    return sensorInstance;
   };
 
   return TiHandler;
@@ -184,7 +248,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"../libs/dbg/console":5,"backbone":9,"jquery":11,"underscore":10}],2:[function(require,module,exports){
-var $, Backbone, TiHandler, TiHandlerDef, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, smoother, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, smoother, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
 
 Backbone = require('backbone');
 
@@ -193,6 +257,20 @@ _ = require('underscore');
 require('../libs/dbg/console');
 
 Backbone.$ = $ = require('jquery');
+
+PylonTemplate = Backbone.Model.extend({
+  scan: false
+});
+
+Pylon = new PylonTemplate;
+
+if (typeof window !== "undefined" && window !== null) {
+  window.Pylon = window.exports = Pylon;
+}
+
+if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+  module.exports = Pylon;
+}
 
 pages = require('./pages.coffee');
 
@@ -229,6 +307,8 @@ clinicCollection = Backbone.Collection.extend({
 
 clinics = new clinicCollection;
 
+Pylon.set('clinics', clinics);
+
 clinicianModel = Backbone.Model.extend({
   defaults: {
     name: 'Text',
@@ -242,6 +322,8 @@ clinicianCollection = Backbone.Collection.extend({
 });
 
 clinicians = new clinicianCollection;
+
+Pylon.set('clinicians', clinicians);
 
 clientModel = Backbone.Model.extend({
   defaults: {
@@ -257,6 +339,8 @@ clientCollection = Backbone.Collection.extend({
 
 clients = new clientCollection;
 
+Pylon.set('clients', clients);
+
 test = Backbone.Model.extend({
   defaults: {
     name: "test 0",
@@ -270,6 +354,8 @@ testCollection = Backbone.Collection.extend({
 });
 
 tests = new testCollection;
+
+Pylon.set('tests', tests);
 
 adminData = Backbone.Model.extend();
 
@@ -301,6 +387,12 @@ readingCollection = Backbone.Collection.extend({
 });
 
 readings = new readingCollection;
+
+Pylon.set('readings', readings);
+
+pageGen = new pages.Pages(sessionInfo);
+
+Pylon.set('pageGen', pageGen);
 
 readings.push(new reading({
   raw: [1, 2, 3, 4, 5, 6],
@@ -563,7 +655,7 @@ enterClear = function() {
 enterConnected = function() {
   var noCalibration;
   noCalibration = true;
-  console.log('enterConnected');
+  console.log('enterConnected -- enable recording button');
   globalState.set('connected', true);
   useButton(buttonModelAdminDisabled);
   if (noCalibration) {
@@ -582,7 +674,7 @@ enterConnected = function() {
 
 enterCalibrate = function() {
   var calibrating;
-  console.log('enterCalibrate');
+  console.log('enterCalibrate -- not used currently');
   calibrating = true;
   useButton(buttonModelCalibrating);
   setButtons();
@@ -591,7 +683,7 @@ enterCalibrate = function() {
 
 exitCalibrate = function() {
   var calibrating;
-  console.log('exitCalibrate');
+  console.log('exitCalibrate -- not used currently');
   calibrating = false;
   if (globalState.get('loggedIn')) {
     useButton(buttonModelActionRecord);
@@ -607,7 +699,7 @@ enterRecording = function() {
     pageGen.forceTest('red');
     return false;
   }
-  console.log('enter Recording');
+  console.log('enter Recording --- actively recording sensor info');
   globalState.set('recording', true);
   useButton(buttonModelActionStop);
   setButtons();
@@ -615,7 +707,7 @@ enterRecording = function() {
 };
 
 enterStop = function() {
-  console.log('enter Stop');
+  console.log('enter Stop -- stop recording');
   globalState.set('recording', false);
   useButton(buttonModelActionRecorded);
   buttonModelUpload.set('active', true);
@@ -626,7 +718,7 @@ enterStop = function() {
 
 enterUpload = function() {
   var brainDump, hopper, hostUrl;
-  console.log('enter Upload');
+  console.log('enter Upload -- send data to Retrotope server');
   hopper = void 0;
   brainDump = void 0;
   if (!readings.length) {
@@ -661,11 +753,12 @@ stopRecording = function() {
   }
 };
 
-TiHandlerDef = require('./TiHandler.coffee');
-
-TiHandler = new TiHandlerDef(globalState, reading, sessionInfo, enterConnected);
-
-window.TiHandler = TiHandler;
+startBlueTooth = function() {
+  var TiHandler, TiHandlerDef;
+  TiHandlerDef = require('./TiHandler.coffee');
+  TiHandler = new TiHandlerDef(globalState, reading, sessionInfo, enterConnected);
+  return window.TiHandler = TiHandler;
+};
 
 visualHandler = require('./visual.coffee');
 
@@ -674,7 +767,9 @@ smoother = new visualHandler(globalState);
 accelerometerHandler = smoother.readingHandler({
   sensor: 'accel',
   debias: 'calibrateAccel',
-  source: TiHandler.getAccelerometerValues,
+  source: function() {
+    return TiHandler.getAccelerometerValues;
+  },
   units: 'G',
   calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
   viewer: smoother.viewSensor('accel-view', 0.4),
@@ -685,7 +780,9 @@ magnetometerHandler = smoother.readingHandler({
   sensor: 'mag',
   debias: 'calibrateMag',
   calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: TiHandler.getMagnetometerValues,
+  source: function() {
+    return TiHandler.getMagnetometerValues;
+  },
   units: '&micro;T',
   viewer: smoother.viewSensor('magnet-view', 0.05),
   htmlID: 'MagnetometerData'
@@ -695,7 +792,9 @@ gyroscopeHandler = smoother.readingHandler({
   sensor: 'gyro',
   debias: 'calibrateGyro',
   calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: TiHandler.getGyroscopeValues,
+  source: function() {
+    return TiHandler.getGyroscopeValues;
+  },
   viewer: smoother.viewSensor('gyro-view', 0.005),
   htmlID: 'GyroscopeData'
 });
@@ -717,12 +816,6 @@ adminDone = function() {
   return false;
 };
 
-clinics.on('change', function() {
-  return console.log("got the change!");
-});
-
-pageGen = new pages.Pages(admin, sessionInfo);
-
 sensorIsReady = false;
 
 domIsReady = false;
@@ -730,17 +823,18 @@ domIsReady = false;
 rediness = function() {
   var e;
   clinics.on('change', function() {
-    return console.log("got BIG change!");
+    return console.log("got reply from server for clinics collection");
   });
   clinics.fetch({
-    success: function(model, response, options) {
+    success: function(collection, response, options) {
       console.log("clinic request success");
-      return model.trigger('change');
+      return collection.trigger('change');
     },
-    error: function(model, response, options) {
-      console.log("clinic request error from server");
+    error: function(collection, response, options) {
+      console.log("clinics fetch error - response");
       console.log(response);
-      return console.log(model);
+      console.log("clinics fetch error - collection");
+      return console.log(collection);
     }
   });
   if (sensorIsReady && domIsReady) {
@@ -784,6 +878,7 @@ window.Buttons = buttonCollection;
 
 $(document).on('deviceready', function() {
   sensorIsReady = true;
+  startBlueTooth();
   rediness();
 });
 
@@ -823,7 +918,7 @@ implementing = function() {
 };
 
 Pages = (function() {
-  var $, Backbone, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, option, p, password, raw, ref, render, renderable, select, span, tea, text;
+  var $, Backbone, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, tea, text, ul;
 
   Teacup = require('teacup');
 
@@ -833,11 +928,11 @@ Pages = (function() {
 
   tea = new Teacup.Teacup;
 
-  ref = tea.tags(), a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+  ref = tea.tags(), ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
 
   Pages.prototype.getAdmin = function(kind) {
     var t;
-    t = this.admin.get(kind);
+    t = Pylon.get(kind);
     if (t) {
       return t.toArray(0);
     } else {
@@ -846,8 +941,7 @@ Pages = (function() {
     }
   };
 
-  function Pages(admin, sessionInfo) {
-    this.admin = admin;
+  function Pages(sessionInfo) {
     this.sessionInfo = sessionInfo;
     this.renderPage = bind(this.renderPage, this);
     this.forceTest = bind(this.forceTest, this);
@@ -862,9 +956,8 @@ Pages = (function() {
     var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
     clinicViewTemplate = Backbone.View.extend({
       el: '#desiredClinic',
-      collection: this.admin.get('clinics'),
+      collection: Pylon.get('clinics'),
       attributes: {
-        admin: this.admin,
         session: this.sessionInfo
       },
       initialize: function() {
@@ -876,11 +969,11 @@ Pages = (function() {
           theOptionCid = this.$el.val();
           theClinic = this.collection.get(theOptionCid);
           this.attributes.session.set('clinic', theClinic);
-          temp = this.attributes.admin.get('clinicians');
+          temp = Pylon.get('clinicians');
           temp.reset();
           temp.add(theClinic.get('clinicians'));
           temp.trigger('change');
-          temp = this.attributes.admin.get('clients');
+          temp = Pylon.get('clients');
           temp.reset();
           temp.add(theClinic.get('clients'));
           temp.trigger('change');
@@ -915,7 +1008,9 @@ Pages = (function() {
     });
     clinicianViewTemplate = Backbone.View.extend({
       el: '#desiredClinician',
-      collection: this.admin.get('clinicians'),
+      collection: function() {
+        return Pylon.get('clinicians');
+      },
       attributes: {
         session: this.sessionInfo
       },
@@ -952,7 +1047,7 @@ Pages = (function() {
     });
     clientViewTemplate = Backbone.View.extend({
       el: '#desiredClient',
-      collection: this.admin.get('clients'),
+      collection: Pylon.get('clients'),
       attributes: {
         session: this.sessionInfo
       },
@@ -997,7 +1092,7 @@ Pages = (function() {
       render: function() {
         var ref1;
         if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
-          console.log('activating');
+          console.log('activating Admin Done Button');
           this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
           this.$el.text("Done");
           this.$el.show().fadeTo(500, 1);
@@ -1042,12 +1137,35 @@ Pages = (function() {
           return raw('&nbsp;');
         });
       });
-      contents1();
-      contents2();
+      div("#tagScanReport");
+      div("#content1", function() {
+        return contents1();
+      });
+      div("#content2", function() {
+        return contents2();
+      });
       return div('#footer', 'style="display:none;"', function() {
         hr();
         return div('#console-log.container');
       });
+    });
+  });
+
+  Pages.prototype.scanContents = renderable(function(pylon) {
+    console.log("rendering Device Scan");
+    hr();
+    h2("Bluetooth Scan report");
+    return;
+    return ul(function() {
+      var device, i, len, ref1, results;
+      ref1 = pylon.get('devices');
+      results = [];
+      for (i = 0, len = ref1.length; i < len; i++) {
+        device = ref1[i];
+        li(device.UUID);
+        results.push(console.log(device));
+      }
+      return results;
     });
   });
 
@@ -1148,9 +1266,7 @@ Pages = (function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
-      button('.three.columns.disabled', {
-        style: "opacity:0.25;"
-      }, '');
+      button('#tagSelect.three.columns button-primary', 'Tag Select');
       return button('#debug.three.columns.disabled', '');
     });
     return div('.row', function() {
@@ -1175,6 +1291,8 @@ Pages = (function() {
       return button('#clear.three.columns.disabled', 'Reset');
     });
   });
+
+  Pages.prototype.tagSelector = renderable(function() {});
 
   Pages.prototype.forceTest = function(color) {
     if (color == null) {
@@ -1255,7 +1373,7 @@ Pages = (function() {
     this.wireButtons();
     testViewTemplate = Backbone.View.extend({
       el: '#TestID',
-      collection: this.admin.get('tests'),
+      collection: Pylon.get('tests'),
       attributes: {
         session: this.sessionInfo
       },

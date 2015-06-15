@@ -8,9 +8,47 @@ _ = require('underscore')
 require('../libs/dbg/console')
 $ = require('jquery')
 
+PylonTemplate = Backbone.Model.extend
+    scan: false
+Pylon = new PylonTemplate
+if window? then window.Pylon = window.exports = Pylon
+if module?.exports? then module.exports = Pylon
+
+pView=Backbone.View.extend
+  el: '#tagSelect'
+  model: Pylon
+  initialize: ->
+    @listenTo @model, 'change respondingDevices', (devices)->
+      console.log "change in respondingDevices"
+      @render()
+      return @
+  events:
+    "click": "changer"
+  changer: ->
+      console.log "click!"
+      Pylon.set('scan',true)
+      return
+  render: ->
+      $('#tagScanReport').html Pylon.get('pageGen').scanContents(@model)
+      return
+  
+Pylon.set 'viewer', new pView
+
+
 class TiHandler
   evothings = window.evothings
-  sensortag = evothings.tisensortag.createInstance(evothings.tisensortag.CC2650_BLUETOOTH_SMART)
+  sensorScanner = evothings.tisensortag.createGenericInstance()
+  evothings.tisensortag.ble.addInstanceMethods(sensorScanner) #Add generic BLE instance methods.
+
+
+
+  Pylon.on "scan change",  =>
+    if Pylon.get('scan')
+      sensorScanner.startScanningForDevices (device)->
+        console.log "got a response"
+        console.log device
+    else
+      sensorScanner.stopScanningForDevices()
 
   ###
   Section: Data Structures
@@ -32,6 +70,7 @@ class TiHandler
     initialize: ->
       d = new Date
       @set 'time', d.getTime()
+      return @
 
 
   rawSession = Backbone.Model.extend()
@@ -44,12 +83,9 @@ class TiHandler
 
   ###
 
-  enterConnected = false
+  enterConnected = false # enterconnected is called to enable 'record' button logic
   constructor: (@globalState,@reading,@sessionInfo,ec) ->
     enterConnected = ec
-    @getMagnetometerValues = sensortag.getMagnetometerValues
-    @getAccelerometerValues = sensortag.getAccelerometerValues
-    @getGyroscopeValues = sensortag.getGyroscopeValues
 
   ###
   # debuging -- should show up on server
@@ -68,7 +104,8 @@ class TiHandler
   statusHandler= (status)->
     console.log "new Sensor Status"
     console.log status
-    if 'Sensors online' == status
+    statusList = evothings.tisensortag.ble.status
+    if statusList.SENSORTAG_ONLINE== status
       try
         if ! enterConnected
           console.log "enterConnected does not exist"
@@ -78,7 +115,7 @@ class TiHandler
         console.log e
         console.log enterConnected
       status = 'Sensor online'
-    if 'Device data available' == status
+    if statusList.DEVICE_INFO_AVAILABLE == status
       $('#FirmwareData').html sensortag.getFirmwareString()
       sessionInfo.set 'sensorUUID', sensortag?.device?.address
       $('#uuid').html(sensortag?.device?.address).css('color','black')
@@ -97,7 +134,7 @@ class TiHandler
       $('#uuid').html("Must connect to sensor").css('color',"red")
       # If disconneted attempt to connect again. (but not to same device)
       setTimeout (->
-        sensortag.connectToClosestDevice()
+        sensortag.connectToClosestDevice(20000)
         return
       ), 1000
     return
@@ -131,19 +168,7 @@ class TiHandler
 #change this to globalState
         errorHandler error,this
       console.log "Status and error handlers OK"
-  #  sensortag.keypressCallback(keypressHandler)
-  #    sensortag.accelerometerCallback (data)=> 
-  #        accelerometerHandler data
-  #      ,100
-      sensortag.magnetometerCallback (data)=>
-          magnetometerHandler data
-        ,100
-      sensortag.gyroscopeCallback (data)=>
-          gyroscopeHandler data
-        ,100
-        ,7
-      console.log "Device Sensors OK"
-      sensortag.connectToClosestDevice()
+      sensortag.connectToClosestDevice(20000)
     catch e
       failures++
       console.log "failed to initialize"
@@ -158,6 +183,31 @@ class TiHandler
     else
       console.log "sensor came on-line immediately"
     return
+
+    
+
+  connectSensor: (device, accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
+
+    #device.type is set to one of these two constants by the scanner  
+    #  evothings.tisensortag.CC2650_BLUETOOTH_SMART = 'CC2650 Bluetooth Smart'
+    #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
+    sensorInstance = evothings.tisensortag.createInstance(device.type)
+    @getMagnetometerValues = sensorScaner.getMagnetometerValues
+    @getAccelerometerValues = sensorScaner.getAccelerometerValues
+    @getGyroscopeValues = sensorScaner.getGyroscopeValues
+  #  sensortag.keypressCallback(keypressHandler)
+    sensorInstance.accelerometerCallback (data)=> 
+        accelerometerHandler data
+      ,100
+    sensorInstance.magnetometerCallback (data)=>
+        magnetometerHandler data
+      ,100
+    sensorInstance.gyroscopeCallback (data)=>
+        gyroscopeHandler data
+      ,100
+      ,7
+    sensorInstance.connectToDevice(device)
+    return sensorInstance
 
 
 if window? then window.exports = TiHandler

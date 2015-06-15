@@ -12,10 +12,10 @@ class Pages
   Backbone = require('Backbone')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {ul,li,ol,a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
 
   getAdmin: (kind) =>
-    t = @admin.get(kind)
+    t = Pylon.get(kind)
     if t
        return t.toArray(0)
     else
@@ -24,15 +24,14 @@ class Pages
 
       #Teacup.Teacup.prototype.admin = @admin
       #Teacup.Teacup.prototype.Page = @
-  constructor: (@admin,@sessionInfo) ->
+  constructor: (@sessionInfo) ->
     tea.getAdmin =  @getAdmin
 
   inspectAdminPage: ()->
     clinicViewTemplate = Backbone.View.extend
       el: '#desiredClinic'
-      collection: @admin.get('clinics')
+      collection: Pylon.get('clinics')
       attributes:
-        admin:  @admin
         session: @sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
@@ -41,11 +40,11 @@ class Pages
           theOptionCid = @$el.val()
           theClinic = @collection.get( theOptionCid )
           @attributes.session.set 'clinic',theClinic
-          temp = @attributes.admin.get('clinicians')
+          temp = Pylon.get('clinicians')
           temp.reset()
           temp.add theClinic.get('clinicians')
           temp.trigger('change')
-          temp = @attributes.admin.get('clients')
+          temp = Pylon.get('clients')
           temp.reset()
           temp.add theClinic.get('clients')
           temp.trigger('change')
@@ -62,7 +61,8 @@ class Pages
 
     clinicianViewTemplate = Backbone.View.extend
       el: '#desiredClinician'
-      collection: @admin.get('clinicians')
+      collection: ->
+        Pylon.get('clinicians')
       attributes:
         session: @sessionInfo
       initialize: ->
@@ -82,7 +82,7 @@ class Pages
 
     clientViewTemplate = Backbone.View.extend
       el: '#desiredClient'
-      collection: @admin.get('clients')
+      collection: Pylon.get('clients')
       attributes:
         session: @sessionInfo
       initialize: ->
@@ -109,7 +109,7 @@ class Pages
       render: ->
         if (@model.get 'clinic') && (@model.get 'clinician') &&
             (@model.get 'client') && 'retro2015' == (@model.get 'password')?.slice(0,9)
-          console.log('activating')
+          console.log('activating Admin Done Button')
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
           @$el.text "Done"
           @$el.show().fadeTo(500,1)
@@ -138,12 +138,24 @@ class Pages
         div '.four.columns',"Platform uuid"
         div '#platformUUID.five.columns', ->
           raw '&nbsp;'
-
-      contents1()
-      contents2()
+      div "#tagScanReport"
+      div "#content1", ->
+        contents1()
+      div "#content2", ->
+        contents2()
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
+
+  scanContents: renderable (pylon)->
+      console.log "rendering Device Scan"
+      hr()
+      h2 "Bluetooth Scan report"
+      return
+      ul ->
+        for device in pylon.get('devices')
+          li device.UUID
+          console.log device
 
   adminContents: renderable ()=>
      div '#adminForm', ->
@@ -208,7 +220,7 @@ class Pages
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
         button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
-        button '.three.columns.disabled', style: "opacity:0.25;", ''
+        button '#tagSelect.three.columns button-primary', 'Tag Select'
         button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
@@ -221,6 +233,9 @@ class Pages
           button '#upload.disabled.u-full-width', 'Upload'
           label '#StatusData',for: "upload", 'No connection'
         button '#clear.three.columns.disabled', 'Reset'
+
+  tagSelector: renderable ()=>
+    
 
   forceTest: (color = 'violet') =>
     $('#TestSelect').text('Must Select Test').css('color',color)
@@ -268,7 +283,7 @@ class Pages
 
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
-      collection: @admin.get('tests')
+      collection: Pylon.get('tests')
       attributes:
         session: @sessionInfo
       initialize: ->

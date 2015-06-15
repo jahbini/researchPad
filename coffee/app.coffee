@@ -7,6 +7,13 @@ Backbone = require ('backbone')
 _ = require('underscore')
 require('../libs/dbg/console')
 Backbone.$ = $ = require('jquery')
+
+PylonTemplate = Backbone.Model.extend
+    scan: false
+Pylon = new PylonTemplate
+if window? then window.Pylon = window.exports = Pylon
+if module?.exports? then module.exports = Pylon
+
 pages = require './pages.coffee'
 
 
@@ -39,6 +46,7 @@ clinicCollection = Backbone.Collection.extend
   url: 'http://192.168.1.200:3000/clinics'
 
 clinics = new clinicCollection
+Pylon.set('clinics',clinics)
 
 
 clinicianModel = Backbone.Model.extend
@@ -49,6 +57,7 @@ clinicianCollection = Backbone.Collection.extend
   model: clinicianModel
   url: '/users'
 clinicians = new clinicianCollection
+Pylon.set('clinicians',clinicians)
 
 
 clientModel = Backbone.Model.extend
@@ -59,6 +68,7 @@ clientCollection = Backbone.Collection.extend
   model: clientModel
   url: '/users'
 clients = new clientCollection
+Pylon.set('clients',clients)
 
 test = Backbone.Model.extend
   defaults:
@@ -68,6 +78,7 @@ testCollection = Backbone.Collection.extend
   model: test
   url: "/tests_list.json"
 tests = new testCollection
+Pylon.set('tests',tests)
 
 adminData = Backbone.Model.extend()
 admin = new adminData
@@ -91,6 +102,9 @@ readingCollection = Backbone.Collection.extend
     @on 'reset', countReadings
 
 readings = new readingCollection
+Pylon.set('readings',readings)
+pageGen = new pages.Pages sessionInfo
+Pylon.set('pageGen',pageGen)
 
 #debug -- should show up on server
 readings.push new reading
@@ -312,7 +326,7 @@ enterClear = ->
 enterConnected = ->
   # enable the recording button
   noCalibration = true #for temporarily
-  console.log('enterConnected')
+  console.log('enterConnected -- enable recording button')
   globalState.set 'connected', true
   useButton buttonModelAdminDisabled
 #  eliminate Calibrate button functionality
@@ -328,14 +342,14 @@ enterConnected = ->
   return false
 
 enterCalibrate = ->
-  console.log('enterCalibrate')
+  console.log('enterCalibrate -- not used currently')
   calibrating = true
   useButton  buttonModelCalibrating
   setButtons()
   return false
 
 exitCalibrate = ->
-  console.log('exitCalibrate')
+  console.log('exitCalibrate -- not used currently')
   calibrating = false
   if globalState.get 'loggedIn'
     useButton buttonModelActionRecord
@@ -348,14 +362,14 @@ enterRecording = ->
   if !sessionInfo.get('testID')
     pageGen.forceTest 'red'
     return false
-  console.log('enter Recording')
+  console.log('enter Recording --- actively recording sensor info')
   globalState.set 'recording',  true
   useButton buttonModelActionStop
   setButtons()
   return false
 
 enterStop = ->
-  console.log('enter Stop')
+  console.log('enter Stop -- stop recording')
   globalState.set 'recording',  false
   useButton  buttonModelActionRecorded
   buttonModelUpload.set('active',true)
@@ -364,7 +378,7 @@ enterStop = ->
   return false
 
 enterUpload = ->
-  console.log('enter Upload')
+  console.log('enter Upload -- send data to Retrotope server')
   hopper = undefined
   brainDump = undefined
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
@@ -405,17 +419,18 @@ stopRecording = ->
 
 #
 # ### Subsection State Handlers that depend on the Hardware
+startBlueTooth = ->
+  TiHandlerDef = require('./TiHandler.coffee')
+  TiHandler = new TiHandlerDef globalState, reading, sessionInfo, enterConnected
+  window.TiHandler = TiHandler
 
-TiHandlerDef = require('./TiHandler.coffee')
-TiHandler = new TiHandlerDef globalState, reading, sessionInfo, enterConnected
-
-window.TiHandler = TiHandler
 visualHandler = require('./visual.coffee')
 smoother = new visualHandler(globalState)
 accelerometerHandler = smoother.readingHandler(
   sensor: 'accel'
   debias: 'calibrateAccel'
-  source: TiHandler.getAccelerometerValues
+  source: ->
+    TiHandler.getAccelerometerValues
   units: 'G'
   calibrator: [
     smoother.calibratorAverage
@@ -431,7 +446,8 @@ magnetometerHandler = smoother.readingHandler(
     smoother.calibratorAverage
     smoother.calibratorSmooth
   ]
-  source: TiHandler.getMagnetometerValues
+  source: ->
+    TiHandler.getMagnetometerValues
   units: '&micro;T'
   viewer: smoother.viewSensor('magnet-view', 0.05)
   htmlID: 'MagnetometerData')
@@ -443,7 +459,8 @@ gyroscopeHandler = smoother.readingHandler(
     smoother.calibratorAverage
     smoother.calibratorSmooth
   ]
-  source: TiHandler.getGyroscopeValues
+  source: ->
+    TiHandler.getGyroscopeValues
   viewer: smoother.viewSensor('gyro-view', 0.005)
   htmlID: 'GyroscopeData')
 
@@ -463,25 +480,21 @@ adminDone= ->
   return false
 
 
-clinics.on 'change', ()->
-  console.log "got the change!"
-
-pageGen = new pages.Pages admin, sessionInfo
-
 sensorIsReady = false
 domIsReady = false
 
 rediness = ->
   clinics.on 'change', ()->
-    console.log "got BIG change!"
+    console.log "got reply from server for clinics collection"
   clinics.fetch
-    success: (model,response,options)->
+    success: (collection,response,options)->
       console.log "clinic request success"
-      model.trigger 'change'
-    error: (model,response,options)->
-      console.log "clinic request error from server"
+      collection.trigger 'change'
+    error: (collection,response,options)->
+      console.log "clinics fetch error - response"
       console.log response
-      console.log model
+      console.log "clinics fetch error - collection"
+      console.log collection
 
   if sensorIsReady && domIsReady
     sessionInfo.set('platformUUID',window.device.uuid)
@@ -514,6 +527,7 @@ window.Buttons = buttonCollection
 
 $(document).on 'deviceready', ->
   sensorIsReady = true
+  startBlueTooth()
   rediness()
   return
 

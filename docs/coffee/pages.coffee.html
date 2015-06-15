@@ -28,12 +28,12 @@ Teacup.Teacup.prototype.Page = @</p>
     <span class="nv">clinicViewTemplate = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">View</span><span class="p">.</span><span class="nx">extend</span>
       <span class="nv">el: </span><span class="s">&#39;#desiredClinic&#39;</span>
       <span class="nv">collection: </span><span class="nx">@admin</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;clinics&#39;</span><span class="p">)</span>
-      <span class="nv">attributes: </span>
+      <span class="nv">attributes:</span>
         <span class="nv">admin: </span> <span class="nx">@admin</span>
         <span class="nv">session: </span><span class="nx">@sessionInfo</span>
       <span class="nv">initialize: </span><span class="nf">-&gt;</span>
         <span class="nx">@listenTo</span> <span class="nx">@collection</span><span class="p">,</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nx">@render</span>
-      <span class="nv">events: </span>
+      <span class="nv">events:</span>
         <span class="s">&#39;change&#39;</span><span class="o">:</span> <span class="nf">-&gt;</span>
           <span class="nv">theOptionCid = </span><span class="nx">@$el</span><span class="p">.</span><span class="nx">val</span><span class="p">()</span>
           <span class="nv">theClinic = </span><span class="nx">@collection</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span> <span class="nx">theOptionCid</span> <span class="p">)</span>
@@ -60,18 +60,18 @@ Teacup.Teacup.prototype.Page = @</p>
     <span class="nv">clinicianViewTemplate = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">View</span><span class="p">.</span><span class="nx">extend</span>
       <span class="nv">el: </span><span class="s">&#39;#desiredClinician&#39;</span>
       <span class="nv">collection: </span><span class="nx">@admin</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;clinicians&#39;</span><span class="p">)</span>
-      <span class="nv">attributes: </span>
+      <span class="nv">attributes:</span>
         <span class="nv">session: </span><span class="nx">@sessionInfo</span>
       <span class="nv">initialize: </span><span class="nf">-&gt;</span>
         <span class="nx">@listenTo</span> <span class="nx">@collection</span><span class="p">,</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nx">@render</span>
-      <span class="nv">events: </span>
+      <span class="nv">events:</span>
         <span class="s">&#39;change&#39;</span><span class="o">:</span> <span class="nf">-&gt;</span>
           <span class="nx">@attributes</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;clinician&#39;</span><span class="p">,</span><span class="nx">@$el</span><span class="p">.</span><span class="nx">val</span><span class="p">()</span>
           <span class="k">return</span> <span class="kc">false</span>
       <span class="nv">render: </span><span class="nf">-&gt;</span>
         <span class="nv">temp = </span><span class="nx">render</span> <span class="nf">=&gt;</span>
           <span class="nx">option</span> <span class="s">&quot;Select ---&quot;</span>
-          <span class="k">for</span> <span class="nx">user</span> <span class="k">in</span> <span class="nx">@collection</span><span class="p">.</span><span class="nx">models</span> 
+          <span class="k">for</span> <span class="nx">user</span> <span class="k">in</span> <span class="nx">@collection</span><span class="p">.</span><span class="nx">models</span>
             <span class="nv">n= </span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">)</span>
             <span class="nx">option</span> <span class="nv">value: </span><span class="nx">user</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;_id&#39;</span><span class="p">),</span> <span class="nx">n</span><span class="p">.</span><span class="nx">first</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="nx">n</span><span class="p">.</span><span class="nx">last</span>
         <span class="nx">@$el</span><span class="p">.</span><span class="nx">html</span> <span class="nx">temp</span>
@@ -84,14 +84,14 @@ Teacup.Teacup.prototype.Page = @</p>
         <span class="nv">session: </span><span class="nx">@sessionInfo</span>
       <span class="nv">initialize: </span><span class="nf">-&gt;</span>
         <span class="nx">@listenTo</span> <span class="nx">@collection</span><span class="p">,</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nx">@render</span>
-      <span class="nv">events: </span>
+      <span class="nv">events:</span>
         <span class="s">&#39;change&#39;</span><span class="o">:</span> <span class="nf">-&gt;</span>
           <span class="nx">@attributes</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;client&#39;</span><span class="p">,</span><span class="nx">@$el</span><span class="p">.</span><span class="nx">val</span><span class="p">()</span>
           <span class="k">return</span> <span class="kc">false</span>
       <span class="nv">render: </span><span class="nf">-&gt;</span>
         <span class="nx">@$el</span><span class="p">.</span><span class="nx">html</span> <span class="nx">render</span> <span class="nf">=&gt;</span>
           <span class="nx">option</span> <span class="s">&quot;Select ---&quot;</span>
-          <span class="k">for</span> <span class="nx">p</span> <span class="k">in</span> <span class="nx">@collection</span><span class="p">.</span><span class="nx">models</span> 
+          <span class="k">for</span> <span class="nx">p</span> <span class="k">in</span> <span class="nx">@collection</span><span class="p">.</span><span class="nx">models</span>
             <span class="nx">n</span><span class="o">=</span><span class="nx">p</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;name&#39;</span><span class="p">)</span>
             <span class="nx">option</span> <span class="nv">value: </span><span class="nx">p</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;_id&#39;</span><span class="p">),</span> <span class="nx">n</span><span class="p">.</span><span class="nx">first</span> <span class="o">+</span> <span class="s">&#39; &#39;</span> <span class="o">+</span> <span class="nx">n</span><span class="p">.</span><span class="nx">last</span>
         <span class="k">return</span> <span class="k">this</span>
@@ -101,10 +101,10 @@ Teacup.Teacup.prototype.Page = @</p>
       <span class="nv">model: </span><span class="nx">@sessionInfo</span>
       <span class="nv">initialize: </span><span class="nf">-&gt;</span>
         <span class="nx">@listenTo</span> <span class="nx">@model</span><span class="p">,</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nx">@render</span>
-      <span class="nv">events: </span>
+      <span class="nv">events:</span>
         <span class="s">&#39;click&#39;</span><span class="o">:</span> <span class="nx">@adminDone</span>
       <span class="nv">render: </span><span class="nf">-&gt;</span>
-        <span class="k">if</span> <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;clinic&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;clinician&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> 
+        <span class="k">if</span> <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;clinic&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;clinician&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span>
             <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;client&#39;</span><span class="p">)</span> <span class="o">&amp;&amp;</span> <span class="s">&#39;retro2015&#39;</span> <span class="o">==</span> <span class="p">(</span><span class="nx">@model</span><span class="p">.</span><span class="nx">get</span> <span class="s">&#39;password&#39;</span><span class="p">)</span><span class="o">?</span><span class="p">.</span><span class="nx">slice</span><span class="p">(</span><span class="mi">0</span><span class="p">,</span><span class="mi">9</span><span class="p">)</span>
           <span class="nx">console</span><span class="p">.</span><span class="nx">log</span><span class="p">(</span><span class="s">&#39;activating&#39;</span><span class="p">)</span>
           <span class="nx">@$el</span><span class="p">.</span><span class="nx">addClass</span><span class="p">(</span><span class="s">&#39;button-primary&#39;</span><span class="p">).</span><span class="nx">removeClass</span><span class="p">(</span><span class="s">&#39;disabled&#39;</span><span class="p">).</span><span class="nx">removeAttr</span><span class="p">(</span><span class="s">&#39;disabled&#39;</span><span class="p">)</span>
@@ -135,7 +135,7 @@ Teacup.Teacup.prototype.Page = @</p>
         <span class="nx">div</span> <span class="s">&#39;.four.columns&#39;</span><span class="p">,</span><span class="s">&quot;Platform uuid&quot;</span>
         <span class="nx">div</span> <span class="s">&#39;#platformUUID.five.columns&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
           <span class="nx">raw</span> <span class="s">&#39;&amp;nbsp;&#39;</span>
-        
+
       <span class="nx">contents1</span><span class="p">()</span>
       <span class="nx">contents2</span><span class="p">()</span>
       <span class="nx">div</span> <span class="s">&#39;#footer&#39;</span><span class="p">,</span><span class="s">&#39;style=&quot;display:none;&quot;&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
@@ -144,7 +144,7 @@ Teacup.Teacup.prototype.Page = @</p>
 
   <span class="nv">adminContents: </span><span class="nx">renderable</span> <span class="nf">()=&gt;</span>
      <span class="nx">div</span> <span class="s">&#39;#adminForm&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
-      <span class="nx">hr</span><span class="p">()</span> 
+      <span class="nx">hr</span><span class="p">()</span>
       <span class="nx">form</span> <span class="nf">-&gt;</span>
         <span class="nx">div</span> <span class="s">&#39;.row&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
           <span class="nx">div</span> <span class="s">&#39;.five.columns&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
@@ -205,7 +205,7 @@ Teacup.Teacup.prototype.Page = @</p>
       <span class="nx">div</span> <span class="s">&#39;.row&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
         <span class="nx">button</span> <span class="s">&#39;#admin.three.columns button-primary&#39;</span><span class="p">,</span> <span class="s">&#39;Admin&#39;</span>
         <span class="nx">button</span> <span class="s">&#39;#calibrate.three.columns.disabled.grayonly&#39;</span><span class="p">,</span> <span class="s">&#39;Calibrate&#39;</span>
-        <span class="nx">button</span> <span class="s">&#39;.three.columns.disabled&#39;</span><span class="p">,</span> <span class="nv">style: </span><span class="s">&quot;opacity:0.25;&quot;</span><span class="p">,</span> <span class="s">&#39;&#39;</span>
+        <span class="nx">button</span> <span class="s">&#39;#tagSelect.three.columns button-primary&#39;</span><span class="p">,</span> <span class="s">&#39;Tag Select&#39;</span>
         <span class="nx">button</span> <span class="s">&#39;#debug.three.columns.disabled&#39;</span><span class="p">,</span> <span class="s">&#39;&#39;</span>
       <span class="nx">div</span> <span class="s">&#39;.row&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
         <span class="nx">div</span> <span class="s">&#39;.three.columns&#39;</span><span class="p">,</span> <span class="nf">-&gt;</span>
@@ -218,6 +218,9 @@ Teacup.Teacup.prototype.Page = @</p>
           <span class="nx">button</span> <span class="s">&#39;#upload.disabled.u-full-width&#39;</span><span class="p">,</span> <span class="s">&#39;Upload&#39;</span>
           <span class="nx">label</span> <span class="s">&#39;#StatusData&#39;</span><span class="p">,</span><span class="k">for</span><span class="o">:</span> <span class="s">&quot;upload&quot;</span><span class="p">,</span> <span class="s">&#39;No connection&#39;</span>
         <span class="nx">button</span> <span class="s">&#39;#clear.three.columns.disabled&#39;</span><span class="p">,</span> <span class="s">&#39;Reset&#39;</span>
+
+  <span class="nv">tagSelector: </span><span class="nx">renderable</span> <span class="nf">()=&gt;</span>
+    
 
   <span class="nv">forceTest: </span><span class="nf">(color = &#39;violet&#39;) =&gt;</span>
     <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#TestSelect&#39;</span><span class="p">).</span><span class="nx">text</span><span class="p">(</span><span class="s">&#39;Must Select Test&#39;</span><span class="p">).</span><span class="nx">css</span><span class="p">(</span><span class="s">&#39;color&#39;</span><span class="p">,</span><span class="nx">color</span><span class="p">)</span>
@@ -262,12 +265,12 @@ Teacup.Teacup.prototype.Page = @</p>
     <span class="nv">testViewTemplate = </span><span class="nx">Backbone</span><span class="p">.</span><span class="nx">View</span><span class="p">.</span><span class="nx">extend</span>
       <span class="nv">el: </span><span class="s">&#39;#TestID&#39;</span>
       <span class="nv">collection: </span><span class="nx">@admin</span><span class="p">.</span><span class="nx">get</span><span class="p">(</span><span class="s">&#39;tests&#39;</span><span class="p">)</span>
-      <span class="nv">attributes: </span>
+      <span class="nv">attributes:</span>
         <span class="nv">session: </span><span class="nx">@sessionInfo</span>
       <span class="nv">initialize: </span><span class="nf">-&gt;</span>
         <span class="nx">@listenTo</span> <span class="nx">@collection</span><span class="p">,</span> <span class="s">&#39;change&#39;</span><span class="p">,</span> <span class="nx">@render</span>
         <span class="nx">@render</span><span class="p">()</span>
-      <span class="nv">events: </span>
+      <span class="nv">events:</span>
         <span class="s">&#39;change&#39;</span><span class="o">:</span> <span class="nf">-&gt;</span>
           <span class="nx">@attributes</span><span class="p">.</span><span class="nx">session</span><span class="p">.</span><span class="nx">set</span> <span class="s">&#39;testID&#39;</span><span class="p">,</span><span class="nx">@$el</span><span class="p">.</span><span class="nx">val</span><span class="p">()</span>
           <span class="k">return</span> <span class="kc">false</span>
@@ -297,6 +300,6 @@ Teacup.Teacup.prototype.Page = @</p>
     <span class="nx">$</span><span class="p">(</span><span class="s">&#39;#sensorPage&#39;</span><span class="p">).</span><span class="nx">show</span><span class="p">()</span>
     <span class="nx">@activateButtons</span> <span class="nx">buttonSpec</span> <span class="k">if</span> <span class="nx">buttonSpec</span><span class="o">?</span>
 
-<span class="nv">exports.Pages = </span><span class="nx">Pages</span>
-
-</pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 08 2015 09:21:50 GMT+1000 (ChST)  </div></div></body></html>
+<span class="nv">exports.Pages = </span><span class="nx">Pages</span></pre></div></td></tr><tr id="section-6"><td class="docs"><div class="pilwrap"><a href="#section-6" class="pilcrow">&#182;</a></div><p>if window? then window.exports = Pages
+if module?.exports? then module.exports = Pages</p>
+</td><td class="code"><div class="highlight"><pre></pre></div></td></tr></tbody></table><div id="generated">generated Mon Jun 15 2015 10:39:43 GMT+1000 (ChST)  </div></div></body></html>
