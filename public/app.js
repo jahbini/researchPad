@@ -295,7 +295,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"../libs/dbg/console":6,"./glib.coffee":3,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, countReadings, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, smoother, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, smoother, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
 
 Backbone = require('backbone');
 
@@ -426,11 +426,7 @@ reading = Backbone.Model.extend({
 
 readingCollection = Backbone.Collection.extend({
   model: reading,
-  initialize: function() {
-    this.on('add', countReadings);
-    this.on('remove', countReadings);
-    return this.on('reset', countReadings);
-  }
+  initialize: function() {}
 });
 
 readings = new readingCollection;
@@ -627,7 +623,6 @@ enterLogout = function() {
   if (globalState.get('recording')) {
     globalState.set('recording', false);
     readings.reset();
-    $('#TotalReadings').html("Items:");
   }
   pageGen.resetAdmin();
   useButton(buttonModelActionDisabled);
@@ -653,12 +648,7 @@ setButtons = function(log) {
 clearUserInterface = function() {
   $('#StatusData').html('Ready to connect');
   $('#FirmwareData').html('?');
-  $('#TotalReadings').html("Items:");
   exitDebug();
-};
-
-countReadings = function() {
-  $('#TotalReadings').html("Items:" + readings.length);
 };
 
 tests.push(new test({
@@ -685,13 +675,11 @@ initAll = function() {
   var rtemp;
   rtemp = void 0;
   clearUserInterface();
-  $('#TotalReadings').html("Items:");
   $('#uuid').html("Must connect to sensor").css('color', "violet");
 };
 
 enterClear = function() {
   readings.reset();
-  $('#TotalReadings').html("Items:");
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
   useButton(buttonModelActionRecord);
@@ -1195,7 +1183,7 @@ Pages = (function() {
     this.clinicianView = new clinicianViewTemplate;
   };
 
-  Pages.prototype.theBody = renderable(function(buttons, contents1, contents2) {
+  Pages.prototype.theBody = renderable(function(buttons, contents1) {
     return div('#capture-display.container', function() {
       div('.row', function() {
         a({
@@ -1230,9 +1218,8 @@ Pages = (function() {
       div("#content1", function() {
         return contents1();
       });
-      div("#content2", function() {
-        return contents2();
-      });
+      div("#PrimarySensor");
+      div("#SecondarySensor");
       return div('#footer', 'style="display:none;"', function() {
         hr();
         return div('#console-log.container');
@@ -1404,7 +1391,7 @@ Pages = (function() {
         button('#action.disabled.u-full-width', '');
         return label('#TotalReadings', {
           "for": "action"
-        }, ' 0');
+        }, 'Items:0');
       });
       div('.three.columns', function() {
         button('#upload.disabled.u-full-width', 'Upload');
@@ -1426,41 +1413,6 @@ Pages = (function() {
     $('#TestID').val('Select --');
     return this.sessionInfo.set('testID', null);
   };
-
-  Pages.prototype.sensorContents = renderable(function() {
-    return div('#sensorPage.container', function() {
-      hr();
-      return div('.row.readings', function() {
-        div('#gyroscope.four.columns', function() {
-          h5('Gyroscope');
-          canvas('#gyro-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#GyroscopeData.u-full-width.dump', ' ');
-        });
-        div('#acelleration.four.columns', function() {
-          h5('Accelerometer');
-          canvas('#accel-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#AccelerometerData.u-full-width.dump', ' ');
-        });
-        return div('#magnetometer.four.columns', function() {
-          h5('Magnetometer');
-          canvas('#magnet-view', {
-            width: '200',
-            height: '200',
-            style: 'width=100%'
-          });
-          return div('#MagnetometerData.u-full-width.dump', '');
-        });
-      });
-    });
-  });
 
   Pages.prototype.activateButtons = function(buttonStruct) {
     var b, btn, key, results, selector;
@@ -1490,11 +1442,60 @@ Pages = (function() {
   };
 
   Pages.prototype.renderPage = function(adminDone) {
-    var bodyHtml, testViewTemplate;
+    var bodyHtml, statusViewTemplate, tagViewTemplate, testViewTemplate;
     this.adminDone = adminDone;
-    bodyHtml = this.theBody(this.topButtons, this.adminContents, this.sensorContents);
+    bodyHtml = this.theBody(this.topButtons, this.adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
+    tagViewTemplate = Backbone.View.extend({
+      render: function() {
+        var tag;
+        tag = 'Primary';
+        if (Pylon.get('Secondary')) {
+          tag = 'Secondary';
+        }
+        return $el.html(function() {
+          hr();
+          return div('.row.readings', function() {
+            div('#gyroscope' + tag + '.four.columns', function() {
+              h5('Gyroscope');
+              canvas('#gyro-view-' + tag, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
+              });
+              return div('#GyroscopeData.u-full-width.dump', ' ');
+            });
+            div('#acelleration' + tag + '.four.columns', function() {
+              h5('Accelerometer');
+              canvas('#accel-view-' + tag, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
+              });
+              return div('#AccelerometerData.u-full-width.dump', ' ');
+            });
+            return div('#magnetometer' + tag + '.four.columns', function() {
+              h5('Magnetometer');
+              canvas('#magnet-view-' + tag, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
+              });
+              return div('#MagnetometerData.u-full-width.dump', '');
+            });
+          });
+        });
+      }
+    });
+    this.primaryView = new tagViewTemplate({
+      el: '#primarySensor',
+      model: Pylon.get('Primary')
+    });
+    this.secondaryView = new tagViewTemplate({
+      el: '#secondarySensor',
+      model: Pylon.get('Secondary')
+    });
     testViewTemplate = Backbone.View.extend({
       el: '#TestID',
       collection: Pylon.get('tests'),
@@ -1538,6 +1539,16 @@ Pages = (function() {
       }
     });
     this.testView = new testViewTemplate;
+    statusViewTemplate = Backbone.View.extend({
+      collection: Pylon.get('readings'),
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      render: function() {
+        return $("#TotalReadings").html("Items: " + this.collection.length());
+      }
+    });
+    this.statusView = new statusViewTemplate;
     this.wireAdmin();
   };
 

@@ -110,7 +110,7 @@ class Pages
     @clinicianView = new clinicianViewTemplate
     return
 
-  theBody: renderable (buttons,contents1,contents2)=>
+  theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
       div '.row', ->
         a href: '/index.html', ->
@@ -132,8 +132,8 @@ class Pages
       div "#tagScanReport"
       div "#content1", ->
         contents1()
-      div "#content2", ->
-        contents2()
+      div "#PrimarySensor"
+      div "#SecondarySensor"
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
@@ -247,7 +247,7 @@ class Pages
           select "#TestID.u-full-width"
         div '.three.columns', ->
           button '#action.disabled.u-full-width', ''
-          label '#TotalReadings', for: "action", ' 0'
+          label '#TotalReadings', for: "action", 'Items:0'
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
           label '#StatusData',for: "upload", 'No connection'
@@ -255,31 +255,10 @@ class Pages
 
   tagSelector: renderable ()=>
     
-
   forceTest: (color = 'violet') =>
     $('#TestSelect').text('Must Select Test').css('color',color)
     $('#TestID').val('Select --')
     @sessionInfo.set('testID',null)
-
-  sensorContents: renderable ->
-    div '#sensorPage.container', ->
-      hr()
-      div '.row.readings', ->
-        div '#gyroscope.four.columns', ->
-          h5 'Gyroscope'
-          canvas '#gyro-view', width: '200', height: '200', style: 'width=100%'
-          div '#GyroscopeData.u-full-width.dump', ' '
-          #button '#calibrateGyro.suppress.three columns', 'Debias'
-        div '#acelleration.four.columns', ->
-          h5 'Accelerometer'
-          canvas '#accel-view', width: '200', height: '200', style: 'width=100%'
-          div '#AccelerometerData.u-full-width.dump', ' '
-          #button '#calibrateAccel.suppress.three columns', 'Debias'
-        div '#magnetometer.four.columns', ->
-          h5 'Magnetometer'
-          canvas '#magnet-view', width: '200', height: '200', style: 'width=100%'
-          div '#MagnetometerData.u-full-width.dump', ''
-          #button '#calibrateMag.suppress.three columns', 'Debias'
 
   activateButtons: (buttonStruct) ->
     for key, btn of buttonStruct
@@ -296,9 +275,36 @@ class Pages
         b.fadeTo(500,0.25)
 
   renderPage: (@adminDone) =>
-    bodyHtml = @theBody @topButtons , @adminContents, @sensorContents
+    bodyHtml = @theBody @topButtons , @adminContents
     $('body').html bodyHtml
     @wireButtons()
+    
+    tagViewTemplate = Backbone.View.extend
+      render: ->
+        tag = 'Primary'
+        if Pylon.get 'Secondary'
+          tag = 'Secondary'
+        $el.html ->
+          hr()
+          div '.row.readings', ->
+            div '#gyroscope'+tag+'.four.columns', ->
+              h5 'Gyroscope'
+              canvas '#gyro-view-'+tag, width: '200', height: '200', style: 'width=100%'
+              div '#GyroscopeData.u-full-width.dump', ' '
+            div '#acelleration'+tag+'.four.columns', ->
+              h5 'Accelerometer'
+              canvas '#accel-view-'+tag, width: '200', height: '200', style: 'width=100%'
+              div '#AccelerometerData.u-full-width.dump', ' '
+            div '#magnetometer'+tag+'.four.columns', ->
+              h5 'Magnetometer'
+              canvas '#magnet-view-'+tag, width: '200', height: '200', style: 'width=100%'
+              div '#MagnetometerData.u-full-width.dump', ''
+    @primaryView = new tagViewTemplate
+        el: '#primarySensor'
+        model: Pylon.get 'Primary'
+    @secondaryView = new tagViewTemplate
+        el: '#secondarySensor'
+        model: Pylon.get 'Secondary'
 
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
@@ -322,6 +328,15 @@ class Pages
               option value: test.get('name'), test.get('Description')
         return this
     @testView = new testViewTemplate
+
+
+    statusViewTemplate = Backbone.View.extend
+      collection: Pylon.get 'readings'
+      initialize: ->
+        @listenTo @collection, 'change', @render
+      render: ->
+        $("#TotalReadings").html "Items: "+@collection.length()
+    @statusView = new statusViewTemplate
 
     @wireAdmin()
     return

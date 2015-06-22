@@ -97,9 +97,6 @@ reading = Backbone.Model.extend
 readingCollection = Backbone.Collection.extend
   model: reading
   initialize: ->
-    @on 'add', countReadings
-    @on 'remove', countReadings
-    @on 'reset', countReadings
 
 readings = new readingCollection
 Pylon.set('readings',readings)
@@ -257,7 +254,6 @@ enterLogout = () ->
   if globalState.get 'recording'
     globalState.set 'recording', false
     readings.reset()
-    $('#TotalReadings').html "Items:"
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
@@ -278,13 +274,8 @@ clearUserInterface = ->
   # Clear current values.
   $('#StatusData').html 'Ready to connect'
   $('#FirmwareData').html '?'
-  $('#TotalReadings').html "Items:"
   # start with the logging info suppressed
   exitDebug()
-  return
-
-countReadings = ->
-  $('#TotalReadings').html "Items:" + readings.length
   return
 
 tests.push new test
@@ -308,7 +299,6 @@ tests.push new test
 initAll = ->
   rtemp = undefined
   clearUserInterface()
-  $('#TotalReadings').html "Items:"
   $('#uuid').html("Must connect to sensor").css('color',"violet")
   return
 
@@ -316,7 +306,6 @@ initAll = ->
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
   readings.reset()
-  $('#TotalReadings').html "Items:"
   buttonModelClear.set('active',false);
   buttonModelUpload.set('active',false);
   useButton buttonModelActionRecord
