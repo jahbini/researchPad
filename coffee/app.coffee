@@ -423,6 +423,7 @@ startBlueTooth = ->
   TiHandlerDef = require('./TiHandler.coffee')
   TiHandler = new TiHandlerDef globalState, reading, sessionInfo, enterConnected
   window.TiHandler = TiHandler
+  Pylon.set 'TiHandler', TiHandler
 
 visualHandler = require('./visual.coffee')
 smoother = new visualHandler(globalState)
@@ -479,11 +480,15 @@ adminDone= ->
   setButtons()
   return false
 
+Pylon.set 'accelerometerHandler', accelerometerHandler
+Pylon.set 'magnetometerHandler', magnetometerHandler
+Pylon.set 'gyroscopeHandler', gyroscopeHandler
 
 sensorIsReady = false
 domIsReady = false
 
 rediness = ->
+  return unless sensorIsReady && domIsReady
   clinics.on 'change', ()->
     console.log "got reply from server for clinics collection"
   clinics.fetch
@@ -496,19 +501,17 @@ rediness = ->
       console.log "clinics fetch error - collection"
       console.log collection
 
-  if sensorIsReady && domIsReady
-    sessionInfo.set('platformUUID',window.device.uuid)
-    $("#platformUUID").text(window.device.uuid)
-    if sensorIsReady && ! ( globalState.get 'connected' )
-      console.log "Activating sensor attempt"
-      try
-        TiHandler.initializeSensorTag accelerometerHandler,
-          magnetometerHandler, gyroscopeHandler
-        console.log "TiHandler initialized"
-      catch e
-        console.log "error from TiHandler"
-        console.log e
-    console.log "Activating sensor exit"
+  sessionInfo.set('platformUUID',window.device.uuid)
+  $("#platformUUID").text(window.device.uuid)
+  if sensorIsReady && ! ( globalState.get 'connected' )
+    console.log "Activating sensor attempt"
+    try
+      TiHandler.initializeSensorTag 
+      console.log "TiHandler initialized"
+    catch e
+      console.log "error from TiHandler"
+      console.log e
+  console.log "Activating sensor exit"
 
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}

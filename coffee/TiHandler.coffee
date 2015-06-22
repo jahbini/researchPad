@@ -7,12 +7,7 @@ Backbone = require ('backbone')
 _ = require('underscore')
 require('../libs/dbg/console')
 $ = require('jquery')
-
-PylonTemplate = Backbone.Model.extend
-    scan: false
-Pylon = new PylonTemplate
-if window? then window.Pylon = window.exports = Pylon
-if module?.exports? then module.exports = Pylon
+glib = require('./glib.coffee').glib
 
 pView=Backbone.View.extend
   el: '#tagSelect'
@@ -26,30 +21,61 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       console.log "click!"
-      Pylon.set('scan',true)
+      Pylon.set('tagScan',true)
+      @render()
       return
   render: ->
-      $('#tagScanReport').html Pylon.get('pageGen').scanContents(@model)
+      if p=Pylon.get('pageGen') 
+        $('#tagScanReport').html p.scanContents(@model)
       return
   
-Pylon.set 'viewer', new pView
+Pylon.set 'tagViewer', new pView
 
+deviceModel = Backbone.Model.extend
+  idAttribute: "UUID"
+  defaults: 
+    UUID: "00000000-0000-0000-0000-000000000000"
+  initialize: ()->
+      @.set 'nickname', glib(@.get 'UUID' )
+
+deviceCollection = Backbone.Collection.extend
+  model: deviceModel
+Pylon.set 'devices', new deviceCollection
+  
 
 class TiHandler
   evothings = window.evothings
   sensorScanner = evothings.tisensortag.createGenericInstance()
   evothings.tisensortag.ble.addInstanceMethods(sensorScanner) #Add generic BLE instance methods.
+  sensorScanner.statusCallback (s)->
+    Pylon.trigger 'sensorScanStatus', s
+  sensorScanner.errorCallback (e)->
+    Pylon.trigger 'sensorScanStatus', e
 
-
-
-  Pylon.on "scan change",  =>
-    if Pylon.get('scan')
+  Pylon.on "tagScan change",  =>
+    if Pylon.get('tagScan')
       sensorScanner.startScanningForDevices (device)->
-        console.log "got a response"
-        console.log device
+        nd = new deviceModel
+          signalStrength: device.rssi
+          genericName: device.name
+          UUID: device.address
+          rawDevice: device
+        pd =Pylon.get('devices')
+        pd.push nd
+        Pylon.trigger('change respondingDevices')
+        return
     else
       sensorScanner.stopScanningForDevices()
+      return
 
+  Pylon.on "setPrimary", (uuid)->
+    alert("Primary = " +uuid)
+    Pylon.get 'TiHandler'
+      .attachDevice uuid, 'primary'
+  Pylon.on "setSecondary", (uuid)->
+    alert("Secondary = " +uuid)
+    Pylon.get 'TiHandler'
+      .attachDevice uuid, 'secondary'
   ###
   Section: Data Structures
    Major data structures and interfaces to them
@@ -102,8 +128,7 @@ class TiHandler
   ###
 
   statusHandler= (status)->
-    console.log "new Sensor Status"
-    console.log status
+    $('#StatusData').html status
     statusList = evothings.tisensortag.ble.status
     if statusList.SENSORTAG_ONLINE== status
       try
@@ -124,8 +149,7 @@ class TiHandler
     return
 
   errorHandler=  (error,that)->
-    console.log "Sensor error!"
-    console.log 'Error: ' + error
+    $('#StatusData').html "Err: " + error
     if 'disconnected' == error
       if !that.globalState
         console.log("ERROR no globalState")
@@ -144,6 +168,7 @@ class TiHandler
     console.log data
 
   initializeSensorTag: (accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
+    return
     # Here sensors are set up.
     #
     # If you wish to use only one or a few sensors, just set up
@@ -159,8 +184,6 @@ class TiHandler
     repeat = false
     failures =0
     console.log "initialize Sensor Communication"
-    console.log accelerometerHandler
-    accelerometerHandler [ 24, 50,40,50,60,33]
     try
       @globalState.set 'connected', false
       sensortag.statusCallback(statusHandler)
@@ -186,28 +209,43 @@ class TiHandler
 
     
 
-  connectSensor: (device, accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
+  attachDevice: (uuid, role) ->
+    d = Pylon.get('devices').get uuid
+    d.set 'role',role
+    Pylon.set role, device
+    try
+      if d.get( 'genericName').search(/BLE/) > -1
+        d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
+      else
+        d.set 'type', evothings.tisensortag.CC2650_BLUETOOTH_SMART
+      #device.type is set to one of these two constants by the scanner  
+      #  evothings.tisensortag.CC2650_BLUETOOTH_SMART = 'CC2650 Bluetooth Smart'
+      #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
+      sensorInstance = evothings.tisensortag.createInstance d.type
+      d.set 'sensorInstance', sensorInstance
+      
+      # bring the evothings data converters up to this device
+      @getMagnetometerValues = d.getMagnetometerValues
+      @getAccelerometerValues = d.getAccelerometerValues
+      @getGyroscopeValues = d.getGyroscopeValues
 
-    #device.type is set to one of these two constants by the scanner  
-    #  evothings.tisensortag.CC2650_BLUETOOTH_SMART = 'CC2650 Bluetooth Smart'
-    #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
-    sensorInstance = evothings.tisensortag.createInstance(device.type)
-    @getMagnetometerValues = sensorScaner.getMagnetometerValues
-    @getAccelerometerValues = sensorScaner.getAccelerometerValues
-    @getGyroscopeValues = sensorScaner.getGyroscopeValues
-  #  sensortag.keypressCallback(keypressHandler)
-    sensorInstance.accelerometerCallback (data)=> 
-        accelerometerHandler data
-      ,100
-    sensorInstance.magnetometerCallback (data)=>
-        magnetometerHandler data
-      ,100
-    sensorInstance.gyroscopeCallback (data)=>
-        gyroscopeHandler data
-      ,100
-      ,7
-    sensorInstance.connectToDevice(device)
-    return sensorInstance
+      # and plug our data handlers into the evothings scheme
+      d.accelerometerCallback (data)=> 
+          accelerometerHandler data
+        ,100
+      d.magnetometerCallback (data)=>
+          magnetometerHandler data
+        ,100
+      d.gyroscopeCallback (data)=>
+          gyroscopeHandler data
+        ,100
+        ,7
+      d.connectToDevice(device)
+    catch e
+      alert('Error in attachSensor -- check LOG')
+      console.log "error in attachSensor"
+      console.log e
+    return d
 
 
 if window? then window.exports = TiHandler

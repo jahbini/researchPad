@@ -12,20 +12,9 @@ class Pages
   Backbone = require('Backbone')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {ul,li,ol,a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {table,tr,th,thead,tbody,td,ul,li,ol,a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
 
-  getAdmin: (kind) =>
-    t = Pylon.get(kind)
-    if t
-       return t.toArray(0)
-    else
-      console.log 'no element named ' + kind + 'in Admin'
-      return []
-
-      #Teacup.Teacup.prototype.admin = @admin
-      #Teacup.Teacup.prototype.Page = @
   constructor: (@sessionInfo) ->
-    tea.getAdmin =  @getAdmin
 
   inspectAdminPage: ()->
     clinicViewTemplate = Backbone.View.extend
@@ -114,11 +103,13 @@ class Pages
           @$el.text "Done"
           @$el.show().fadeTo(500,1)
         return this
+
     @doneView = new doneViewTemplate
     @clientView = new clientViewTemplate
     @clinicView = new clinicViewTemplate
     @clinicianView = new clinicianViewTemplate
     return
+
   theBody: renderable (buttons,contents1,contents2)=>
     div '#capture-display.container', ->
       div '.row', ->
@@ -148,14 +139,42 @@ class Pages
         div '#console-log.container'
 
   scanContents: renderable (pylon)->
-      console.log "rendering Device Scan"
+      sensorTags = pylon.get('devices')?.models || []
       hr()
-      h2 "Bluetooth Scan report"
+      table ".u-full-width", ->
+        thead ->
+          tr ->
+            th "Bluetooth Scan report"
+          if sensorTags.length == 0
+            th "no sensors respond"
+            return
+          else
+            th "UUID"
+            th "name"
+            th "signal"
+            th "P/S select"
+        for device in sensorTags
+          theUUID = device.get 'UUID'
+          tbody ->
+            tr ->
+              td theUUID
+              td ->
+                text (device.get 'genericName')
+                br()
+                text (device.get 'nickname')
+              td device.get 'signalStrength'
+              td ->
+                input "", 
+                  type: "radio"
+                  name: "setPrimary"
+                  onChange: "Pylon.trigger('setPrimary', '" + theUUID + "')"
+                span '/---/'
+                input "",
+                  type: "radio",
+                  name: "setSecondary" 
+                  onChange: "Pylon.trigger('setSecondary', '" + theUUID + "')"
+              td ->
       return
-      ul ->
-        for device in pylon.get('devices')
-          li device.UUID
-          console.log device
 
   adminContents: renderable ()=>
      div '#adminForm', ->

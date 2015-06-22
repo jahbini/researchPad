@@ -103,6 +103,7 @@ class visual
       console.log "in readinghandler"
       console.log data
       try
+        return #Debug ONLY JAH
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
