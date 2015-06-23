@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, TiHandler, _, deviceCollection, deviceModel, glib, pView;
+var $, Backbone, TiHandler, _, deviceCollection, deviceModel, glib, pView, visualHandler;
 
 Backbone = require('backbone');
 
@@ -16,7 +16,6 @@ pView = Backbone.View.extend({
   model: Pylon,
   initialize: function() {
     return this.listenTo(this.model, 'change respondingDevices', function(devices) {
-      console.log("change in respondingDevices");
       this.render();
       return this;
     });
@@ -54,6 +53,8 @@ deviceCollection = Backbone.Collection.extend({
 });
 
 Pylon.set('devices', new deviceCollection);
+
+visualHandler = require('./visual.coffee');
 
 TiHandler = (function() {
   var debugReading, enterConnected, errorHandler, evothings, sensorScanner, statusHandler;
@@ -136,8 +137,7 @@ TiHandler = (function() {
 
   enterConnected = false;
 
-  function TiHandler(globalState, reading, sessionInfo1, ec) {
-    this.globalState = globalState;
+  function TiHandler(reading, sessionInfo1, ec) {
     this.reading = reading;
     this.sessionInfo = sessionInfo1;
     enterConnected = ec;
@@ -214,7 +214,7 @@ TiHandler = (function() {
     failures = 0;
     console.log("initialize Sensor Communication");
     try {
-      this.globalState.set('connected', false);
+      this.globalState.set('connected', []);
       sensortag.statusCallback(statusHandler);
       sensortag.errorCallback((function(_this) {
         return function(error) {
@@ -239,38 +239,80 @@ TiHandler = (function() {
     }
   };
 
+  TiHandler.prototype.createVisualChain = function(device) {
+    var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
+    smoother = new visualHandler;
+    accelerometerHandler = smoother.readingHandler({
+      sensor: 'accel',
+      debias: 'calibrateAccel',
+      source: function() {
+        return device.get('getAccelerometerValues');
+      },
+      units: 'G',
+      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      viewer: smoother.viewSensor('accel-view', 0.4),
+      htmlID: 'AccelerometerData' + device.get('role')
+    });
+    magnetometerHandler = smoother.readingHandler({
+      sensor: 'mag',
+      debias: 'calibrateMag',
+      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      source: function() {
+        return device.get('getMagnetometerValues');
+      },
+      units: '&micro;T',
+      viewer: smoother.viewSensor('magnet-view', 0.05),
+      htmlID: 'MagnetometerData' + device.get('role')
+    });
+    gyroscopeHandler = smoother.readingHandler({
+      sensor: 'gyro',
+      debias: 'calibrateGyro',
+      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      source: function() {
+        return device.get('getGyroscopeValues');
+      },
+      viewer: smoother.viewSensor('gyro-view', 0.005),
+      htmlID: 'GyroscopeData' + device.get('role')
+    });
+    return {
+      gyro: gyroscopeHandler,
+      accel: accelerometerHandler,
+      mag: magnetometerHandler
+    };
+  };
+
   TiHandler.prototype.attachDevice = function(uuid, role) {
-    var d, e, sensorInstance;
+    var d, e, handlers, rawDevice;
     d = Pylon.get('devices').get(uuid);
     d.set('role', role);
-    Pylon.set(role, device);
+    Pylon.set(role, d);
+    handlers = this.createVisualChain(d);
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
         d.set('type', evothings.tisensortag.CC2541_BLUETOOTH_SMART);
       } else {
         d.set('type', evothings.tisensortag.CC2650_BLUETOOTH_SMART);
       }
-      sensorInstance = evothings.tisensortag.createInstance(d.type);
-      d.set('sensorInstance', sensorInstance);
-      this.getMagnetometerValues = d.getMagnetometerValues;
-      this.getAccelerometerValues = d.getAccelerometerValues;
-      this.getGyroscopeValues = d.getGyroscopeValues;
-      d.accelerometerCallback((function(_this) {
+      rawDevice = evothings.tisensortag.createInstance(d.get('type'));
+      this.getMagnetometerValues = rawDevice.getMagnetometerValues;
+      this.getAccelerometerValues = rawDevice.getAccelerometerValues;
+      this.getGyroscopeValues = rawDevice.getGyroscopeValues;
+      rawDevice.accelerometerCallback((function(_this) {
         return function(data) {
-          return accelerometerHandler(data);
+          return handlers.accel(data);
         };
       })(this), 100);
-      d.magnetometerCallback((function(_this) {
+      rawDevice.magnetometerCallback((function(_this) {
         return function(data) {
-          return magnetometerHandler(data);
+          return handlers.mag(data);
         };
       })(this), 100);
-      d.gyroscopeCallback((function(_this) {
+      rawDevice.gyroscopeCallback((function(_this) {
         return function(data) {
-          return gyroscopeHandler(data);
+          return handlers.gyro(data);
         };
       })(this), 100, 7);
-      d.connectToDevice(device);
+      rawDevice.connectToDevice(d.get('rawDevice'));
     } catch (_error) {
       e = _error;
       alert('Error in attachSensor -- check LOG');
@@ -294,8 +336,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/console":6,"./glib.coffee":3,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, accelerometerHandler, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, globalState, gyroscopeHandler, initAll, magnetometerHandler, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, smoother, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton, visualHandler;
+},{"../libs/dbg/console":6,"./glib.coffee":3,"./visual.coffee":5,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 Backbone = require('backbone');
 
@@ -337,13 +379,13 @@ systemCommunicator = Backbone.Model.extend({
   defaults: {
     calibrating: false,
     recording: false,
-    connected: false,
+    connected: [],
     calibrate: false,
     loggedIn: false
   }
 });
 
-globalState = new systemCommunicator;
+Pylon.set('globalState', new systemCommunicator);
 
 clinicModel = Backbone.Model.extend();
 
@@ -467,7 +509,7 @@ exitDebug = function() {
 };
 
 exitAdmin = function() {
-  globalState.set('loggedIn', true);
+  Pylon.get('globalState').set('loggedIn', true);
   enterLogout();
   return false;
 };
@@ -619,9 +661,11 @@ useButton = function(model) {
 };
 
 enterLogout = function() {
-  globalState.set('loggedIn', false);
-  if (globalState.get('recording')) {
-    globalState.set('recording', false);
+  var g;
+  g = Pylon.get('globalState');
+  g.set('loggedIn', false);
+  if (g.get('recording')) {
+    g.set('recording', false);
     readings.reset();
   }
   pageGen.resetAdmin();
@@ -688,13 +732,13 @@ enterClear = function() {
 };
 
 enterConnected = function() {
-  var noCalibration;
+  var g, noCalibration;
   noCalibration = true;
   console.log('enterConnected -- enable recording button');
-  globalState.set('connected', true);
+  g = Pylon.get('globalState');
   useButton(buttonModelAdminDisabled);
   if (noCalibration) {
-    if (globalState.get('loggedIn')) {
+    if (g.get('loggedIn')) {
       useButton(buttonModelActionRecord);
     } else {
       useButton(buttonModelAdmin);
@@ -720,7 +764,7 @@ exitCalibrate = function() {
   var calibrating;
   console.log('exitCalibrate -- not used currently');
   calibrating = false;
-  if (globalState.get('loggedIn')) {
+  if (Pylon.get('globalState').get('loggedIn')) {
     useButton(buttonModelActionRecord);
   }
   useButton(buttonModelAdmin);
@@ -735,7 +779,7 @@ enterRecording = function() {
     return false;
   }
   console.log('enter Recording --- actively recording sensor info');
-  globalState.set('recording', true);
+  Pylon.get('globalState').set('recording', true);
   useButton(buttonModelActionStop);
   setButtons();
   return false;
@@ -743,7 +787,7 @@ enterRecording = function() {
 
 enterStop = function() {
   console.log('enter Stop -- stop recording');
-  globalState.set('recording', false);
+  Pylon.get('globalState').set('recording', false);
   useButton(buttonModelActionRecorded);
   buttonModelUpload.set('active', true);
   buttonModelClear.set('active', true);
@@ -782,8 +826,10 @@ enterUpload = function() {
 };
 
 stopRecording = function() {
-  if (globalState.get('recording')) {
-    globalState.set('recording', false);
+  var g;
+  g = Pylon.get('globalState');
+  if (g.get('recording')) {
+    g.set('recording', false);
     $('#record').prop('disabled', true).text('finished').fadeTo(200, 0.3);
   }
 };
@@ -791,49 +837,10 @@ stopRecording = function() {
 startBlueTooth = function() {
   var TiHandler, TiHandlerDef;
   TiHandlerDef = require('./TiHandler.coffee');
-  TiHandler = new TiHandlerDef(globalState, reading, sessionInfo, enterConnected);
+  TiHandler = new TiHandlerDef(reading, sessionInfo, enterConnected);
   window.TiHandler = TiHandler;
   return Pylon.set('TiHandler', TiHandler);
 };
-
-visualHandler = require('./visual.coffee');
-
-smoother = new visualHandler(globalState);
-
-accelerometerHandler = smoother.readingHandler({
-  sensor: 'accel',
-  debias: 'calibrateAccel',
-  source: function() {
-    return TiHandler.getAccelerometerValues;
-  },
-  units: 'G',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  viewer: smoother.viewSensor('accel-view', 0.4),
-  htmlID: 'AccelerometerData'
-});
-
-magnetometerHandler = smoother.readingHandler({
-  sensor: 'mag',
-  debias: 'calibrateMag',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: function() {
-    return TiHandler.getMagnetometerValues;
-  },
-  units: '&micro;T',
-  viewer: smoother.viewSensor('magnet-view', 0.05),
-  htmlID: 'MagnetometerData'
-});
-
-gyroscopeHandler = smoother.readingHandler({
-  sensor: 'gyro',
-  debias: 'calibrateGyro',
-  calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-  source: function() {
-    return TiHandler.getGyroscopeValues;
-  },
-  viewer: smoother.viewSensor('gyro-view', 0.005),
-  htmlID: 'GyroscopeData'
-});
 
 setSensor = function() {
   pageGen.activateSensorPage();
@@ -842,21 +849,17 @@ setSensor = function() {
 };
 
 adminDone = function() {
-  globalState.set('loggedIn', true);
+  var g;
+  g = Pylon.get('globalState');
+  g.set('loggedIn', true);
   useButton(buttonModelAdminLogout);
-  if (globalState.get('connected')) {
+  if (g.get('connected').length > 0) {
     useButton(buttonModelActionRecord);
   }
   pageGen.activateSensorPage();
   setButtons();
   return false;
 };
-
-Pylon.set('accelerometerHandler', accelerometerHandler);
-
-Pylon.set('magnetometerHandler', magnetometerHandler);
-
-Pylon.set('gyroscopeHandler', gyroscopeHandler);
 
 sensorIsReady = false;
 
@@ -884,7 +887,7 @@ rediness = function() {
   });
   sessionInfo.set('platformUUID', window.device.uuid);
   $("#platformUUID").text(window.device.uuid);
-  if (sensorIsReady && !(globalState.get('connected'))) {
+  if (sensorIsReady && (Pylon.get('globalState').get('connected' === 0))) {
     console.log("Activating sensor attempt");
     try {
       TiHandler.initializeSensorTag;
@@ -941,7 +944,7 @@ $(function() {
 
 
 
-},{"../libs/dbg/console":6,"./TiHandler.coffee":1,"./pages.coffee":4,"./visual.coffee":5,"backbone":10,"jquery":12,"underscore":11}],3:[function(require,module,exports){
+},{"../libs/dbg/console":6,"./TiHandler.coffee":1,"./pages.coffee":4,"backbone":10,"jquery":12,"underscore":11}],3:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -1578,7 +1581,7 @@ exports.Pages = Pages;
 
 
 },{"Backbone":8,"jquery":12,"teacup":13}],5:[function(require,module,exports){
-var $, Seen, base, visual;
+var $, Seen, visual;
 
 Seen = require('../libs/dbg/seen');
 
@@ -1586,7 +1589,7 @@ $ = require('jquery');
 
 
 /*
-#globalStatus looks like this:
+#Pylon's globalStatus looks like this:
 #systemCommunicator = Backbone.Model.extend
  *  defaults:
  *    calibrating: false
@@ -1594,16 +1597,13 @@ $ = require('jquery');
  *    connected: false
  *    calibrate: false
 #
-#globalState = new systemCommunicator
+ *  Pylon.set 'globalState',  new systemCommunicator
  */
 
 visual = (function() {
   var bufferToHexStr, byteToHexStr, hx, split;
 
-  function visual(globalState, readings) {
-    this.globalState = globalState;
-    this.readings = readings;
-  }
+  function visual() {}
 
   visual.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
     var e, tH;
@@ -1714,12 +1714,12 @@ visual = (function() {
           dataCondition.cookedValue = r.copy();
           i = 0;
           while (i < o.calibrator.length) {
-            o.calibrator[i](dataCondition, _this.globalState.get('calibrate'), _this.globalState.get('calibrating'));
+            o.calibrator[i](dataCondition, 0, 0);
             i++;
           }
           p = dataCondition.cookedValue;
-          if (_this.globalState.get('recording')) {
-            _this.readings.push(new reading({
+          if (Pylon.get('globalState').get('recording')) {
+            Pylon.get('readings').push(new reading({
               sensor: o.sensor,
               raw: _.toArray(data)
             }));
@@ -1864,14 +1864,12 @@ visual = (function() {
 })();
 
 if (typeof window !== "undefined" && window !== null) {
-  base = window;
+  window.exports = visual;
 }
 
 if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
-  base = module;
+  module.exports = visual;
 }
-
-base.exports = visual;
 
 
 

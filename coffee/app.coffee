@@ -32,11 +32,11 @@ systemCommunicator = Backbone.Model.extend
   defaults:
     calibrating: false
     recording: false
-    connected: false
+    connected: []
     calibrate: false
     loggedIn:  false
 
-globalState = new systemCommunicator
+Pylon.set 'globalState', new systemCommunicator
 
 
 clinicModel = Backbone.Model.extend()
@@ -130,7 +130,7 @@ exitDebug = () ->
   return false
 
 exitAdmin = () ->
-  globalState.set 'loggedIn', true
+  Pylon.get('globalState').set 'loggedIn', true
   enterLogout()
   return false
 
@@ -250,9 +250,10 @@ useButton= (model) ->
 
 
 enterLogout = () ->
-  globalState.set 'loggedIn', false
-  if globalState.get 'recording'
-    globalState.set 'recording', false
+  g=Pylon.get 'globalState'
+  g.set 'loggedIn', false
+  if g.get 'recording'
+    g.set 'recording', false
     readings.reset()
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
@@ -316,11 +317,11 @@ enterConnected = ->
   # enable the recording button
   noCalibration = true #for temporarily
   console.log('enterConnected -- enable recording button')
-  globalState.set 'connected', true
+  g=Pylon.get('globalState')
   useButton buttonModelAdminDisabled
 #  eliminate Calibrate button functionality
   if noCalibration
-    if globalState.get 'loggedIn'
+    if g.get 'loggedIn'
       useButton buttonModelActionRecord
     else
       useButton buttonModelAdmin
@@ -340,7 +341,7 @@ enterCalibrate = ->
 exitCalibrate = ->
   console.log('exitCalibrate -- not used currently')
   calibrating = false
-  if globalState.get 'loggedIn'
+  if Pylon.get('globalState').get 'loggedIn'
     useButton buttonModelActionRecord
   useButton buttonModelAdmin
   useButton buttonModelCalibrateOff
@@ -352,14 +353,14 @@ enterRecording = ->
     pageGen.forceTest 'red'
     return false
   console.log('enter Recording --- actively recording sensor info')
-  globalState.set 'recording',  true
+  Pylon.get('globalState').set 'recording',  true
   useButton buttonModelActionStop
   setButtons()
   return false
 
 enterStop = ->
   console.log('enter Stop -- stop recording')
-  globalState.set 'recording',  false
+  Pylon.get('globalState').set 'recording',  false
   useButton  buttonModelActionRecorded
   buttonModelUpload.set('active',true)
   buttonModelClear.set('active',true)
@@ -400,8 +401,9 @@ enterUpload = ->
 # upload button remains enabled, clear button remains enabled
 
 stopRecording = ->
-  if globalState.get 'recording'
-    globalState.set 'recording', false
+  g=Pylon.get('globalState')
+  if g.get 'recording'
+    g.set 'recording', false
     $('#record').prop('disabled', true).text('finished').fadeTo 200, 0.3
   return
 
@@ -410,50 +412,9 @@ stopRecording = ->
 # ### Subsection State Handlers that depend on the Hardware
 startBlueTooth = ->
   TiHandlerDef = require('./TiHandler.coffee')
-  TiHandler = new TiHandlerDef globalState, reading, sessionInfo, enterConnected
+  TiHandler = new TiHandlerDef  reading, sessionInfo, enterConnected
   window.TiHandler = TiHandler
   Pylon.set 'TiHandler', TiHandler
-
-visualHandler = require('./visual.coffee')
-smoother = new visualHandler(globalState)
-accelerometerHandler = smoother.readingHandler(
-  sensor: 'accel'
-  debias: 'calibrateAccel'
-  source: ->
-    TiHandler.getAccelerometerValues
-  units: 'G'
-  calibrator: [
-    smoother.calibratorAverage
-    smoother.calibratorSmooth
-  ]
-  viewer: smoother.viewSensor('accel-view', 0.4)
-  htmlID: 'AccelerometerData')
-
-magnetometerHandler = smoother.readingHandler(
-  sensor: 'mag'
-  debias: 'calibrateMag'
-  calibrator: [
-    smoother.calibratorAverage
-    smoother.calibratorSmooth
-  ]
-  source: ->
-    TiHandler.getMagnetometerValues
-  units: '&micro;T'
-  viewer: smoother.viewSensor('magnet-view', 0.05)
-  htmlID: 'MagnetometerData')
-
-gyroscopeHandler = smoother.readingHandler(
-  sensor: 'gyro'
-  debias: 'calibrateGyro'
-  calibrator: [
-    smoother.calibratorAverage
-    smoother.calibratorSmooth
-  ]
-  source: ->
-    TiHandler.getGyroscopeValues
-  viewer: smoother.viewSensor('gyro-view', 0.005)
-  htmlID: 'GyroscopeData')
-
 
 setSensor = ->
   pageGen.activateSensorPage()
@@ -461,17 +422,15 @@ setSensor = ->
   return false
 
 adminDone= ->
-  globalState.set 'loggedIn',  true
+  g=Pylon.get('globalState')
+  g.set 'loggedIn',  true
   useButton  buttonModelAdminLogout
-  if globalState.get 'connected'
+  if g.get 'connected'
+      .length  > 0
     useButton buttonModelActionRecord
   pageGen.activateSensorPage()
   setButtons()
   return false
-
-Pylon.set 'accelerometerHandler', accelerometerHandler
-Pylon.set 'magnetometerHandler', magnetometerHandler
-Pylon.set 'gyroscopeHandler', gyroscopeHandler
 
 sensorIsReady = false
 domIsReady = false
@@ -492,7 +451,7 @@ rediness = ->
 
   sessionInfo.set('platformUUID',window.device.uuid)
   $("#platformUUID").text(window.device.uuid)
-  if sensorIsReady && ! ( globalState.get 'connected' )
+  if sensorIsReady &&  ( Pylon.get('globalState').get 'connected' == 0 )
     console.log "Activating sensor attempt"
     try
       TiHandler.initializeSensorTag 

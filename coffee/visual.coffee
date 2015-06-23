@@ -5,7 +5,7 @@ Seen = require('../libs/dbg/seen')
 $=require('jquery')
 
 ###
-#globalStatus looks like this:
+#Pylon's globalStatus looks like this:
 #systemCommunicator = Backbone.Model.extend
 #  defaults:
 #    calibrating: false
@@ -13,11 +13,11 @@ $=require('jquery')
 #    connected: false
 #    calibrate: false
 #
-#globalState = new systemCommunicator
+#  Pylon.set 'globalState',  new systemCommunicator
 ###
 
 class visual
-  constructor: (@globalState,@readings) ->
+  constructor: () ->
 
   calibratorAverage: (dataCondition, calibrate, calibrating) ->
     try
@@ -115,11 +115,13 @@ class visual
         dataCondition.cookedValue = r.copy()
         i = 0
         while i < o.calibrator.length
-          o.calibrator[i] dataCondition, @globalState.get('calibrate'), @globalState.get('calibrating')
+          #o.calibrator[i] dataCondition, @globalState.get('calibrate'), @globalState.get('calibrating')
+          # calibration has been deprecated, but if needed would be moved to some newly designed View
+          o.calibrator[i] dataCondition, 0,0
           i++
         p = dataCondition.cookedValue
-        if @globalState.get 'recording'
-          @readings.push new reading(
+        if Pylon.get('globalState').get 'recording'
+          Pylon.get('readings').push new reading(
             sensor: o.sensor
             raw: _.toArray(data))
         m = dataCondition.dataHistory
@@ -252,7 +254,5 @@ class visual
     newValue
 
 
-if window? then base= window
-if module?.exports? then base = module
-
-base.exports = visual
+if window? then window.exports = visual
+if module?.exports? then module.exports = visual

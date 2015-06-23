@@ -1,5 +1,5 @@
 # # stagapp devices
-# vim: et:ts=2:sw=2:sts=2
+# vim: et:ts=2:sw=2:sts=2:tw=0
 # ## device interface handler for clinical recording of SensorTag data
 # via TI SensorTag object.
 
@@ -14,7 +14,6 @@ pView=Backbone.View.extend
   model: Pylon
   initialize: ->
     @listenTo @model, 'change respondingDevices', (devices)->
-      console.log "change in respondingDevices"
       @render()
       return @
   events:
@@ -41,12 +40,16 @@ deviceModel = Backbone.Model.extend
 deviceCollection = Backbone.Collection.extend
   model: deviceModel
 Pylon.set 'devices', new deviceCollection
+
+visualHandler = require('./visual.coffee')
   
 
 class TiHandler
   evothings = window.evothings
   sensorScanner = evothings.tisensortag.createGenericInstance()
   evothings.tisensortag.ble.addInstanceMethods(sensorScanner) #Add generic BLE instance methods.
+
+# status callbacks for the BLE scan for devices mode -- should activate "status" view
   sensorScanner.statusCallback (s)->
     Pylon.trigger 'sensorScanStatus', s
   sensorScanner.errorCallback (e)->
@@ -110,7 +113,7 @@ class TiHandler
   ###
 
   enterConnected = false # enterconnected is called to enable 'record' button logic
-  constructor: (@globalState,@reading,@sessionInfo,ec) ->
+  constructor: (@reading,@sessionInfo,ec) ->
     enterConnected = ec
 
   ###
@@ -185,7 +188,7 @@ class TiHandler
     failures =0
     console.log "initialize Sensor Communication"
     try
-      @globalState.set 'connected', false
+      @globalState.set 'connected', []
       sensortag.statusCallback(statusHandler)
       sensortag.errorCallback (error)=>
 #change this to globalState
@@ -207,12 +210,56 @@ class TiHandler
       console.log "sensor came on-line immediately"
     return
 
-    
+  createVisualChain: (device) ->
+    smoother = new visualHandler
+    accelerometerHandler = smoother.readingHandler
+      sensor: 'accel'
+      debias: 'calibrateAccel'
+      source: ->
+        device.get('getAccelerometerValues')
+      units: 'G'
+      calibrator: [
+        smoother.calibratorAverage
+        smoother.calibratorSmooth
+      ]
+      viewer: smoother.viewSensor 'accel-view', 0.4
+      htmlID: 'AccelerometerData'+device.get('role') 
+
+    magnetometerHandler = smoother.readingHandler
+      sensor: 'mag'
+      debias: 'calibrateMag'
+      calibrator: [
+        smoother.calibratorAverage
+        smoother.calibratorSmooth
+      ]
+      source: ->
+        device.get 'getMagnetometerValues'
+      units: '&micro;T'
+      viewer: smoother.viewSensor 'magnet-view', 0.05
+      htmlID: 'MagnetometerData'+device.get('role')
+
+    gyroscopeHandler = smoother.readingHandler
+      sensor: 'gyro'
+      debias: 'calibrateGyro'
+      calibrator: [
+        smoother.calibratorAverage
+        smoother.calibratorSmooth
+      ]
+      source: ->
+        device.get 'getGyroscopeValues'
+      viewer: smoother.viewSensor 'gyro-view', 0.005
+      htmlID: 'GyroscopeData'+device.get('role')
+    return gyro: gyroscopeHandler
+      , accel: accelerometerHandler
+      , mag: magnetometerHandler
+
+      
 
   attachDevice: (uuid, role) ->
     d = Pylon.get('devices').get uuid
     d.set 'role',role
-    Pylon.set role, device
+    Pylon.set role, d
+    handlers= @createVisualChain d
     try
       if d.get( 'genericName').search(/BLE/) > -1
         d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
@@ -221,26 +268,25 @@ class TiHandler
       #device.type is set to one of these two constants by the scanner  
       #  evothings.tisensortag.CC2650_BLUETOOTH_SMART = 'CC2650 Bluetooth Smart'
       #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
-      sensorInstance = evothings.tisensortag.createInstance d.type
-      d.set 'sensorInstance', sensorInstance
+      rawDevice = evothings.tisensortag.createInstance d.get('type')
       
       # bring the evothings data converters up to this device
-      @getMagnetometerValues = d.getMagnetometerValues
-      @getAccelerometerValues = d.getAccelerometerValues
-      @getGyroscopeValues = d.getGyroscopeValues
+      @getMagnetometerValues = rawDevice.getMagnetometerValues
+      @getAccelerometerValues = rawDevice.getAccelerometerValues
+      @getGyroscopeValues = rawDevice.getGyroscopeValues
 
       # and plug our data handlers into the evothings scheme
-      d.accelerometerCallback (data)=> 
-          accelerometerHandler data
+      rawDevice.accelerometerCallback (data)=> 
+          handlers.accel data
         ,100
-      d.magnetometerCallback (data)=>
-          magnetometerHandler data
+      rawDevice.magnetometerCallback (data)=>
+          handlers.mag data
         ,100
-      d.gyroscopeCallback (data)=>
-          gyroscopeHandler data
+      rawDevice.gyroscopeCallback (data)=>
+          handlers.gyro data
         ,100
         ,7
-      d.connectToDevice(device)
+      rawDevice.connectToDevice d.get('rawDevice')
     catch e
       alert('Error in attachSensor -- check LOG')
       console.log "error in attachSensor"
