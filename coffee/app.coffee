@@ -44,7 +44,7 @@ clinicModel = Backbone.Model.extend()
 
 clinicCollection = Backbone.Collection.extend
   model: clinicModel
-  url: 'http://192.168.1.200:3000/clinics'
+  url: 'http://sensor.retrotope.com/clinics'
 
 clinics = new clinicCollection
 Pylon.set('clinics',clinics)
