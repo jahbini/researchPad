@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, TiHandler, _, deviceCollection, deviceModel, glib, pView, visualHandler;
+var $, Backbone, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading, readingCollection, visualHandler;
 
 Backbone = require('backbone');
 
@@ -37,6 +37,22 @@ pView = Backbone.View.extend({
 });
 
 Pylon.set('tagViewer', new pView);
+
+reading = Backbone.Model.extend({
+  defaults: {
+    sensor: 'gyro'
+  },
+  initialize: function() {
+    var d;
+    d = new Date;
+    return this.set('time', d.getTime());
+  }
+});
+
+readingCollection = Backbone.Collection.extend({
+  model: reading,
+  initialize: function() {}
+});
 
 deviceModel = Backbone.Model.extend({
   idAttribute: "UUID",
@@ -137,8 +153,8 @@ TiHandler = (function() {
       platformUUID: ''
    */
 
-  function TiHandler(reading, sessionInfo) {
-    this.reading = reading;
+  function TiHandler(reading1, sessionInfo) {
+    this.reading = reading1;
     this.sessionInfo = sessionInfo;
   }
 
@@ -208,6 +224,7 @@ TiHandler = (function() {
     smoother = new visualHandler;
     accelerometerHandler = smoother.readingHandler({
       sensor: 'accel',
+      readings: device.get('readings'),
       debias: 'calibrateAccel',
       source: function(data) {
         return (device.get('getAccelerometerValues'))(data);
@@ -218,6 +235,7 @@ TiHandler = (function() {
     });
     magnetometerHandler = smoother.readingHandler({
       sensor: 'mag',
+      readings: device.get('readings'),
       debias: 'calibrateMag',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
       source: function(data) {
@@ -228,6 +246,7 @@ TiHandler = (function() {
     });
     gyroscopeHandler = smoother.readingHandler({
       sensor: 'gyro',
+      readings: device.get('readings'),
       debias: 'calibrateGyro',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
       source: function(data) {
@@ -243,14 +262,15 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(uuid, role) {
-    var connected, d, e, handlers, rawDevice;
+    var d, e, handlers, rawDevice;
     if (role == null) {
       role = "Primary";
     }
-    connected = false;
     d = Pylon.get('devices').get(uuid);
     d.set('role', role);
+    d.set('connected', false);
     Pylon.set(role, d);
+    d.set('readings', new readingCollection);
     handlers = this.createVisualChain(d);
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
@@ -264,10 +284,10 @@ TiHandler = (function() {
       d.set('getGyroscopeValues', rawDevice.getGyroscopeValues);
       rawDevice.statusCallback(function(s) {
         $('#status' + uuid).text(s);
-        if (connected) {
+        if (d.get('connected')) {
           return;
         }
-        connected = true;
+        d.set('connected', true);
         return Pylon.trigger('connected');
       });
       rawDevice.errorCallback(function(e) {
@@ -313,7 +333,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"../libs/dbg/console":6,"./glib.coffee":3,"./visual.coffee":5,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, mainHost, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 Backbone = require('backbone');
 
@@ -339,13 +359,15 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-pages = require('./pages.coffee');
+development = false;
 
-mainHost = {
-  iP: "sensor.retrotope.com",
-  port: 80,
-  protocol: "http"
-};
+if (development) {
+  Pylon.set('hostUrl', "http://192.168.1.200:3000/");
+} else {
+  Pylon.set('hostUrl', "http://sensor.retrotope.com:80/");
+}
+
+pages = require('./pages.coffee');
 
 
 /*
@@ -369,7 +391,7 @@ clinicModel = Backbone.Model.extend();
 
 clinicCollection = Backbone.Collection.extend({
   model: clinicModel,
-  url: 'http://sensor.retrotope.com/clinics'
+  url: Pylon.get('hostUrl') + 'clinics'
 });
 
 clinics = new clinicCollection;
@@ -450,8 +472,6 @@ readingCollection = Backbone.Collection.extend({
 });
 
 readings = new readingCollection;
-
-Pylon.set('readings', readings);
 
 rawSession = Backbone.Model.extend();
 
@@ -641,7 +661,14 @@ enterLogout = function() {
   g.set('loggedIn', false);
   if (g.get('recording')) {
     g.set('recording', false);
-    readings.reset();
+    Pylon.get('devices').each(function(body) {
+      body.unset('readings', {
+        silent: true
+      });
+      return body.unset('readings', {
+        silent: true
+      });
+    });
   }
   pageGen.resetAdmin();
   useButton(buttonModelActionDisabled);
@@ -698,7 +725,14 @@ initAll = function() {
 };
 
 enterClear = function() {
-  readings.reset();
+  Pylon.get('devices').each(function(body) {
+    body.unset('readings', {
+      silent: true
+    });
+    return body.unset('readings', {
+      silent: true
+    });
+  });
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
   useButton(buttonModelActionRecord);
@@ -771,24 +805,42 @@ enterStop = function() {
 };
 
 enterUpload = function() {
-  var brainDump, hopper, hostUrl;
+  var body, brainDump, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref;
   console.log('enter Upload -- send data to Retrotope server');
-  hopper = void 0;
-  brainDump = void 0;
-  if (!readings.length) {
+  deviceSummary = Backbone.Model.extend();
+  deviceDataCollection = Backbone.Collection.extend({
+    model: deviceSummary
+  });
+  devicesData = new deviceDataCollection;
+  noData = true;
+  ref = Pylon.get('devices').toJSON();
+  for (i in ref) {
+    body = ref[i];
+    if (!(r = body.readings)) {
+      continue;
+    }
+    if (r.length === 0) {
+      continue;
+    }
+    noData = false;
+    devicesData.push({
+      sensorUUID: body.UUID,
+      role: body.role,
+      type: body.type,
+      nickname: body.nickname,
+      readings: r.toJSON()
+    });
+  }
+  if (noData) {
     return false;
   }
-  hostUrl = '192.168.1.200:3000';
   hopper = Backbone.Model.extend({
-    url: '/trajectory',
-    urlRoot: hostUrl
+    url: Pylon.get('hostUrl') + 'trajectory',
+    urlRoot: Pylon.get('hostUrl')
   });
-  if (typeof console === "function") {
-    console(log('hostURL=' + hostURL));
-  }
   brainDump = new hopper;
-  brainDump.set('readings', readings);
-  brainDump.set('sensorUUID', sessionInfo.get('sensorUUID'));
+  brainDump.set('readings', devicesData);
+  brainDump.set('sensorUUID', uuid);
   brainDump.set('patientID', sessionInfo.get('patient'));
   brainDump.set('user', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
@@ -1515,11 +1567,13 @@ exports.Pages = Pages;
 
 
 },{"Backbone":8,"jquery":12,"teacup":13}],5:[function(require,module,exports){
-var $, Seen, visual;
+var $, Seen, _, visual;
 
 Seen = require('../libs/dbg/seen');
 
 $ = require('jquery');
+
+_ = require('underscore');
 
 
 /*
@@ -1650,10 +1704,10 @@ visual = (function() {
           }
           p = dataCondition.cookedValue;
           if (Pylon.get('globalState').get('recording')) {
-            Pylon.get('readings').push(new reading({
+            o.readings.push({
               sensor: o.sensor,
               raw: _.toArray(data)
-            }));
+            });
           }
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
@@ -1804,7 +1858,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/seen":7,"jquery":12}],6:[function(require,module,exports){
+},{"../libs/dbg/seen":7,"jquery":12,"underscore":11}],6:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 

@@ -15,14 +15,12 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
+development = false
+if development
+  Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
+else
+  Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
 pages = require './pages.coffee'
-
-
-# Host we communicate with
-mainHost =
-  iP: "sensor.retrotope.com"
-  port: 80
-  protocol: "http"
 
 ###
 Section: Data Structures
@@ -44,7 +42,7 @@ clinicModel = Backbone.Model.extend()
 
 clinicCollection = Backbone.Collection.extend
   model: clinicModel
-  url: 'http://sensor.retrotope.com/clinics'
+  url: Pylon.get('hostUrl')+'clinics'
 
 clinics = new clinicCollection
 Pylon.set('clinics',clinics)
@@ -100,7 +98,6 @@ readingCollection = Backbone.Collection.extend
   initialize: ->
 
 readings = new readingCollection
-Pylon.set('readings',readings)
 
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
@@ -251,7 +248,9 @@ enterLogout = () ->
   g.set 'loggedIn', false
   if g.get 'recording'
     g.set 'recording', false
-    readings.reset()
+    Pylon.get('devices').each (body)->
+      body.unset 'readings', silent: true
+      body.unset 'readings', silent: true
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
@@ -303,7 +302,9 @@ initAll = ->
 ## subsection State handlers that depend on the View
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
-  readings.reset()
+  Pylon.get('devices').each (body)->
+    body.unset 'readings', silent: true
+    body.unset 'readings', silent: true
   buttonModelClear.set('active',false);
   buttonModelUpload.set('active',false);
   useButton buttonModelActionRecord
@@ -366,25 +367,34 @@ enterStop = ->
 
 enterUpload = ->
   console.log('enter Upload -- send data to Retrotope server')
-  hopper = undefined
-  brainDump = undefined
+  deviceSummary = Backbone.Model.extend()
+  deviceDataCollection = Backbone.Collection.extend
+    model: deviceSummary
+  devicesData = new deviceDataCollection
+  noData = true
+  for i,body of Pylon.get('devices').toJSON()
+    continue if ! (r = body.readings)
+    continue if r.length == 0
+    noData = false
+    devicesData.push
+      sensorUUID: body.UUID
+      role: body.role
+      type: body.type
+      nickname: body.nickname
+      readings: r.toJSON()
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
-  if !readings.length
-   return false
-  hostUrl = '192.168.1.200:3000'
-  hopper = Backbone.Model.extend {
-    url: '/trajectory'
-    urlRoot: hostUrl
-  }
-  console?log 'hostURL=' + hostURL
-  #console?log sessionInfo
-  brainDump = new hopper
+  return false if noData  
 
-  brainDump.set('readings',readings )
-  brainDump.set('sensorUUID',sessionInfo.get('sensorUUID') )
+  hopper = Backbone.Model.extend {
+    url: Pylon.get('hostUrl')+'trajectory'
+    urlRoot: Pylon.get 'hostUrl'
+  }
+  
+  brainDump = new hopper
+  brainDump.set('readings',devicesData )
+  brainDump.set('sensorUUID',uuid )
   brainDump.set('patientID',sessionInfo.get('patient') )
   brainDump.set('user',sessionInfo.get('clinician') )
-
   brainDump.set('password',sessionInfo.get('password') )
   brainDump.set('testID',sessionInfo.get('testID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )

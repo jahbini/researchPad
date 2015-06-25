@@ -30,6 +30,19 @@ pView=Backbone.View.extend
   
 Pylon.set 'tagViewer', new pView
 
+
+reading = Backbone.Model.extend
+  defaults:
+    sensor: 'gyro'
+  initialize: ->
+    d = new Date
+    @set 'time', d.getTime()
+
+readingCollection = Backbone.Collection.extend
+  model: reading
+  initialize: ->
+
+
 deviceModel = Backbone.Model.extend
   idAttribute: "UUID"
   defaults: 
@@ -184,6 +197,7 @@ class TiHandler
     smoother = new visualHandler
     accelerometerHandler = smoother.readingHandler
       sensor: 'accel'
+      readings: device.get 'readings'
       debias: 'calibrateAccel'
       source: (data)->
         (device.get 'getAccelerometerValues') data
@@ -196,6 +210,7 @@ class TiHandler
 
     magnetometerHandler = smoother.readingHandler
       sensor: 'mag'
+      readings: device.get 'readings'
       debias: 'calibrateMag'
       calibrator: [
         smoother.calibratorAverage
@@ -208,6 +223,7 @@ class TiHandler
 
     gyroscopeHandler = smoother.readingHandler
       sensor: 'gyro'
+      readings: device.get 'readings'
       debias: 'calibrateGyro'
       calibrator: [
         smoother.calibratorAverage
@@ -229,10 +245,13 @@ class TiHandler
 # error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
 # not used in this initial release
   attachDevice: (uuid, role="Primary") ->
-    connected = false
     d = Pylon.get('devices').get uuid
     d.set 'role',role
+    d.set 'connected', false
     Pylon.set role, d
+  #throw away any previous reading
+    d.set 'readings', new readingCollection
+      
     handlers= @createVisualChain d
     try
       if d.get( 'genericName').search(/BLE/) > -1
@@ -251,8 +270,8 @@ class TiHandler
 
       rawDevice.statusCallback (s) ->
         $('#status'+uuid).text s
-        return if connected
-        connected = true
+        return if d.get 'connected'
+        d.set 'connected', true
         Pylon.trigger 'connected'
       rawDevice.errorCallback (e) ->
         $('#status'+uuid).text e

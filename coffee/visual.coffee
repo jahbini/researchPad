@@ -1,8 +1,9 @@
 #
 # vim: et:ts=2:sw=2:sts=2
 
-Seen = require('../libs/dbg/seen')
-$=require('jquery')
+Seen = require '../libs/dbg/seen' 
+$=require 'jquery' 
+_=require 'underscore' 
 
 ###
 #Pylon's globalStatus looks like this:
@@ -118,9 +119,7 @@ class visual
           i++
         p = dataCondition.cookedValue
         if Pylon.get('globalState').get 'recording'
-          Pylon.get('readings').push new reading(
-            sensor: o.sensor
-            raw: _.toArray(data))
+          o.readings.push sensor: o.sensor, raw: _.toArray(data)
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
       catch error
