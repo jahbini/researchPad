@@ -1,0 +1,41 @@
+{
+  "name": "skeleton-ui",
+  "version": "1.0.1",
+  "description": "Lightweight CSS toolkit built on Skeleton",
+  "main": [
+    "less/skeleton-ui.less",
+    "js/skeleton-ui.js"
+  ],
+  "author": [
+    "Florian Dejonckheere <florian@floriandejonckheere.be>"
+  ],
+  "contributors": [
+    "Dave Gamache <hello@davegamache.com> (http://davegamache.com/)",
+    "Seth Coelen <scoelen89@gmail.com> (http://SethCoelen.com)"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/floriandejonckheere/skeleton-ui.git"
+  },
+  "keywords": [
+    "skeleton",
+    "css",
+    "ui",
+    "framework",
+    "responsive",
+    "components"
+  ],
+  "license": "MIT",
+  "homepage": "https://github.com/floriandejonckheere/skeleton-ui",
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "font-awesome": "~4.3.0"
+  }
+}

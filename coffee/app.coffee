@@ -14,6 +14,7 @@ Pylon = new PylonTemplate
 if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
+Pylon.set 'spearCount', 5
 pages = require './pages.coffee'
 
 
@@ -100,14 +101,6 @@ readingCollection = Backbone.Collection.extend
 
 readings = new readingCollection
 Pylon.set('readings',readings)
-pageGen = new pages.Pages sessionInfo
-Pylon.set('pageGen',pageGen)
-
-#debug -- should show up on server
-readings.push new reading
- raw: [ 1,2,3,4,5,6]
- sensor: 'DebugOnly'
-
 
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
@@ -116,6 +109,10 @@ sessionInfo = new rawSession
   testID: ''
   sensorUUID: ''
   platformUUID: ''
+
+pageGen = new pages.Pages sessionInfo
+Pylon.set 'pageGen', pageGen
+Pylon.set 'sessionInfo', sessionInfo
 
 enterDebug = () ->
   useButton  buttonModelDebugOn
@@ -408,11 +405,12 @@ stopRecording = ->
   return
 
 
+Pylon.on 'connected', enterConnected
 #
 # ### Subsection State Handlers that depend on the Hardware
 startBlueTooth = ->
   TiHandlerDef = require('./TiHandler.coffee')
-  TiHandler = new TiHandlerDef  reading, sessionInfo, enterConnected
+  TiHandler = new TiHandlerDef  reading, sessionInfo
   window.TiHandler = TiHandler
   Pylon.set 'TiHandler', TiHandler
 
@@ -425,7 +423,7 @@ adminDone= ->
   g=Pylon.get('globalState')
   g.set 'loggedIn',  true
   useButton  buttonModelAdminLogout
-  if g.get 'connected'
+  if g.get('devices').pluck('connected')
       .length  > 0
     useButton buttonModelActionRecord
   pageGen.activateSensorPage()
@@ -451,15 +449,6 @@ rediness = ->
 
   sessionInfo.set('platformUUID',window.device.uuid)
   $("#platformUUID").text(window.device.uuid)
-  if sensorIsReady &&  ( Pylon.get('globalState').get 'connected' == 0 )
-    console.log "Activating sensor attempt"
-    try
-      TiHandler.initializeSensorTag 
-      console.log "TiHandler initialized"
-    catch e
-      console.log "error from TiHandler"
-      console.log e
-  console.log "Activating sensor exit"
 
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}

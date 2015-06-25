@@ -42,7 +42,6 @@ deviceCollection = Backbone.Collection.extend
 Pylon.set 'devices', new deviceCollection
 
 visualHandler = require('./visual.coffee')
-  
 
 class TiHandler
   evothings = window.evothings
@@ -58,27 +57,32 @@ class TiHandler
   Pylon.on "tagScan change",  =>
     if Pylon.get('tagScan')
       sensorScanner.startScanningForDevices (device)->
-        nd = new deviceModel
-          signalStrength: device.rssi
-          genericName: device.name
-          UUID: device.address
-          rawDevice: device
         pd =Pylon.get('devices')
-        pd.push nd
+        uuid = device.address
+        rssi = device.rssi
+        if d=pd.get(uuid)
+          # just update the signal strength and do not trigger any changes
+          d.set 'SignalStrength', rssi
+          $('#rssi-'+uuid).html rssi
+          return
+
+        console.log "got new device"
+        d = new deviceModel
+          signalStrength: rssi
+          genericName: device.name
+          UUID: uuid
+          rawDevice: device
+        pd.push d
         Pylon.trigger('change respondingDevices')
         return
     else
       sensorScanner.stopScanningForDevices()
       return
 
-  Pylon.on "setPrimary", (uuid)->
-    alert("Primary = " +uuid)
+  Pylon.on "enableTag", (uuid)->
     Pylon.get 'TiHandler'
       .attachDevice uuid, 'primary'
-  Pylon.on "setSecondary", (uuid)->
-    alert("Secondary = " +uuid)
-    Pylon.get 'TiHandler'
-      .attachDevice uuid, 'secondary'
+
   ###
   Section: Data Structures
    Major data structures and interfaces to them
@@ -112,40 +116,13 @@ class TiHandler
 
   ###
 
-  enterConnected = false # enterconnected is called to enable 'record' button logic
-  constructor: (@reading,@sessionInfo,ec) ->
-    enterConnected = ec
-
-  ###
-  # debuging -- should show up on server
-  readings.push new reading
-   raw: [ 1,2,3,4,5,6]
-   sensor: 'DebugOnly'
-
-  # ## Hardware
-  # external communications to Hardware
-  #
-  # set up the sensorTag and configure to recieve
-  # accelerometer, magnetometer and gyro data
-  #
-  ###
+  constructor: (@reading,@sessionInfo) ->
 
   statusHandler= (status)->
     $('#StatusData').html status
-    statusList = evothings.tisensortag.ble.status
-    if statusList.SENSORTAG_ONLINE== status
-      try
-        if ! enterConnected
-          console.log "enterConnected does not exist"
-        enterConnected()
-      catch e
-        console.log "error setting connection"
-        console.log e
-        console.log enterConnected
-      status = 'Sensor online'
-    if statusList.DEVICE_INFO_AVAILABLE == status
+    if statusList.SENSORTAG_ONLINE== status || statusList.DEVICE_INFO_AVAILABLE == status
       $('#FirmwareData').html sensortag.getFirmwareString()
-      sessionInfo.set 'sensorUUID', sensortag?.device?.address
+      @sessionInfo.set 'sensorUUID', sensortag?.device?.address
       $('#uuid').html(sensortag?.device?.address).css('color','black')
       console?.log sensortag?.device?.address
     $('#StatusData').html status
@@ -166,15 +143,8 @@ class TiHandler
       ), 1000
     return
 
-  debugReading = (data)->
-    console.log "got reading"
-    console.log data
-
   initializeSensorTag: (accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
     return
-    # Here sensors are set up.
-    #
-    # If you wish to use only one or a few sensors, just set up
     # the ones you wish to use.
     #
     # First parameter to sensor function is the callback function.
@@ -215,15 +185,14 @@ class TiHandler
     accelerometerHandler = smoother.readingHandler
       sensor: 'accel'
       debias: 'calibrateAccel'
-      source: ->
-        device.get('getAccelerometerValues')
+      source: (data)->
+        (device.get 'getAccelerometerValues') data
       units: 'G'
       calibrator: [
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      viewer: smoother.viewSensor 'accel-view', 0.4
-      htmlID: 'AccelerometerData'+device.get('role') 
+      viewer: smoother.viewSensor 'accel-view-'+device.id, 0.4
 
     magnetometerHandler = smoother.readingHandler
       sensor: 'mag'
@@ -232,11 +201,10 @@ class TiHandler
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      source: ->
-        device.get 'getMagnetometerValues'
+      source: (data)->
+        (device.get 'getMagnetometerValues') data
       units: '&micro;T'
-      viewer: smoother.viewSensor 'magnet-view', 0.05
-      htmlID: 'MagnetometerData'+device.get('role')
+      viewer: smoother.viewSensor 'magnet-view-'+device.id, 0.05
 
     gyroscopeHandler = smoother.readingHandler
       sensor: 'gyro'
@@ -245,17 +213,23 @@ class TiHandler
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      source: ->
-        device.get 'getGyroscopeValues'
-      viewer: smoother.viewSensor 'gyro-view', 0.005
-      htmlID: 'GyroscopeData'+device.get('role')
+      source: (data)->
+        (device.get 'getGyroscopeValues') data
+      viewer: smoother.viewSensor 'gyro-view-'+device.id, 0.005
+
     return gyro: gyroscopeHandler
       , accel: accelerometerHandler
       , mag: magnetometerHandler
 
-      
-
-  attachDevice: (uuid, role) ->
+# #attachDevice
+# when scan is active or completed, the devices can be enabled with only its UUID
+# Enables the responding device UUID to send motion information
+# specific status is NOT used:
+# status handler is set -- d.get('rawDevice').statusCallback (s)-> {something}
+# error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
+# not used in this initial release
+  attachDevice: (uuid, role="Primary") ->
+    connected = false
     d = Pylon.get('devices').get uuid
     d.set 'role',role
     Pylon.set role, d
@@ -271,10 +245,17 @@ class TiHandler
       rawDevice = evothings.tisensortag.createInstance d.get('type')
       
       # bring the evothings data converters up to this device
-      @getMagnetometerValues = rawDevice.getMagnetometerValues
-      @getAccelerometerValues = rawDevice.getAccelerometerValues
-      @getGyroscopeValues = rawDevice.getGyroscopeValues
+      d.set 'getMagnetometerValues', rawDevice.getMagnetometerValues
+      d.set 'getAccelerometerValues', rawDevice.getAccelerometerValues
+      d.set 'getGyroscopeValues', rawDevice.getGyroscopeValues
 
+      rawDevice.statusCallback (s) ->
+        $('#status'+uuid).text s
+        return if connected
+        connected = true
+        Pylon.trigger 'connected'
+      rawDevice.errorCallback (e) ->
+        $('#status'+uuid).text e
       # and plug our data handlers into the evothings scheme
       rawDevice.accelerometerCallback (data)=> 
           handlers.accel data

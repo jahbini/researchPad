@@ -1,0 +1,34 @@
+/**
+ * dropdown - Dropdown
+ *
+ * Florian Dejonckheere <florian@floriandejonckheere.be>
+ *
+ * */
+
+select {
+  padding-right: 30px;
+
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  appearance: none;
+
+  &:-moz-focusring {
+    color: transparent;
+    text-shadow: 0 0 0 #000;
+  }
+
+  &::-ms-expand {
+    display: none;
+  }
+}
+
+label.select {
+  display: inline;
+
+  &:after {
+    color: @dark-grey;
+    margin-left: -27.5px;
+    content: "\f0d7";
+    font-family: @font-awesome;
+  }
+}

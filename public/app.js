@@ -57,7 +57,7 @@ Pylon.set('devices', new deviceCollection);
 visualHandler = require('./visual.coffee');
 
 TiHandler = (function() {
-  var debugReading, enterConnected, errorHandler, evothings, sensorScanner, statusHandler;
+  var errorHandler, evothings, sensorScanner, statusHandler;
 
   evothings = window.evothings;
 
@@ -76,15 +76,23 @@ TiHandler = (function() {
   Pylon.on("tagScan change", function() {
     if (Pylon.get('tagScan')) {
       return sensorScanner.startScanningForDevices(function(device) {
-        var nd, pd;
-        nd = new deviceModel({
-          signalStrength: device.rssi,
+        var d, pd, rssi, uuid;
+        pd = Pylon.get('devices');
+        uuid = device.address;
+        rssi = device.rssi;
+        if (d = pd.get(uuid)) {
+          d.set('SignalStrength', rssi);
+          $('#rssi-' + uuid).html(rssi);
+          return;
+        }
+        console.log("got new device");
+        d = new deviceModel({
+          signalStrength: rssi,
           genericName: device.name,
-          UUID: device.address,
+          UUID: uuid,
           rawDevice: device
         });
-        pd = Pylon.get('devices');
-        pd.push(nd);
+        pd.push(d);
         Pylon.trigger('change respondingDevices');
       });
     } else {
@@ -92,14 +100,8 @@ TiHandler = (function() {
     }
   });
 
-  Pylon.on("setPrimary", function(uuid) {
-    alert("Primary = " + uuid);
+  Pylon.on("enableTag", function(uuid) {
     return Pylon.get('TiHandler').attachDevice(uuid, 'primary');
-  });
-
-  Pylon.on("setSecondary", function(uuid) {
-    alert("Secondary = " + uuid);
-    return Pylon.get('TiHandler').attachDevice(uuid, 'secondary');
   });
 
 
@@ -135,50 +137,17 @@ TiHandler = (function() {
       platformUUID: ''
    */
 
-  enterConnected = false;
-
-  function TiHandler(reading, sessionInfo1, ec) {
+  function TiHandler(reading, sessionInfo) {
     this.reading = reading;
-    this.sessionInfo = sessionInfo1;
-    enterConnected = ec;
+    this.sessionInfo = sessionInfo;
   }
 
-
-  /*
-   * debuging -- should show up on server
-  readings.push new reading
-   raw: [ 1,2,3,4,5,6]
-   sensor: 'DebugOnly'
-  
-   * ## Hardware
-   * external communications to Hardware
-  #
-   * set up the sensorTag and configure to recieve
-   * accelerometer, magnetometer and gyro data
-  #
-   */
-
   statusHandler = function(status) {
-    var e, ref, ref1, ref2, statusList;
+    var ref, ref1, ref2;
     $('#StatusData').html(status);
-    statusList = evothings.tisensortag.ble.status;
-    if (statusList.SENSORTAG_ONLINE === status) {
-      try {
-        if (!enterConnected) {
-          console.log("enterConnected does not exist");
-        }
-        enterConnected();
-      } catch (_error) {
-        e = _error;
-        console.log("error setting connection");
-        console.log(e);
-        console.log(enterConnected);
-      }
-      status = 'Sensor online';
-    }
-    if (statusList.DEVICE_INFO_AVAILABLE === status) {
+    if (statusList.SENSORTAG_ONLINE === status || statusList.DEVICE_INFO_AVAILABLE === status) {
       $('#FirmwareData').html(sensortag.getFirmwareString());
-      sessionInfo.set('sensorUUID', typeof sensortag !== "undefined" && sensortag !== null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
+      this.sessionInfo.set('sensorUUID', typeof sensortag !== "undefined" && sensortag !== null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
       $('#uuid').html(typeof sensortag !== "undefined" && sensortag !== null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
       if (typeof console !== "undefined" && console !== null) {
         console.log(typeof sensortag !== "undefined" && sensortag !== null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
@@ -200,11 +169,6 @@ TiHandler = (function() {
         sensortag.connectToClosestDevice(20000);
       }), 1000);
     }
-  };
-
-  debugReading = function(data) {
-    console.log("got reading");
-    return console.log(data);
   };
 
   TiHandler.prototype.initializeSensorTag = function(accelerometerHandler, magnetometerHandler, gyroscopeHandler) {
@@ -245,34 +209,31 @@ TiHandler = (function() {
     accelerometerHandler = smoother.readingHandler({
       sensor: 'accel',
       debias: 'calibrateAccel',
-      source: function() {
-        return device.get('getAccelerometerValues');
+      source: function(data) {
+        return (device.get('getAccelerometerValues'))(data);
       },
       units: 'G',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      viewer: smoother.viewSensor('accel-view', 0.4),
-      htmlID: 'AccelerometerData' + device.get('role')
+      viewer: smoother.viewSensor('accel-view-' + device.id, 0.4)
     });
     magnetometerHandler = smoother.readingHandler({
       sensor: 'mag',
       debias: 'calibrateMag',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: function() {
-        return device.get('getMagnetometerValues');
+      source: function(data) {
+        return (device.get('getMagnetometerValues'))(data);
       },
       units: '&micro;T',
-      viewer: smoother.viewSensor('magnet-view', 0.05),
-      htmlID: 'MagnetometerData' + device.get('role')
+      viewer: smoother.viewSensor('magnet-view-' + device.id, 0.05)
     });
     gyroscopeHandler = smoother.readingHandler({
       sensor: 'gyro',
       debias: 'calibrateGyro',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: function() {
-        return device.get('getGyroscopeValues');
+      source: function(data) {
+        return (device.get('getGyroscopeValues'))(data);
       },
-      viewer: smoother.viewSensor('gyro-view', 0.005),
-      htmlID: 'GyroscopeData' + device.get('role')
+      viewer: smoother.viewSensor('gyro-view-' + device.id, 0.005)
     });
     return {
       gyro: gyroscopeHandler,
@@ -282,7 +243,11 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(uuid, role) {
-    var d, e, handlers, rawDevice;
+    var connected, d, e, handlers, rawDevice;
+    if (role == null) {
+      role = "Primary";
+    }
+    connected = false;
     d = Pylon.get('devices').get(uuid);
     d.set('role', role);
     Pylon.set(role, d);
@@ -294,9 +259,20 @@ TiHandler = (function() {
         d.set('type', evothings.tisensortag.CC2650_BLUETOOTH_SMART);
       }
       rawDevice = evothings.tisensortag.createInstance(d.get('type'));
-      this.getMagnetometerValues = rawDevice.getMagnetometerValues;
-      this.getAccelerometerValues = rawDevice.getAccelerometerValues;
-      this.getGyroscopeValues = rawDevice.getGyroscopeValues;
+      d.set('getMagnetometerValues', rawDevice.getMagnetometerValues);
+      d.set('getAccelerometerValues', rawDevice.getAccelerometerValues);
+      d.set('getGyroscopeValues', rawDevice.getGyroscopeValues);
+      rawDevice.statusCallback(function(s) {
+        $('#status' + uuid).text(s);
+        if (connected) {
+          return;
+        }
+        connected = true;
+        return Pylon.trigger('connected');
+      });
+      rawDevice.errorCallback(function(e) {
+        return $('#status' + uuid).text(e);
+      });
       rawDevice.accelerometerCallback((function(_this) {
         return function(data) {
           return handlers.accel(data);
@@ -360,6 +336,8 @@ if (typeof window !== "undefined" && window !== null) {
 if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
   module.exports = Pylon;
 }
+
+Pylon.set('spearCount', 5);
 
 pages = require('./pages.coffee');
 
@@ -475,15 +453,6 @@ readings = new readingCollection;
 
 Pylon.set('readings', readings);
 
-pageGen = new pages.Pages(sessionInfo);
-
-Pylon.set('pageGen', pageGen);
-
-readings.push(new reading({
-  raw: [1, 2, 3, 4, 5, 6],
-  sensor: 'DebugOnly'
-}));
-
 rawSession = Backbone.Model.extend();
 
 sessionInfo = new rawSession({
@@ -493,6 +462,12 @@ sessionInfo = new rawSession({
   sensorUUID: '',
   platformUUID: ''
 });
+
+pageGen = new pages.Pages(sessionInfo);
+
+Pylon.set('pageGen', pageGen);
+
+Pylon.set('sessionInfo', sessionInfo);
 
 enterDebug = function() {
   useButton(buttonModelDebugOn);
@@ -834,10 +809,12 @@ stopRecording = function() {
   }
 };
 
+Pylon.on('connected', enterConnected);
+
 startBlueTooth = function() {
   var TiHandler, TiHandlerDef;
   TiHandlerDef = require('./TiHandler.coffee');
-  TiHandler = new TiHandlerDef(reading, sessionInfo, enterConnected);
+  TiHandler = new TiHandlerDef(reading, sessionInfo);
   window.TiHandler = TiHandler;
   return Pylon.set('TiHandler', TiHandler);
 };
@@ -853,7 +830,7 @@ adminDone = function() {
   g = Pylon.get('globalState');
   g.set('loggedIn', true);
   useButton(buttonModelAdminLogout);
-  if (g.get('connected').length > 0) {
+  if (g.get('devices').pluck('connected').length > 0) {
     useButton(buttonModelActionRecord);
   }
   pageGen.activateSensorPage();
@@ -866,7 +843,6 @@ sensorIsReady = false;
 domIsReady = false;
 
 rediness = function() {
-  var e;
   if (!(sensorIsReady && domIsReady)) {
     return;
   }
@@ -886,19 +862,7 @@ rediness = function() {
     }
   });
   sessionInfo.set('platformUUID', window.device.uuid);
-  $("#platformUUID").text(window.device.uuid);
-  if (sensorIsReady && (Pylon.get('globalState').get('connected' === 0))) {
-    console.log("Activating sensor attempt");
-    try {
-      TiHandler.initializeSensorTag;
-      console.log("TiHandler initialized");
-    } catch (_error) {
-      e = _error;
-      console.log("error from TiHandler");
-      console.log(e);
-    }
-  }
-  return console.log("Activating sensor exit");
+  return $("#platformUUID").text(window.device.uuid);
 };
 
 
@@ -1023,8 +987,7 @@ Pages = (function() {
 
   ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
 
-  function Pages(sessionInfo) {
-    this.sessionInfo = sessionInfo;
+  function Pages() {
     this.renderPage = bind(this.renderPage, this);
     this.forceTest = bind(this.forceTest, this);
     this.wireAdmin = bind(this.wireAdmin, this);
@@ -1038,7 +1001,7 @@ Pages = (function() {
       el: '#desiredClinic',
       collection: Pylon.get('clinics'),
       attributes: {
-        session: this.sessionInfo
+        session: Pylon.get('sessionInfo')
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -1088,11 +1051,9 @@ Pages = (function() {
     });
     clinicianViewTemplate = Backbone.View.extend({
       el: '#desiredClinician',
-      collection: function() {
-        return Pylon.get('clinicians');
-      },
+      collection: Pylon.get('clinicians'),
       attributes: {
-        session: this.sessionInfo
+        session: Pylon.get('sessionInfo')
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -1129,7 +1090,7 @@ Pages = (function() {
       el: '#desiredClient',
       collection: Pylon.get('clients'),
       attributes: {
-        session: this.sessionInfo
+        session: Pylon.get('sessionInfo')
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -1162,7 +1123,7 @@ Pages = (function() {
     });
     doneViewTemplate = Backbone.View.extend({
       el: '#done',
-      model: this.sessionInfo,
+      model: Pylon.get('sessionInfo'),
       initialize: function() {
         return this.listenTo(this.model, 'change', this.render);
       },
@@ -1184,6 +1145,7 @@ Pages = (function() {
     this.clientView = new clientViewTemplate;
     this.clinicView = new clinicViewTemplate;
     this.clinicianView = new clinicianViewTemplate;
+    Pylon.get('clinics').trigger('change');
   };
 
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
@@ -1221,8 +1183,6 @@ Pages = (function() {
       div("#content1", function() {
         return contents1();
       });
-      div("#PrimarySensor");
-      div("#SecondarySensor");
       return div('#footer', 'style="display:none;"', function() {
         hr();
         return div('#console-log.container');
@@ -1234,7 +1194,7 @@ Pages = (function() {
     var ref1, sensorTags;
     sensorTags = ((ref1 = pylon.get('devices')) != null ? ref1.models : void 0) || [];
     hr();
-    table(".u-full-width", function() {
+    return table(".u-full-width", function() {
       var device, i, len, results, theUUID;
       thead(function() {
         tr(function() {
@@ -1243,10 +1203,10 @@ Pages = (function() {
         if (sensorTags.length === 0) {
           th("no sensors respond");
         } else {
-          th("UUID");
           th("name");
-          th("signal");
-          return th("P/S select");
+          th("gyro");
+          th("accel");
+          return th("mag");
         }
       });
       results = [];
@@ -1255,27 +1215,37 @@ Pages = (function() {
         theUUID = device.get('UUID');
         results.push(tbody(function() {
           return tr(function() {
-            td(theUUID);
             td(function() {
-              text(device.get('genericName'));
+              text(device.get('nickname'));
               br();
-              return text(device.get('nickname'));
+              span("#rssi-" + theUUID, device.get('signalStrength'));
+              br();
+              span("#status-" + theUUID, '--');
+              return button('.needsclick', {
+                onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
+              }, "Connect");
             });
-            td(device.get('signalStrength'));
             td(function() {
-              input("", {
-                type: "radio",
-                name: "setPrimary",
-                onChange: "Pylon.trigger('setPrimary', '" + theUUID + "')"
-              });
-              span('/---/');
-              return input("", {
-                type: "radio",
-                name: "setSecondary",
-                onChange: "Pylon.trigger('setSecondary', '" + theUUID + "')"
+              return canvas('#gyro-view-' + theUUID, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
               });
             });
-            return td(function() {});
+            td(function() {
+              return canvas('#accel-view-' + theUUID, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
+              });
+            });
+            return td(function() {
+              return canvas('#magnet-view-' + theUUID, {
+                width: '200',
+                height: '200',
+                style: 'width=100%'
+              });
+            });
           });
         }));
       }
@@ -1328,7 +1298,7 @@ Pages = (function() {
 
   Pages.prototype.wireButtons = function() {
     var model;
-    model = this.sessionInfo;
+    model = Pylon.get('sessionInfo');
     return $('#TestID').change((function(_this) {
       return function(node) {
         $('#TestSelect').text('Which Test?').css('color', '');
@@ -1339,21 +1309,32 @@ Pages = (function() {
   };
 
   Pages.prototype.resetAdmin = function() {
-    this.sessionInfo.set('clinic', '');
-    this.sessionInfo.set('clinician', '');
-    this.sessionInfo.set('password', '');
-    this.sessionInfo.set('client', '');
-    this.sessionInfo.set('testID', '');
+    var model;
+    model = Pylon.get('sessionInfo');
+    model.unset('clinic', {
+      silent: true
+    });
+    model.unset('clinician', {
+      silent: true
+    });
+    model.unset('password', {
+      silent: true
+    });
+    model.unset('client', {
+      silent: true
+    });
+    model.unset('testID', {
+      silent: true
+    });
     $('#password').val('');
     $('option:selected').prop('selected', false);
     $('option.forceSelect').prop('selected', true);
-    $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-    return this.sessionInfo.set('hostUrl', $('#desiredHost option:selected').val());
+    return $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
   };
 
   Pages.prototype.wireAdmin = function() {
     var model;
-    model = this.sessionInfo;
+    model = Pylon.get('sessionInfo');
     $('#password').keypress((function(_this) {
       return function(node) {
         var ref1;
@@ -1414,7 +1395,9 @@ Pages = (function() {
     }
     $('#TestSelect').text('Must Select Test').css('color', color);
     $('#TestID').val('Select --');
-    return this.sessionInfo.set('testID', null);
+    return Pylon.get('sessionInfo').unset('testID', {
+      silent: true
+    });
   };
 
   Pages.prototype.activateButtons = function(buttonStruct) {
@@ -1445,65 +1428,16 @@ Pages = (function() {
   };
 
   Pages.prototype.renderPage = function(adminDone) {
-    var bodyHtml, statusViewTemplate, tagViewTemplate, testViewTemplate;
+    var bodyHtml, statusViewTemplate, testViewTemplate;
     this.adminDone = adminDone;
     bodyHtml = this.theBody(this.topButtons, this.adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
-    tagViewTemplate = Backbone.View.extend({
-      render: function() {
-        var tag;
-        tag = 'Primary';
-        if (Pylon.get('Secondary')) {
-          tag = 'Secondary';
-        }
-        return $el.html(function() {
-          hr();
-          return div('.row.readings', function() {
-            div('#gyroscope' + tag + '.four.columns', function() {
-              h5('Gyroscope');
-              canvas('#gyro-view-' + tag, {
-                width: '200',
-                height: '200',
-                style: 'width=100%'
-              });
-              return div('#GyroscopeData.u-full-width.dump', ' ');
-            });
-            div('#acelleration' + tag + '.four.columns', function() {
-              h5('Accelerometer');
-              canvas('#accel-view-' + tag, {
-                width: '200',
-                height: '200',
-                style: 'width=100%'
-              });
-              return div('#AccelerometerData.u-full-width.dump', ' ');
-            });
-            return div('#magnetometer' + tag + '.four.columns', function() {
-              h5('Magnetometer');
-              canvas('#magnet-view-' + tag, {
-                width: '200',
-                height: '200',
-                style: 'width=100%'
-              });
-              return div('#MagnetometerData.u-full-width.dump', '');
-            });
-          });
-        });
-      }
-    });
-    this.primaryView = new tagViewTemplate({
-      el: '#primarySensor',
-      model: Pylon.get('Primary')
-    });
-    this.secondaryView = new tagViewTemplate({
-      el: '#secondarySensor',
-      model: Pylon.get('Secondary')
-    });
     testViewTemplate = Backbone.View.extend({
       el: '#TestID',
       collection: Pylon.get('tests'),
       attributes: {
-        session: this.sessionInfo
+        session: Pylon.get('sessionInfo')
       },
       initialize: function() {
         this.listenTo(this.collection, 'change', this.render);
@@ -1701,10 +1635,7 @@ visual = (function() {
     return (function(_this) {
       return function(data) {
         var error, i, m, p, r;
-        console.log("in readinghandler");
-        console.log(data);
         try {
-          return;
           r = o.source(data);
           p = void 0;
           m = void 0;
@@ -1729,7 +1660,7 @@ visual = (function() {
         } catch (_error) {
           error = _error;
           console.log(error);
-          return console.log("in readinghandler");
+          console.log("in readinghandler");
         }
       };
     })(this);
@@ -1853,7 +1784,7 @@ visual = (function() {
       }
       context.render();
     };
-    spearFromPool = new spearPool(10);
+    spearFromPool = new spearPool(Pylon.get('spearCount'));
     cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
     model.add(cubie);
     return newValue;

@@ -1,0 +1,66 @@
+/**
+ * range - Range slider
+ *
+ * Florian Dejonckheere <florian@floriandejonckheere.be>
+ *
+ * */
+
+input[type="range"] {
+  -webkit-appearance: none;
+  -moz-appearance: none;
+
+  &::-webkit-slider-runnable-track,
+  &::-webkit-slider-thumb {
+    background-color: white;
+    border: 1px solid @border-color;
+  }
+
+  &::-moz-range-track,
+  &::-moz-range-thumb {
+    background-color: white;
+    border: 1px solid @border-color;
+  }
+
+  &::-webkit-slider-runnable-track {
+    height: 5px;
+    border-radius: @global-radius;
+  }
+
+  &::-moz-range-track {
+    height: 5px;
+    border-radius: @global-radius;
+  }
+
+  .slider-thumb() {
+    -webkit-appearance: none;
+       -moz-appearance: none;
+
+    height: 16px;
+    width: 16px;
+    border-radius: 50%;
+    margin-top: -6px;
+  }
+
+  &::-webkit-slider-thumb { .slider-thumb; }
+  &::-moz-range-thumb     { .slider-thumb; }
+
+  &[disabled]::-webkit-slider-runnable-track,
+  &[disabled]::-webkit-slider-thumb {
+    cursor: not-allowed;
+    border-color: @light-grey;
+  }
+
+  &[disabled]::-moz-range-track,
+  &[disabled]::-moz-range-thumb {
+    cursor: not-allowed;
+    border-color: @light-grey;
+  }
+
+  &:focus {
+    outline: none;
+  }
+
+  &.vertical {
+    transform: rotate(270deg);
+  }
+}

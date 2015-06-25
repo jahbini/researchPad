@@ -12,16 +12,19 @@ class Pages
   Backbone = require('Backbone')
   $=require('jquery')
   tea = new Teacup.Teacup
-  {table,tr,th,thead,tbody,td,ul,li,ol,a,render,input,renderable,raw,div,img,h2,h3,h4,h5,label,button,p,text,span,canvas,option,select,form,body,head,doctype,hr,br,password} = tea.tags()
+  {table,tr,th,thead,tbody,td,ul,li,ol,a,render
+    ,input,renderable,raw,div,img,h2,h3,h4,h5,label
+    ,button,p,text,span,canvas,option,select,form
+    ,body,head,doctype,hr,br,password} = tea.tags()
 
-  constructor: (@sessionInfo) ->
+  constructor: () ->
 
   inspectAdminPage: ()->
     clinicViewTemplate = Backbone.View.extend
       el: '#desiredClinic'
       collection: Pylon.get('clinics')
       attributes:
-        session: @sessionInfo
+        session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
       events:
@@ -43,17 +46,18 @@ class Pages
           option "Select ---"
           for clinic in @collection.models
             if clinic.get('force')
-              option '.forceSelect.selected', selected: 'selected', value: clinic.cid, clinic.get('name')
+              option '.forceSelect.selected',
+                selected: 'selected'
+                value: clinic.cid, clinic.get('name')
             else
               option value: clinic.cid, clinic.get('name')
         return this
 
     clinicianViewTemplate = Backbone.View.extend
       el: '#desiredClinician'
-      collection: ->
-        Pylon.get('clinicians')
+      collection: Pylon.get('clinicians')
       attributes:
-        session: @sessionInfo
+        session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
       events:
@@ -73,7 +77,7 @@ class Pages
       el: '#desiredClient'
       collection: Pylon.get('clients')
       attributes:
-        session: @sessionInfo
+        session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
       events:
@@ -90,7 +94,7 @@ class Pages
 
     doneViewTemplate = Backbone.View.extend
       el: '#done'
-      model: @sessionInfo
+      model: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @model, 'change', @render
       events:
@@ -108,6 +112,7 @@ class Pages
     @clientView = new clientViewTemplate
     @clinicView = new clinicViewTemplate
     @clinicianView = new clinicianViewTemplate
+    Pylon.get('clinics').trigger('change')
     return
 
   theBody: renderable (buttons,contents1)=>
@@ -132,8 +137,6 @@ class Pages
       div "#tagScanReport"
       div "#content1", ->
         contents1()
-      div "#PrimarySensor"
-      div "#SecondarySensor"
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
@@ -149,32 +152,28 @@ class Pages
             th "no sensors respond"
             return
           else
-            th "UUID"
             th "name"
-            th "signal"
-            th "P/S select"
+            th "gyro"
+            th "accel"
+            th "mag"
         for device in sensorTags
           theUUID = device.get 'UUID'
           tbody ->
             tr ->
-              td theUUID
               td ->
-                text (device.get 'genericName')
-                br()
                 text (device.get 'nickname')
-              td device.get 'signalStrength'
+                br()
+                span "#rssi-"+theUUID, device.get 'signalStrength'
+                br()
+                span "#status-"+theUUID, '--'
+                button '.needsclick', onClick: "Pylon.trigger('enableTag', '" + theUUID + "')","Connect"
               td ->
-                input "", 
-                  type: "radio"
-                  name: "setPrimary"
-                  onChange: "Pylon.trigger('setPrimary', '" + theUUID + "')"
-                span '/---/'
-                input "",
-                  type: "radio",
-                  name: "setSecondary" 
-                  onChange: "Pylon.trigger('setSecondary', '" + theUUID + "')"
+                canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
               td ->
-      return
+                canvas '#accel-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
+              td ->
+                canvas '#magnet-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
+            
 
   adminContents: renderable ()=>
      div '#adminForm', ->
@@ -200,27 +199,27 @@ class Pages
             raw "&nbsp;"
           button '#done.three.columns', disabled: true, "Done"
   wireButtons: =>
-    model = @sessionInfo
+    model = Pylon.get('sessionInfo')
     $('#TestID').change (node)=>
       $('#TestSelect').text('Which Test?').css('color','')
       model.set 'testID',$('#TestID option:selected').val()
       return false
 
   resetAdmin: =>
-    @sessionInfo.set('clinic','')
-    @sessionInfo.set('clinician','')
-    @sessionInfo.set('password','')
-    @sessionInfo.set('client','')
-    @sessionInfo.set('testID','')
+    model = Pylon.get('sessionInfo')
+    model.unset 'clinic', silent: true
+    model.unset 'clinician', silent: true
+    model.unset 'password', silent: true
+    model.unset 'client', silent: true
+    model.unset 'testID', silent: true
 
     $('#password').val('')
     $('option:selected').prop('selected',false)
     $('option.forceSelect').prop('selected',true)
     $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
-    @sessionInfo.set 'hostUrl',$('#desiredHost option:selected').val()
 
   wireAdmin: =>
-    model = @sessionInfo
+    model = Pylon.get('sessionInfo')
     $('#password').keypress( (node)=>
         if (node.keyCode == 13 && !node.shiftKey)
           node.preventDefault(); #disallow page reload default
@@ -258,7 +257,7 @@ class Pages
   forceTest: (color = 'violet') =>
     $('#TestSelect').text('Must Select Test').css('color',color)
     $('#TestID').val('Select --')
-    @sessionInfo.set('testID',null)
+    Pylon.get('sessionInfo').unset 'testID', silent: true
 
   activateButtons: (buttonStruct) ->
     for key, btn of buttonStruct
@@ -278,39 +277,11 @@ class Pages
     bodyHtml = @theBody @topButtons , @adminContents
     $('body').html bodyHtml
     @wireButtons()
-    
-    tagViewTemplate = Backbone.View.extend
-      render: ->
-        tag = 'Primary'
-        if Pylon.get 'Secondary'
-          tag = 'Secondary'
-        $el.html ->
-          hr()
-          div '.row.readings', ->
-            div '#gyroscope'+tag+'.four.columns', ->
-              h5 'Gyroscope'
-              canvas '#gyro-view-'+tag, width: '200', height: '200', style: 'width=100%'
-              div '#GyroscopeData.u-full-width.dump', ' '
-            div '#acelleration'+tag+'.four.columns', ->
-              h5 'Accelerometer'
-              canvas '#accel-view-'+tag, width: '200', height: '200', style: 'width=100%'
-              div '#AccelerometerData.u-full-width.dump', ' '
-            div '#magnetometer'+tag+'.four.columns', ->
-              h5 'Magnetometer'
-              canvas '#magnet-view-'+tag, width: '200', height: '200', style: 'width=100%'
-              div '#MagnetometerData.u-full-width.dump', ''
-    @primaryView = new tagViewTemplate
-        el: '#primarySensor'
-        model: Pylon.get 'Primary'
-    @secondaryView = new tagViewTemplate
-        el: '#secondarySensor'
-        model: Pylon.get 'Secondary'
-
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
       collection: Pylon.get('tests')
       attributes:
-        session: @sessionInfo
+        session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
         @render()

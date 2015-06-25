@@ -100,10 +100,7 @@ class visual
       return
     (data) =>
       # data points from Evothings library are Seen.Point NOT compatible as sources
-      console.log "in readinghandler"
-      console.log data
       try
-        return #Debug ONLY JAH
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
@@ -126,10 +123,10 @@ class visual
             raw: _.toArray(data))
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
-        return
       catch error
         console.log error
         console.log "in readinghandler"
+      return
 
   ###
   # Convert byte buffer to hex string.
@@ -248,7 +245,7 @@ class visual
       context.render()
       return
 
-    spearFromPool = new spearPool(10)
+    spearFromPool = new spearPool Pylon.get('spearCount')
     cubie.fill new (Seen.Material)(new (Seen.Color)(25, 200, 200, 100))
     model.add cubie
     newValue
