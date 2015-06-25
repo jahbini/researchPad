@@ -20,8 +20,8 @@ pages = require './pages.coffee'
 
 # Host we communicate with
 mainHost =
-  iP: "192.168.1.200"
-  port: 3000
+  iP: "sensor.retrotope.com"
+  port: 80
   protocol: "http"
 
 ###
@@ -423,7 +423,7 @@ adminDone= ->
   g=Pylon.get('globalState')
   g.set 'loggedIn',  true
   useButton  buttonModelAdminLogout
-  if g.get('devices').pluck('connected')
+  if Pylon.get('devices').pluck('connected')
       .length  > 0
     useButton buttonModelActionRecord
   pageGen.activateSensorPage()
