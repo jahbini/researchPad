@@ -15,6 +15,7 @@ pView = Backbone.View.extend({
   el: '#tagSelect',
   model: Pylon,
   initialize: function() {
+    Pylon.set('tagScan', false);
     return this.listenTo(this.model, 'change respondingDevices', function(devices) {
       this.render();
       return this;
@@ -27,11 +28,22 @@ pView = Backbone.View.extend({
     console.log("click!");
     Pylon.set('tagScan', true);
     this.render();
+    setTimeout((function(_this) {
+      return function() {
+        Pylon.set('tagScan', false);
+        _this.render();
+      };
+    })(this), 30000);
   },
   render: function() {
     var p;
+    if (Pylon.get('tagScan')) {
+      this.$el.prop("disabled", true).text('Scanning');
+    } else {
+      this.$el.prop("disabled", false).text('Scan Devices');
+    }
     if (p = Pylon.get('pageGen')) {
-      $('#tagScanReport').html(p.scanContents(this.model));
+      this.$('#tagScanReport').html(p.scanContents(this.model));
     }
   }
 });
@@ -1231,10 +1243,10 @@ Pages = (function() {
           return raw('&nbsp;');
         });
       });
-      div("#tagScanReport");
       div("#content1", function() {
         return contents1();
       });
+      div("#tagScanReport");
       return div('#footer', 'style="display:none;"', function() {
         hr();
         return div('#console-log.container');
@@ -1413,7 +1425,7 @@ Pages = (function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
-      button('#tagSelect.three.columns button-primary', 'Tag Select');
+      button('#tagSelect.three.columns button-primary', 'Scan Devices');
       return button('#debug.three.columns.disabled', '');
     });
     return div('.row', function() {

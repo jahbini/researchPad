@@ -134,9 +134,9 @@ class Pages
         div '.four.columns',"Platform uuid"
         div '#platformUUID.five.columns', ->
           raw '&nbsp;'
-      div "#tagScanReport"
       div "#content1", ->
         contents1()
+      div "#tagScanReport"
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
@@ -238,7 +238,7 @@ class Pages
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
         button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
-        button '#tagSelect.three.columns button-primary', 'Tag Select'
+        button '#tagSelect.three.columns button-primary', 'Scan Devices'
         button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->

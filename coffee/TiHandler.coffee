@@ -13,6 +13,7 @@ pView=Backbone.View.extend
   el: '#tagSelect'
   model: Pylon
   initialize: ->
+    Pylon.set 'tagScan', false
     @listenTo @model, 'change respondingDevices', (devices)->
       @render()
       return @
@@ -20,12 +21,22 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       console.log "click!"
-      Pylon.set('tagScan',true)
+      Pylon.set 'tagScan', true
       @render()
+      setTimeout(
+        ()=>
+          Pylon.set 'tagScan', false
+          @render()
+          return 
+        ,30000)
       return
   render: ->
+      if Pylon.get 'tagScan'
+        @$el.prop("disabled",true).text 'Scanning'
+      else
+        @$el.prop("disabled",false).text 'Scan Devices'
       if p=Pylon.get('pageGen') 
-        $('#tagScanReport').html p.scanContents(@model)
+        @$('#tagScanReport').html p.scanContents(@model)
       return
   
 Pylon.set 'tagViewer', new pView
