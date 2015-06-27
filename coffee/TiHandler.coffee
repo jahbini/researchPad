@@ -32,9 +32,15 @@ pView=Backbone.View.extend
       return
   render: ->
       if Pylon.get 'tagScan'
-        @$el.prop("disabled",true).text 'Scanning'
+        @$el.prop "disabled",true
+          .removeClass 'button-primary'
+          .addClass 'button-success'
+          .text 'Scanning'
       else
-        @$el.prop("disabled",false).text 'Scan Devices'
+        @$el.prop("disabled",false)
+          .removeClass 'button-success'
+          .addClass 'button-primary'
+          .text 'Scan Devices'
       if p=Pylon.get('pageGen') 
         @$('#tagScanReport').html p.scanContents(@model)
       return

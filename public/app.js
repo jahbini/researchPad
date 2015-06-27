@@ -38,9 +38,9 @@ pView = Backbone.View.extend({
   render: function() {
     var p;
     if (Pylon.get('tagScan')) {
-      this.$el.prop("disabled", true).text('Scanning');
+      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
     } else {
-      this.$el.prop("disabled", false).text('Scan Devices');
+      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
     }
     if (p = Pylon.get('pageGen')) {
       this.$('#tagScanReport').html(p.scanContents(this.model));
