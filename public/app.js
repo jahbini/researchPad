@@ -15,6 +15,8 @@ pView = Backbone.View.extend({
   el: '#tagSelect',
   model: Pylon,
   initialize: function() {
+    $('#StatusData').html('Ready to connect');
+    $('#FirmwareData').html('?');
     Pylon.set('tagScan', false);
     return this.listenTo(this.model, 'change respondingDevices', function(devices) {
       this.render();
@@ -43,7 +45,7 @@ pView = Backbone.View.extend({
       this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
     }
     if (p = Pylon.get('pageGen')) {
-      this.$('#tagScanReport').html(p.scanContents(this.model));
+      $('#tagScanReport').html(p.scanContents(this.model));
     }
   }
 });
@@ -85,7 +87,7 @@ Pylon.set('devices', new deviceCollection);
 visualHandler = require('./visual.coffee');
 
 TiHandler = (function() {
-  var errorHandler, evothings, sensorScanner, statusHandler;
+  var evothings, sensorScanner;
 
   evothings = window.evothings;
 
@@ -94,11 +96,21 @@ TiHandler = (function() {
   evothings.tisensortag.ble.addInstanceMethods(sensorScanner);
 
   sensorScanner.statusCallback(function(s) {
-    return Pylon.trigger('sensorScanStatus', s);
+    console.log("Scan status = " + s);
+    if (s === "SENSORTAG_NOT_FOUND") {
+      s = "Scan Complete";
+    }
+    $('#StatusData').css("color", "green").html(s);
+    Pylon.trigger('sensorScanStatus', s);
   });
 
   sensorScanner.errorCallback(function(e) {
-    return Pylon.trigger('sensorScanStatus', e);
+    console.log("Scan Error = " + e);
+    if (e === "SCAN_FAILED") {
+      return;
+    }
+    $('#StatusData').css("color", "red").html(e);
+    Pylon.trigger('sensorScanStatus', e);
   });
 
   Pylon.on("tagScan change", function() {
@@ -118,7 +130,9 @@ TiHandler = (function() {
           signalStrength: rssi,
           genericName: device.name,
           UUID: uuid,
-          rawDevice: device
+          rawDevice: device,
+          buttonText: 'connect',
+          buttonClass: 'button-primary'
         });
         pd.push(d);
         Pylon.trigger('change respondingDevices');
@@ -165,71 +179,10 @@ TiHandler = (function() {
       platformUUID: ''
    */
 
-  function TiHandler(reading1, sessionInfo) {
+  function TiHandler(reading1, sessionInfo1) {
     this.reading = reading1;
-    this.sessionInfo = sessionInfo;
+    this.sessionInfo = sessionInfo1;
   }
-
-  statusHandler = function(status) {
-    var ref, ref1, ref2;
-    $('#StatusData').html(status);
-    if (statusList.SENSORTAG_ONLINE === status || statusList.DEVICE_INFO_AVAILABLE === status) {
-      $('#FirmwareData').html(sensortag.getFirmwareString());
-      this.sessionInfo.set('sensorUUID', typeof sensortag !== "undefined" && sensortag !== null ? (ref = sensortag.device) != null ? ref.address : void 0 : void 0);
-      $('#uuid').html(typeof sensortag !== "undefined" && sensortag !== null ? (ref1 = sensortag.device) != null ? ref1.address : void 0 : void 0).css('color', 'black');
-      if (typeof console !== "undefined" && console !== null) {
-        console.log(typeof sensortag !== "undefined" && sensortag !== null ? (ref2 = sensortag.device) != null ? ref2.address : void 0 : void 0);
-      }
-    }
-    $('#StatusData').html(status);
-  };
-
-  errorHandler = function(error, that) {
-    $('#StatusData').html("Err: " + error);
-    if ('disconnected' === error) {
-      if (!that.globalState) {
-        console.log("ERROR no globalState");
-      } else {
-        that.globalState.set('connected', false);
-      }
-      $('#uuid').html("Must connect to sensor").css('color', "red");
-      setTimeout((function() {
-        sensortag.connectToClosestDevice(20000);
-      }), 1000);
-    }
-  };
-
-  TiHandler.prototype.initializeSensorTag = function(accelerometerHandler, magnetometerHandler, gyroscopeHandler) {
-    var e, failures, repeat;
-    return;
-    repeat = false;
-    failures = 0;
-    console.log("initialize Sensor Communication");
-    try {
-      this.globalState.set('connected', []);
-      sensortag.statusCallback(statusHandler);
-      sensortag.errorCallback((function(_this) {
-        return function(error) {
-          return errorHandler(error, _this);
-        };
-      })(this));
-      console.log("Status and error handlers OK");
-      sensortag.connectToClosestDevice(20000);
-    } catch (_error) {
-      e = _error;
-      failures++;
-      console.log("failed to initialize");
-      console.log(e);
-      repeat = window.setInterval(initializeSensorTag, 500);
-      return;
-    }
-    if (repeat != null) {
-      console.log("sensor came on-line after " + failures + " failures");
-      window.clearInterval(repeat);
-    } else {
-      console.log("sensor came on-line immediately");
-    }
-  };
 
   TiHandler.prototype.createVisualChain = function(device) {
     var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
@@ -273,12 +226,14 @@ TiHandler = (function() {
     };
   };
 
-  TiHandler.prototype.attachDevice = function(uuid, role) {
-    var d, e, handlers, rawDevice;
-    if (role == null) {
-      role = "Primary";
-    }
+  TiHandler.prototype.attachDevice = function(uuid) {
+    var d, e, handlers, other, rawDevice, role;
+    role = "Primary";
     d = Pylon.get('devices').get(uuid);
+    other = Pylon.get('Primary');
+    if (other && other !== d) {
+      role = 'Secondary';
+    }
     d.set('role', role);
     d.set('connected', false);
     Pylon.set(role, d);
@@ -291,20 +246,52 @@ TiHandler = (function() {
         d.set('type', evothings.tisensortag.CC2650_BLUETOOTH_SMART);
       }
       rawDevice = evothings.tisensortag.createInstance(d.get('type'));
+      rawDevice.statusCallback(function(s) {
+        var sessionInfo, statusList;
+        statusList = evothings.tisensortag.ble.status;
+        if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
+          $('#FirmwareData').html(rawDevice.getFirmwareString());
+        }
+        sessionInfo = Pylon.get('sessionInfo');
+        sessionInfo.set(role + 'sensorUUID', d.id);
+        console.log("sensor status report:" + s + ' ' + d.id);
+        if (statusList.SENSORTAG_ONLINE === s) {
+          s = 'on-line';
+          $('#status-' + uuid).html(s);
+          $('#' + role + 'Stat').html(s);
+          d.set('connected', true);
+          $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text('on-line');
+          d.set('buttonClass', 'button-success');
+          d.set('buttonText', 'on-line');
+          if (!d.get('connected')) {
+            Pylon.trigger('connected');
+          }
+        }
+      });
+      rawDevice.errorCallback(function(s) {
+        var err, widget;
+        console.log("sensor ERROR report:" + s, ' ' + d.id);
+        if (!s) {
+          return;
+        }
+        err = s.split(' ');
+        if (evothings.easyble.error.CHARACTERISTIC_NOT_FOUND === err[0]) {
+          return;
+        }
+        if (evothings.easyble.error.DISCONNECTED === s) {
+          $('#connect-' + uuid).removeClass('button-success').addClass('button-warning').text('Reconnect');
+          d.set('buttonClass', 'button-warning');
+          d.set('buttonText', 'Reconnect');
+          s = 'Disconnected';
+        }
+        widget = $('#' + role + 'Stat');
+        widget.html(s);
+        widget = $('#status-' + uuid);
+        widget.html(s);
+      });
       d.set('getMagnetometerValues', rawDevice.getMagnetometerValues);
       d.set('getAccelerometerValues', rawDevice.getAccelerometerValues);
       d.set('getGyroscopeValues', rawDevice.getGyroscopeValues);
-      rawDevice.statusCallback(function(s) {
-        $('#status' + uuid).text(s);
-        if (d.get('connected')) {
-          return;
-        }
-        d.set('connected', true);
-        return Pylon.trigger('connected');
-      });
-      rawDevice.errorCallback(function(e) {
-        return $('#status' + uuid).text(e);
-      });
       rawDevice.accelerometerCallback((function(_this) {
         return function(data) {
           return handlers.accel(data);
@@ -345,7 +332,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"../libs/dbg/console":6,"./glib.coffee":3,"./visual.coffee":5,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clearUserInterface, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 Backbone = require('backbone');
 
@@ -703,12 +690,6 @@ setButtons = function(log) {
   }
 };
 
-clearUserInterface = function() {
-  $('#StatusData').html('Ready to connect');
-  $('#FirmwareData').html('?');
-  exitDebug();
-};
-
 tests.push(new test({
   name: 'T25FW',
   Description: 'T25FW'
@@ -732,7 +713,7 @@ tests.push(new test({
 initAll = function() {
   var rtemp;
   rtemp = void 0;
-  clearUserInterface();
+  exitDebug();
   $('#uuid').html("Must connect to sensor").css('color', "violet");
 };
 
@@ -1262,15 +1243,15 @@ Pages = (function() {
       var device, i, len, results, theUUID;
       thead(function() {
         tr(function() {
-          return th("Bluetooth Scan report");
+          return th("Available Sensors");
         });
         if (sensorTags.length === 0) {
           th("no sensors respond");
         } else {
-          th("name");
-          th("gyro");
-          th("accel");
-          return th("mag");
+          th("Sensor");
+          th("Gyroscope");
+          th("Accelerometer");
+          return th("Magnetometer");
         }
       });
       results = [];
@@ -1285,9 +1266,9 @@ Pages = (function() {
               span("#rssi-" + theUUID, device.get('signalStrength'));
               br();
               span("#status-" + theUUID, '--');
-              return button('.needsclick', {
+              return button('#connect-' + theUUID + '.needsclick.' + device.get('buttonClass'), {
                 onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
-              }, "Connect");
+              }, device.get('buttonText'));
             });
             td(function() {
               return canvas('#gyro-view-' + theUUID, {
@@ -1424,11 +1405,17 @@ Pages = (function() {
   Pages.prototype.topButtons = renderable(function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
+      button('#action.disabled.three.columns', '');
       button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
-      button('#tagSelect.three.columns button-primary', 'Scan Devices');
       return button('#debug.three.columns.disabled', '');
     });
     return div('.row', function() {
+      div('.three.columns', function() {
+        button('#tagSelect.u-full-width.button-primary', 'Scan Devices');
+        return label('#StatusData', {
+          "for": "upload"
+        }, 'No connection');
+      });
       div('.three.columns', function() {
         label('#TestSelect', {
           "for": "TestID"
@@ -1436,18 +1423,17 @@ Pages = (function() {
         return select("#TestID.u-full-width");
       });
       div('.three.columns', function() {
-        button('#action.disabled.u-full-width', '');
-        return label('#TotalReadings', {
-          "for": "action"
+        button('#upload.disabled.u-full-width', 'Upload');
+        return label('#PrimaryStat', {
+          "for": "upload"
         }, 'Items:0');
       });
-      div('.three.columns', function() {
-        button('#upload.disabled.u-full-width', 'Upload');
-        return label('#StatusData', {
-          "for": "upload"
-        }, 'No connection');
+      return div('.three.columns', function() {
+        button('#clear.u-full-width.disabled', 'Reset');
+        return label('#SecondaryStat', {
+          "for": "clear"
+        }, 'Items:0');
       });
-      return button('#clear.three.columns.disabled', 'Reset');
     });
   });
 

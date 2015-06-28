@@ -13,6 +13,8 @@ pView=Backbone.View.extend
   el: '#tagSelect'
   model: Pylon
   initialize: ->
+    $('#StatusData').html 'Ready to connect'
+    $('#FirmwareData').html '?'
     Pylon.set 'tagScan', false
     @listenTo @model, 'change respondingDevices', (devices)->
       @render()
@@ -42,7 +44,7 @@ pView=Backbone.View.extend
           .addClass 'button-primary'
           .text 'Scan Devices'
       if p=Pylon.get('pageGen') 
-        @$('#tagScanReport').html p.scanContents(@model)
+        $('#tagScanReport').html p.scanContents(@model)
       return
   
 Pylon.set 'tagViewer', new pView
@@ -80,9 +82,18 @@ class TiHandler
 
 # status callbacks for the BLE scan for devices mode -- should activate "status" view
   sensorScanner.statusCallback (s)->
+    console.log "Scan status = "+s
+    s = "Scan Complete" if s == "SENSORTAG_NOT_FOUND"
+    $('#StatusData').css("color", "green").html s
     Pylon.trigger 'sensorScanStatus', s
+    return
   sensorScanner.errorCallback (e)->
+    console.log "Scan Error = "+e
+    # Evothings reports SCAN_FAILED when it detects a tag.  Not cool
+    return if e == "SCAN_FAILED" 
+    $('#StatusData').css("color", "red").html e
     Pylon.trigger 'sensorScanStatus', e
+    return
 
   Pylon.on "tagScan change",  =>
     if Pylon.get('tagScan')
@@ -102,6 +113,8 @@ class TiHandler
           genericName: device.name
           UUID: uuid
           rawDevice: device
+          buttonText: 'connect'
+          buttonClass: 'button-primary'
         pd.push d
         Pylon.trigger('change respondingDevices')
         return
@@ -147,68 +160,6 @@ class TiHandler
   ###
 
   constructor: (@reading,@sessionInfo) ->
-
-  statusHandler= (status)->
-    $('#StatusData').html status
-    if statusList.SENSORTAG_ONLINE== status || statusList.DEVICE_INFO_AVAILABLE == status
-      $('#FirmwareData').html sensortag.getFirmwareString()
-      @sessionInfo.set 'sensorUUID', sensortag?.device?.address
-      $('#uuid').html(sensortag?.device?.address).css('color','black')
-      console?.log sensortag?.device?.address
-    $('#StatusData').html status
-    return
-
-  errorHandler=  (error,that)->
-    $('#StatusData').html "Err: " + error
-    if 'disconnected' == error
-      if !that.globalState
-        console.log("ERROR no globalState")
-      else
-        that.globalState.set 'connected', false
-      $('#uuid').html("Must connect to sensor").css('color',"red")
-      # If disconneted attempt to connect again. (but not to same device)
-      setTimeout (->
-        sensortag.connectToClosestDevice(20000)
-        return
-      ), 1000
-    return
-
-  initializeSensorTag: (accelerometerHandler, magnetometerHandler, gyroscopeHandler) ->
-    return
-    # the ones you wish to use.
-    #
-    # First parameter to sensor function is the callback function.
-    # Several of the sensors take a millisecond update interval
-    # as the second parameter.
-    # Gyroscope takes the axes to enable as the third parameter:
-    # 1 to enable X axis only, 2 to enable Y axis only, 3 = X and Y,
-    # 4 = Z only, 5 = X and Z, 6 = Y and Z, 7 = X, Y and Z.
-    #
-    repeat = false
-    failures =0
-    console.log "initialize Sensor Communication"
-    try
-      @globalState.set 'connected', []
-      sensortag.statusCallback(statusHandler)
-      sensortag.errorCallback (error)=>
-#change this to globalState
-        errorHandler error,this
-      console.log "Status and error handlers OK"
-      sensortag.connectToClosestDevice(20000)
-    catch e
-      failures++
-      console.log "failed to initialize"
-      console.log e
-      # try again after 1/2 second
-      repeat = window.setInterval(initializeSensorTag,500)
-      return
-    # when the try finishes without a catch, clear the retry timer
-    if repeat?
-      console.log "sensor came on-line after " + failures + " failures"
-      window.clearInterval repeat
-    else
-      console.log "sensor came on-line immediately"
-    return
 
   createVisualChain: (device) ->
     smoother = new visualHandler
@@ -257,12 +208,15 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-# specific status is NOT used:
+# specific status is used:
 # status handler is set -- d.get('rawDevice').statusCallback (s)-> {something}
 # error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
 # not used in this initial release
-  attachDevice: (uuid, role="Primary") ->
+  attachDevice: (uuid) ->
+    role = "Primary"
     d = Pylon.get('devices').get uuid
+    other = Pylon.get 'Primary' 
+    role = 'Secondary' if other && other != d
     d.set 'role',role
     d.set 'connected', false
     Pylon.set role, d
@@ -280,18 +234,54 @@ class TiHandler
       #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
       rawDevice = evothings.tisensortag.createInstance d.get('type')
       
+
+      # status handler is set -- device.statusCallback (s)-> {something}
+      rawDevice.statusCallback (s)->
+        statusList = evothings.tisensortag.ble.status
+        if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
+          $('#FirmwareData').html rawDevice.getFirmwareString()
+        sessionInfo = Pylon.get 'sessionInfo'
+        sessionInfo.set role+'sensorUUID', d.id
+        console.log "sensor status report:" +s + ' '+d.id
+
+        if statusList.SENSORTAG_ONLINE == s
+          s='on-line'
+          $('#status-'+uuid).html s
+          $('#'+role+'Stat').html s
+          d.set 'connected', true
+          $('#connect-'+uuid)
+            .removeClass('button-warning')
+            .addClass('button-success')
+            .text 'on-line'
+          d.set 'buttonClass', 'button-success'
+          d.set 'buttonText', 'on-line'
+          Pylon.trigger 'connected' unless d.get 'connected'
+        return
+
+      rawDevice.errorCallback (s)->
+        console.log "sensor ERROR report:" +s, ' '+d.id
+        # evothings status reporting errors often report null, for no reason?
+        return if !s
+        err=s.split(' ')
+        if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
+          return
+        if evothings.easyble.error.DISCONNECTED == s
+          $('#connect-'+uuid).removeClass('button-success').addClass('button-warning').text 'Reconnect'
+          d.set 'buttonClass', 'button-warning'
+          d.set 'buttonText', 'Reconnect'
+          s='Disconnected'
+        widget = $('#'+role+'Stat')
+        widget.html s
+        widget = $('#status-'+uuid)
+        widget.html s
+        return
+        
+    
       # bring the evothings data converters up to this device
       d.set 'getMagnetometerValues', rawDevice.getMagnetometerValues
       d.set 'getAccelerometerValues', rawDevice.getAccelerometerValues
       d.set 'getGyroscopeValues', rawDevice.getGyroscopeValues
 
-      rawDevice.statusCallback (s) ->
-        $('#status'+uuid).text s
-        return if d.get 'connected'
-        d.set 'connected', true
-        Pylon.trigger 'connected'
-      rawDevice.errorCallback (e) ->
-        $('#status'+uuid).text e
       # and plug our data handlers into the evothings scheme
       rawDevice.accelerometerCallback (data)=> 
           handlers.accel data

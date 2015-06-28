@@ -267,14 +267,6 @@ setButtons = (log) ->
       console.log value.toJSON()
   return
 
-clearUserInterface = ->
-  # Clear current values.
-  $('#StatusData').html 'Ready to connect'
-  $('#FirmwareData').html '?'
-  # start with the logging info suppressed
-  exitDebug()
-  return
-
 tests.push new test
   name: 'T25FW'
   Description: 'T25FW'
@@ -295,7 +287,8 @@ tests.push new test
 
 initAll = ->
   rtemp = undefined
-  clearUserInterface()
+  # start with the logging info suppressed
+  exitDebug()
   $('#uuid').html("Must connect to sensor").css('color',"violet")
   return
 

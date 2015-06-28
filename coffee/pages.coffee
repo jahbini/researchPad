@@ -147,15 +147,15 @@ class Pages
       table ".u-full-width", ->
         thead ->
           tr ->
-            th "Bluetooth Scan report"
+            th "Available Sensors"
           if sensorTags.length == 0
             th "no sensors respond"
             return
           else
-            th "name"
-            th "gyro"
-            th "accel"
-            th "mag"
+            th "Sensor"
+            th "Gyroscope"
+            th "Accelerometer"
+            th "Magnetometer"
         for device in sensorTags
           theUUID = device.get 'UUID'
           tbody ->
@@ -166,7 +166,9 @@ class Pages
                 span "#rssi-"+theUUID, device.get 'signalStrength'
                 br()
                 span "#status-"+theUUID, '--'
-                button '.needsclick', onClick: "Pylon.trigger('enableTag', '" + theUUID + "')","Connect"
+                button '#connect-'+theUUID+'.needsclick.'+device.get('buttonClass')
+                  ,onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
+                  ,device.get 'buttonText'
               td ->
                 canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
               td ->
@@ -237,20 +239,22 @@ class Pages
   topButtons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
+        button '#action.disabled.three.columns', ''
         button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
-        button '#tagSelect.three.columns button-primary', 'Scan Devices'
         button '#debug.three.columns.disabled', ''
       div '.row', ->
+        div '.three.columns', ->
+          button '#tagSelect.u-full-width.button-primary', 'Scan Devices'
+          label '#StatusData',for: "upload", 'No connection'
         div '.three.columns', ->
           label '#TestSelect', for: "TestID", 'Which Test?'
           select "#TestID.u-full-width"
         div '.three.columns', ->
-          button '#action.disabled.u-full-width', ''
-          label '#TotalReadings', for: "action", 'Items:0'
-        div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
-          label '#StatusData',for: "upload", 'No connection'
-        button '#clear.three.columns.disabled', 'Reset'
+          label '#PrimaryStat', for: "upload", 'Items:0'
+        div '.three.columns', ->
+          button '#clear.u-full-width.disabled', 'Reset'
+          label '#SecondaryStat', for: "clear", 'Items:0'
 
   tagSelector: renderable ()=>
     
