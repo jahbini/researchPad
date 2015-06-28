@@ -219,10 +219,6 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-# specific status is used:
-# status handler is set -- d.get('rawDevice').statusCallback (s)-> {something}
-# error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
-# not used in this initial release
   attachDevice: (uuid) ->
     role = "First"
     d = Pylon.get('devices').get uuid
@@ -230,9 +226,10 @@ class TiHandler
     role = 'Second' if other && other != d
     d.set 'role',role
     d.set 'connected', false
-    Pylon.set role, d
   #throw away any previous reading
     d.set 'readings', new readingCollection
+    # triggers change:First or change:Second 
+    Pylon.set role, d
       
     handlers= @createVisualChain d
     try
@@ -246,7 +243,7 @@ class TiHandler
       rawDevice = evothings.tisensortag.createInstance d.get('type')
       
 
-      # status handler is set -- device.statusCallback (s)-> {something}
+      # status handler is set -- d.get('rawDevice').statusCallback (s)-> {something}
       rawDevice.statusCallback (s)->
         statusList = evothings.tisensortag.ble.status
         if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
@@ -256,10 +253,10 @@ class TiHandler
         console.log "sensor status report:" +s + ' '+d.id
 
         if statusList.SENSORTAG_ONLINE == s
+          Pylon.trigger 'connected' unless d.get 'connected'
+          d.set 'connected', true
           s='on-line'
           $('#status-'+uuid).html s
-          $('#'+role+'Stat').html s
-          d.set 'connected', true
           $('#'+role+'Nick').text d.get("nickname")
           $('#'+role+'uuid').text d.id
           $('#connect-'+uuid)
@@ -268,9 +265,9 @@ class TiHandler
             .text 'on-line'
           d.set 'buttonClass', 'button-success'
           d.set 'buttonText', 'on-line'
-          Pylon.trigger 'connected' unless d.get 'connected'
         return
 
+      # error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
       rawDevice.errorCallback (s)->
         console.log "sensor ERROR report:" +s, ' '+d.id
         # evothings status reporting errors often report null, for no reason?
@@ -283,8 +280,6 @@ class TiHandler
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'Reconnect'
           s='Disconnected'
-        widget = $('#'+role+'Stat')
-        widget.html s
         widget = $('#status-'+uuid)
         widget.html s
         return

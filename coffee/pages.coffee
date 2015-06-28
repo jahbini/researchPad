@@ -122,7 +122,7 @@ class Pages
           img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
-        h5 '.five.columns', 'Movement data capture'
+        img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
       buttons()
       div '.row',->
         div '.two.columns',"First Tag"
@@ -320,14 +320,20 @@ class Pages
         return this
     @testView = new testViewTemplate
 
-
     statusViewTemplate = Backbone.View.extend
-      collection: Pylon.get 'readings'
       initialize: ->
         @listenTo @collection, 'change', @render
       render: ->
-        $("#TotalReadings").html "Items: "+@collection.length()
-    @statusView = new statusViewTemplate
+        @$el.html "Items: "+@collection.length()
+
+    Pylon.on 'change:First', ()=>
+      dev = Pylon.get 'First'
+      readings = dev.get 'readings'
+      @FirstView = new statusViewTemplate el: "#FirstStat", collection: readings
+    Pylon.on 'change:Second', ()=>
+      dev = Pylon.get 'Second'
+      readings = dev.get 'readings'
+      @SecondView = new statusViewTemplate el: "#SecondStat", collection: readings
 
     @wireAdmin()
     return

@@ -248,8 +248,8 @@ TiHandler = (function() {
     }
     d.set('role', role);
     d.set('connected', false);
-    Pylon.set(role, d);
     d.set('readings', new readingCollection);
+    Pylon.set(role, d);
     handlers = this.createVisualChain(d);
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
@@ -268,18 +268,17 @@ TiHandler = (function() {
         sessionInfo.set(role + 'sensorUUID', d.id);
         console.log("sensor status report:" + s + ' ' + d.id);
         if (statusList.SENSORTAG_ONLINE === s) {
+          if (!d.get('connected')) {
+            Pylon.trigger('connected');
+          }
+          d.set('connected', true);
           s = 'on-line';
           $('#status-' + uuid).html(s);
-          $('#' + role + 'Stat').html(s);
-          d.set('connected', true);
           $('#' + role + 'Nick').text(d.get("nickname"));
           $('#' + role + 'uuid').text(d.id);
           $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text('on-line');
           d.set('buttonClass', 'button-success');
           d.set('buttonText', 'on-line');
-          if (!d.get('connected')) {
-            Pylon.trigger('connected');
-          }
         }
       });
       rawDevice.errorCallback(function(s) {
@@ -298,8 +297,6 @@ TiHandler = (function() {
           d.set('buttonText', 'Reconnect');
           s = 'Disconnected';
         }
-        widget = $('#' + role + 'Stat');
-        widget.html(s);
         widget = $('#status-' + uuid);
         widget.html(s);
       });
@@ -847,7 +844,7 @@ enterUpload = function() {
   });
   brainDump = new hopper;
   brainDump.set('readings', devicesData);
-  brainDump.set('sensorUUID', uuid);
+  brainDump.set('sensorUUID', "0-0-0");
   brainDump.set('patientID', sessionInfo.get('patient'));
   brainDump.set('user', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
@@ -1221,26 +1218,29 @@ Pages = (function() {
         div('#dud.one.columns', function() {
           return raw('&nbsp;');
         });
-        return h5('.five.columns', 'Movement data capture');
+        return img(".five.columns", {
+          src: './ui/images/movdatcap.png',
+          width: '100%'
+        });
       });
       buttons();
       div('.row', function() {
         div('.two.columns', "First Tag");
-        div('.two.columns', function() {
+        div('.three.columns', function() {
           return span('#FirstNick', '?');
         });
         return div('#Firstuuid.seven.columns', ' ');
       });
       div('.row', function() {
         div('.two.columns', "Second Tag");
-        div('.two.columns', function() {
+        div('.three.columns', function() {
           return span('#SecondNick', '?');
         });
         return div('#Seconduuid.seven.columns', ' ');
       });
       div('.row', function() {
-        div('.four.columns', "Platform uuid");
-        return div('#platformUUID.five.columns', function() {
+        div('.five.columns', "Platform uuid");
+        return div('#platformUUID.seven.columns', function() {
           return raw('&nbsp;');
         });
       });
@@ -1563,15 +1563,35 @@ Pages = (function() {
     });
     this.testView = new testViewTemplate;
     statusViewTemplate = Backbone.View.extend({
-      collection: Pylon.get('readings'),
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
       },
       render: function() {
-        return $("#TotalReadings").html("Items: " + this.collection.length());
+        return this.$el.html("Items: " + this.collection.length());
       }
     });
-    this.statusView = new statusViewTemplate;
+    Pylon.on('change:First', (function(_this) {
+      return function() {
+        var dev, readings;
+        dev = Pylon.get('First');
+        readings = dev.get('readings');
+        return _this.FirstView = new statusViewTemplate({
+          el: "#FirstStat",
+          collection: readings
+        });
+      };
+    })(this));
+    Pylon.on('change:Second', (function(_this) {
+      return function() {
+        var dev, readings;
+        dev = Pylon.get('Second');
+        readings = dev.get('readings');
+        return _this.SecondView = new statusViewTemplate({
+          el: "#SecondStat",
+          collection: readings
+        });
+      };
+    })(this));
     this.wireAdmin();
   };
 

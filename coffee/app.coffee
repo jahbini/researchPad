@@ -385,7 +385,7 @@ enterUpload = ->
   
   brainDump = new hopper
   brainDump.set('readings',devicesData )
-  brainDump.set('sensorUUID',uuid )
+  brainDump.set('sensorUUID',"0-0-0")
   brainDump.set('patientID',sessionInfo.get('patient') )
   brainDump.set('user',sessionInfo.get('clinician') )
   brainDump.set('password',sessionInfo.get('password') )
