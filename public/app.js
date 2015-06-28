@@ -116,13 +116,25 @@ TiHandler = (function() {
   Pylon.on("tagScan change", function() {
     if (Pylon.get('tagScan')) {
       return sensorScanner.startScanningForDevices(function(device) {
-        var d, pd, rssi, uuid;
+        var color, d, pd, rssi, sig, uuid;
         pd = Pylon.get('devices');
         uuid = device.address;
         rssi = device.rssi;
         if (d = pd.get(uuid)) {
           d.set('SignalStrength', rssi);
-          $('#rssi-' + uuid).html(rssi);
+          sig = rssi;
+          if (sig < -90) {
+            color = "#800000";
+          } else if (sig < -75) {
+            color = "#533659";
+          } else if (sig < -60) {
+            color = "#2d63a6";
+          } else if (sig < -50) {
+            color = "#2073Bf";
+          } else if (sig < -40) {
+            color = "#0099ff";
+          }
+          $('#rssi-' + uuid).css("color", color).html(rssi);
           return;
         }
         console.log("got new device");
@@ -143,7 +155,7 @@ TiHandler = (function() {
   });
 
   Pylon.on("enableTag", function(uuid) {
-    return Pylon.get('TiHandler').attachDevice(uuid, 'primary');
+    return Pylon.get('TiHandler').attachDevice(uuid, 'First');
   });
 
 
@@ -228,11 +240,11 @@ TiHandler = (function() {
 
   TiHandler.prototype.attachDevice = function(uuid) {
     var d, e, handlers, other, rawDevice, role;
-    role = "Primary";
+    role = "First";
     d = Pylon.get('devices').get(uuid);
-    other = Pylon.get('Primary');
+    other = Pylon.get('First');
     if (other && other !== d) {
-      role = 'Secondary';
+      role = 'Second';
     }
     d.set('role', role);
     d.set('connected', false);
@@ -250,7 +262,7 @@ TiHandler = (function() {
         var sessionInfo, statusList;
         statusList = evothings.tisensortag.ble.status;
         if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
-          $('#FirmwareData').html(rawDevice.getFirmwareString());
+          $('#version-' + uuid).html('Ver. ' + rawDevice.getFirmwareString());
         }
         sessionInfo = Pylon.get('sessionInfo');
         sessionInfo.set(role + 'sensorUUID', d.id);
@@ -260,6 +272,8 @@ TiHandler = (function() {
           $('#status-' + uuid).html(s);
           $('#' + role + 'Stat').html(s);
           d.set('connected', true);
+          $('#' + role + 'Nick').text(d.get("nickname"));
+          $('#' + role + 'uuid').text(d.id);
           $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text('on-line');
           d.set('buttonClass', 'button-success');
           d.set('buttonText', 'on-line');
@@ -1211,12 +1225,18 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.two.columns', "Sensor --");
+        div('.two.columns', "First Tag");
         div('.two.columns', function() {
-          text('Version:');
-          return span('#FirmwareData', '?');
+          return span('#FirstNick', '?');
         });
-        return div('#uuid.five.columns', ' ');
+        return div('#Firstuuid.seven.columns', ' ');
+      });
+      div('.row', function() {
+        div('.two.columns', "Second Tag");
+        div('.two.columns', function() {
+          return span('#SecondNick', '?');
+        });
+        return div('#Seconduuid.seven.columns', ' ');
       });
       div('.row', function() {
         div('.four.columns', "Platform uuid");
@@ -1261,14 +1281,30 @@ Pages = (function() {
         results.push(tbody(function() {
           return tr(function() {
             td(function() {
-              text(device.get('nickname'));
-              br();
-              span("#rssi-" + theUUID, device.get('signalStrength'));
-              br();
-              span("#status-" + theUUID, '--');
-              return button('#connect-' + theUUID + '.needsclick.' + device.get('buttonClass'), {
+              var color, modifier, sig;
+              button('#connect-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
                 onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
               }, device.get('buttonText'));
+              text(device.get('nickname'));
+              br();
+              span("#status-" + theUUID, '--');
+              br();
+              sig = device.get('signalStrength');
+              if (sig < -90) {
+                color = "#800000";
+              } else if (sig < -75) {
+                color = "#533659";
+              } else if (sig < -60) {
+                color = "#2d63a6";
+              } else if (sig < -50) {
+                color = "#2073Bf";
+              } else if (sig < -40) {
+                color = "#0099ff";
+              }
+              modifier = ".fa.fa-signal.fa-3x";
+              return span("#rssi-" + theUUID + modifier, {
+                style: 'color:' + color
+              }, sig);
             });
             td(function() {
               return canvas('#gyro-view-' + theUUID, {
@@ -1424,13 +1460,13 @@ Pages = (function() {
       });
       div('.three.columns', function() {
         button('#upload.disabled.u-full-width', 'Upload');
-        return label('#PrimaryStat', {
+        return label('#FirstStat', {
           "for": "upload"
         }, 'Items:0');
       });
       return div('.three.columns', function() {
         button('#clear.u-full-width.disabled', 'Reset');
-        return label('#SecondaryStat', {
+        return label('#SecondStat', {
           "for": "clear"
         }, 'Items:0');
       });

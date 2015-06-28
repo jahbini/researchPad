@@ -125,14 +125,18 @@ class Pages
         h5 '.five.columns', 'Movement data capture'
       buttons()
       div '.row',->
-        div '.two.columns',"Sensor --"
-        div '.two.columns', ->
-          text 'Version:'
-          span '#FirmwareData', '?'
-        div '#uuid.five.columns' , ' '
+        div '.two.columns',"First Tag"
+        div '.three.columns', ->
+          span '#FirstNick', '?'
+        div '#Firstuuid.seven.columns' , ' '
+      div '.row',->
+        div '.two.columns',"Second Tag"
+        div '.three.columns', ->
+          span '#SecondNick', '?'
+        div '#Seconduuid.seven.columns' , ' '
       div '.row', ->
-        div '.four.columns',"Platform uuid"
-        div '#platformUUID.five.columns', ->
+        div '.five.columns',"Platform uuid"
+        div '#platformUUID.seven.columns', ->
           raw '&nbsp;'
       div "#content1", ->
         contents1()
@@ -161,14 +165,26 @@ class Pages
           tbody ->
             tr ->
               td ->
-                text (device.get 'nickname')
-                br()
-                span "#rssi-"+theUUID, device.get 'signalStrength'
-                br()
-                span "#status-"+theUUID, '--'
-                button '#connect-'+theUUID+'.needsclick.'+device.get('buttonClass')
+                button '#connect-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
                   ,onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
                   ,device.get 'buttonText'
+                text (device.get 'nickname')
+                br()
+                span "#status-"+theUUID, '--'
+                br()
+                sig = device.get 'signalStrength'
+                if sig < -90
+                  color = "#800000"
+                else if sig < -75
+                  color = "#533659"
+                else if sig < -60
+                  color = "#2d63a6"
+                else if sig < -50
+                  color = "#2073Bf"
+                else if sig < -40
+                  color = "#0099ff"
+                modifier = ".fa.fa-signal.fa-3x"
+                span "#rssi-"+theUUID+modifier, style: 'color:'+color, sig
               td ->
                 canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
               td ->
@@ -251,10 +267,10 @@ class Pages
           select "#TestID.u-full-width"
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
-          label '#PrimaryStat', for: "upload", 'Items:0'
+          label '#FirstStat', for: "upload", 'Items:0'
         div '.three.columns', ->
           button '#clear.u-full-width.disabled', 'Reset'
-          label '#SecondaryStat', for: "clear", 'Items:0'
+          label '#SecondStat', for: "clear", 'Items:0'
 
   tagSelector: renderable ()=>
     

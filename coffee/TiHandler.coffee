@@ -9,6 +9,7 @@ require('../libs/dbg/console')
 $ = require('jquery')
 glib = require('./glib.coffee').glib
 
+# ## Scan request viewer
 pView=Backbone.View.extend
   el: '#tagSelect'
   model: Pylon
@@ -46,21 +47,20 @@ pView=Backbone.View.extend
       if p=Pylon.get('pageGen') 
         $('#tagScanReport').html p.scanContents(@model)
       return
-  
 Pylon.set 'tagViewer', new pView
 
-
+# ## Sensor Data
+# ### a single sensor reading
 reading = Backbone.Model.extend
   defaults:
     sensor: 'gyro'
   initialize: ->
     d = new Date
     @set 'time', d.getTime()
-
+# ### all sensor readings
 readingCollection = Backbone.Collection.extend
   model: reading
   initialize: ->
-
 
 deviceModel = Backbone.Model.extend
   idAttribute: "UUID"
@@ -104,7 +104,18 @@ class TiHandler
         if d=pd.get(uuid)
           # just update the signal strength and do not trigger any changes
           d.set 'SignalStrength', rssi
-          $('#rssi-'+uuid).html rssi
+          sig = rssi
+          if sig < -90
+            color = "#800000"
+          else if sig < -75
+            color = "#533659"
+          else if sig < -60
+            color = "#2d63a6"
+          else if sig < -50
+            color = "#2073Bf"
+          else if sig < -40
+            color = "#0099ff"
+          $('#rssi-'+uuid).css("color",color).html rssi
           return
 
         console.log "got new device"
@@ -124,7 +135,7 @@ class TiHandler
 
   Pylon.on "enableTag", (uuid)->
     Pylon.get 'TiHandler'
-      .attachDevice uuid, 'primary'
+      .attachDevice uuid, 'First'
 
   ###
   Section: Data Structures
@@ -213,10 +224,10 @@ class TiHandler
 # error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
 # not used in this initial release
   attachDevice: (uuid) ->
-    role = "Primary"
+    role = "First"
     d = Pylon.get('devices').get uuid
-    other = Pylon.get 'Primary' 
-    role = 'Secondary' if other && other != d
+    other = Pylon.get 'First' 
+    role = 'Second' if other && other != d
     d.set 'role',role
     d.set 'connected', false
     Pylon.set role, d
@@ -239,7 +250,7 @@ class TiHandler
       rawDevice.statusCallback (s)->
         statusList = evothings.tisensortag.ble.status
         if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
-          $('#FirmwareData').html rawDevice.getFirmwareString()
+          $('#version-'+uuid).html 'Ver. '+rawDevice.getFirmwareString()
         sessionInfo = Pylon.get 'sessionInfo'
         sessionInfo.set role+'sensorUUID', d.id
         console.log "sensor status report:" +s + ' '+d.id
@@ -249,6 +260,8 @@ class TiHandler
           $('#status-'+uuid).html s
           $('#'+role+'Stat').html s
           d.set 'connected', true
+          $('#'+role+'Nick').text d.get("nickname")
+          $('#'+role+'uuid').text d.id
           $('#connect-'+uuid)
             .removeClass('button-warning')
             .addClass('button-success')
