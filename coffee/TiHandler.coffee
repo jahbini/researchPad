@@ -3,7 +3,7 @@
 # ## device interface handler for clinical recording of SensorTag data
 # via TI SensorTag object.
 
-Backbone = require ('backbone')
+Backbone = require('backbone')
 _ = require('underscore')
 require('../libs/dbg/console')
 $ = require('jquery')
@@ -220,6 +220,8 @@ class TiHandler
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
   attachDevice: (uuid) ->
+    $('#connect-'+uuid).text 'connecting'
+    console.log "attach "+uuid
     role = "First"
     d = Pylon.get('devices').get uuid
     other = Pylon.get 'First' 
@@ -227,10 +229,12 @@ class TiHandler
     d.set 'role',role
     d.set 'connected', false
   #throw away any previous reading
-    d.set 'readings', new readingCollection
-    x = d.get 'readings'
-    console.log role+" readings created"
-    console.log x
+    if d.has 'readings'
+      #reset twice to clean up storage
+      d.get('readings').reset [], silent: true
+      d.get('readings').reset []
+    else
+      d.set 'readings', new readingCollection
     # triggers change:First or change:Second 
     Pylon.set role, d
       

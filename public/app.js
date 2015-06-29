@@ -239,7 +239,9 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(uuid) {
-    var d, e, handlers, other, rawDevice, role, sensorInstance, x;
+    var d, e, handlers, other, rawDevice, role, sensorInstance;
+    $('#connect-' + uuid).text('connecting');
+    console.log("attach " + uuid);
     role = "First";
     d = Pylon.get('devices').get(uuid);
     other = Pylon.get('First');
@@ -248,10 +250,14 @@ TiHandler = (function() {
     }
     d.set('role', role);
     d.set('connected', false);
-    d.set('readings', new readingCollection);
-    x = d.get('readings');
-    console.log(role + " readings created");
-    console.log(x);
+    if (d.has('readings')) {
+      d.get('readings').reset([], {
+        silent: true
+      });
+      d.get('readings').reset([]);
+    } else {
+      d.set('readings', new readingCollection);
+    }
     Pylon.set(role, d);
     handlers = this.createVisualChain(d);
     try {
@@ -843,6 +849,9 @@ enterUpload = function() {
       nickname: body.nickname,
       readings: r.toJSON()
     });
+    r.reset();
+    r.reset();
+    r.trigger('change');
   }
   if (noData) {
     return false;
@@ -1576,19 +1585,23 @@ Pages = (function() {
         var dev, readings, statusFirstViewTemplate;
         dev = Pylon.get('First');
         readings = dev.get('readings');
+        console.log("activating First");
+        console.log(readings);
         statusFirstViewTemplate = Backbone.View.extend({
           collection: readings,
           el: "#FirstStat",
           initialize: function() {
             console.log("First Item readings (collection)");
             console.log(this.collection);
+            debugger;
             return this.listenTo(this.collection, 'change', this.render);
           },
           render: function() {
-            return this.$el.html("Items: " + this.collection.length());
+            debugger;
+            return this.$el.html("Items: " + this.collection.length);
           }
         });
-        return _this.FirstView = new statusViewTemplate;
+        Pylon.set("FirstView", new statusFirstViewTemplate);
       };
     })(this));
     Pylon.on('change:Second', (function(_this) {
@@ -1599,19 +1612,16 @@ Pages = (function() {
         console.log("Second Item readings (collection)");
         console.log(_this.collection);
         statusSecondViewTemplate = Backbone.View.extend({
-          el: "SecondStat",
+          el: "#SecondStat",
           collection: readings,
           initialize: function() {
             return this.listenTo(this.collection, 'change', this.render);
           },
           render: function() {
-            return this.$el.html("Items: " + this.collection.length());
+            return this.$el.html("Items: " + this.collection.length);
           }
         });
-        return _this.SecondView = new statusViewTemplate({
-          el: "#SecondStat",
-          collection: readings
-        });
+        Pylon.set("SecondView", new statusSecondViewTemplate);
       };
     })(this));
     this.wireAdmin();
@@ -1784,6 +1794,7 @@ visual = (function() {
               sensor: o.sensor,
               raw: _.toArray(data)
             });
+            o.readings.trigger('change');
           }
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);

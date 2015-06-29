@@ -120,6 +120,7 @@ class visual
         p = dataCondition.cookedValue
         if Pylon.get('globalState').get 'recording'
           o.readings.push sensor: o.sensor, raw: _.toArray(data)
+          o.readings.trigger 'change'
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
       catch error

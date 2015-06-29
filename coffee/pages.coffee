@@ -323,16 +323,21 @@ class Pages
     Pylon.on 'change:First', ()=>
       dev = Pylon.get 'First'
       readings = dev.get 'readings'
+      console.log "activating First"
+      console.log readings
       statusFirstViewTemplate = Backbone.View.extend
         collection: readings
         el: "#FirstStat"
         initialize: ->
           console.log "First Item readings (collection)"
           console.log @collection
+          debugger
           @listenTo @collection, 'change', @render
         render: ->
-          @$el.html "Items: "+@collection.length()
-      @FirstView = new statusViewTemplate
+          debugger
+          @$el.html "Items: "+@collection.length
+      Pylon.set("FirstView", new statusFirstViewTemplate)
+      return
 
     Pylon.on 'change:Second', ()=>
       dev = Pylon.get 'Second'
@@ -340,14 +345,14 @@ class Pages
       console.log "Second Item readings (collection)"
       console.log @collection
       statusSecondViewTemplate = Backbone.View.extend
-        el: "SecondStat"
+        el: "#SecondStat"
         collection: readings
         initialize: ->
           @listenTo @collection, 'change', @render
         render: ->
-          @$el.html "Items: "+@collection.length()
-      @SecondView = new statusViewTemplate el: "#SecondStat", collection: readings
-
+          @$el.html "Items: "+@collection.length
+      Pylon.set("SecondView", new statusSecondViewTemplate)
+      return
     @wireAdmin()
     return
 

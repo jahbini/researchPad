@@ -376,6 +376,10 @@ enterUpload = ->
       type: body.type
       nickname: body.nickname
       readings: r.toJSON()
+    #and clear out the collection of readings
+    r.reset()
+    r.reset()
+    r.trigger 'change'
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
   return false if noData  
 
