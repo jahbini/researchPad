@@ -320,19 +320,32 @@ class Pages
         return this
     @testView = new testViewTemplate
 
-    statusViewTemplate = Backbone.View.extend
-      initialize: ->
-        @listenTo @collection, 'change', @render
-      render: ->
-        @$el.html "Items: "+@collection.length()
-
     Pylon.on 'change:First', ()=>
       dev = Pylon.get 'First'
       readings = dev.get 'readings'
-      @FirstView = new statusViewTemplate el: "#FirstStat", collection: readings
+      statusFirstViewTemplate = Backbone.View.extend
+        collection: readings
+        el: "#FirstStat"
+        initialize: ->
+          console.log "First Item readings (collection)"
+          console.log @collection
+          @listenTo @collection, 'change', @render
+        render: ->
+          @$el.html "Items: "+@collection.length()
+      @FirstView = new statusViewTemplate
+
     Pylon.on 'change:Second', ()=>
       dev = Pylon.get 'Second'
       readings = dev.get 'readings'
+      console.log "Second Item readings (collection)"
+      console.log @collection
+      statusSecondViewTemplate = Backbone.View.extend
+        el: "SecondStat"
+        collection: readings
+        initialize: ->
+          @listenTo @collection, 'change', @render
+        render: ->
+          @$el.html "Items: "+@collection.length()
       @SecondView = new statusViewTemplate el: "#SecondStat", collection: readings
 
     @wireAdmin()

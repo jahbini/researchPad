@@ -239,7 +239,7 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(uuid) {
-    var d, e, handlers, other, rawDevice, role;
+    var d, e, handlers, other, rawDevice, role, sensorInstance, x;
     role = "First";
     d = Pylon.get('devices').get(uuid);
     other = Pylon.get('First');
@@ -249,6 +249,9 @@ TiHandler = (function() {
     d.set('role', role);
     d.set('connected', false);
     d.set('readings', new readingCollection);
+    x = d.get('readings');
+    console.log(role + " readings created");
+    console.log(x);
     Pylon.set(role, d);
     handlers = this.createVisualChain(d);
     try {
@@ -257,12 +260,17 @@ TiHandler = (function() {
       } else {
         d.set('type', evothings.tisensortag.CC2650_BLUETOOTH_SMART);
       }
-      rawDevice = evothings.tisensortag.createInstance(d.get('type'));
-      rawDevice.statusCallback(function(s) {
+      sensorInstance = evothings.tisensortag.createInstance(d.get('type'));
+      rawDevice = d.get('rawDevice');
+      rawDevice.sensorInstance = sensorInstance;
+      d.set({
+        sensorInstance: sensorInstance
+      });
+      sensorInstance.statusCallback(function(s) {
         var sessionInfo, statusList;
         statusList = evothings.tisensortag.ble.status;
         if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
-          $('#version-' + uuid).html('Ver. ' + rawDevice.getFirmwareString());
+          $('#version-' + uuid).html('Ver. ' + sensorInstance.getFirmwareString());
         }
         sessionInfo = Pylon.get('sessionInfo');
         sessionInfo.set(role + 'sensorUUID', d.id);
@@ -281,7 +289,7 @@ TiHandler = (function() {
           d.set('buttonText', 'on-line');
         }
       });
-      rawDevice.errorCallback(function(s) {
+      sensorInstance.errorCallback(function(s) {
         var err, widget;
         console.log("sensor ERROR report:" + s, ' ' + d.id);
         if (!s) {
@@ -300,25 +308,25 @@ TiHandler = (function() {
         widget = $('#status-' + uuid);
         widget.html(s);
       });
-      d.set('getMagnetometerValues', rawDevice.getMagnetometerValues);
-      d.set('getAccelerometerValues', rawDevice.getAccelerometerValues);
-      d.set('getGyroscopeValues', rawDevice.getGyroscopeValues);
-      rawDevice.accelerometerCallback((function(_this) {
+      d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
+      d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
+      d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
+      sensorInstance.accelerometerCallback((function(_this) {
         return function(data) {
           return handlers.accel(data);
         };
       })(this), 100);
-      rawDevice.magnetometerCallback((function(_this) {
+      sensorInstance.magnetometerCallback((function(_this) {
         return function(data) {
           return handlers.mag(data);
         };
       })(this), 100);
-      rawDevice.gyroscopeCallback((function(_this) {
+      sensorInstance.gyroscopeCallback((function(_this) {
         return function(data) {
           return handlers.gyro(data);
         };
       })(this), 100, 7);
-      rawDevice.connectToDevice(d.get('rawDevice'));
+      sensorInstance.connectToDevice(d.get('rawDevice'));
     } catch (_error) {
       e = _error;
       alert('Error in attachSensor -- check LOG');
@@ -817,6 +825,7 @@ enterUpload = function() {
   });
   devicesData = new deviceDataCollection;
   noData = true;
+  debugger;
   ref = Pylon.get('devices').toJSON();
   for (i in ref) {
     body = ref[i];
@@ -1514,7 +1523,7 @@ Pages = (function() {
   };
 
   Pages.prototype.renderPage = function(adminDone) {
-    var bodyHtml, statusViewTemplate, testViewTemplate;
+    var bodyHtml, testViewTemplate;
     this.adminDone = adminDone;
     bodyHtml = this.theBody(this.topButtons, this.adminContents);
     $('body').html(bodyHtml);
@@ -1562,30 +1571,43 @@ Pages = (function() {
       }
     });
     this.testView = new testViewTemplate;
-    statusViewTemplate = Backbone.View.extend({
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      render: function() {
-        return this.$el.html("Items: " + this.collection.length());
-      }
-    });
     Pylon.on('change:First', (function(_this) {
       return function() {
-        var dev, readings;
+        var dev, readings, statusFirstViewTemplate;
         dev = Pylon.get('First');
         readings = dev.get('readings');
-        return _this.FirstView = new statusViewTemplate({
+        statusFirstViewTemplate = Backbone.View.extend({
+          collection: readings,
           el: "#FirstStat",
-          collection: readings
+          initialize: function() {
+            console.log("First Item readings (collection)");
+            console.log(this.collection);
+            return this.listenTo(this.collection, 'change', this.render);
+          },
+          render: function() {
+            return this.$el.html("Items: " + this.collection.length());
+          }
         });
+        return _this.FirstView = new statusViewTemplate;
       };
     })(this));
     Pylon.on('change:Second', (function(_this) {
       return function() {
-        var dev, readings;
+        var dev, readings, statusSecondViewTemplate;
         dev = Pylon.get('Second');
         readings = dev.get('readings');
+        console.log("Second Item readings (collection)");
+        console.log(_this.collection);
+        statusSecondViewTemplate = Backbone.View.extend({
+          el: "SecondStat",
+          collection: readings,
+          initialize: function() {
+            return this.listenTo(this.collection, 'change', this.render);
+          },
+          render: function() {
+            return this.$el.html("Items: " + this.collection.length());
+          }
+        });
         return _this.SecondView = new statusViewTemplate({
           el: "#SecondStat",
           collection: readings

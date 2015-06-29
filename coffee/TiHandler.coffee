@@ -228,6 +228,9 @@ class TiHandler
     d.set 'connected', false
   #throw away any previous reading
     d.set 'readings', new readingCollection
+    x = d.get 'readings'
+    console.log role+" readings created"
+    console.log x
     # triggers change:First or change:Second 
     Pylon.set role, d
       
@@ -237,17 +240,16 @@ class TiHandler
         d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
       else
         d.set 'type', evothings.tisensortag.CC2650_BLUETOOTH_SMART
-      #device.type is set to one of these two constants by the scanner  
-      #  evothings.tisensortag.CC2650_BLUETOOTH_SMART = 'CC2650 Bluetooth Smart'
-      #  evothings.tisensortag.CC2541_BLUETOOTH_SMART = 'CC2541 Bluetooth Smart'
-      rawDevice = evothings.tisensortag.createInstance d.get('type')
-      
+      sensorInstance = evothings.tisensortag.createInstance d.get('type')
+      rawDevice = d.get 'rawDevice'
+      rawDevice.sensorInstance= sensorInstance
+      d.set sensorInstance: sensorInstance
 
-      # status handler is set -- d.get('rawDevice').statusCallback (s)-> {something}
-      rawDevice.statusCallback (s)->
+      # status handler is set -- d.get('sensorInstance').statusCallback (s)-> {something}
+      sensorInstance.statusCallback (s)->
         statusList = evothings.tisensortag.ble.status
         if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
-          $('#version-'+uuid).html 'Ver. '+rawDevice.getFirmwareString()
+          $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
         sessionInfo = Pylon.get 'sessionInfo'
         sessionInfo.set role+'sensorUUID', d.id
         console.log "sensor status report:" +s + ' '+d.id
@@ -267,8 +269,8 @@ class TiHandler
           d.set 'buttonText', 'on-line'
         return
 
-      # error  handler is set -- d.get('rawDevice').errorCallback (e)-> {something}
-      rawDevice.errorCallback (s)->
+      # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
+      sensorInstance.errorCallback (s)->
         console.log "sensor ERROR report:" +s, ' '+d.id
         # evothings status reporting errors often report null, for no reason?
         return if !s
@@ -286,22 +288,22 @@ class TiHandler
         
     
       # bring the evothings data converters up to this device
-      d.set 'getMagnetometerValues', rawDevice.getMagnetometerValues
-      d.set 'getAccelerometerValues', rawDevice.getAccelerometerValues
-      d.set 'getGyroscopeValues', rawDevice.getGyroscopeValues
+      d.set 'getMagnetometerValues', sensorInstance.getMagnetometerValues
+      d.set 'getAccelerometerValues', sensorInstance.getAccelerometerValues
+      d.set 'getGyroscopeValues', sensorInstance.getGyroscopeValues
 
       # and plug our data handlers into the evothings scheme
-      rawDevice.accelerometerCallback (data)=> 
+      sensorInstance.accelerometerCallback (data)=> 
           handlers.accel data
         ,100
-      rawDevice.magnetometerCallback (data)=>
+      sensorInstance.magnetometerCallback (data)=>
           handlers.mag data
         ,100
-      rawDevice.gyroscopeCallback (data)=>
+      sensorInstance.gyroscopeCallback (data)=>
           handlers.gyro data
         ,100
         ,7
-      rawDevice.connectToDevice d.get('rawDevice')
+      sensorInstance.connectToDevice d.get('rawDevice')
     catch e
       alert('Error in attachSensor -- check LOG')
       console.log "error in attachSensor"

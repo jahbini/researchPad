@@ -365,6 +365,7 @@ enterUpload = ->
     model: deviceSummary
   devicesData = new deviceDataCollection
   noData = true
+  debugger
   for i,body of Pylon.get('devices').toJSON()
     continue if ! (r = body.readings)
     continue if r.length == 0
