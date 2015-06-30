@@ -220,10 +220,13 @@ class TiHandler
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
   attachDevice: (uuid) ->
-    $('#connect-'+uuid).text 'connecting'
     console.log "attach "+uuid
     role = "First"
     d = Pylon.get('devices').get uuid
+    d.buttonText = 'connecting'
+    $('#connect-'+uuid)
+      .removeClass('button-warning')
+      .text d.get('buttonText') 
     other = Pylon.get 'First' 
     role = 'Second' if other && other != d
     d.set 'role',role
@@ -261,16 +264,16 @@ class TiHandler
         if statusList.SENSORTAG_ONLINE == s
           Pylon.trigger 'connected' unless d.get 'connected'
           d.set 'connected', true
-          s='on-line'
+          d.set 'buttonText', 'on-line'
+          d.set 'buttonClass', 'button-success'
+          s= d.get 'buttonText'
           $('#status-'+uuid).html s
           $('#'+role+'Nick').text d.get("nickname")
           $('#'+role+'uuid').text d.id
           $('#connect-'+uuid)
             .removeClass('button-warning')
             .addClass('button-success')
-            .text 'on-line'
-          d.set 'buttonClass', 'button-success'
-          d.set 'buttonText', 'on-line'
+            .text s
         return
 
       # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
@@ -282,9 +285,9 @@ class TiHandler
         if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
           return
         if evothings.easyble.error.DISCONNECTED == s
-          $('#connect-'+uuid).removeClass('button-success').addClass('button-warning').text 'Reconnect'
           d.set 'buttonClass', 'button-warning'
-          d.set 'buttonText', 'Reconnect'
+          d.set 'buttonText', 'reconnect'
+          $('#connect-'+uuid).removeClass('button-success').addClass('button-warning').text 'Reconnect'
           s='Disconnected'
         widget = $('#status-'+uuid)
         widget.html s

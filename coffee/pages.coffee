@@ -27,6 +27,9 @@ class Pages
         session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
+
+      # when the clinics selection changes,
+      # fill in the client and clinician dropDowns
       events:
         'change': ->
           theOptionCid = @$el.val()
@@ -41,6 +44,7 @@ class Pages
           temp.add theClinic.get('clients')
           temp.trigger('change')
           return false
+      #render the clinic drop down list -- if the server is responding
       render: ->
         @$el.html render =>
           option "Select ---"
@@ -297,6 +301,7 @@ class Pages
     bodyHtml = @theBody @topButtons , @adminContents
     $('body').html bodyHtml
     @wireButtons()
+
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
       collection: Pylon.get('tests')

@@ -240,10 +240,11 @@ TiHandler = (function() {
 
   TiHandler.prototype.attachDevice = function(uuid) {
     var d, e, handlers, other, rawDevice, role, sensorInstance;
-    $('#connect-' + uuid).text('connecting');
     console.log("attach " + uuid);
     role = "First";
     d = Pylon.get('devices').get(uuid);
+    d.buttonText = 'connecting';
+    $('#connect-' + uuid).removeClass('button-warning').text(d.get('buttonText'));
     other = Pylon.get('First');
     if (other && other !== d) {
       role = 'Second';
@@ -286,13 +287,13 @@ TiHandler = (function() {
             Pylon.trigger('connected');
           }
           d.set('connected', true);
-          s = 'on-line';
+          d.set('buttonText', 'on-line');
+          d.set('buttonClass', 'button-success');
+          s = d.get('buttonText');
           $('#status-' + uuid).html(s);
           $('#' + role + 'Nick').text(d.get("nickname"));
           $('#' + role + 'uuid').text(d.id);
-          $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text('on-line');
-          d.set('buttonClass', 'button-success');
-          d.set('buttonText', 'on-line');
+          $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text(s);
         }
       });
       sensorInstance.errorCallback(function(s) {
@@ -306,9 +307,9 @@ TiHandler = (function() {
           return;
         }
         if (evothings.easyble.error.DISCONNECTED === s) {
-          $('#connect-' + uuid).removeClass('button-success').addClass('button-warning').text('Reconnect');
           d.set('buttonClass', 'button-warning');
-          d.set('buttonText', 'Reconnect');
+          d.set('buttonText', 'reconnect');
+          $('#connect-' + uuid).removeClass('button-success').addClass('button-warning').text('Reconnect');
           s = 'Disconnected';
         }
         widget = $('#status-' + uuid);
