@@ -144,7 +144,8 @@ TiHandler = (function() {
           UUID: uuid,
           rawDevice: device,
           buttonText: 'connect',
-          buttonClass: 'button-primary'
+          buttonClass: 'button-primary',
+          deviceStatus: '--'
         });
         pd.push(d);
         Pylon.trigger('change respondingDevices');
@@ -243,8 +244,7 @@ TiHandler = (function() {
     console.log("attach " + uuid);
     role = "First";
     d = Pylon.get('devices').get(uuid);
-    d.buttonText = 'connecting';
-    $('#connect-' + uuid).removeClass('button-warning').text(d.get('buttonText'));
+    d.set('buttonText', 'connecting');
     other = Pylon.get('First');
     if (other && other !== d) {
       role = 'Second';
@@ -260,6 +260,7 @@ TiHandler = (function() {
       d.set('readings', new readingCollection);
     }
     Pylon.set(role, d);
+    Pylon.trigger('change respondingDevices');
     handlers = this.createVisualChain(d);
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
@@ -289,11 +290,12 @@ TiHandler = (function() {
           d.set('connected', true);
           d.set('buttonText', 'on-line');
           d.set('buttonClass', 'button-success');
+          d.set('deviceStatus', 'waiting for data');
           s = d.get('buttonText');
           $('#status-' + uuid).html(s);
           $('#' + role + 'Nick').text(d.get("nickname"));
           $('#' + role + 'uuid').text(d.id);
-          $('#connect-' + uuid).removeClass('button-warning').addClass('button-success').text(s);
+          Pylon.trigger('change respondingDevices');
         }
       });
       sensorInstance.errorCallback(function(s) {
@@ -309,11 +311,11 @@ TiHandler = (function() {
         if (evothings.easyble.error.DISCONNECTED === s) {
           d.set('buttonClass', 'button-warning');
           d.set('buttonText', 'reconnect');
-          $('#connect-' + uuid).removeClass('button-success').addClass('button-warning').text('Reconnect');
-          s = 'Disconnected';
+          d.set('deviceStatus', 'Disconnected');
         }
         widget = $('#status-' + uuid);
         widget.html(s);
+        Pylon.trigger('change respondingDevices');
       });
       d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
       d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
@@ -864,7 +866,7 @@ enterUpload = function() {
   brainDump = new hopper;
   brainDump.set('readings', devicesData);
   brainDump.set('sensorUUID', "0-0-0");
-  brainDump.set('patientID', sessionInfo.get('patient'));
+  brainDump.set('patientID', sessionInfo.get('client'));
   brainDump.set('user', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
   brainDump.set('testID', sessionInfo.get('testID'));
@@ -930,6 +932,7 @@ rediness = function() {
       return collection.trigger('change');
     },
     error: function(collection, response, options) {
+      console.log(Pylon.get('hostUrl') + 'clinics');
       console.log("clinics fetch error - response");
       console.log(response);
       console.log("clinics fetch error - collection");
@@ -945,10 +948,8 @@ rediness = function() {
 #seen = {}
 #if window? then window.seen = seen # for the web
 #if module?.exports? then module.exports = seen # for node
- */
-
-
-/*  And since we are in a browser ---
+#
+ *  And since we are in a browser ---
  */
 
 window.$ = $;
@@ -1306,7 +1307,7 @@ Pages = (function() {
               }, device.get('buttonText'));
               text(device.get('nickname'));
               br();
-              span("#status-" + theUUID, '--');
+              span("#status-" + theUUID, device.get('deviceStatus'));
               br();
               sig = device.get('signalStrength');
               if (sig < -90) {
@@ -1592,7 +1593,7 @@ Pages = (function() {
           collection: readings,
           el: "#FirstStat",
           initialize: function() {
-            console.log("First Item readings (collection)");
+            console.log("Creation of readings (collection) for First");
             console.log(this.collection);
             debugger;
             return this.listenTo(this.collection, 'change', this.render);
@@ -1610,7 +1611,7 @@ Pages = (function() {
         var dev, readings, statusSecondViewTemplate;
         dev = Pylon.get('Second');
         readings = dev.get('readings');
-        console.log("Second Item readings (collection)");
+        console.log("Creation of readings (collection) for Second");
         console.log(_this.collection);
         statusSecondViewTemplate = Backbone.View.extend({
           el: "#SecondStat",

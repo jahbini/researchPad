@@ -174,7 +174,7 @@ class Pages
                   ,device.get 'buttonText'
                 text (device.get 'nickname')
                 br()
-                span "#status-"+theUUID, '--'
+                span "#status-"+theUUID, (device.get 'deviceStatus')
                 br()
                 sig = device.get 'signalStrength'
                 if sig < -90
@@ -334,7 +334,7 @@ class Pages
         collection: readings
         el: "#FirstStat"
         initialize: ->
-          console.log "First Item readings (collection)"
+          console.log "Creation of readings (collection) for First"
           console.log @collection
           debugger
           @listenTo @collection, 'change', @render
@@ -347,7 +347,7 @@ class Pages
     Pylon.on 'change:Second', ()=>
       dev = Pylon.get 'Second'
       readings = dev.get 'readings'
-      console.log "Second Item readings (collection)"
+      console.log "Creation of readings (collection) for Second"
       console.log @collection
       statusSecondViewTemplate = Backbone.View.extend
         el: "#SecondStat"

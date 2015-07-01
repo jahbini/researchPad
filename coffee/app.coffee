@@ -391,7 +391,7 @@ enterUpload = ->
   brainDump = new hopper
   brainDump.set('readings',devicesData )
   brainDump.set('sensorUUID',"0-0-0")
-  brainDump.set('patientID',sessionInfo.get('patient') )
+  brainDump.set('patientID',sessionInfo.get('client') )
   brainDump.set('user',sessionInfo.get('clinician') )
   brainDump.set('password',sessionInfo.get('password') )
   brainDump.set('testID',sessionInfo.get('testID') )
@@ -450,6 +450,7 @@ rediness = ->
       console.log "clinic request success"
       collection.trigger 'change'
     error: (collection,response,options)->
+      console.log (Pylon.get('hostUrl')+'clinics')
       console.log "clinics fetch error - response"
       console.log response
       console.log "clinics fetch error - collection"
@@ -462,8 +463,8 @@ rediness = ->
 #seen = {}
 #if window? then window.seen = seen # for the web
 #if module?.exports? then module.exports = seen # for node
-###
-###  And since we are in a browser ---
+#
+#  And since we are in a browser ---
 ###
 window.$=$
 window.sessionInfo = sessionInfo

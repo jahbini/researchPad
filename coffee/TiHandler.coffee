@@ -126,6 +126,7 @@ class TiHandler
           rawDevice: device
           buttonText: 'connect'
           buttonClass: 'button-primary'
+          deviceStatus: '--'
         pd.push d
         Pylon.trigger('change respondingDevices')
         return
@@ -223,10 +224,7 @@ class TiHandler
     console.log "attach "+uuid
     role = "First"
     d = Pylon.get('devices').get uuid
-    d.buttonText = 'connecting'
-    $('#connect-'+uuid)
-      .removeClass('button-warning')
-      .text d.get('buttonText') 
+    d.set 'buttonText', 'connecting'
     other = Pylon.get 'First' 
     role = 'Second' if other && other != d
     d.set 'role',role
@@ -240,6 +238,7 @@ class TiHandler
       d.set 'readings', new readingCollection
     # triggers change:First or change:Second 
     Pylon.set role, d
+    Pylon.trigger('change respondingDevices')
       
     handlers= @createVisualChain d
     try
@@ -266,14 +265,12 @@ class TiHandler
           d.set 'connected', true
           d.set 'buttonText', 'on-line'
           d.set 'buttonClass', 'button-success'
+          d.set 'deviceStatus', 'waiting for data'
           s= d.get 'buttonText'
           $('#status-'+uuid).html s
           $('#'+role+'Nick').text d.get("nickname")
           $('#'+role+'uuid').text d.id
-          $('#connect-'+uuid)
-            .removeClass('button-warning')
-            .addClass('button-success')
-            .text s
+          Pylon.trigger('change respondingDevices')
         return
 
       # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
@@ -287,10 +284,10 @@ class TiHandler
         if evothings.easyble.error.DISCONNECTED == s
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'reconnect'
-          $('#connect-'+uuid).removeClass('button-success').addClass('button-warning').text 'Reconnect'
-          s='Disconnected'
+          d.set 'deviceStatus', 'Disconnected'
         widget = $('#status-'+uuid)
         widget.html s
+        Pylon.trigger('change respondingDevices')
         return
         
     
