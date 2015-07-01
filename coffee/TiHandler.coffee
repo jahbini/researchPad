@@ -1,7 +1,7 @@
 # # stagapp devices
 # vim: et:ts=2:sw=2:sts=2:tw=0
-# ## device interface handler for clinical recording of SensorTag data
-# via TI SensorTag object.
+# ### device interface handler for clinical recording of SensorTag data
+# ### via TI SensorTag object.
 
 Backbone = require('backbone')
 _ = require('underscore')
@@ -9,7 +9,7 @@ require('../libs/dbg/console')
 $ = require('jquery')
 glib = require('./glib.coffee').glib
 
-# ## Scan request viewer
+# #### View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
   el: '#tagSelect'
   model: Pylon
@@ -23,7 +23,7 @@ pView=Backbone.View.extend
   events:
     "click": "changer"
   changer: ->
-      console.log "click!"
+      console.log "Start Scan button activated"
       Pylon.set 'tagScan', true
       @render()
       setTimeout(
@@ -98,6 +98,7 @@ class TiHandler
   Pylon.on "tagScan change",  =>
     if Pylon.get('tagScan')
       sensorScanner.startScanningForDevices (device)->
+        return unless sensorScanner.deviceIsSensorTag device
         pd =Pylon.get('devices')
         uuid = device.address
         rssi = device.rssi

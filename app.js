@@ -1,1 +1,0 @@
-console.error("/Users/bamboo-jim/development/Retrotope/stagapp/pages.coffee:58\n  clinicianContents: renderable(clinicians)->\n                                           ^^\nParseError: unexpected ->")

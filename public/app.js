@@ -27,7 +27,7 @@ pView = Backbone.View.extend({
     "click": "changer"
   },
   changer: function() {
-    console.log("click!");
+    console.log("Start Scan button activated");
     Pylon.set('tagScan', true);
     this.render();
     setTimeout((function(_this) {
@@ -117,6 +117,9 @@ TiHandler = (function() {
     if (Pylon.get('tagScan')) {
       return sensorScanner.startScanningForDevices(function(device) {
         var color, d, pd, rssi, sig, uuid;
+        if (!sensorScanner.deviceIsSensorTag(device)) {
+          return;
+        }
         pd = Pylon.get('devices');
         uuid = device.address;
         rssi = device.rssi;

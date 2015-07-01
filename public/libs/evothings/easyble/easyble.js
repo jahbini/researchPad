@@ -250,6 +250,7 @@
 		// If device object already has advertisementData we
 		// do not need to parse the scanRecord.
 		if (device.advertisementData) { return; }
+/*
         if (device.name === 'SensorTag 2.0') {
                 device.advertisementData = { 
                     'kCBAdvDataServiceUUIDs': ['AA10'],
@@ -257,7 +258,7 @@
                     }
                 return
                 }
-
+*/
 		// Must have scanRecord yo continue.
 		if (!device.scanRecord) { return; }
 
