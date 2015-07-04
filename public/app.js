@@ -851,6 +851,7 @@ enterUpload = function() {
   ref = Pylon.get('devices').toJSON();
   for (i in ref) {
     body = ref[i];
+    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
     if (!(r = body.readings)) {
       continue;
     }

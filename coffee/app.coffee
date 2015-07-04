@@ -367,6 +367,7 @@ enterUpload = ->
   noData = true
   debugger
   for i,body of Pylon.get('devices').toJSON()
+    console.log body.nickname+" has "+body.readings.length+" readings for upload."
     continue if ! (r = body.readings)
     continue if r.length == 0
     noData = false
