@@ -1073,13 +1073,13 @@ implementing = function() {
 };
 
 Pages = (function(superClass) {
-  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tbody, td, tea, text, th, thead, tr, ul;
+  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   extend(Pages, superClass);
 
   tea = new Teacup.Teacup;
 
-  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password;
+  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
 
   function Pages() {
     this.renderPage = bind(this.renderPage, this);
@@ -1477,6 +1477,27 @@ Pages = (function(superClass) {
   };
 
   Pages.prototype.topButtons = renderable(function() {
+    div(".modal.four.columns", function() {
+      tag("header", function() {
+        h2(".three.columns", "Wubba Woo");
+        return button(".one.column.close.toggleModle", "Close");
+      });
+      tag("section", function() {
+        return p("Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis.");
+      });
+      button(".button-border.button-success", function() {
+        span(".icon", function() {
+          return raw("&#61853");
+        });
+        return text("Download");
+      });
+      return button(".button-border.button-error.pull-right", function() {
+        span(".icon", function() {
+          return raw("&#61756");
+        });
+        return text("Lock");
+      });
+    });
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#action.disabled.three.columns', '');
