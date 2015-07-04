@@ -1,21 +1,22 @@
 # vim: et:ts=2:sw=2:sts=2:nowrap
 
+Backbone = require('Backbone')
+$=require('jquery')
+Teacup = require('teacup')
+
 implementing = (mixins..., classReference) ->
   for mixin in mixins
     for key, value of mixin::
       classReference::[key] = value
   classReference
 
-
-class Pages
-  Teacup = require('teacup')
-  Backbone = require('Backbone')
-  $=require('jquery')
+class Pages extends Teacup.Teacup
   tea = new Teacup.Teacup
   {table,tr,th,thead,tbody,td,ul,li,ol,a,render
     ,input,renderable,raw,div,img,h2,h3,h4,h5,label
     ,button,p,text,span,canvas,option,select,form
     ,body,head,doctype,hr,br,password} = tea.tags()
+
 
   constructor: () ->
 
@@ -139,7 +140,7 @@ class Pages
           span '#SecondNick', '?'
         div '#Seconduuid.seven.columns' , ' '
       div '.row', ->
-        div '.five.columns',"Platform uuid"
+        div '.five.columns',"Platform UUID"
         div '#platformUUID.seven.columns', ->
           raw '&nbsp;'
       div "#content1", ->
@@ -339,7 +340,6 @@ class Pages
           debugger
           @listenTo @collection, 'change', @render
         render: ->
-          debugger
           @$el.html "Items: "+@collection.length
       Pylon.set("FirstView", new statusFirstViewTemplate)
       return

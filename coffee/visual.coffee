@@ -102,6 +102,9 @@ class visual
     (data) =>
       # data points from Evothings library are Seen.Point NOT compatible as sources
       try
+        o.device.set 'deviceStatus', 'Recieving'
+        theUUID = o.device.id
+        $("#status-"+theUUID).text (o.device.get 'deviceStatus')
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined

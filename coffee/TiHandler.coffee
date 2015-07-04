@@ -177,6 +177,7 @@ class TiHandler
   createVisualChain: (device) ->
     smoother = new visualHandler
     accelerometerHandler = smoother.readingHandler
+      device: device
       sensor: 'accel'
       readings: device.get 'readings'
       debias: 'calibrateAccel'
@@ -190,6 +191,7 @@ class TiHandler
       viewer: smoother.viewSensor 'accel-view-'+device.id, 0.4
 
     magnetometerHandler = smoother.readingHandler
+      device: device
       sensor: 'mag'
       readings: device.get 'readings'
       debias: 'calibrateMag'
@@ -203,6 +205,7 @@ class TiHandler
       viewer: smoother.viewSensor 'magnet-view-'+device.id, 0.05
 
     gyroscopeHandler = smoother.readingHandler
+      device: device
       sensor: 'gyro'
       readings: device.get 'readings'
       debias: 'calibrateGyro'
@@ -240,7 +243,7 @@ class TiHandler
     # triggers change:First or change:Second 
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
-      
+        
     handlers= @createVisualChain d
     try
       if d.get( 'genericName').search(/BLE/) > -1
@@ -266,7 +269,7 @@ class TiHandler
           d.set 'connected', true
           d.set 'buttonText', 'on-line'
           d.set 'buttonClass', 'button-success'
-          d.set 'deviceStatus', 'waiting for data'
+          d.set 'deviceStatus', 'Listening'
           s= d.get 'buttonText'
           $('#status-'+uuid).html s
           $('#'+role+'Nick').text d.get("nickname")
@@ -282,7 +285,7 @@ class TiHandler
         err=s.split(' ')
         if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
           return
-        if evothings.easyble.error.DISCONNECTED == s
+        if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'reconnect'
           d.set 'deviceStatus', 'Disconnected'
@@ -291,6 +294,11 @@ class TiHandler
         Pylon.trigger('change respondingDevices')
         return
         
+      setTimeout ()->
+          return if 'Recieving' == d.get 'deviceStatus'
+          sensorInstance.callErrorCallback "No Response"
+          sensorInstance.disconnectDevice()
+        ,5000
     
       # bring the evothings data converters up to this device
       d.set 'getMagnetometerValues', sensorInstance.getMagnetometerValues

@@ -204,6 +204,7 @@ TiHandler = (function() {
     var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
     smoother = new visualHandler;
     accelerometerHandler = smoother.readingHandler({
+      device: device,
       sensor: 'accel',
       readings: device.get('readings'),
       debias: 'calibrateAccel',
@@ -215,6 +216,7 @@ TiHandler = (function() {
       viewer: smoother.viewSensor('accel-view-' + device.id, 0.4)
     });
     magnetometerHandler = smoother.readingHandler({
+      device: device,
       sensor: 'mag',
       readings: device.get('readings'),
       debias: 'calibrateMag',
@@ -226,6 +228,7 @@ TiHandler = (function() {
       viewer: smoother.viewSensor('magnet-view-' + device.id, 0.05)
     });
     gyroscopeHandler = smoother.readingHandler({
+      device: device,
       sensor: 'gyro',
       readings: device.get('readings'),
       debias: 'calibrateGyro',
@@ -293,7 +296,7 @@ TiHandler = (function() {
           d.set('connected', true);
           d.set('buttonText', 'on-line');
           d.set('buttonClass', 'button-success');
-          d.set('deviceStatus', 'waiting for data');
+          d.set('deviceStatus', 'Listening');
           s = d.get('buttonText');
           $('#status-' + uuid).html(s);
           $('#' + role + 'Nick').text(d.get("nickname"));
@@ -311,7 +314,7 @@ TiHandler = (function() {
         if (evothings.easyble.error.CHARACTERISTIC_NOT_FOUND === err[0]) {
           return;
         }
-        if (evothings.easyble.error.DISCONNECTED === s) {
+        if (evothings.easyble.error.DISCONNECTED === s || s === "No Response") {
           d.set('buttonClass', 'button-warning');
           d.set('buttonText', 'reconnect');
           d.set('deviceStatus', 'Disconnected');
@@ -320,6 +323,13 @@ TiHandler = (function() {
         widget.html(s);
         Pylon.trigger('change respondingDevices');
       });
+      setTimeout(function() {
+        if ('Recieving' === d.get('deviceStatus')) {
+          return;
+        }
+        sensorInstance.callErrorCallback("No Response");
+        return sensorInstance.disconnectDevice();
+      }, 5000);
       d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
       d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
       d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
@@ -1035,9 +1045,17 @@ exports.glib = new glib;
 
 
 },{}],4:[function(require,module,exports){
-var Pages, implementing,
+var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
+  hasProp = {}.hasOwnProperty;
+
+Backbone = require('Backbone');
+
+$ = require('jquery');
+
+Teacup = require('teacup');
 
 implementing = function() {
   var classReference, i, j, key, len, mixin, mixins, ref, value;
@@ -1053,14 +1071,10 @@ implementing = function() {
   return classReference;
 };
 
-Pages = (function() {
-  var $, Backbone, Teacup, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tbody, td, tea, text, th, thead, tr, ul;
+Pages = (function(superClass) {
+  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tbody, td, tea, text, th, thead, tr, ul;
 
-  Teacup = require('teacup');
-
-  Backbone = require('Backbone');
-
-  $ = require('jquery');
+  extend(Pages, superClass);
 
   tea = new Teacup.Teacup;
 
@@ -1262,7 +1276,7 @@ Pages = (function() {
         return div('#Seconduuid.seven.columns', ' ');
       });
       div('.row', function() {
-        div('.five.columns', "Platform uuid");
+        div('.five.columns', "Platform UUID");
         return div('#platformUUID.seven.columns', function() {
           return raw('&nbsp;');
         });
@@ -1602,7 +1616,6 @@ Pages = (function() {
             return this.listenTo(this.collection, 'change', this.render);
           },
           render: function() {
-            debugger;
             return this.$el.html("Items: " + this.collection.length);
           }
         });
@@ -1651,7 +1664,7 @@ Pages = (function() {
 
   return Pages;
 
-})();
+})(Teacup.Teacup);
 
 exports.Pages = Pages;
 
@@ -1779,8 +1792,11 @@ visual = (function() {
     });
     return (function(_this) {
       return function(data) {
-        var error, i, m, p, r;
+        var error, i, m, p, r, theUUID;
         try {
+          o.device.set('deviceStatus', 'Recieving');
+          theUUID = o.device.id;
+          $("#status-" + theUUID).text(o.device.get('deviceStatus'));
           r = o.source(data);
           p = void 0;
           m = void 0;
