@@ -7,7 +7,7 @@
   height: auto;
   margin-left: -200px;
   margin-top: -150px;
-  background-color: #ffffff;
+  background-color: #888888;
   padding: 25px;
   border-radius: 5px;
   z-index: 10;
@@ -19,7 +19,7 @@
 .modal header {
   position: relative;
 }
-.modal h2 {
+.modal hr {
   text-align: center;
 }
 .modal .close {

@@ -288,7 +288,7 @@ TiHandler = (function() {
         }
         sessionInfo = Pylon.get('sessionInfo');
         sessionInfo.set(role + 'sensorUUID', d.id);
-        console.log("sensor status report:" + s + ' ' + d.id);
+        console.log("sensor status report: " + s + ' ' + d.id);
         if (statusList.SENSORTAG_ONLINE === s) {
           if (!d.get('connected')) {
             Pylon.trigger('connected');
@@ -306,7 +306,7 @@ TiHandler = (function() {
       });
       sensorInstance.errorCallback(function(s) {
         var err, widget;
-        console.log("sensor ERROR report:" + s, ' ' + d.id);
+        console.log("sensor ERROR report: " + s, ' ' + d.id);
         if (!s) {
           return;
         }
@@ -372,7 +372,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/console":6,"./glib.coffee":3,"./visual.coffee":5,"backbone":10,"jquery":12,"underscore":11}],2:[function(require,module,exports){
+},{"../libs/dbg/console":7,"./glib.coffee":3,"./visual.coffee":6,"backbone":11,"jquery":13,"underscore":12}],2:[function(require,module,exports){
 var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 Backbone = require('backbone');
@@ -702,10 +702,10 @@ enterLogout = function() {
   if (g.get('recording')) {
     g.set('recording', false);
     Pylon.get('devices').each(function(body) {
-      body.unset('readings', {
+      body.reset('readings', {
         silent: true
       });
-      return body.unset('readings', {
+      return body.reset('readings', {
         silent: true
       });
     });
@@ -719,16 +719,8 @@ enterLogout = function() {
   return false;
 };
 
-setButtons = function(log) {
-  var key, value;
+setButtons = function() {
   pageGen.activateButtons(buttonCollection);
-  if (log) {
-    for (key in buttonCollection) {
-      value = buttonCollection[key];
-      console.log('--' + key);
-      console.log(value.toJSON());
-    }
-  }
 };
 
 tests.push(new test({
@@ -760,12 +752,11 @@ initAll = function() {
 
 enterClear = function() {
   Pylon.get('devices').each(function(body) {
-    body.unset('readings', {
+    readings = body.get('readings');
+    readings.reset({
       silent: true
     });
-    return body.unset('readings', {
-      silent: true
-    });
+    return readings.reset();
   });
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
@@ -847,7 +838,6 @@ enterUpload = function() {
   });
   devicesData = new deviceDataCollection;
   noData = true;
-  debugger;
   ref = Pylon.get('devices').toJSON();
   for (i in ref) {
     body = ref[i];
@@ -866,9 +856,6 @@ enterUpload = function() {
       nickname: body.nickname,
       readings: r.toJSON()
     });
-    r.reset();
-    r.reset();
-    r.trigger('change');
   }
   if (noData) {
     return false;
@@ -885,9 +872,18 @@ enterUpload = function() {
   brainDump.set('password', sessionInfo.get('password'));
   brainDump.set('testID', sessionInfo.get('testID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  brainDump.save();
-  pageGen.forceTest();
-  enterClear();
+  brainDump.save().done(function(a, b, c) {
+    Pylon.trigger("upload:complete", a);
+    console.log("Save Complete " + a);
+    pageGen.forceTest();
+    enterClear();
+  }).fail(function(a, b, c) {
+    Pylon.trigger("upload:failure", a);
+    console.log(b);
+    console.log(c);
+    console.log("Braindump failure");
+    debugger;
+  });
   return false;
 };
 
@@ -998,7 +994,7 @@ $(function() {
 
 
 
-},{"../libs/dbg/console":6,"./TiHandler.coffee":1,"./pages.coffee":4,"backbone":10,"jquery":12,"underscore":11}],3:[function(require,module,exports){
+},{"../libs/dbg/console":7,"./TiHandler.coffee":1,"./pages.coffee":5,"backbone":11,"jquery":13,"underscore":12}],3:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -1046,6 +1042,112 @@ exports.glib = new glib;
 
 
 },{}],4:[function(require,module,exports){
+var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
+  slice = [].slice;
+
+Backbone = require('Backbone');
+
+$ = require('jquery');
+
+Teacup = require('teacup');
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+tea = new Teacup.Teacup;
+
+ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h1 = ref.h1, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
+
+uploadViewTemplate = Backbone.View.extend({
+  el: "#upload-report",
+  initialize: function() {
+    this.render();
+    Pylon.on('upload:complete', (function(_this) {
+      return function(a) {
+        _this.render(a);
+        return _this.$el.addClass('active');
+      };
+    })(this));
+    return Pylon.on('upload:close', (function(_this) {
+      return function(a) {
+        return _this.$el.removeClass('active');
+      };
+    })(this));
+  },
+  render: function(a) {
+    if (!a) {
+      a = {
+        message: '---'
+      };
+    }
+    this.$el.html(render((function(_this) {
+      return function() {
+        tag("header", function() {
+          return h2("Upload Status");
+        });
+        tag("section", function() {
+          return h1("#upload-result", a.message);
+        });
+        return button(".close", {
+          onClick: "Pylon.trigger('upload:close')"
+        }, "Close");
+      };
+    })(this)));
+    return this;
+  }
+});
+
+exports.uploadView = new uploadViewTemplate;
+
+countDownViewTemplate = Backbone.View.extend({
+  el: "#count-down",
+  initialize: function() {
+    this.render(-1);
+    return Pylon.on('countDown:start', (function(_this) {
+      return function(time) {
+        return _this.render(time);
+      };
+    })(this));
+  },
+  render: function(t) {
+    this.$el.html(render((function(_this) {
+      return function() {
+        tag("header", function() {
+          return h2("Time!");
+        });
+        return tag("section", function() {
+          return h1("#downCount", t);
+        });
+      };
+    })(this)));
+    if (t < 0) {
+      this.$el.removeClass('active');
+    } else {
+      this.$el.addClass('active');
+      setTimeout(function() {
+        return Pylon.trigger('countDown:start', t - 1);
+      }, 1000);
+    }
+    return this;
+  }
+});
+
+exports.countDownView = new countDownViewTemplate;
+
+
+
+},{"Backbone":9,"jquery":13,"teacup":14}],5:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
@@ -1243,7 +1345,7 @@ Pages = (function(superClass) {
   };
 
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
-    return div('#capture-display.container', function() {
+    div('#capture-display.container', function() {
       div('.row', function() {
         a({
           href: '/index.html'
@@ -1290,6 +1392,24 @@ Pages = (function(superClass) {
         hr();
         return div('#console-log.container');
       });
+    });
+    div("#upload-report.modal", function() {
+      tag("header", function() {
+        return h2("Upload Status");
+      });
+      tag("section", function() {
+        return p("#upload-result", "Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis.");
+      });
+      return button(".one.column.close.toggleModle", "Close");
+    });
+    return div("#count-down.modal", function() {
+      tag("header", function() {
+        return h2("Wubba Woo");
+      });
+      tag("section", function() {
+        return p("#downCount", "Lorem ipsum dolor so sad...");
+      });
+      return button(".one.column.close.toggleModle", "Close");
     });
   });
 
@@ -1477,27 +1597,6 @@ Pages = (function(superClass) {
   };
 
   Pages.prototype.topButtons = renderable(function() {
-    div(".modal.four.columns", function() {
-      tag("header", function() {
-        h2(".three.columns", "Wubba Woo");
-        return button(".one.column.close.toggleModle", "Close");
-      });
-      tag("section", function() {
-        return p("Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis.");
-      });
-      button(".button-border.button-success", function() {
-        span(".icon", function() {
-          return raw("&#61853");
-        });
-        return text("Download");
-      });
-      return button(".button-border.button-error.pull-right", function() {
-        span(".icon", function() {
-          return raw("&#61756");
-        });
-        return text("Lock");
-      });
-    });
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
       button('#action.disabled.three.columns', '');
@@ -1578,6 +1677,7 @@ Pages = (function(superClass) {
     bodyHtml = this.theBody(this.topButtons, this.adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
+    require('./modalViews.coffee');
     testViewTemplate = Backbone.View.extend({
       el: '#TestID',
       collection: Pylon.get('tests'),
@@ -1627,15 +1727,13 @@ Pages = (function(superClass) {
         dev = Pylon.get('First');
         readings = dev.get('readings');
         console.log("activating First");
-        console.log(readings);
         statusFirstViewTemplate = Backbone.View.extend({
           collection: readings,
           el: "#FirstStat",
           initialize: function() {
             console.log("Creation of readings (collection) for First");
-            console.log(this.collection);
-            debugger;
-            return this.listenTo(this.collection, 'change', this.render);
+            this.listenTo(this.collection, 'change', this.render);
+            return this.listenTo(this.collection, 'reset', this.render);
           },
           render: function() {
             return this.$el.html("Items: " + this.collection.length);
@@ -1650,12 +1748,12 @@ Pages = (function(superClass) {
         dev = Pylon.get('Second');
         readings = dev.get('readings');
         console.log("Creation of readings (collection) for Second");
-        console.log(_this.collection);
         statusSecondViewTemplate = Backbone.View.extend({
           el: "#SecondStat",
           collection: readings,
           initialize: function() {
-            return this.listenTo(this.collection, 'change', this.render);
+            this.listenTo(this.collection, 'change', this.render);
+            return this.listenTo(this.collection, 'reset', this.render);
           },
           render: function() {
             return this.$el.html("Items: " + this.collection.length);
@@ -1692,7 +1790,7 @@ exports.Pages = Pages;
 
 
 
-},{"Backbone":8,"jquery":12,"teacup":13}],5:[function(require,module,exports){
+},{"./modalViews.coffee":4,"Backbone":9,"jquery":13,"teacup":14}],6:[function(require,module,exports){
 var $, Seen, _, visual;
 
 Seen = require('../libs/dbg/seen');
@@ -1988,7 +2086,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/seen":7,"jquery":12,"underscore":11}],6:[function(require,module,exports){
+},{"../libs/dbg/seen":8,"jquery":13,"underscore":12}],7:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -2270,7 +2368,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],7:[function(require,module,exports){
+},{}],8:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -5082,7 +5180,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],8:[function(require,module,exports){
+},{}],9:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.0
 
@@ -6954,7 +7052,7 @@ THE SOFTWARE.
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":12,"underscore":9}],9:[function(require,module,exports){
+},{"jquery":13,"underscore":10}],10:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8504,11 +8602,11 @@ THE SOFTWARE.
   }
 }.call(this));
 
-},{}],10:[function(require,module,exports){
-arguments[4][8][0].apply(exports,arguments)
-},{"dup":8,"jquery":12,"underscore":11}],11:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 arguments[4][9][0].apply(exports,arguments)
-},{"dup":9}],12:[function(require,module,exports){
+},{"dup":9,"jquery":13,"underscore":12}],12:[function(require,module,exports){
+arguments[4][10][0].apply(exports,arguments)
+},{"dup":10}],13:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -17720,7 +17818,7 @@ return jQuery;
 
 }));
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.1
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, i, j, l, len, len1, len2, merge_elements, ref, ref1, ref2, tagName,

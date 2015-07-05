@@ -262,7 +262,7 @@ class TiHandler
           $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
         sessionInfo = Pylon.get 'sessionInfo'
         sessionInfo.set role+'sensorUUID', d.id
-        console.log "sensor status report:" +s + ' '+d.id
+        console.log "sensor status report: " +s + ' '+d.id
 
         if statusList.SENSORTAG_ONLINE == s
           Pylon.trigger 'connected' unless d.get 'connected'
@@ -279,7 +279,7 @@ class TiHandler
 
       # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
       sensorInstance.errorCallback (s)->
-        console.log "sensor ERROR report:" +s, ' '+d.id
+        console.log "sensor ERROR report: " +s, ' '+d.id
         # evothings status reporting errors often report null, for no reason?
         return if !s
         err=s.split(' ')

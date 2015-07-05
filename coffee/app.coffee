@@ -249,8 +249,8 @@ enterLogout = () ->
   if g.get 'recording'
     g.set 'recording', false
     Pylon.get('devices').each (body)->
-      body.unset 'readings', silent: true
-      body.unset 'readings', silent: true
+      body.reset 'readings', silent: true
+      body.reset 'readings', silent: true
   pageGen.resetAdmin()
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
@@ -259,12 +259,8 @@ enterLogout = () ->
   setButtons()
   return false
 
-setButtons = (log) ->
+setButtons = () ->
   pageGen.activateButtons buttonCollection
-  if log
-    for key, value of buttonCollection
-      console.log '--' + key
-      console.log value.toJSON()
   return
 
 tests.push new test
@@ -296,8 +292,9 @@ initAll = ->
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
   Pylon.get('devices').each (body)->
-    body.unset 'readings', silent: true
-    body.unset 'readings', silent: true
+    readings = body.get('readings')
+    readings.reset silent: true
+    readings.reset() 
   buttonModelClear.set('active',false);
   buttonModelUpload.set('active',false);
   useButton buttonModelActionRecord
@@ -365,8 +362,8 @@ enterUpload = ->
     model: deviceSummary
   devicesData = new deviceDataCollection
   noData = true
-  debugger
   for i,body of Pylon.get('devices').toJSON()
+  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
     console.log body.nickname+" has "+body.readings.length+" readings for upload."
     continue if ! (r = body.readings)
     continue if r.length == 0
@@ -377,11 +374,6 @@ enterUpload = ->
       type: body.type
       nickname: body.nickname
       readings: r.toJSON()
-    #and clear out the collection of readings
-    r.reset()
-    r.reset()
-    r.trigger 'change'
-  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
   return false if noData  
 
   hopper = Backbone.Model.extend {
@@ -399,8 +391,20 @@ enterUpload = ->
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
 
   brainDump.save()
-  pageGen.forceTest()
-  enterClear()
+    .done (a,b,c)->
+      Pylon.trigger "upload:complete", a
+      console.log "Save Complete "+a
+      pageGen.forceTest()
+      enterClear()
+      #and clear out the collection of readings
+      return
+    .fail (a,b,c)->
+      Pylon.trigger "upload:failure", a
+      console.log b
+      console.log c
+      console.log "Braindump failure"
+      debugger
+      return
   return false
 # ## stopRecording
 # halt the record session -- no restart allowed

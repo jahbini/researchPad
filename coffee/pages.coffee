@@ -17,7 +17,6 @@ class Pages extends Teacup.Teacup
     ,button,p,text,span,canvas,option,select,form
     ,body,head,doctype,hr,br,password,tag} = tea.tags()
 
-
   constructor: () ->
 
   inspectAdminPage: ()->
@@ -316,6 +315,7 @@ class Pages extends Teacup.Teacup
     bodyHtml = @theBody @topButtons , @adminContents
     $('body').html bodyHtml
     @wireButtons()
+    require('./modalViews.coffee')
 
     testViewTemplate = Backbone.View.extend
       el: '#TestID'
@@ -344,15 +344,13 @@ class Pages extends Teacup.Teacup
       dev = Pylon.get 'First'
       readings = dev.get 'readings'
       console.log "activating First"
-      console.log readings
       statusFirstViewTemplate = Backbone.View.extend
         collection: readings
         el: "#FirstStat"
         initialize: ->
           console.log "Creation of readings (collection) for First"
-          console.log @collection
-          debugger
           @listenTo @collection, 'change', @render
+          @listenTo @collection, 'reset', @render
         render: ->
           @$el.html "Items: "+@collection.length
       Pylon.set("FirstView", new statusFirstViewTemplate)
@@ -362,12 +360,12 @@ class Pages extends Teacup.Teacup
       dev = Pylon.get 'Second'
       readings = dev.get 'readings'
       console.log "Creation of readings (collection) for Second"
-      console.log @collection
       statusSecondViewTemplate = Backbone.View.extend
         el: "#SecondStat"
         collection: readings
         initialize: ->
           @listenTo @collection, 'change', @render
+          @listenTo @collection, 'reset', @render
         render: ->
           @$el.html "Items: "+@collection.length
       Pylon.set("SecondView", new statusSecondViewTemplate)
@@ -386,6 +384,7 @@ class Pages extends Teacup.Teacup
     $('#adminForm').hide()
     $('#sensorPage').show()
     @activateButtons buttonSpec if buttonSpec?
+
 
 exports.Pages = Pages
 #if window? then window.exports = Pages
