@@ -337,25 +337,44 @@ exitCalibrate = ->
   return false
 
 enterRecording = ->
+  # reject record request if no test is selected
   if !sessionInfo.get('testID')
     pageGen.forceTest 'red'
     return false
+  # reject record request if we are already recording
+  gs = Pylon.get('globalState')
+  return if gs.get 'recording'
+  # start recording and show a lead in timer of 5 seconds
+  gs.set 'recording',  true
+  Pylon.trigger 'recordCountDown:start', 5
   console.log('enter Recording --- actively recording sensor info')
-  Pylon.get('globalState').set 'recording',  true
+
+Pylon.on 'recordCountDown:over', ->
+  # change the record button into the stop button
   useButton buttonModelActionStop
   setButtons()
   return false
 
 enterStop = ->
+  gs = Pylon.get('globalState')
+  return if 'stopping' == gs.get 'recording'
+  gs.set 'recording', 'stopping'
+  Pylon.trigger 'stopCountDown:start', 5
+  return false
+
+Pylon.on 'stopCountDown:over', ->
   console.log('enter Stop -- stop recording')
   Pylon.get('globalState').set 'recording',  false
-  useButton  buttonModelActionRecorded
+  useButton buttonModelActionRecorded
   buttonModelUpload.set('active',true)
   buttonModelClear.set('active',true)
   setButtons()
   return false
 
+currentlyUploading = false
 enterUpload = ->
+  return if currentlyUploading
+  currentlyUploading = true
   console.log('enter Upload -- send data to Retrotope server')
   deviceSummary = Backbone.Model.extend()
   deviceDataCollection = Backbone.Collection.extend
@@ -395,11 +414,13 @@ enterUpload = ->
       Pylon.trigger "upload:complete", a
       console.log "Save Complete "+a
       pageGen.forceTest()
+      currentlyUploading = false
       enterClear()
       #and clear out the collection of readings
       return
     .fail (a,b,c)->
       Pylon.trigger "upload:failure", a
+      currentlyUploading = false
       console.log b
       console.log c
       console.log "Braindump failure"

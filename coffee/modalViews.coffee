@@ -44,20 +44,27 @@ countDownViewTemplate = Backbone.View.extend
     el: "#count-down"
     initialize: ()->
       @render -1
-      Pylon.on 'countDown:start', (time)=>
+      Pylon.on 'recordCountDown:start', (time)=>
+        @response = 'recordCountDown:over'
+        @render time
+      Pylon.on 'stopCountDown:start', (time)=>
+        @response = 'stopCountDown:over'
+        @render time
+      Pylon.on 'countDown:continue', (time)=>
         @render time
     render: (t)->
       @$el.html render =>
         tag "header", ->
           h2 "Time!"
         tag "section", ->
-          h1 "#downCount", t
+          h1 "#downCount", "count: "+t
       if t<0
         @$el.removeClass('active')
+        Pylon.trigger(@response)
       else
         @$el.addClass('active')
         setTimeout ()->
-            Pylon.trigger('countDown:start',t-1)
+            Pylon.trigger('countDown:continue',t-1)
           ,1000
       @
 

@@ -121,11 +121,19 @@ class visual
           o.calibrator[i] dataCondition, 0,0
           i++
         p = dataCondition.cookedValue
-        if Pylon.get('globalState').get 'recording'
-          o.readings.push sensor: o.sensor, raw: _.toArray(data)
-          o.readings.trigger 'change'
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
+
+        # record the data from all three channels of old sensor
+        # New sensor data is identical for all channels, and only needs one
+        if Pylon.get('globalState').get 'recording'
+          if o.device.get 'type' !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
+            o.readings.push sensor: o.sensor, raw: _.toArray(data)
+            o.readings.trigger 'change'
+          else if o.sensor == 'gyro'
+            o.readings.push sensor: "movement", raw: _.toArray(data)
+            o.readings.trigger 'change'
+
       catch error
         console.log error
         console.log "in readinghandler"

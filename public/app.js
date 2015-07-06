@@ -373,7 +373,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"../libs/dbg/console":7,"./glib.coffee":3,"./visual.coffee":6,"backbone":11,"jquery":13,"underscore":12}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 Backbone = require('backbone');
 
@@ -808,18 +808,38 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
+  var gs;
   if (!sessionInfo.get('testID')) {
     pageGen.forceTest('red');
     return false;
   }
-  console.log('enter Recording --- actively recording sensor info');
-  Pylon.get('globalState').set('recording', true);
+  gs = Pylon.get('globalState');
+  if (gs.get('recording')) {
+    return;
+  }
+  gs.set('recording', true);
+  Pylon.trigger('recordCountDown:start', 5);
+  return console.log('enter Recording --- actively recording sensor info');
+};
+
+Pylon.on('recordCountDown:over', function() {
   useButton(buttonModelActionStop);
   setButtons();
   return false;
-};
+});
 
 enterStop = function() {
+  var gs;
+  gs = Pylon.get('globalState');
+  if ('stopping' === gs.get('recording')) {
+    return;
+  }
+  gs.set('recording', 'stopping');
+  Pylon.trigger('stopCountDown:start', 5);
+  return false;
+};
+
+Pylon.on('stopCountDown:over', function() {
   console.log('enter Stop -- stop recording');
   Pylon.get('globalState').set('recording', false);
   useButton(buttonModelActionRecorded);
@@ -827,10 +847,16 @@ enterStop = function() {
   buttonModelClear.set('active', true);
   setButtons();
   return false;
-};
+});
+
+currentlyUploading = false;
 
 enterUpload = function() {
   var body, brainDump, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref;
+  if (currentlyUploading) {
+    return;
+  }
+  currentlyUploading = true;
   console.log('enter Upload -- send data to Retrotope server');
   deviceSummary = Backbone.Model.extend();
   deviceDataCollection = Backbone.Collection.extend({
@@ -876,9 +902,11 @@ enterUpload = function() {
     Pylon.trigger("upload:complete", a);
     console.log("Save Complete " + a);
     pageGen.forceTest();
+    currentlyUploading = false;
     enterClear();
   }).fail(function(a, b, c) {
     Pylon.trigger("upload:failure", a);
+    currentlyUploading = false;
     console.log(b);
     console.log(c);
     console.log("Braindump failure");
@@ -1114,7 +1142,19 @@ countDownViewTemplate = Backbone.View.extend({
   el: "#count-down",
   initialize: function() {
     this.render(-1);
-    return Pylon.on('countDown:start', (function(_this) {
+    Pylon.on('recordCountDown:start', (function(_this) {
+      return function(time) {
+        _this.response = 'recordCountDown:over';
+        return _this.render(time);
+      };
+    })(this));
+    Pylon.on('stopCountDown:start', (function(_this) {
+      return function(time) {
+        _this.response = 'stopCountDown:over';
+        return _this.render(time);
+      };
+    })(this));
+    return Pylon.on('countDown:continue', (function(_this) {
       return function(time) {
         return _this.render(time);
       };
@@ -1127,16 +1167,17 @@ countDownViewTemplate = Backbone.View.extend({
           return h2("Time!");
         });
         return tag("section", function() {
-          return h1("#downCount", t);
+          return h1("#downCount", "count: " + t);
         });
       };
     })(this)));
     if (t < 0) {
       this.$el.removeClass('active');
+      Pylon.trigger(this.response);
     } else {
       this.$el.addClass('active');
       setTimeout(function() {
-        return Pylon.trigger('countDown:start', t - 1);
+        return Pylon.trigger('countDown:continue', t - 1);
       }, 1000);
     }
     return this;
@@ -1930,15 +1971,23 @@ visual = (function() {
             i++;
           }
           p = dataCondition.cookedValue;
-          if (Pylon.get('globalState').get('recording')) {
-            o.readings.push({
-              sensor: o.sensor,
-              raw: _.toArray(data)
-            });
-            o.readings.trigger('change');
-          }
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
+          if (Pylon.get('globalState').get('recording')) {
+            if (o.device.get('type' !== evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
+              o.readings.push({
+                sensor: o.sensor,
+                raw: _.toArray(data)
+              });
+              o.readings.trigger('change');
+            } else if (o.sensor === 'gyro') {
+              o.readings.push({
+                sensor: "movement",
+                raw: _.toArray(data)
+              });
+              o.readings.trigger('change');
+            }
+          }
         } catch (_error) {
           error = _error;
           console.log(error);
