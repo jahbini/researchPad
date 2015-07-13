@@ -372,16 +372,288 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/console":7,"./glib.coffee":3,"./visual.coffee":6,"backbone":11,"jquery":13,"underscore":12}],2:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminDone, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+},{"../libs/dbg/console":9,"./glib.coffee":4,"./visual.coffee":8,"backbone":13,"jquery":15,"underscore":14}],2:[function(require,module,exports){
+var $, Backbone, Teacup, adminView, implementing,
+  slice = [].slice,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
-Backbone = require('backbone');
+$ = require('jquery');
+
+Backbone = require('Backbone');
+
+Teacup = require('teacup');
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+adminView = (function() {
+  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+
+  tea = new Teacup.Teacup;
+
+  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
+
+  function adminView() {
+    this.wireAdmin = bind(this.wireAdmin, this);
+    this.adminContents = bind(this.adminContents, this);
+  }
+
+  adminView.prototype.inspectAdminPage = function() {
+    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
+    clinicViewTemplate = Backbone.View.extend({
+      el: '#desiredClinic',
+      collection: Pylon.get('clinics'),
+      attributes: {
+        session: Pylon.get('sessionInfo')
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          var temp, theClinic, theOptionCid;
+          theOptionCid = this.$el.val();
+          theClinic = this.collection.get(theOptionCid);
+          this.attributes.session.set('clinic', theClinic);
+          temp = Pylon.get('clinicians');
+          temp.reset();
+          temp.add(theClinic.get('clinicians'));
+          temp.trigger('change');
+          temp = Pylon.get('clients');
+          temp.reset();
+          temp.add(theClinic.get('clients'));
+          temp.trigger('change');
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var clinic, i, len, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              clinic = ref1[i];
+              if (clinic.get('force')) {
+                results.push(option('.forceSelect.selected', {
+                  selected: 'selected',
+                  value: clinic.cid
+                }, clinic.get('name')));
+              } else {
+                results.push(option({
+                  value: clinic.cid
+                }, clinic.get('name')));
+              }
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    clinicianViewTemplate = Backbone.View.extend({
+      el: '#desiredClinician',
+      collection: Pylon.get('clinicians'),
+      attributes: {
+        session: Pylon.get('sessionInfo')
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('clinician', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        var temp;
+        temp = render((function(_this) {
+          return function() {
+            var i, len, n, ref1, results, user;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              user = ref1[i];
+              n = user.get('name');
+              results.push(option({
+                value: user.get('_id')
+              }, n.first + ' ' + n.last));
+            }
+            return results;
+          };
+        })(this));
+        this.$el.html(temp);
+        return this;
+      }
+    });
+    clientViewTemplate = Backbone.View.extend({
+      el: '#desiredClient',
+      collection: Pylon.get('clients'),
+      attributes: {
+        session: Pylon.get('sessionInfo')
+      },
+      initialize: function() {
+        return this.listenTo(this.collection, 'change', this.render);
+      },
+      events: {
+        'change': function() {
+          this.attributes.session.set('client', this.$el.val());
+          return false;
+        }
+      },
+      render: function() {
+        this.$el.html(render((function(_this) {
+          return function() {
+            var i, len, n, ref1, results;
+            option("Select ---");
+            ref1 = _this.collection.models;
+            results = [];
+            for (i = 0, len = ref1.length; i < len; i++) {
+              p = ref1[i];
+              n = p.get('name');
+              results.push(option({
+                value: p.get('_id')
+              }, n.first + ' ' + n.last));
+            }
+            return results;
+          };
+        })(this)));
+        return this;
+      }
+    });
+    doneViewTemplate = Backbone.View.extend({
+      el: '#done',
+      model: Pylon.get('sessionInfo'),
+      initialize: function() {
+        this.listenTo(this.model, 'change', this.render);
+        return this;
+      },
+      events: {
+        'click': function() {
+          Pylon.trigger('adminDone');
+          return false;
+        }
+      },
+      render: function() {
+        var ref1;
+        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
+          console.log('activating Admin Done Button');
+          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
+          this.$el.text("Done");
+          this.$el.show().fadeTo(500, 1);
+        }
+        return this;
+      }
+    });
+    this.doneView = new doneViewTemplate;
+    this.clientView = new clientViewTemplate;
+    this.clinicView = new clinicViewTemplate;
+    this.clinicianView = new clinicianViewTemplate;
+    Pylon.get('clinics').trigger('change');
+  };
+
+  adminView.prototype.adminContents = function() {
+    return render(function() {
+      return div('#adminForm', function() {
+        hr();
+        return form(function() {
+          div('.row', function() {
+            return div('.five.columns', function() {
+              label('Clinic');
+              return select('#desiredClinic.u-full-width', 'Clinic', '');
+            });
+          });
+          div('.row', function() {
+            div('.four.columns', function() {
+              label({
+                "for": 'desiredClinician'
+              }, 'Clinician');
+              select('#desiredClinician.u-full-width');
+              br();
+              label({
+                "for": "password"
+              }, "Enter Password");
+              return input("#password", {
+                type: 'password'
+              });
+            });
+            return div('.four.columns', function() {
+              label({
+                "for": 'desiredClient'
+              }, 'Client');
+              return select('#desiredClient.u-full-width');
+            });
+          });
+          return div('.row', function() {
+            div('.nine.columns', function() {
+              return raw("&nbsp;");
+            });
+            return button('#done.three.columns', {
+              disabled: true
+            }, "Done");
+          });
+        });
+      });
+    });
+  };
+
+  adminView.prototype.wireAdmin = function() {
+    var model;
+    model = Pylon.get('sessionInfo');
+    $('#password').keypress((function(_this) {
+      return function(node) {
+        var ref1;
+        if (node.keyCode === 13 && !node.shiftKey) {
+          node.preventDefault();
+          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+            model.set('password', $('#password').val());
+            return false;
+          }
+        }
+      };
+    })(this)).on('blur', (function(_this) {
+      return function(node) {
+        var ref1;
+        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
+          model.set('password', $('#password').val());
+          return false;
+        }
+      };
+    })(this));
+  };
+
+  return adminView;
+
+})();
+
+exports.adminView = new adminView;
+
+
+
+},{"Backbone":11,"jquery":15,"teacup":16}],3:[function(require,module,exports){
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+
+$ = require('jquery');
 
 _ = require('underscore');
 
-require('../libs/dbg/console');
+Backbone = require('backbone');
 
-Backbone.$ = $ = require('jquery');
+require('../libs/dbg/console');
 
 PylonTemplate = Backbone.Model.extend({
   scan: false
@@ -399,7 +671,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-development = false;
+development = true;
 
 if (development) {
   Pylon.set('hostUrl', "http://192.168.1.200:3000/");
@@ -408,6 +680,14 @@ if (development) {
 }
 
 pages = require('./pages.coffee');
+
+Pylon.set('adminView', require('./adminView.coffee').adminView);
+
+loadScript = require("./loadScript.coffee").loadScript;
+
+loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
+  return alert("logon.js returns status of " + status);
+});
 
 
 /*
@@ -696,21 +976,40 @@ useButton = function(model) {
 };
 
 enterLogout = function() {
-  var g;
+  var g, model;
   g = Pylon.get('globalState');
   g.set('loggedIn', false);
   if (g.get('recording')) {
     g.set('recording', false);
-    Pylon.get('devices').each(function(body) {
-      body.reset('readings', {
-        silent: true
-      });
-      return body.reset('readings', {
-        silent: true
-      });
-    });
   }
-  pageGen.resetAdmin();
+  Pylon.get('devices').each(function(body) {
+    body.reset('readings', {
+      silent: true
+    });
+    return body.reset('readings', {
+      silent: true
+    });
+  });
+  model = Pylon.get('sessionInfo');
+  model.unset('clinic', {
+    silent: true
+  });
+  model.unset('clinician', {
+    silent: true
+  });
+  model.unset('password', {
+    silent: true
+  });
+  model.unset('client', {
+    silent: true
+  });
+  model.unset('testID', {
+    silent: true
+  });
+  $('#password').val('');
+  $('option:selected').prop('selected', false);
+  $('option.forceSelect').prop('selected', true);
+  $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
   useButton(buttonModelActionDisabled);
   useButton(buttonModelAdmin);
   buttonModelUpload.set('active', false);
@@ -940,7 +1239,7 @@ setSensor = function() {
   return false;
 };
 
-adminDone = function() {
+Pylon.on('adminDone', function() {
   var g;
   g = Pylon.get('globalState');
   g.set('loggedIn', true);
@@ -951,7 +1250,7 @@ adminDone = function() {
   pageGen.activateSensorPage();
   setButtons();
   return false;
-};
+});
 
 sensorIsReady = false;
 
@@ -1009,7 +1308,7 @@ $(document).on('deviceready', function() {
 $(function() {
   var console;
   domIsReady = true;
-  pageGen.renderPage(adminDone);
+  pageGen.renderPage();
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
     exitDebug();
@@ -1022,7 +1321,7 @@ $(function() {
 
 
 
-},{"../libs/dbg/console":7,"./TiHandler.coffee":1,"./pages.coffee":5,"backbone":11,"jquery":13,"underscore":12}],3:[function(require,module,exports){
+},{"../libs/dbg/console":9,"./TiHandler.coffee":1,"./adminView.coffee":2,"./loadScript.coffee":5,"./pages.coffee":7,"backbone":13,"jquery":15,"underscore":14}],4:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -1069,7 +1368,64 @@ exports.glib = new glib;
 
 
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
+var _, loadScript, loadedScripts;
+
+loadedScripts = [];
+
+_ = require('underscore');
+
+
+/*
+    Load a script.
+    @param {string} url - URL or path to the script. Relative paths are
+    relative to the HTML file that initiated script loading.
+    @param {function} callback - Optional function that will
+    be called on load or error.
+    @public
+ */
+
+loadScript = function(url, callback) {
+  var script, status;
+  if (callback == null) {
+    callback = function() {};
+  }
+  if (!loadedScripts[url]) {
+    loadedScripts[url] = {
+      status: "",
+      callees: []
+    };
+  }
+  status = loadedScripts[url].status;
+  if (status === "loading" || status === "error") {
+    callback(status);
+    return;
+  }
+  loadedScripts[url].callees.push(callback);
+  if (status === "loading") {
+    return;
+  }
+  script = document.createElement("script");
+  script.type = "text/javascript";
+  script.src = url;
+  script.onload = function() {
+    loadedScripts[url].status = "loaded";
+    _(loadedScripts[url].callees).each(callback("loaded"));
+    return loadedScripts[url].callees = [];
+  };
+  script.onerror = function() {
+    loadedScripts[url] = "error";
+    _(loadedScripts[url].callees).each(callback("error"));
+    return loadedScripts[url].callees = [];
+  };
+  return document.head.appendChild(script);
+};
+
+exports.loadScript = loadScript;
+
+
+
+},{"underscore":14}],6:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
   slice = [].slice;
 
@@ -1188,12 +1544,10 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"Backbone":9,"jquery":13,"teacup":14}],5:[function(require,module,exports){
+},{"Backbone":11,"jquery":15,"teacup":16}],7:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
-  extend = function(child, parent) { for (var key in parent) { if (hasProp.call(parent, key)) child[key] = parent[key]; } function ctor() { this.constructor = child; } ctor.prototype = parent.prototype; child.prototype = new ctor(); child.__super__ = parent.prototype; return child; },
-  hasProp = {}.hasOwnProperty;
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
 Backbone = require('Backbone');
 
@@ -1215,10 +1569,10 @@ implementing = function() {
   return classReference;
 };
 
-Pages = (function(superClass) {
-  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+Pylon.set('adminView', require('./adminView.coffee').adminView);
 
-  extend(Pages, superClass);
+Pages = (function() {
+  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   tea = new Teacup.Teacup;
 
@@ -1226,164 +1580,9 @@ Pages = (function(superClass) {
 
   function Pages() {
     this.renderPage = bind(this.renderPage, this);
-    this.forceTest = bind(this.forceTest, this);
-    this.wireAdmin = bind(this.wireAdmin, this);
-    this.resetAdmin = bind(this.resetAdmin, this);
     this.wireButtons = bind(this.wireButtons, this);
+    this.forceTest = bind(this.forceTest, this);
   }
-
-  Pages.prototype.inspectAdminPage = function() {
-    var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
-    clinicViewTemplate = Backbone.View.extend({
-      el: '#desiredClinic',
-      collection: Pylon.get('clinics'),
-      attributes: {
-        session: Pylon.get('sessionInfo')
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          var temp, theClinic, theOptionCid;
-          theOptionCid = this.$el.val();
-          theClinic = this.collection.get(theOptionCid);
-          this.attributes.session.set('clinic', theClinic);
-          temp = Pylon.get('clinicians');
-          temp.reset();
-          temp.add(theClinic.get('clinicians'));
-          temp.trigger('change');
-          temp = Pylon.get('clients');
-          temp.reset();
-          temp.add(theClinic.get('clients'));
-          temp.trigger('change');
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var clinic, i, len, ref1, results;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              clinic = ref1[i];
-              if (clinic.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: clinic.cid
-                }, clinic.get('name')));
-              } else {
-                results.push(option({
-                  value: clinic.cid
-                }, clinic.get('name')));
-              }
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    clinicianViewTemplate = Backbone.View.extend({
-      el: '#desiredClinician',
-      collection: Pylon.get('clinicians'),
-      attributes: {
-        session: Pylon.get('sessionInfo')
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('clinician', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        var temp;
-        temp = render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results, user;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              user = ref1[i];
-              n = user.get('name');
-              results.push(option({
-                value: user.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this));
-        this.$el.html(temp);
-        return this;
-      }
-    });
-    clientViewTemplate = Backbone.View.extend({
-      el: '#desiredClient',
-      collection: Pylon.get('clients'),
-      attributes: {
-        session: Pylon.get('sessionInfo')
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          this.attributes.session.set('client', this.$el.val());
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results;
-            option("Select ---");
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              p = ref1[i];
-              n = p.get('name');
-              results.push(option({
-                value: p.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    doneViewTemplate = Backbone.View.extend({
-      el: '#done',
-      model: Pylon.get('sessionInfo'),
-      initialize: function() {
-        return this.listenTo(this.model, 'change', this.render);
-      },
-      events: {
-        'click': this.adminDone
-      },
-      render: function() {
-        var ref1;
-        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
-          console.log('activating Admin Done Button');
-          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
-          this.$el.text("Done");
-          this.$el.show().fadeTo(500, 1);
-        }
-        return this;
-      }
-    });
-    this.doneView = new doneViewTemplate;
-    this.clientView = new clientViewTemplate;
-    this.clinicView = new clinicViewTemplate;
-    this.clinicianView = new clinicianViewTemplate;
-    Pylon.get('clinics').trigger('change');
-  };
 
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
     div('#capture-display.container', function() {
@@ -1425,9 +1624,7 @@ Pages = (function(superClass) {
           return raw('&nbsp;');
         });
       });
-      div("#content1", function() {
-        return contents1();
-      });
+      raw(contents1());
       div("#tagScanReport");
       return div('#footer', 'style="display:none;"', function() {
         hr();
@@ -1533,110 +1730,6 @@ Pages = (function(superClass) {
     });
   });
 
-  Pages.prototype.adminContents = renderable(function() {
-    return div('#adminForm', function() {
-      hr();
-      return form(function() {
-        div('.row', function() {
-          return div('.five.columns', function() {
-            label('Clinic');
-            return select('#desiredClinic.u-full-width', 'Clinic', '');
-          });
-        });
-        div('.row', function() {
-          div('.four.columns', function() {
-            label({
-              "for": 'desiredClinician'
-            }, 'Clinician');
-            select('#desiredClinician.u-full-width');
-            br();
-            label({
-              "for": "password"
-            }, "Enter Password");
-            return input("#password", {
-              type: 'password'
-            });
-          });
-          return div('.four.columns', function() {
-            label({
-              "for": 'desiredClient'
-            }, 'Client');
-            return select('#desiredClient.u-full-width');
-          });
-        });
-        return div('.row', function() {
-          div('.nine.columns', function() {
-            return raw("&nbsp;");
-          });
-          return button('#done.three.columns', {
-            disabled: true
-          }, "Done");
-        });
-      });
-    });
-  });
-
-  Pages.prototype.wireButtons = function() {
-    var model;
-    model = Pylon.get('sessionInfo');
-    return $('#TestID').change((function(_this) {
-      return function(node) {
-        $('#TestSelect').text('Which Test?').css('color', '');
-        model.set('testID', $('#TestID option:selected').val());
-        return false;
-      };
-    })(this));
-  };
-
-  Pages.prototype.resetAdmin = function() {
-    var model;
-    model = Pylon.get('sessionInfo');
-    model.unset('clinic', {
-      silent: true
-    });
-    model.unset('clinician', {
-      silent: true
-    });
-    model.unset('password', {
-      silent: true
-    });
-    model.unset('client', {
-      silent: true
-    });
-    model.unset('testID', {
-      silent: true
-    });
-    $('#password').val('');
-    $('option:selected').prop('selected', false);
-    $('option.forceSelect').prop('selected', true);
-    return $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-  };
-
-  Pages.prototype.wireAdmin = function() {
-    var model;
-    model = Pylon.get('sessionInfo');
-    $('#password').keypress((function(_this) {
-      return function(node) {
-        var ref1;
-        if (node.keyCode === 13 && !node.shiftKey) {
-          node.preventDefault();
-          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-            model.set('password', $('#password').val());
-            return false;
-          }
-        }
-      };
-    })(this)).on('blur', (function(_this) {
-      return function(node) {
-        var ref1;
-        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-          model.set('password', $('#password').val());
-          return false;
-        }
-      };
-    })(this));
-  };
-
   Pages.prototype.topButtons = renderable(function() {
     div('.row', function() {
       button('#admin.three.columns button-primary', 'Admin');
@@ -1712,10 +1805,21 @@ Pages = (function(superClass) {
     return results;
   };
 
-  Pages.prototype.renderPage = function(adminDone) {
+  Pages.prototype.wireButtons = function() {
+    var model;
+    model = Pylon.get('sessionInfo');
+    return $('#TestID').change((function(_this) {
+      return function(node) {
+        $('#TestSelect').text('Which Test?').css('color', '');
+        model.set('testID', $('#TestID option:selected').val());
+        return false;
+      };
+    })(this));
+  };
+
+  Pages.prototype.renderPage = function() {
     var bodyHtml, testViewTemplate;
-    this.adminDone = adminDone;
-    bodyHtml = this.theBody(this.topButtons, this.adminContents);
+    bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
     require('./modalViews.coffee');
@@ -1803,13 +1907,13 @@ Pages = (function(superClass) {
         Pylon.set("SecondView", new statusSecondViewTemplate);
       };
     })(this));
-    this.wireAdmin();
+    Pylon.get('adminView').wireAdmin();
   };
 
   Pages.prototype.activateAdminPage = function(buttonSpec) {
     $('#sensorPage').hide();
     $('#adminForm').show();
-    this.inspectAdminPage();
+    Pylon.get('adminView').inspectAdminPage();
     if (buttonSpec != null) {
       return this.activateButtons(buttonSpec);
     }
@@ -1825,13 +1929,13 @@ Pages = (function(superClass) {
 
   return Pages;
 
-})(Teacup.Teacup);
+})();
 
 exports.Pages = Pages;
 
 
 
-},{"./modalViews.coffee":4,"Backbone":9,"jquery":13,"teacup":14}],6:[function(require,module,exports){
+},{"./adminView.coffee":2,"./modalViews.coffee":6,"Backbone":11,"jquery":15,"teacup":16}],8:[function(require,module,exports){
 var $, Seen, _, visual;
 
 Seen = require('../libs/dbg/seen');
@@ -2135,7 +2239,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/seen":8,"jquery":13,"underscore":12}],7:[function(require,module,exports){
+},{"../libs/dbg/seen":10,"jquery":15,"underscore":14}],9:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -2417,7 +2521,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],8:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -5229,7 +5333,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],9:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.0
 
@@ -7101,7 +7205,7 @@ THE SOFTWARE.
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":13,"underscore":10}],10:[function(require,module,exports){
+},{"jquery":15,"underscore":12}],12:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8651,11 +8755,11 @@ THE SOFTWARE.
   }
 }.call(this));
 
-},{}],11:[function(require,module,exports){
-arguments[4][9][0].apply(exports,arguments)
-},{"dup":9,"jquery":13,"underscore":12}],12:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"dup":10}],13:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
+arguments[4][11][0].apply(exports,arguments)
+},{"dup":11,"jquery":15,"underscore":14}],14:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],15:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -17867,7 +17971,7 @@ return jQuery;
 
 }));
 
-},{}],14:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.1
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, i, j, l, len, len1, len2, merge_elements, ref, ref1, ref2, tagName,
@@ -18279,4 +18383,4 @@ return jQuery;
 
 }).call(this);
 
-},{}]},{},[2]);
+},{}]},{},[3]);

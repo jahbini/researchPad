@@ -3,10 +3,10 @@
 # ## data handler for clinical recording of SensorTag data
 # SensorTag object.
 
-Backbone = require ('backbone')
+$ = require('jquery')
 _ = require('underscore')
+Backbone = require ('backbone')
 require('../libs/dbg/console')
-Backbone.$ = $ = require('jquery')
 
 PylonTemplate = Backbone.Model.extend
     scan: false
@@ -15,12 +15,16 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = false
+development = true
 if development
   Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
 else
   Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
 pages = require './pages.coffee'
+Pylon.set 'adminView', require('./adminView.coffee').adminView
+loadScript = require("./loadScript.coffee").loadScript
+loadScript Pylon.get('hostUrl')+"logon.js", (status)->
+  alert "logon.js returns status of "+status
 
 ###
 Section: Data Structures
@@ -248,10 +252,21 @@ enterLogout = () ->
   g.set 'loggedIn', false
   if g.get 'recording'
     g.set 'recording', false
-    Pylon.get('devices').each (body)->
-      body.reset 'readings', silent: true
-      body.reset 'readings', silent: true
-  pageGen.resetAdmin()
+  Pylon.get('devices').each (body)->
+    body.reset 'readings', silent: true
+    body.reset 'readings', silent: true
+  model = Pylon.get('sessionInfo')
+  model.unset 'clinic', silent: true
+  model.unset 'clinician', silent: true
+  model.unset 'password', silent: true
+  model.unset 'client', silent: true
+  model.unset 'testID', silent: true
+
+  $('#password').val('')
+  $('option:selected').prop('selected',false)
+  $('option.forceSelect').prop('selected',true)
+  $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
+
   useButton buttonModelActionDisabled
   useButton buttonModelAdmin
   buttonModelUpload.set('active',false)
@@ -453,7 +468,7 @@ setSensor = ->
   setButtons()
   return false
 
-adminDone= ->
+Pylon.on 'adminDone', ->
   g=Pylon.get('globalState')
   g.set 'loggedIn',  true
   useButton  buttonModelAdminLogout
@@ -508,7 +523,7 @@ $(document).on 'deviceready', ->
 
 $ ->
   domIsReady = true
-  pageGen.renderPage adminDone
+  pageGen.renderPage() 
   if $('#console-log')?
     window.console=console = new Console('console-log')
     exitDebug()
