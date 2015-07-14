@@ -1,1 +1,1 @@
-alert("Wheee!");
+console.log('logon.js loaded');

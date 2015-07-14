@@ -686,7 +686,7 @@ Pylon.set('adminView', require('./adminView.coffee').adminView);
 loadScript = require("./loadScript.coffee").loadScript;
 
 loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
-  return alert("logon.js returns status of " + status);
+  return console.log("logon.js returns status of " + status);
 });
 
 

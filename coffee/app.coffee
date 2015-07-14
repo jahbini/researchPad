@@ -15,7 +15,7 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = true
+development = false
 if development
   Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
 else
@@ -24,7 +24,7 @@ pages = require './pages.coffee'
 Pylon.set 'adminView', require('./adminView.coffee').adminView
 loadScript = require("./loadScript.coffee").loadScript
 loadScript Pylon.get('hostUrl')+"logon.js", (status)->
-  alert "logon.js returns status of "+status
+  console.log "logon.js returns status of "+status
 
 ###
 Section: Data Structures
