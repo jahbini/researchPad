@@ -75,7 +75,6 @@ class Pages
             th "no sensors respond"
             return
           else
-            th "Sensor"
             th "Gyroscope"
             th "Accelerometer"
             th "Magnetometer"
@@ -84,9 +83,6 @@ class Pages
           tbody ->
             tr ->
               td ->
-                button '#connect-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                  ,onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
-                  ,device.get 'buttonText'
                 text (device.get 'nickname')
                 br()
                 span "#status-"+theUUID, (device.get 'deviceStatus')
@@ -104,6 +100,15 @@ class Pages
                   color = "#0099ff"
                 modifier = ".fa.fa-signal.fa-3x"
                 span "#rssi-"+theUUID+modifier, style: 'color:'+color, sig
+              td ->
+                button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                  ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+                  ,device.get('buttonText') + if device.get('role')=='Second' then '' else "(R)"
+              td ->
+                button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                  ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+                  ,device.get('buttonText') + if device.get('role')== 'First' then '' else "(L)"
+            tr ->
               td ->
                 canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
               td ->

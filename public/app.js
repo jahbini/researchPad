@@ -158,8 +158,12 @@ TiHandler = (function() {
     }
   });
 
-  Pylon.on("enableTag", function(uuid) {
+  Pylon.on("enableRight", function(uuid) {
     return Pylon.get('TiHandler').attachDevice(uuid, 'First');
+  });
+
+  Pylon.on("enableLeft", function(uuid) {
+    return Pylon.get('TiHandler').attachDevice(uuid, 'Second');
   });
 
 
@@ -245,16 +249,14 @@ TiHandler = (function() {
     };
   };
 
-  TiHandler.prototype.attachDevice = function(uuid) {
-    var d, e, handlers, other, rawDevice, role, sensorInstance;
+  TiHandler.prototype.attachDevice = function(uuid, role) {
+    var d, e, handlers, rawDevice, sensorInstance;
+    if (role == null) {
+      role = "First";
+    }
     console.log("attach " + uuid);
-    role = "First";
     d = Pylon.get('devices').get(uuid);
     d.set('buttonText', 'connecting');
-    other = Pylon.get('First');
-    if (other && other !== d) {
-      role = 'Second';
-    }
     d.set('role', role);
     d.set('connected', false);
     if (d.has('readings')) {
@@ -1664,7 +1666,6 @@ Pages = (function() {
         if (sensorTags.length === 0) {
           th("no sensors respond");
         } else {
-          th("Sensor");
           th("Gyroscope");
           th("Accelerometer");
           return th("Magnetometer");
@@ -1675,12 +1676,9 @@ Pages = (function() {
         device = sensorTags[i];
         theUUID = device.get('UUID');
         results.push(tbody(function() {
-          return tr(function() {
+          tr(function() {
             td(function() {
               var color, modifier, sig;
-              button('#connect-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
-                onClick: "Pylon.trigger('enableTag', '" + theUUID + "')"
-              }, device.get('buttonText'));
               text(device.get('nickname'));
               br();
               span("#status-" + theUUID, device.get('deviceStatus'));
@@ -1702,6 +1700,18 @@ Pages = (function() {
                 style: 'color:' + color
               }, sig);
             });
+            td(function() {
+              return button('#connect-r-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
+                onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+              }, device.get('buttonText') + (device.get('role') === 'Second' ? '' : "(R)"));
+            });
+            return td(function() {
+              return button('#connect-l-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
+                onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+              }, device.get('buttonText') + (device.get('role') === 'First' ? '' : "(L)"));
+            });
+          });
+          return tr(function() {
             td(function() {
               return canvas('#gyro-view-' + theUUID, {
                 width: '200',

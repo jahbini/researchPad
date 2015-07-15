@@ -135,9 +135,13 @@ class TiHandler
       sensorScanner.stopScanningForDevices()
       return
 
-  Pylon.on "enableTag", (uuid)->
+  Pylon.on "enableRight", (uuid)->
     Pylon.get 'TiHandler'
       .attachDevice uuid, 'First'
+
+  Pylon.on "enableLeft", (uuid)->
+    Pylon.get 'TiHandler'
+      .attachDevice uuid, 'Second'
 
   ###
   Section: Data Structures
@@ -224,13 +228,10 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-  attachDevice: (uuid) ->
+  attachDevice: (uuid,role="First") ->
     console.log "attach "+uuid
-    role = "First"
     d = Pylon.get('devices').get uuid
     d.set 'buttonText', 'connecting'
-    other = Pylon.get 'First' 
-    role = 'Second' if other && other != d
     d.set 'role',role
     d.set 'connected', false
   #throw away any previous reading
