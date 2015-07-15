@@ -1589,13 +1589,9 @@ Pages = (function() {
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
     div('#capture-display.container', function() {
       div('.row', function() {
-        a({
-          href: '/index.html'
-        }, function() {
-          return img("#logo.five.columns", {
-            src: './ui/images/logo-final.png',
-            width: '100%'
-          });
+        img("#logo.five.columns", {
+          src: './ui/images/logo-final.png',
+          width: '100%'
         });
         div('#dud.one.columns', function() {
           return raw('&nbsp;');

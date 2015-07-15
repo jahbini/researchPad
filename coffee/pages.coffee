@@ -24,8 +24,7 @@ class Pages
   theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
       div '.row', ->
-        a href: '/index.html', ->
-          img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
+        img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
