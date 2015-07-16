@@ -159,11 +159,11 @@ TiHandler = (function() {
   });
 
   Pylon.on("enableRight", function(uuid) {
-    return Pylon.get('TiHandler').attachDevice(uuid, 'First');
+    return Pylon.get('TiHandler').attachDevice(uuid, 'Right');
   });
 
   Pylon.on("enableLeft", function(uuid) {
-    return Pylon.get('TiHandler').attachDevice(uuid, 'Second');
+    return Pylon.get('TiHandler').attachDevice(uuid, 'Left');
   });
 
 
@@ -252,7 +252,7 @@ TiHandler = (function() {
   TiHandler.prototype.attachDevice = function(uuid, role) {
     var d, e, handlers, rawDevice, sensorInstance;
     if (role == null) {
-      role = "First";
+      role = "Right";
     }
     console.log("attach " + uuid);
     d = Pylon.get('devices').get(uuid);
@@ -1603,18 +1603,18 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.two.columns', "First Tag");
+        div('.two.columns', "Right Tag");
         div('.three.columns', function() {
-          return span('#FirstNick', '?');
+          return span('#RightNick', '?');
         });
-        return div('#Firstuuid.seven.columns', ' ');
+        return div('#Rightuuid.seven.columns', ' ');
       });
       div('.row', function() {
-        div('.two.columns', "Second Tag");
+        div('.two.columns', "Left Tag");
         div('.three.columns', function() {
-          return span('#SecondNick', '?');
+          return span('#LeftNick', '?');
         });
-        return div('#Seconduuid.seven.columns', ' ');
+        return div('#Leftuuid.seven.columns', ' ');
       });
       div('.row', function() {
         div('.five.columns', "Platform UUID");
@@ -1697,14 +1697,22 @@ Pages = (function() {
               }, sig);
             });
             td(function() {
-              return button('#connect-r-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
-                onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
-              }, device.get('buttonText') + (device.get('role') === 'Second' ? '' : "(R)"));
+              if ('Right' !== device.get('role')) {
+                return button('#connect-l-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
+                  onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+                }, device.get('buttonText') + "(L)");
+              } else {
+                return button('.disabled.u-full-width', "Right");
+              }
             });
             return td(function() {
-              return button('#connect-l-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
-                onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
-              }, device.get('buttonText') + (device.get('role') === 'First' ? '' : "(L)"));
+              if ('Left' !== device.get('role')) {
+                return button('#connect-r-' + theUUID + '.needsclick.u-full-width.' + device.get('buttonClass'), {
+                  onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+                }, device.get('buttonText') + "(R)");
+              } else {
+                return button('.disabled.u-full-width', "Left");
+              }
             });
           });
           return tr(function() {
@@ -1758,13 +1766,13 @@ Pages = (function() {
       });
       div('.three.columns', function() {
         button('#upload.disabled.u-full-width', 'Upload');
-        return label('#FirstStat', {
+        return label('#RightStat', {
           "for": "upload"
         }, 'Items:0');
       });
       return div('.three.columns', function() {
         button('#clear.u-full-width.disabled', 'Reset');
-        return label('#SecondStat', {
+        return label('#LeftStat', {
           "for": "clear"
         }, 'Items:0');
       });
@@ -1872,17 +1880,17 @@ Pages = (function() {
       }
     });
     this.testView = new testViewTemplate;
-    Pylon.on('change:First', (function(_this) {
+    Pylon.on('change:Right', (function(_this) {
       return function() {
-        var dev, readings, statusFirstViewTemplate;
-        dev = Pylon.get('First');
+        var dev, readings, statusRightViewTemplate;
+        dev = Pylon.get('Right');
         readings = dev.get('readings');
-        console.log("activating First");
-        statusFirstViewTemplate = Backbone.View.extend({
+        console.log("activating Right");
+        statusRightViewTemplate = Backbone.View.extend({
           collection: readings,
-          el: "#FirstStat",
+          el: "#RightStat",
           initialize: function() {
-            console.log("Creation of readings (collection) for First");
+            console.log("Creation of readings (collection) for Right");
             this.listenTo(this.collection, 'change', this.render);
             return this.listenTo(this.collection, 'reset', this.render);
           },
@@ -1890,17 +1898,17 @@ Pages = (function() {
             return this.$el.html("Items: " + this.collection.length);
           }
         });
-        Pylon.set("FirstView", new statusFirstViewTemplate);
+        Pylon.set("RightView", new statusRightViewTemplate);
       };
     })(this));
-    Pylon.on('change:Second', (function(_this) {
+    Pylon.on('change:Left', (function(_this) {
       return function() {
-        var dev, readings, statusSecondViewTemplate;
-        dev = Pylon.get('Second');
+        var dev, readings, statusLeftViewTemplate;
+        dev = Pylon.get('Left');
         readings = dev.get('readings');
-        console.log("Creation of readings (collection) for Second");
-        statusSecondViewTemplate = Backbone.View.extend({
-          el: "#SecondStat",
+        console.log("Creation of readings (collection) for Left");
+        statusLeftViewTemplate = Backbone.View.extend({
+          el: "#LeftStat",
           collection: readings,
           initialize: function() {
             this.listenTo(this.collection, 'change', this.render);
@@ -1910,7 +1918,7 @@ Pages = (function() {
             return this.$el.html("Items: " + this.collection.length);
           }
         });
-        Pylon.set("SecondView", new statusSecondViewTemplate);
+        Pylon.set("LeftView", new statusLeftViewTemplate);
       };
     })(this));
     Pylon.get('adminView').wireAdmin();

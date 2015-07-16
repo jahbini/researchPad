@@ -137,11 +137,11 @@ class TiHandler
 
   Pylon.on "enableRight", (uuid)->
     Pylon.get 'TiHandler'
-      .attachDevice uuid, 'First'
+      .attachDevice uuid, 'Right'
 
   Pylon.on "enableLeft", (uuid)->
     Pylon.get 'TiHandler'
-      .attachDevice uuid, 'Second'
+      .attachDevice uuid, 'Left'
 
   ###
   Section: Data Structures
@@ -228,7 +228,7 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-  attachDevice: (uuid,role="First") ->
+  attachDevice: (uuid,role="Right") ->
     console.log "attach "+uuid
     d = Pylon.get('devices').get uuid
     d.set 'buttonText', 'connecting'
@@ -241,7 +241,7 @@ class TiHandler
       d.get('readings').reset []
     else
       d.set 'readings', new readingCollection
-    # triggers change:First or change:Second 
+    # triggers change:Right or change:Left 
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
         

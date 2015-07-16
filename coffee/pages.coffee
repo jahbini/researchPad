@@ -30,15 +30,15 @@ class Pages
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
       buttons()
       div '.row',->
-        div '.two.columns',"First Tag"
+        div '.two.columns',"Right Tag"
         div '.three.columns', ->
-          span '#FirstNick', '?'
-        div '#Firstuuid.seven.columns' , ' '
+          span '#RightNick', '?'
+        div '#Rightuuid.seven.columns' , ' '
       div '.row',->
-        div '.two.columns',"Second Tag"
+        div '.two.columns',"Left Tag"
         div '.three.columns', ->
-          span '#SecondNick', '?'
-        div '#Seconduuid.seven.columns' , ' '
+          span '#LeftNick', '?'
+        div '#Leftuuid.seven.columns' , ' '
       div '.row', ->
         div '.five.columns',"Platform UUID"
         div '#platformUUID.seven.columns', ->
@@ -100,13 +100,19 @@ class Pages
                 modifier = ".fa.fa-signal.fa-3x"
                 span "#rssi-"+theUUID+modifier, style: 'color:'+color, sig
               td ->
-                button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                  ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
-                  ,device.get('buttonText') + if device.get('role')=='Second' then '' else "(R)"
+                if 'Right' != device.get 'role'
+                  button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                    ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+                    ,device.get('buttonText') + "(L)"
+                else
+                  button '.disabled.u-full-width', "Right"
               td ->
-                button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                  ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
-                  ,device.get('buttonText') + if device.get('role')== 'First' then '' else "(L)"
+                if 'Left' != device.get 'role'
+                  button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                    ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+                    ,device.get('buttonText') + "(R)"
+                else
+                  button '.disabled.u-full-width', "Left"
             tr ->
               td ->
                 canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
@@ -131,10 +137,10 @@ class Pages
           select "#TestID.u-full-width"
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
-          label '#FirstStat', for: "upload", 'Items:0'
+          label '#RightStat', for: "upload", 'Items:0'
         div '.three.columns', ->
           button '#clear.u-full-width.disabled', 'Reset'
-          label '#SecondStat', for: "clear", 'Items:0'
+          label '#LeftStat', for: "clear", 'Items:0'
 
   tagSelector: renderable ()=>
     
@@ -193,35 +199,35 @@ class Pages
         return this
     @testView = new testViewTemplate
 
-    Pylon.on 'change:First', ()=>
-      dev = Pylon.get 'First'
+    Pylon.on 'change:Right', ()=>
+      dev = Pylon.get 'Right'
       readings = dev.get 'readings'
-      console.log "activating First"
-      statusFirstViewTemplate = Backbone.View.extend
+      console.log "activating Right"
+      statusRightViewTemplate = Backbone.View.extend
         collection: readings
-        el: "#FirstStat"
+        el: "#RightStat"
         initialize: ->
-          console.log "Creation of readings (collection) for First"
+          console.log "Creation of readings (collection) for Right"
           @listenTo @collection, 'change', @render
           @listenTo @collection, 'reset', @render
         render: ->
           @$el.html "Items: "+@collection.length
-      Pylon.set("FirstView", new statusFirstViewTemplate)
+      Pylon.set("RightView", new statusRightViewTemplate)
       return
 
-    Pylon.on 'change:Second', ()=>
-      dev = Pylon.get 'Second'
+    Pylon.on 'change:Left', ()=>
+      dev = Pylon.get 'Left'
       readings = dev.get 'readings'
-      console.log "Creation of readings (collection) for Second"
-      statusSecondViewTemplate = Backbone.View.extend
-        el: "#SecondStat"
+      console.log "Creation of readings (collection) for Left"
+      statusLeftViewTemplate = Backbone.View.extend
+        el: "#LeftStat"
         collection: readings
         initialize: ->
           @listenTo @collection, 'change', @render
           @listenTo @collection, 'reset', @render
         render: ->
           @$el.html "Items: "+@collection.length
-      Pylon.set("SecondView", new statusSecondViewTemplate)
+      Pylon.set("LeftView", new statusLeftViewTemplate)
       return
     Pylon.get('adminView').wireAdmin()
     return
