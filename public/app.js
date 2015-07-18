@@ -217,7 +217,8 @@ TiHandler = (function() {
       },
       units: 'G',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      viewer: smoother.viewSensor('accel-view-' + device.id, 0.4)
+      viewer: smoother.viewSensor('accel-view-' + device.id, 0.4),
+      finalScale: 1
     });
     magnetometerHandler = smoother.readingHandler({
       device: device,
@@ -229,7 +230,8 @@ TiHandler = (function() {
         return (device.get('getMagnetometerValues'))(data);
       },
       units: '&micro;T',
-      viewer: smoother.viewSensor('magnet-view-' + device.id, 0.05)
+      viewer: smoother.viewSensor('magnet-view-' + device.id, 0.05),
+      finalScale: 1
     });
     gyroscopeHandler = smoother.readingHandler({
       device: device,
@@ -240,7 +242,8 @@ TiHandler = (function() {
       source: function(data) {
         return (device.get('getGyroscopeValues'))(data);
       },
-      viewer: smoother.viewSensor('gyro-view-' + device.id, 0.005)
+      viewer: smoother.viewSensor('gyro-view-' + device.id, 0.005),
+      finalScale: 1
     });
     return {
       gyro: gyroscopeHandler,
@@ -269,7 +272,6 @@ TiHandler = (function() {
     }
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
-    handlers = this.createVisualChain(d);
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
         d.set('type', evothings.tisensortag.CC2541_BLUETOOTH_SMART);
@@ -335,6 +337,11 @@ TiHandler = (function() {
       d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
       d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
       d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
+      handlers = this.createVisualChain(d);
+      if (d.get('type' === evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
+        handlers.accel.finalScale = 2;
+        handlers.mag.finalScale = 0.35;
+      }
       sensorInstance.accelerometerCallback((function(_this) {
         return function(data) {
           return handlers.accel(data);
@@ -1273,7 +1280,7 @@ rediness = function() {
     error: function(collection, response, options) {
       console.log(Pylon.get('hostUrl') + 'clinics');
       console.log("clinics fetch error - response");
-      console.log(response);
+      console.log(response.statusText);
       console.log("clinics fetch error - collection");
       return console.log(collection);
     }
@@ -2088,7 +2095,7 @@ visual = (function() {
             o.calibrator[i](dataCondition, 0, 0);
             i++;
           }
-          p = dataCondition.cookedValue;
+          p = dataCondition.cookedValue.multiply(o.finalScale);
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
           if (Pylon.get('globalState').get('recording')) {

@@ -193,6 +193,7 @@ class TiHandler
         smoother.calibratorSmooth
       ]
       viewer: smoother.viewSensor 'accel-view-'+device.id, 0.4
+      finalScale: 1
 
     magnetometerHandler = smoother.readingHandler
       device: device
@@ -207,6 +208,7 @@ class TiHandler
         (device.get 'getMagnetometerValues') data
       units: '&micro;T'
       viewer: smoother.viewSensor 'magnet-view-'+device.id, 0.05
+      finalScale: 1
 
     gyroscopeHandler = smoother.readingHandler
       device: device
@@ -220,6 +222,7 @@ class TiHandler
       source: (data)->
         (device.get 'getGyroscopeValues') data
       viewer: smoother.viewSensor 'gyro-view-'+device.id, 0.005
+      finalScale: 1
 
     return gyro: gyroscopeHandler
       , accel: accelerometerHandler
@@ -245,7 +248,6 @@ class TiHandler
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
         
-    handlers= @createVisualChain d
     try
       if d.get( 'genericName').search(/BLE/) > -1
         d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
@@ -307,6 +309,10 @@ class TiHandler
       d.set 'getGyroscopeValues', sensorInstance.getGyroscopeValues
 
       # and plug our data handlers into the evothings scheme
+      handlers= @createVisualChain d
+      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
+        handlers.accel.finalScale = 2
+        handlers.mag.finalScale = 0.35
       sensorInstance.accelerometerCallback (data)=> 
           handlers.accel data
         ,100

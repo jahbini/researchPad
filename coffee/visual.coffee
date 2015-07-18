@@ -120,7 +120,7 @@ class visual
           # calibration has been deprecated, but if needed would be moved to some newly designed View
           o.calibrator[i] dataCondition, 0,0
           i++
-        p = dataCondition.cookedValue
+        p = dataCondition.cookedValue.multiply(o.finalScale)
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
 

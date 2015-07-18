@@ -493,7 +493,7 @@ rediness = ->
     error: (collection,response,options)->
       console.log (Pylon.get('hostUrl')+'clinics')
       console.log "clinics fetch error - response"
-      console.log response
+      console.log response.statusText
       console.log "clinics fetch error - collection"
       console.log collection
 
