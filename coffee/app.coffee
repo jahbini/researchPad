@@ -15,7 +15,7 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = true
+development = false
 if development
   Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
 else
