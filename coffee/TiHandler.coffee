@@ -63,6 +63,7 @@ readingCollection = Backbone.Collection.extend
   initialize: ->
 
 deviceModel = Backbone.Model.extend
+  urlRoot: Pylon.get('hostUrl')+'sensor-tag'
   idAttribute: "UUID"
   defaults: 
     UUID: "00000000-0000-0000-0000-000000000000"
@@ -82,12 +83,14 @@ class TiHandler
 
 # status callbacks for the BLE scan for devices mode -- should activate "status" view
   sensorScanner.statusCallback (s)->
+    return if s == 'SCANNING'
     console.log "Scan status = "+s
     s = "Scan Complete" if s == "SENSORTAG_NOT_FOUND"
     $('#StatusData').css("color", "green").html s
     Pylon.trigger 'sensorScanStatus', s
     return
   sensorScanner.errorCallback (e)->
+    return if e == "SCAN_FAILED" 
     console.log "Scan Error = "+e
     # Evothings reports SCAN_FAILED when it detects a tag.  Not cool
     return if e == "SCAN_FAILED" 
@@ -121,6 +124,7 @@ class TiHandler
 
         console.log "got new device"
         d = new deviceModel
+          id: uuid
           signalStrength: rssi
           genericName: device.name
           UUID: uuid
@@ -129,6 +133,19 @@ class TiHandler
           buttonClass: 'button-primary'
           deviceStatus: '--'
         pd.push d
+        d.fetch 
+          success: (model,response,options) ->
+            console.log "Got new Tag info"
+            console.log model.toJSON()
+            console.log "Got new Tag response"
+            console.log response
+          error: (model,response,options)->
+            console.log (Pylon.get('hostUrl')+'/sensorTag')
+            console.log "sensorTag fetch error - response"
+            console.log response.statusText
+            console.log "sensorTag fetch error - model"
+            console.log model
+
         Pylon.trigger('change respondingDevices')
         return
     else
@@ -312,7 +329,7 @@ class TiHandler
       handlers= @createVisualChain d
       if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
         handlers.accel.finalScale = 2
-        handlers.mag.finalScale = 0.35
+        handlers.mag.finalScale = 0.15
       sensorInstance.accelerometerCallback (data)=> 
           handlers.accel data
         ,100

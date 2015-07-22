@@ -159,7 +159,8 @@
 			instance.movementFun = fun
 
  			// Set the config that turns on the needed sensors.
-			instance.movementConfig = [sensors, 0]
+      // -- high byte of 1 selects 8G mode
+			instance.movementConfig = [sensors, 1]
 			instance.movementInterval = interval
 			instance.requiredServices.push(instance.MOVEMENT_SERVICE)
 
@@ -322,7 +323,8 @@
 		 */
 		instance.getAccelerometerValues = function(data)
 		{
-			var divisors = {x: -16384.0, y: 16384.0, z: -16384.0}
+      /* reduce divisors to scale 8G readings */
+			var divisors = {x: -16384.0/4, y: 16384.0/4, z: -16384.0/4}
 
 			// Calculate accelerometer values.
 			var ax = evothings.util.littleEndianToInt16(data, 6) / divisors.x

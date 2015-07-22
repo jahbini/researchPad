@@ -69,6 +69,7 @@ readingCollection = Backbone.Collection.extend({
 });
 
 deviceModel = Backbone.Model.extend({
+  urlRoot: Pylon.get('hostUrl') + 'sensor-tag',
   idAttribute: "UUID",
   defaults: {
     UUID: "00000000-0000-0000-0000-000000000000"
@@ -96,6 +97,9 @@ TiHandler = (function() {
   evothings.tisensortag.ble.addInstanceMethods(sensorScanner);
 
   sensorScanner.statusCallback(function(s) {
+    if (s === 'SCANNING') {
+      return;
+    }
     console.log("Scan status = " + s);
     if (s === "SENSORTAG_NOT_FOUND") {
       s = "Scan Complete";
@@ -105,6 +109,9 @@ TiHandler = (function() {
   });
 
   sensorScanner.errorCallback(function(e) {
+    if (e === "SCAN_FAILED") {
+      return;
+    }
     console.log("Scan Error = " + e);
     if (e === "SCAN_FAILED") {
       return;
@@ -142,6 +149,7 @@ TiHandler = (function() {
         }
         console.log("got new device");
         d = new deviceModel({
+          id: uuid,
           signalStrength: rssi,
           genericName: device.name,
           UUID: uuid,
@@ -151,6 +159,21 @@ TiHandler = (function() {
           deviceStatus: '--'
         });
         pd.push(d);
+        d.fetch({
+          success: function(model, response, options) {
+            console.log("Got new Tag info");
+            console.log(model.toJSON());
+            console.log("Got new Tag response");
+            return console.log(response);
+          },
+          error: function(model, response, options) {
+            console.log(Pylon.get('hostUrl') + '/sensorTag');
+            console.log("sensorTag fetch error - response");
+            console.log(response.statusText);
+            console.log("sensorTag fetch error - model");
+            return console.log(model);
+          }
+        });
         Pylon.trigger('change respondingDevices');
       });
     } else {
@@ -340,7 +363,7 @@ TiHandler = (function() {
       handlers = this.createVisualChain(d);
       if (d.get('type' === evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
         handlers.accel.finalScale = 2;
-        handlers.mag.finalScale = 0.35;
+        handlers.mag.finalScale = 0.15;
       }
       sensorInstance.accelerometerCallback((function(_this) {
         return function(data) {
@@ -680,7 +703,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-development = false;
+development = true;
 
 if (development) {
   Pylon.set('hostUrl', "http://192.168.1.200:3000/");
@@ -1175,7 +1198,6 @@ enterUpload = function() {
   ref = Pylon.get('devices').toJSON();
   for (i in ref) {
     body = ref[i];
-    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
     if (!(r = body.readings)) {
       continue;
     }
@@ -1183,6 +1205,7 @@ enterUpload = function() {
       continue;
     }
     noData = false;
+    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
     devicesData.push({
       sensorUUID: body.UUID,
       role: body.role,
@@ -1203,6 +1226,7 @@ enterUpload = function() {
   brainDump.set('sensorUUID', "0-0-0");
   brainDump.set('patientID', sessionInfo.get('client'));
   brainDump.set('user', sessionInfo.get('clinician'));
+  brainDump.set('clinician', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
   brainDump.set('testID', sessionInfo.get('testID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));

@@ -15,7 +15,7 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = false
+development = true
 if development
   Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
 else
@@ -398,10 +398,10 @@ enterUpload = ->
   noData = true
   for i,body of Pylon.get('devices').toJSON()
   #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
-    console.log body.nickname+" has "+body.readings.length+" readings for upload."
     continue if ! (r = body.readings)
     continue if r.length == 0
     noData = false
+    console.log body.nickname+" has "+body.readings.length+" readings for upload."
     devicesData.push
       sensorUUID: body.UUID
       role: body.role
@@ -420,6 +420,7 @@ enterUpload = ->
   brainDump.set('sensorUUID',"0-0-0")
   brainDump.set('patientID',sessionInfo.get('client') )
   brainDump.set('user',sessionInfo.get('clinician') )
+  brainDump.set('clinician',sessionInfo.get('clinician') )
   brainDump.set('password',sessionInfo.get('password') )
   brainDump.set('testID',sessionInfo.get('testID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
