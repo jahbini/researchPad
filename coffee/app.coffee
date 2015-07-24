@@ -41,7 +41,6 @@ systemCommunicator = Backbone.Model.extend
 
 Pylon.set 'globalState', new systemCommunicator
 
-
 clinicModel = Backbone.Model.extend()
 
 clinicCollection = Backbone.Collection.extend
@@ -51,7 +50,7 @@ clinicCollection = Backbone.Collection.extend
 clinics = new clinicCollection
 Pylon.set('clinics',clinics)
 
-
+# #Clinicians -- users without 'patientOnly' attribute
 clinicianModel = Backbone.Model.extend
   defaults:
     name: 'Text'
@@ -62,7 +61,7 @@ clinicianCollection = Backbone.Collection.extend
 clinicians = new clinicianCollection
 Pylon.set('clinicians',clinicians)
 
-
+# #Clients -- users with 'patientOnly' attribute
 clientModel = Backbone.Model.extend
   defaults:
     name: 'Text'
@@ -73,6 +72,7 @@ clientCollection = Backbone.Collection.extend
 clients = new clientCollection
 Pylon.set('clients',clients)
 
+# #Test Protocols
 test = Backbone.Model.extend
   defaults:
     name: "test 0"
@@ -83,25 +83,29 @@ testCollection = Backbone.Collection.extend
 tests = new testCollection
 Pylon.set('tests',tests)
 
+tests.push new test
+  name: 'T25FW'
+  Description: 'T25FW'
+
+tests.push new test
+  name: '9HPT (dom)'
+  Description: '9HPT (dom)'
+
+tests.push new test
+  name: '9HPT (non-dom)'
+  Description: '9HPT (non-dom)'
+
+tests.push new test
+  name: 'Other'
+  Description: 'Other'
+
+
 adminData = Backbone.Model.extend()
 admin = new adminData
     clinics: clinics
     clinicians: clinicians
     clients: clients
     tests: tests
-
-reading = Backbone.Model.extend
-  defaults:
-    sensor: 'gyro'
-  initialize: ->
-    d = new Date
-    @set 'time', d.getTime()
-
-readingCollection = Backbone.Collection.extend
-  model: reading
-  initialize: ->
-
-readings = new readingCollection
 
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
@@ -114,31 +118,6 @@ sessionInfo = new rawSession
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
 Pylon.set 'sessionInfo', sessionInfo
-
-enterDebug = () ->
-  useButton  buttonModelDebugOn
-  setButtons()
-  $('#footer').show()
-  return false
-
-exitDebug = () ->
-  useButton  buttonModelDebugOff
-  setButtons()
-  $('#footer').hide()
-  return false
-
-exitAdmin = () ->
-  Pylon.get('globalState').set 'loggedIn', true
-  enterLogout()
-  return false
-
-enterAdmin = ->
-  try
-    pageGen.activateAdminPage()
-  catch e
-    console.log e
-  return false
-
 aButtonModel = Backbone.Model.extend
   defaults:
     active: false
@@ -246,6 +225,29 @@ useButton= (model) ->
   key = model.get('selector')
   buttonCollection[key] = model
 
+enterDebug = () ->
+  useButton  buttonModelDebugOn
+  setButtons()
+  $('#footer').show()
+  return false
+
+exitDebug = () ->
+  useButton  buttonModelDebugOff
+  setButtons()
+  $('#footer').hide()
+  return false
+
+exitAdmin = () ->
+  Pylon.get('globalState').set 'loggedIn', true
+  enterLogout()
+  return false
+
+enterAdmin = ->
+  try
+    pageGen.activateAdminPage()
+  catch e
+    console.log e
+  return false
 
 enterLogout = () ->
   g=Pylon.get 'globalState'
@@ -277,23 +279,6 @@ enterLogout = () ->
 setButtons = () ->
   pageGen.activateButtons buttonCollection
   return
-
-tests.push new test
-  name: 'T25FW'
-  Description: 'T25FW'
-
-tests.push new test
-  name: '9HPT (dom)'
-  Description: '9HPT (dom)'
-
-tests.push new test
-  name: '9HPT (non-dom)'
-  Description: '9HPT (non-dom)'
-
-tests.push new test
-  name: 'Other'
-  Description: 'Other'
-
 # ## Section State Handlers
 
 initAll = ->
@@ -460,7 +445,7 @@ Pylon.on 'connected', enterConnected
 # ### Subsection State Handlers that depend on the Hardware
 startBlueTooth = ->
   TiHandlerDef = require('./TiHandler.coffee')
-  TiHandler = new TiHandlerDef  reading, sessionInfo
+  TiHandler = new TiHandlerDef sessionInfo
   window.TiHandler = TiHandler
   Pylon.set 'TiHandler', TiHandler
 

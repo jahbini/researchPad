@@ -135,10 +135,10 @@ class TiHandler
         pd.push d
         d.fetch 
           success: (model,response,options) ->
-            console.log "Got new Tag info"
-            console.log model.toJSON()
-            console.log "Got new Tag response"
-            console.log response
+            name = d.get 'assignedName'
+            if name
+              $("#assignedName-"+d.id).text name
+
           error: (model,response,options)->
             console.log (Pylon.get('hostUrl')+'/sensorTag')
             console.log "sensorTag fetch error - response"
@@ -193,7 +193,7 @@ class TiHandler
 
   ###
 
-  constructor: (@reading,@sessionInfo) ->
+  constructor: (@sessionInfo) ->
 
   createVisualChain: (device) ->
     smoother = new visualHandler
@@ -293,7 +293,7 @@ class TiHandler
           s= d.get 'buttonText'
           $('#status-'+uuid).html s
           $('#'+role+'Nick').text d.get("nickname")
-          $('#'+role+'uuid').text d.id
+          $('#'+role+'uuid').text (d.get('assignedName') || d.id)
           Pylon.trigger('change respondingDevices')
         return
 

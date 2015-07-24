@@ -161,10 +161,11 @@ TiHandler = (function() {
         pd.push(d);
         d.fetch({
           success: function(model, response, options) {
-            console.log("Got new Tag info");
-            console.log(model.toJSON());
-            console.log("Got new Tag response");
-            return console.log(response);
+            var name;
+            name = d.get('assignedName');
+            if (name) {
+              return $("#assignedName-" + d.id).text(name);
+            }
           },
           error: function(model, response, options) {
             console.log(Pylon.get('hostUrl') + '/sensorTag');
@@ -222,8 +223,7 @@ TiHandler = (function() {
       platformUUID: ''
    */
 
-  function TiHandler(reading1, sessionInfo1) {
-    this.reading = reading1;
+  function TiHandler(sessionInfo1) {
     this.sessionInfo = sessionInfo1;
   }
 
@@ -327,7 +327,7 @@ TiHandler = (function() {
           s = d.get('buttonText');
           $('#status-' + uuid).html(s);
           $('#' + role + 'Nick').text(d.get("nickname"));
-          $('#' + role + 'uuid').text(d.id);
+          $('#' + role + 'uuid').text(d.get('assignedName') || d.id);
           Pylon.trigger('change respondingDevices');
         }
       });
@@ -677,7 +677,7 @@ exports.adminView = new adminView;
 
 
 },{"Backbone":11,"jquery":15,"teacup":16}],3:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, rawSession, reading, readingCollection, readings, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
 
 $ = require('jquery');
 
@@ -798,6 +798,26 @@ tests = new testCollection;
 
 Pylon.set('tests', tests);
 
+tests.push(new test({
+  name: 'T25FW',
+  Description: 'T25FW'
+}));
+
+tests.push(new test({
+  name: '9HPT (dom)',
+  Description: '9HPT (dom)'
+}));
+
+tests.push(new test({
+  name: '9HPT (non-dom)',
+  Description: '9HPT (non-dom)'
+}));
+
+tests.push(new test({
+  name: 'Other',
+  Description: 'Other'
+}));
+
 adminData = Backbone.Model.extend();
 
 admin = new adminData({
@@ -806,24 +826,6 @@ admin = new adminData({
   clients: clients,
   tests: tests
 });
-
-reading = Backbone.Model.extend({
-  defaults: {
-    sensor: 'gyro'
-  },
-  initialize: function() {
-    var d;
-    d = new Date;
-    return this.set('time', d.getTime());
-  }
-});
-
-readingCollection = Backbone.Collection.extend({
-  model: reading,
-  initialize: function() {}
-});
-
-readings = new readingCollection;
 
 rawSession = Backbone.Model.extend();
 
@@ -840,37 +842,6 @@ pageGen = new pages.Pages(sessionInfo);
 Pylon.set('pageGen', pageGen);
 
 Pylon.set('sessionInfo', sessionInfo);
-
-enterDebug = function() {
-  useButton(buttonModelDebugOn);
-  setButtons();
-  $('#footer').show();
-  return false;
-};
-
-exitDebug = function() {
-  useButton(buttonModelDebugOff);
-  setButtons();
-  $('#footer').hide();
-  return false;
-};
-
-exitAdmin = function() {
-  Pylon.get('globalState').set('loggedIn', true);
-  enterLogout();
-  return false;
-};
-
-enterAdmin = function() {
-  var e;
-  try {
-    pageGen.activateAdminPage();
-  } catch (_error) {
-    e = _error;
-    console.log(e);
-  }
-  return false;
-};
 
 aButtonModel = Backbone.Model.extend({
   defaults: {
@@ -1007,6 +978,37 @@ useButton = function(model) {
   return buttonCollection[key] = model;
 };
 
+enterDebug = function() {
+  useButton(buttonModelDebugOn);
+  setButtons();
+  $('#footer').show();
+  return false;
+};
+
+exitDebug = function() {
+  useButton(buttonModelDebugOff);
+  setButtons();
+  $('#footer').hide();
+  return false;
+};
+
+exitAdmin = function() {
+  Pylon.get('globalState').set('loggedIn', true);
+  enterLogout();
+  return false;
+};
+
+enterAdmin = function() {
+  var e;
+  try {
+    pageGen.activateAdminPage();
+  } catch (_error) {
+    e = _error;
+    console.log(e);
+  }
+  return false;
+};
+
 enterLogout = function() {
   var g, model;
   g = Pylon.get('globalState');
@@ -1054,26 +1056,6 @@ setButtons = function() {
   pageGen.activateButtons(buttonCollection);
 };
 
-tests.push(new test({
-  name: 'T25FW',
-  Description: 'T25FW'
-}));
-
-tests.push(new test({
-  name: '9HPT (dom)',
-  Description: '9HPT (dom)'
-}));
-
-tests.push(new test({
-  name: '9HPT (non-dom)',
-  Description: '9HPT (non-dom)'
-}));
-
-tests.push(new test({
-  name: 'Other',
-  Description: 'Other'
-}));
-
 initAll = function() {
   var rtemp;
   rtemp = void 0;
@@ -1083,6 +1065,7 @@ initAll = function() {
 
 enterClear = function() {
   Pylon.get('devices').each(function(body) {
+    var readings;
     readings = body.get('readings');
     readings.reset({
       silent: true
@@ -1261,7 +1244,7 @@ Pylon.on('connected', enterConnected);
 startBlueTooth = function() {
   var TiHandler, TiHandlerDef;
   TiHandlerDef = require('./TiHandler.coffee');
-  TiHandler = new TiHandlerDef(reading, sessionInfo);
+  TiHandler = new TiHandlerDef(sessionInfo);
   window.TiHandler = TiHandler;
   return Pylon.set('TiHandler', TiHandler);
 };
@@ -1705,7 +1688,12 @@ Pages = (function() {
         results.push(tbody(function() {
           tr(function() {
             td(function() {
-              var color, modifier, sig;
+              var color, modifier, name, sig;
+              name = device.get('assignedName');
+              if (!name) {
+                name = '';
+              }
+              div("#assignedName-" + theUUID, name);
               text(device.get('nickname'));
               br();
               span("#status-" + theUUID, device.get('deviceStatus'));
