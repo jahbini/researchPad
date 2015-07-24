@@ -1,0 +1,66 @@
+/**
+ * input - Text-like input elements
+ *
+ * Florian Dejonckheere <florian@floriandejonckheere.be>
+ *
+ * */
+
+.textarea() {
+  height: 38px;
+  padding: 6px 10px; /* The 6px vertically centers text on FF, ignored by Webkit */
+  background-color: @white;
+  border: 1px solid lighten(@border-color, 8.8%);
+  border-radius: @global-radius;
+  box-shadow: none;
+  box-sizing: border-box;
+
+  -webkit-appearance: none;
+     -moz-appearance: none;
+          appearance: none;
+
+  &:focus {
+    border: 1px solid @primary-color;
+    outline: 0;
+  }
+}
+
+textarea,
+select {
+  .textarea;
+}
+
+input {
+  &[type="email"],
+  &[type="number"],
+  &[type="search"],
+  &[type="text"],
+  &[type="tel"],
+  &[type="url"],
+  &[type="password"] {
+    .textarea;
+  }
+}
+
+textarea {
+  min-height: 65px;
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+label,
+legend {
+  display: block;
+  margin-bottom: .5rem;
+  font-weight: 600;
+}
+
+fieldset {
+  padding: 0;
+  border-width: 0;
+}
+
+label > .label-body {
+  display: inline-block;
+  margin-left: .5rem;
+  font-weight: normal;
+}

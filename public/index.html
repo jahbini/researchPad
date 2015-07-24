@@ -8,22 +8,35 @@
   <title>Movement Capture</title>
 
   <style>
-    @import 'skeleton/css/normalize.css';
-    @import 'skeleton/css/skeleton.css';
-    @import 'css/console.css';
-    button.disabled {border: 1px dashed gray;}
+        @import 'skeleton/css/normalize.css';
+        @import 'skeleton/css/skeleton.css';
+        @import 'skeleton-ui/bower_components/font-awesome/css/font-awesome.min.css';
+        @import 'skeleton-ui/css/skeleton-ui.css';
+        @import 'skeleton-ui/examples/custom.css';
+        @import 'css/modal.css';
+        @import 'css/console.css';
+    button.disabled {border: 1px dashed darkgray;}
+    .button, button, input[type="submit"], input[type="reset"], input[type="button"] { padding: 0 15px; }
     .dump {
       font: normal 14px/1.3 Consolas,'Andale Mono','Courier New',Courier,monospace;
     }
   </style>
+
 <script src="cordova.js"></script>
-<script src="app.js"> </script>
+<script src="libs/evothings/evothings.js"></script>
+<script src="libs/evothings/easyble/easyble.js"></script>
+<script src="libs/evothings/tisensortag/tisensortag.js"></script>
+<script src="libs/evothings/tisensortag/tisensortag-ble.js"></script>
+<script src="libs/evothings/tisensortag/tisensortag-ble-cc2541.js"></script>
+<script src="libs/evothings/tisensortag/tisensortag-ble-cc2650.js"></script>
 </head>
 <body id="theBody" style="margin:0;padding:0">
   <!--
   <iframe src="steady.html" style="border:0;padding:0" height="100%" width="100%">
   </iframe>
 -->
+<script src="app.js"> </script>
+<script src="skeleton-ui/js/skeleton-ui.js"></script>
 </body>
 
 </html>
