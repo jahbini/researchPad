@@ -677,7 +677,7 @@ exports.adminView = new adminView;
 
 
 },{"Backbone":11,"jquery":15,"teacup":16}],3:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, test, testCollection, tests, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, useButton;
 
 $ = require('jquery');
 
@@ -782,41 +782,21 @@ clients = new clientCollection;
 
 Pylon.set('clients', clients);
 
-test = Backbone.Model.extend({
+protocol = Backbone.Model.extend({
   defaults: {
-    name: "test 0",
-    Description: "Test 0"
+    name: "Other",
+    Description: "Other"
   }
 });
 
-testCollection = Backbone.Collection.extend({
-  model: test,
-  url: "/tests_list.json"
+protocolCollection = Backbone.Collection.extend({
+  model: protocol,
+  url: Pylon.get('hostUrl') + 'protocols'
 });
 
-tests = new testCollection;
+protocols = new protocolCollection;
 
-Pylon.set('tests', tests);
-
-tests.push(new test({
-  name: 'T25FW',
-  Description: 'T25FW'
-}));
-
-tests.push(new test({
-  name: '9HPT (dom)',
-  Description: '9HPT (dom)'
-}));
-
-tests.push(new test({
-  name: '9HPT (non-dom)',
-  Description: '9HPT (non-dom)'
-}));
-
-tests.push(new test({
-  name: 'Other',
-  Description: 'Other'
-}));
+Pylon.set('protocols', protocols);
 
 adminData = Backbone.Model.extend();
 
@@ -824,7 +804,7 @@ admin = new adminData({
   clinics: clinics,
   clinicians: clinicians,
   clients: clients,
-  tests: tests
+  protocol: protocols
 });
 
 rawSession = Backbone.Model.extend();
@@ -832,7 +812,7 @@ rawSession = Backbone.Model.extend();
 sessionInfo = new rawSession({
   user: '',
   patient: '',
-  testID: '',
+  protocolID: '',
   sensorUUID: '',
   platformUUID: ''
 });
@@ -1037,7 +1017,7 @@ enterLogout = function() {
   model.unset('client', {
     silent: true
   });
-  model.unset('testID', {
+  model.unset('protocolID', {
     silent: true
   });
   $('#password').val('');
@@ -1123,7 +1103,7 @@ exitCalibrate = function() {
 
 enterRecording = function() {
   var gs;
-  if (!sessionInfo.get('testID')) {
+  if (!sessionInfo.get('protocolID')) {
     pageGen.forceTest('red');
     return false;
   }
@@ -1208,10 +1188,12 @@ enterUpload = function() {
   brainDump.set('readings', devicesData);
   brainDump.set('sensorUUID', "0-0-0");
   brainDump.set('patientID', sessionInfo.get('client'));
+  brainDump.set('client', sessionInfo.get('client'));
   brainDump.set('user', sessionInfo.get('clinician'));
   brainDump.set('clinician', sessionInfo.get('clinician'));
   brainDump.set('password', sessionInfo.get('password'));
-  brainDump.set('testID', sessionInfo.get('testID'));
+  brainDump.set('protocolID', sessionInfo.get('protocolID'));
+  brainDump.set('testID', sessionInfo.get('protocolID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
   brainDump.save().done(function(a, b, c) {
     Pylon.trigger("upload:complete", a);
@@ -1276,6 +1258,22 @@ rediness = function() {
   if (!(sensorIsReady && domIsReady)) {
     return;
   }
+  protocols.on('change', function() {
+    return console.log("got reply from server for protocol collection");
+  });
+  protocols.fetch({
+    success: function(collection, response, options) {
+      console.log("protocols request success");
+      return collection.trigger('change');
+    },
+    error: function(collection, response, options) {
+      console.log(Pylon.get('hostUrl') + 'protocols');
+      console.log("protocols fetch error - response");
+      console.log(response.statusText);
+      console.log("protocols fetch error - collection");
+      return console.log(collection);
+    }
+  });
   clinics.on('change', function() {
     return console.log("got reply from server for clinics collection");
   });
@@ -1778,10 +1776,10 @@ Pages = (function() {
         }, 'No connection');
       });
       div('.three.columns', function() {
-        label('#TestSelect', {
-          "for": "TestID"
+        label('#ProtocolSelect', {
+          "for": "ProtocolID"
         }, 'Which Test?');
-        return select("#TestID.u-full-width");
+        return select("#ProtocolID.u-full-width");
       });
       div('.three.columns', function() {
         button('#upload.disabled.u-full-width', 'Upload');
@@ -1806,7 +1804,7 @@ Pages = (function() {
     }
     $('#TestSelect').text('Must Select Test').css('color', color);
     $('#TestID').val('Select --');
-    return Pylon.get('sessionInfo').unset('testID', {
+    return Pylon.get('sessionInfo').unset('protocolID', {
       silent: true
     });
   };
@@ -1841,24 +1839,24 @@ Pages = (function() {
   Pages.prototype.wireButtons = function() {
     var model;
     model = Pylon.get('sessionInfo');
-    return $('#TestID').change((function(_this) {
+    return $('#ProtocolID').change((function(_this) {
       return function(node) {
-        $('#TestSelect').text('Which Test?').css('color', '');
-        model.set('testID', $('#TestID option:selected').val());
+        $('#ProtocolSelect').text('Which Protocol?').css('color', '');
+        model.set('protocolID', $('#protocolID option:selected').val());
         return false;
       };
     })(this));
   };
 
   Pages.prototype.renderPage = function() {
-    var bodyHtml, testViewTemplate;
+    var bodyHtml, protocolViewTemplate;
     bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
     require('./modalViews.coffee');
-    testViewTemplate = Backbone.View.extend({
-      el: '#TestID',
-      collection: Pylon.get('tests'),
+    protocolViewTemplate = Backbone.View.extend({
+      el: '#ProtocolID',
+      collection: Pylon.get('protocols'),
       attributes: {
         session: Pylon.get('sessionInfo')
       },
@@ -1868,28 +1866,28 @@ Pages = (function() {
       },
       events: {
         'change': function() {
-          this.attributes.session.set('testID', this.$el.val());
+          this.attributes.session.set('protocolID', this.$el.val());
           return false;
         }
       },
       render: function() {
         this.$el.html(render((function(_this) {
           return function() {
-            var i, len, ref1, results, test;
+            var i, len, protocol, ref1, results;
             option("Select ---");
             ref1 = _this.collection.models;
             results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
-              test = ref1[i];
-              if (test.get('force')) {
+              protocol = ref1[i];
+              if (protocol.get('force')) {
                 results.push(option('.forceSelect.selected', {
                   selected: 'selected',
-                  value: test.get('testID')
-                }, test.get('testID')));
+                  value: protocol.get('name')
+                }, protocol.get('name')));
               } else {
                 results.push(option({
-                  value: test.get('name')
-                }, test.get('Description')));
+                  value: protocol.get('name')
+                }, protocol.get('name')));
               }
             }
             return results;
@@ -1898,7 +1896,7 @@ Pages = (function() {
         return this;
       }
     });
-    this.testView = new testViewTemplate;
+    this.protocolView = new protocolViewTemplate;
     Pylon.on('change:Right', (function(_this) {
       return function() {
         var dev, readings, statusRightViewTemplate;
@@ -2111,7 +2109,7 @@ visual = (function() {
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
           if (Pylon.get('globalState').get('recording')) {
-            if (o.device.get('type' !== evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
+            if (o.device.get('type') !== evothings.tisensortag.CC2650_BLUETOOTH_SMART) {
               o.readings.push({
                 sensor: o.sensor,
                 raw: _.toArray(data)

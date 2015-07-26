@@ -73,45 +73,28 @@ clients = new clientCollection
 Pylon.set('clients',clients)
 
 # #Test Protocols
-test = Backbone.Model.extend
+protocol = Backbone.Model.extend
   defaults:
-    name: "test 0"
-    Description: "Test 0"
-testCollection = Backbone.Collection.extend
-  model: test
-  url: "/tests_list.json"
-tests = new testCollection
-Pylon.set('tests',tests)
-
-tests.push new test
-  name: 'T25FW'
-  Description: 'T25FW'
-
-tests.push new test
-  name: '9HPT (dom)'
-  Description: '9HPT (dom)'
-
-tests.push new test
-  name: '9HPT (non-dom)'
-  Description: '9HPT (non-dom)'
-
-tests.push new test
-  name: 'Other'
-  Description: 'Other'
-
+    name: "Other"
+    Description: "Other"
+protocolCollection = Backbone.Collection.extend
+  model: protocol
+  url: Pylon.get('hostUrl')+'protocols'
+protocols = new protocolCollection
+Pylon.set('protocols',protocols)
 
 adminData = Backbone.Model.extend()
 admin = new adminData
     clinics: clinics
     clinicians: clinicians
     clients: clients
-    tests: tests
+    protocol: protocols
 
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
   user: ''
   patient: ''
-  testID: ''
+  protocolID: ''
   sensorUUID: ''
   platformUUID: ''
 
@@ -262,7 +245,7 @@ enterLogout = () ->
   model.unset 'clinician', silent: true
   model.unset 'password', silent: true
   model.unset 'client', silent: true
-  model.unset 'testID', silent: true
+  model.unset 'protocolID', silent: true
 
   $('#password').val('')
   $('option:selected').prop('selected',false)
@@ -337,8 +320,8 @@ exitCalibrate = ->
   return false
 
 enterRecording = ->
-  # reject record request if no test is selected
-  if !sessionInfo.get('testID')
+  # reject record request if no protocol is selected
+  if !sessionInfo.get('protocolID')
     pageGen.forceTest 'red'
     return false
   # reject record request if we are already recording
@@ -404,10 +387,12 @@ enterUpload = ->
   brainDump.set('readings',devicesData )
   brainDump.set('sensorUUID',"0-0-0")
   brainDump.set('patientID',sessionInfo.get('client') )
+  brainDump.set('client',sessionInfo.get('client') )
   brainDump.set('user',sessionInfo.get('clinician') )
   brainDump.set('clinician',sessionInfo.get('clinician') )
   brainDump.set('password',sessionInfo.get('password') )
-  brainDump.set('testID',sessionInfo.get('testID') )
+  brainDump.set('protocolID',sessionInfo.get('protocolID') )
+  brainDump.set('testID',sessionInfo.get('protocolID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
 
   brainDump.save()
@@ -470,6 +455,21 @@ domIsReady = false
 
 rediness = ->
   return unless sensorIsReady && domIsReady
+
+  protocols.on 'change', ()->
+    console.log "got reply from server for protocol collection"
+  protocols.fetch
+    success: (collection,response,options)->
+      console.log "protocols request success"
+      collection.trigger 'change'
+    error: (collection,response,options)->
+      console.log (Pylon.get('hostUrl')+'protocols')
+      console.log "protocols fetch error - response"
+      console.log response.statusText
+      console.log "protocols fetch error - collection"
+      console.log collection
+
+
   clinics.on 'change', ()->
     console.log "got reply from server for clinics collection"
   clinics.fetch

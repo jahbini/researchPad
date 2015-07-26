@@ -136,8 +136,8 @@ class Pages
           button '#tagSelect.u-full-width.button-primary', 'Scan Devices'
           label '#StatusData',for: "upload", 'No connection'
         div '.three.columns', ->
-          label '#TestSelect', for: "TestID", 'Which Test?'
-          select "#TestID.u-full-width"
+          label '#ProtocolSelect', for: "ProtocolID", 'Which Test?'
+          select "#ProtocolID.u-full-width"
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
           label '#RightStat', for: "upload", 'Items:0'
@@ -150,7 +150,7 @@ class Pages
   forceTest: (color = 'violet') =>
     $('#TestSelect').text('Must Select Test').css('color',color)
     $('#TestID').val('Select --')
-    Pylon.get('sessionInfo').unset 'testID', silent: true
+    Pylon.get('sessionInfo').unset 'protocolID', silent: true
 
   activateButtons: (buttonStruct) ->
     for key, btn of buttonStruct
@@ -168,9 +168,9 @@ class Pages
 
   wireButtons: =>
     model = Pylon.get('sessionInfo')
-    $('#TestID').change (node)=>
-      $('#TestSelect').text('Which Test?').css('color','')
-      model.set 'testID',$('#TestID option:selected').val()
+    $('#ProtocolID').change (node)=>
+      $('#ProtocolSelect').text('Which Protocol?').css('color','')
+      model.set 'protocolID',$('#protocolID option:selected').val()
       return false
 
   renderPage: ()=>
@@ -179,9 +179,9 @@ class Pages
     @wireButtons()
     require('./modalViews.coffee')
 
-    testViewTemplate = Backbone.View.extend
-      el: '#TestID'
-      collection: Pylon.get('tests')
+    protocolViewTemplate = Backbone.View.extend
+      el: '#ProtocolID'
+      collection: Pylon.get('protocols')
       attributes:
         session: Pylon.get('sessionInfo')
       initialize: ->
@@ -189,18 +189,18 @@ class Pages
         @render()
       events:
         'change': ->
-          @attributes.session.set 'testID',@$el.val()
+          @attributes.session.set 'protocolID',@$el.val()
           return false
       render: ->
         @$el.html render =>
           option "Select ---"
-          for test in @collection.models
-            if test.get('force')
-              option '.forceSelect.selected', selected: 'selected', value: test.get('testID'), test.get('testID')
+          for protocol in @collection.models
+            if protocol.get('force')
+              option '.forceSelect.selected', selected: 'selected', value: protocol.get('name'), protocol.get('name')
             else
-              option value: test.get('name'), test.get('Description')
+              option value: protocol.get('name'), protocol.get('name')
         return this
-    @testView = new testViewTemplate
+    @protocolView = new protocolViewTemplate
 
     Pylon.on 'change:Right', ()=>
       dev = Pylon.get 'Right'

@@ -127,7 +127,7 @@ class visual
         # record the data from all three channels of old sensor
         # New sensor data is identical for all channels, and only needs one
         if Pylon.get('globalState').get 'recording'
-          if o.device.get 'type' !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
+          if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
             o.readings.push sensor: o.sensor, raw: _.toArray(data)
             o.readings.trigger 'change'
           else if o.sensor == 'gyro'
