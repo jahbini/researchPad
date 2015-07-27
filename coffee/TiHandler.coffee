@@ -273,7 +273,7 @@ class TiHandler
       sensorInstance = evothings.tisensortag.createInstance d.get('type')
       rawDevice = d.get 'rawDevice'
       rawDevice.sensorInstance= sensorInstance
-      d.set sensorInstance: sensorInstance
+      d.set sensorInstance: sensorInstance, fwRev: sensorInstance.getFirmwareString() 
 
       # status handler is set -- d.get('sensorInstance').statusCallback (s)-> {something}
       sensorInstance.statusCallback (s)->

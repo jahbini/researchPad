@@ -374,6 +374,7 @@ enterUpload = ->
       sensorUUID: body.UUID
       role: body.role
       type: body.type
+      fwRev: body.firmwareRevision
       nickname: body.nickname
       readings: r.toJSON()
   return false if noData  

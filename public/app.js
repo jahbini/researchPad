@@ -305,7 +305,8 @@ TiHandler = (function() {
       rawDevice = d.get('rawDevice');
       rawDevice.sensorInstance = sensorInstance;
       d.set({
-        sensorInstance: sensorInstance
+        sensorInstance: sensorInstance,
+        fwRev: sensorInstance.getFirmwareString()
       });
       sensorInstance.statusCallback(function(s) {
         var sessionInfo, statusList;
@@ -618,7 +619,7 @@ adminView = (function() {
               br();
               label({
                 "for": "password"
-              }, "Enter Password");
+              }, "Password");
               return input("#password", {
                 type: 'password'
               });
@@ -1173,6 +1174,7 @@ enterUpload = function() {
       sensorUUID: body.UUID,
       role: body.role,
       type: body.type,
+      fwRev: body.firmwareRevision,
       nickname: body.nickname,
       readings: r.toJSON()
     });

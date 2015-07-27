@@ -137,7 +137,7 @@ class adminView
             label for: 'desiredClinician','Clinician'
             select '#desiredClinician.u-full-width'
             br()
-            label for: "password", "Enter Password"
+            label for: "password", "Password"
             input "#password", type: 'password'
           div '.four.columns', ->
             label for: 'desiredClient', 'Client'
