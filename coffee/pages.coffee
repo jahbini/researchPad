@@ -148,8 +148,8 @@ class Pages
   tagSelector: renderable ()=>
     
   forceTest: (color = 'violet') =>
-    $('#TestSelect').text('Must Select Test').css('color',color)
-    $('#TestID').val('Select --')
+    $('#ProtocolSelect').text('Must Select Test').css('color',color)
+    $('#ProtocolID').val('Select --')
     Pylon.get('sessionInfo').unset 'protocolID', silent: true
 
   activateButtons: (buttonStruct) ->

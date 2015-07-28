@@ -1175,7 +1175,7 @@ enterUpload = function() {
       sensorUUID: body.UUID,
       role: body.role,
       type: body.type,
-      fwRev: body.firmwareRevision(),
+      fwRev: body.fwRev,
       assignedName: body.assignedName,
       nickname: body.nickname,
       readings: r.toJSON()
@@ -1806,8 +1806,8 @@ Pages = (function() {
     if (color == null) {
       color = 'violet';
     }
-    $('#TestSelect').text('Must Select Test').css('color', color);
-    $('#TestID').val('Select --');
+    $('#ProtocolSelect').text('Must Select Test').css('color', color);
+    $('#ProtocolID').val('Select --');
     return Pylon.get('sessionInfo').unset('protocolID', {
       silent: true
     });
