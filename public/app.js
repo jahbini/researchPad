@@ -305,14 +305,16 @@ TiHandler = (function() {
       rawDevice = d.get('rawDevice');
       rawDevice.sensorInstance = sensorInstance;
       d.set({
-        sensorInstance: sensorInstance,
-        fwRev: sensorInstance.getFirmwareString()
+        sensorInstance: sensorInstance
       });
       sensorInstance.statusCallback(function(s) {
         var sessionInfo, statusList;
         statusList = evothings.tisensortag.ble.status;
         if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
           $('#version-' + uuid).html('Ver. ' + sensorInstance.getFirmwareString());
+          d.set({
+            fwRev: sensorInstance.getFirmwareString()
+          });
         }
         sessionInfo = Pylon.get('sessionInfo');
         sessionInfo.set(role + 'sensorUUID', d.id);
