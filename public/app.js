@@ -973,12 +973,6 @@ exitDebug = function() {
   return false;
 };
 
-exitAdmin = function() {
-  Pylon.get('globalState').set('loggedIn', true);
-  enterLogout();
-  return false;
-};
-
 enterAdmin = function() {
   var e;
   try {
@@ -990,18 +984,25 @@ enterAdmin = function() {
   return false;
 };
 
+exitAdmin = function() {
+  enterLogout();
+  return false;
+};
+
 enterLogout = function() {
   var g, model;
   g = Pylon.get('globalState');
-  g.set('loggedIn', false);
-  if (g.get('recording')) {
-    g.set('recording', false);
-  }
+  g.set({
+    loggedIn: false,
+    recording: false
+  });
   Pylon.get('devices').each(function(body) {
-    body.reset('readings', {
+    var readings;
+    readings = body.get('readings');
+    readings.reset({
       silent: true
     });
-    return body.reset('readings', {
+    readings.reset({
       silent: true
     });
   });
@@ -1174,7 +1175,8 @@ enterUpload = function() {
       sensorUUID: body.UUID,
       role: body.role,
       type: body.type,
-      fwRev: body.firmwareRevision,
+      fwRev: body.firmwareRevision(),
+      assignedName: body.assignedName,
       nickname: body.nickname,
       readings: r.toJSON()
     });

@@ -220,11 +220,6 @@ exitDebug = () ->
   $('#footer').hide()
   return false
 
-exitAdmin = () ->
-  Pylon.get('globalState').set 'loggedIn', true
-  enterLogout()
-  return false
-
 enterAdmin = ->
   try
     pageGen.activateAdminPage()
@@ -232,14 +227,19 @@ enterAdmin = ->
     console.log e
   return false
 
+exitAdmin = () ->
+  enterLogout()
+  return false
+
 enterLogout = () ->
   g=Pylon.get 'globalState'
-  g.set 'loggedIn', false
-  if g.get 'recording'
-    g.set 'recording', false
+  g.set loggedIn: false, recording: false
   Pylon.get('devices').each (body)->
-    body.reset 'readings', silent: true
-    body.reset 'readings', silent: true
+    readings = body.get('readings')
+    readings.reset silent: true
+    readings.reset silent: true
+    return
+
   model = Pylon.get('sessionInfo')
   model.unset 'clinic', silent: true
   model.unset 'clinician', silent: true
@@ -374,7 +374,8 @@ enterUpload = ->
       sensorUUID: body.UUID
       role: body.role
       type: body.type
-      fwRev: body.firmwareRevision
+      fwRev: body.fwRev
+      assignedName: body.assignedName
       nickname: body.nickname
       readings: r.toJSON()
   return false if noData  
