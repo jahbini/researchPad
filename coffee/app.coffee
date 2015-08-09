@@ -15,9 +15,9 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = false
+development = true
 if development
-  Pylon.set 'hostUrl', "http://192.168.1.200:3000/"
+  Pylon.set 'hostUrl', "http://172.20.10.4:3000/"
 else
   Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
 pages = require './pages.coffee'
