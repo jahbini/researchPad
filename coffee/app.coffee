@@ -93,6 +93,7 @@ admin = new adminData
 rawSession = Backbone.Model.extend()
 sessionInfo = new rawSession
   user: ''
+  clinic: ''
   patient: ''
   protocolID: ''
   sensorUUID: ''
@@ -385,9 +386,11 @@ enterUpload = ->
     urlRoot: Pylon.get 'hostUrl'
   }
   
+  theClinic = sessionInfo.get 'clinic'
   brainDump = new hopper
   brainDump.set('readings',devicesData )
   brainDump.set('sensorUUID',"0-0-0")
+  brainDump.set('clinic',theClinic.get("_id") )
   brainDump.set('patientID',sessionInfo.get('client') )
   brainDump.set('client',sessionInfo.get('client') )
   brainDump.set('user',sessionInfo.get('clinician') )
@@ -396,6 +399,7 @@ enterUpload = ->
   brainDump.set('protocolID',sessionInfo.get('protocolID') )
   brainDump.set('testID',sessionInfo.get('protocolID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
+  console.log theClinic.get("_id"), " The Clinic"
 
   brainDump.save()
     .done (a,b,c)->
