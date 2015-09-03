@@ -17924,7 +17924,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-development = true;
+development = false;
 
 if (development) {
   Pylon.set('hostUrl', "http://Retro.local:3000/");
