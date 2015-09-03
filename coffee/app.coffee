@@ -15,9 +15,9 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = false
+development = true
 if development
-  Pylon.set 'hostUrl', "http://172.20.10.4:3000/"
+  Pylon.set 'hostUrl', "http://Retro.local:3000/"
 else
   Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
 pages = require './pages.coffee'
@@ -25,6 +25,8 @@ Pylon.set 'adminView', require('./adminView.coffee').adminView
 loadScript = require("./loadScript.coffee").loadScript
 loadScript Pylon.get('hostUrl')+"logon.js", (status)->
   console.log "logon.js returns status of "+status
+
+uploader = require "./upload.coffee"
 
 ###
 Section: Data Structures
@@ -355,70 +357,12 @@ Pylon.on 'stopCountDown:over', ->
   setButtons()
   return false
 
-currentlyUploading = false
 enterUpload = ->
-  return if currentlyUploading
-  currentlyUploading = true
-  console.log('enter Upload -- send data to Retrotope server')
-  deviceSummary = Backbone.Model.extend()
-  deviceDataCollection = Backbone.Collection.extend
-    model: deviceSummary
-  devicesData = new deviceDataCollection
-  noData = true
-  for i,body of Pylon.get('devices').toJSON()
-  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
-    continue if ! (r = body.readings)
-    continue if r.length == 0
-    noData = false
-    console.log body.nickname+" has "+body.readings.length+" readings for upload."
-    devicesData.push
-      sensorUUID: body.UUID
-      role: body.role
-      type: body.type
-      fwRev: body.fwRev
-      assignedName: body.assignedName
-      nickname: body.nickname
-      readings: r.toJSON()
-  return false if noData  
-
-  hopper = Backbone.Model.extend {
-    url: Pylon.get('hostUrl')+'trajectory'
-    urlRoot: Pylon.get 'hostUrl'
-  }
-  
-  theClinic = sessionInfo.get 'clinic'
-  brainDump = new hopper
-  brainDump.set('readings',devicesData )
-  brainDump.set('sensorUUID',"0-0-0")
-  brainDump.set('clinic',theClinic.get("_id") )
-  brainDump.set('patientID',sessionInfo.get('client') )
-  brainDump.set('client',sessionInfo.get('client') )
-  brainDump.set('user',sessionInfo.get('clinician') )
-  brainDump.set('clinician',sessionInfo.get('clinician') )
-  brainDump.set('password',sessionInfo.get('password') )
-  brainDump.set('protocolID',sessionInfo.get('protocolID') )
-  brainDump.set('testID',sessionInfo.get('protocolID') )
-  brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
-  console.log theClinic.get("_id"), " The Clinic"
-
-  brainDump.save()
-    .done (a,b,c)->
-      Pylon.trigger "upload:complete", a
-      console.log "Save Complete "+a
-      pageGen.forceTest()
-      currentlyUploading = false
-      enterClear()
-      #and clear out the collection of readings
-      return
-    .fail (a,b,c)->
-      Pylon.trigger "upload:failure", a
-      currentlyUploading = false
-      console.log b
-      console.log c
-      console.log "Braindump failure"
-      debugger
-      return
+  uploader()
+  pageGen.forceTest()
+  enterClear() 
   return false
+
 # ## stopRecording
 # halt the record session -- no restart allowed
 # upload button remains enabled, clear button remains enabled

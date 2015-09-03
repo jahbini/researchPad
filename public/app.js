@@ -406,7 +406,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 }
 
 
-},{"../libs/dbg/console":8,"./glib.coffee":3,"./visual.coffee":7,"backbone":12,"jquery":14,"underscore":13}],2:[function(require,module,exports){
+},{"../libs/dbg/console":9,"./glib.coffee":3,"./visual.coffee":8,"backbone":13,"jquery":15,"underscore":14}],2:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -677,7 +677,7 @@ adminView = (function() {
 exports.adminView = new adminView;
 
 
-},{"Backbone":10,"jquery":14,"teacup":15}],3:[function(require,module,exports){
+},{"Backbone":11,"jquery":15,"teacup":16}],3:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -779,7 +779,7 @@ loadScript = function(url, callback) {
 exports.loadScript = loadScript;
 
 
-},{"underscore":13}],5:[function(require,module,exports){
+},{"underscore":14}],5:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
   slice = [].slice;
 
@@ -897,7 +897,7 @@ countDownViewTemplate = Backbone.View.extend({
 exports.countDownView = new countDownViewTemplate;
 
 
-},{"Backbone":10,"jquery":14,"teacup":15}],6:[function(require,module,exports){
+},{"Backbone":11,"jquery":15,"teacup":16}],6:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1304,7 +1304,125 @@ Pages = (function() {
 exports.Pages = Pages;
 
 
-},{"./adminView.coffee":2,"./modalViews.coffee":5,"Backbone":10,"jquery":14,"teacup":15}],7:[function(require,module,exports){
+},{"./adminView.coffee":2,"./modalViews.coffee":5,"Backbone":11,"jquery":15,"teacup":16}],7:[function(require,module,exports){
+var $, Backbone, Pylon, _, dumpLocal, localStorage, uploader;
+
+$ = require('jquery');
+
+_ = require('underscore');
+
+Backbone = require('backbone');
+
+require('../libs/dbg/console');
+
+localStorage = window.localStorage;
+
+Pylon = window.Pylon;
+
+dumpLocal = function() {
+  var brainDump, hopper, sessionInfo, trajectoryKey;
+  sessionInfo = Pylon.get("sessionInfo");
+  trajectoryKey = localStorage.key(0);
+  if (!trajectoryKey) {
+    return;
+  }
+  brainDump = localStorage.getItem(trajectoryKey);
+  brainDump = JSON.parse(brainDump);
+  hopper = Backbone.Model.extend({
+    url: Pylon.get('hostUrl') + 'trajectory',
+    urlRoot: Pylon.get('hostUrl')
+  });
+  brainDump = new hopper(brainDump);
+  brainDump.save().done(function(a, b, c) {
+    Pylon.trigger("upload:complete", a);
+    console.log("Save Complete " + a);
+    localStorage.removeItem(trajectoryKey);
+  }).fail(function(a, b, c) {
+    var currentlyUploading;
+    Pylon.trigger("upload:failure", a);
+    currentlyUploading = false;
+    console.log(b);
+    console.log(c);
+    console.log("Braindump failure");
+    debugger;
+  });
+  setTimeout(dumpLocal, 5000);
+  return false;
+};
+
+uploader = function() {
+  var body, brainDump, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref, sessionInfo, theClinic;
+  sessionInfo = Pylon.get("sessionInfo");
+  console.log('enter Upload -- send data to localStorage queue to server');
+  deviceSummary = Backbone.Model.extend();
+  deviceDataCollection = Backbone.Collection.extend({
+    model: deviceSummary
+  });
+  devicesData = new deviceDataCollection;
+  noData = true;
+  ref = Pylon.get('devices').toJSON();
+  for (i in ref) {
+    body = ref[i];
+    if (!(r = body.readings)) {
+      continue;
+    }
+    if (r.length === 0) {
+      continue;
+    }
+    noData = false;
+    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
+    devicesData.push({
+      sensorUUID: body.UUID,
+      role: body.role,
+      type: body.type,
+      fwRev: body.fwRev,
+      assignedName: body.assignedName,
+      nickname: body.nickname,
+      readings: r.toJSON()
+    });
+  }
+  if (noData) {
+    return false;
+  }
+  hopper = Backbone.Model.extend({
+    url: Pylon.get('hostUrl') + 'trajectory',
+    urlRoot: Pylon.get('hostUrl')
+  });
+  console.log("Prepare brain");
+  theClinic = sessionInfo.get('clinic');
+  brainDump = new hopper;
+  brainDump.set('readings', devicesData);
+  brainDump.set('sensorUUID', "0-0-0");
+  brainDump.set('clinic', theClinic.get("_id"));
+  brainDump.set('patientID', sessionInfo.get('client'));
+  brainDump.set('client', sessionInfo.get('client'));
+  brainDump.set('user', sessionInfo.get('clinician'));
+  brainDump.set('clinician', sessionInfo.get('clinician'));
+  brainDump.set('password', sessionInfo.get('password'));
+  brainDump.set('protocolID', sessionInfo.get('protocolID'));
+  brainDump.set('testID', sessionInfo.get('protocolID'));
+  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
+  console.log("Store brain");
+  localStorage.setItem(brainDump.cid, JSON.stringify(brainDump.toJSON()));
+  console.log("Upload brain");
+  dumpLocal();
+  console.log("return from brain");
+};
+
+dumpLocal();
+
+
+/* this is how seen exports things -- it's clean.  we use it as example
+#seen = {}
+#if window? then window.seen = seen # for the web
+#if module?.exports? then module.exports = seen # for node
+ *
+ */
+
+module.exports = uploader;
+
+
+},{"../libs/dbg/console":9,"backbone":13,"jquery":15,"underscore":14}],8:[function(require,module,exports){
 var $, Seen, _, visual;
 
 Seen = require('../libs/dbg/seen');
@@ -1607,7 +1725,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 }
 
 
-},{"../libs/dbg/seen":9,"jquery":14,"underscore":13}],8:[function(require,module,exports){
+},{"../libs/dbg/seen":10,"jquery":15,"underscore":14}],9:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1889,7 +2007,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],9:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -4701,7 +4819,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],10:[function(require,module,exports){
+},{}],11:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.1
 
@@ -6578,7 +6696,7 @@ THE SOFTWARE.
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":14,"underscore":11}],11:[function(require,module,exports){
+},{"jquery":15,"underscore":12}],12:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8128,11 +8246,11 @@ THE SOFTWARE.
   }
 }.call(this));
 
-},{}],12:[function(require,module,exports){
-arguments[4][10][0].apply(exports,arguments)
-},{"dup":10,"jquery":14,"underscore":13}],13:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 arguments[4][11][0].apply(exports,arguments)
-},{"dup":11}],14:[function(require,module,exports){
+},{"dup":11,"jquery":15,"underscore":14}],14:[function(require,module,exports){
+arguments[4][12][0].apply(exports,arguments)
+},{"dup":12}],15:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.1.4
  * http://jquery.com/
@@ -17344,7 +17462,7 @@ return jQuery;
 
 }));
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -17779,8 +17897,8 @@ return jQuery;
 
 }).call(this);
 
-},{}],16:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, currentlyUploading, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, useButton;
+},{}],17:[function(require,module,exports){
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, development, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, useButton;
 
 $ = require('jquery');
 
@@ -17806,10 +17924,10 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-development = false;
+development = true;
 
 if (development) {
-  Pylon.set('hostUrl', "http://172.20.10.4:3000/");
+  Pylon.set('hostUrl', "http://Retro.local:3000/");
 } else {
   Pylon.set('hostUrl', "http://sensor.retrotope.com:80/");
 }
@@ -17823,6 +17941,8 @@ loadScript = require("./loadScript.coffee").loadScript;
 loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
   return console.log("logon.js returns status of " + status);
 });
+
+uploader = require("./upload.coffee");
 
 
 /*
@@ -18248,77 +18368,10 @@ Pylon.on('stopCountDown:over', function() {
   return false;
 });
 
-currentlyUploading = false;
-
 enterUpload = function() {
-  var body, brainDump, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref, theClinic;
-  if (currentlyUploading) {
-    return;
-  }
-  currentlyUploading = true;
-  console.log('enter Upload -- send data to Retrotope server');
-  deviceSummary = Backbone.Model.extend();
-  deviceDataCollection = Backbone.Collection.extend({
-    model: deviceSummary
-  });
-  devicesData = new deviceDataCollection;
-  noData = true;
-  ref = Pylon.get('devices').toJSON();
-  for (i in ref) {
-    body = ref[i];
-    if (!(r = body.readings)) {
-      continue;
-    }
-    if (r.length === 0) {
-      continue;
-    }
-    noData = false;
-    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
-    devicesData.push({
-      sensorUUID: body.UUID,
-      role: body.role,
-      type: body.type,
-      fwRev: body.fwRev,
-      assignedName: body.assignedName,
-      nickname: body.nickname,
-      readings: r.toJSON()
-    });
-  }
-  if (noData) {
-    return false;
-  }
-  hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + 'trajectory',
-    urlRoot: Pylon.get('hostUrl')
-  });
-  theClinic = sessionInfo.get('clinic');
-  brainDump = new hopper;
-  brainDump.set('readings', devicesData);
-  brainDump.set('sensorUUID', "0-0-0");
-  brainDump.set('clinic', theClinic.get("_id"));
-  brainDump.set('patientID', sessionInfo.get('client'));
-  brainDump.set('client', sessionInfo.get('client'));
-  brainDump.set('user', sessionInfo.get('clinician'));
-  brainDump.set('clinician', sessionInfo.get('clinician'));
-  brainDump.set('password', sessionInfo.get('password'));
-  brainDump.set('protocolID', sessionInfo.get('protocolID'));
-  brainDump.set('testID', sessionInfo.get('protocolID'));
-  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  console.log(theClinic.get("_id"), " The Clinic");
-  brainDump.save().done(function(a, b, c) {
-    Pylon.trigger("upload:complete", a);
-    console.log("Save Complete " + a);
-    pageGen.forceTest();
-    currentlyUploading = false;
-    enterClear();
-  }).fail(function(a, b, c) {
-    Pylon.trigger("upload:failure", a);
-    currentlyUploading = false;
-    console.log(b);
-    console.log(c);
-    console.log("Braindump failure");
-    debugger;
-  });
+  uploader();
+  pageGen.forceTest();
+  enterClear();
   return false;
 };
 
@@ -18444,4 +18497,4 @@ $(function() {
 });
 
 
-},{"../libs/dbg/console":8,"./TiHandler.coffee":1,"./adminView.coffee":2,"./loadScript.coffee":4,"./pages.coffee":6,"backbone":12,"jquery":14,"underscore":13}]},{},[16]);
+},{"../libs/dbg/console":9,"./TiHandler.coffee":1,"./adminView.coffee":2,"./loadScript.coffee":4,"./pages.coffee":6,"./upload.coffee":7,"backbone":13,"jquery":15,"underscore":14}]},{},[17]);
