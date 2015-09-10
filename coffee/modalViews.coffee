@@ -23,6 +23,11 @@ uploadViewTemplate = Backbone.View.extend
       Pylon.on 'upload:complete', (a)=>
         @render a
         @$el.addClass 'active'
+
+      Pylon.on 'upload:failure', =>
+        @render 'upload deferred'
+        @$el.addClass 'active'
+
       Pylon.on 'upload:close', (a)=>
         @$el.removeClass 'active'
     # the upload report success/fail

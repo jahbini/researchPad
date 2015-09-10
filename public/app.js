@@ -817,6 +817,12 @@ uploadViewTemplate = Backbone.View.extend({
         return _this.$el.addClass('active');
       };
     })(this));
+    Pylon.on('upload:failure', (function(_this) {
+      return function() {
+        _this.render('upload deferred');
+        return _this.$el.addClass('active');
+      };
+    })(this));
     return Pylon.on('upload:close', (function(_this) {
       return function(a) {
         return _this.$el.removeClass('active');
@@ -1343,10 +1349,10 @@ dumpLocal = function() {
     currentlyUploading = false;
     console.log(b);
     console.log(c);
-    console.log("Braindump failure");
+    console.log("Trajectory upload failure, retry in 30 seconds");
     debugger;
   });
-  setTimeout(dumpLocal, 5000);
+  setTimeout(dumpLocal, 30000);
   return false;
 };
 

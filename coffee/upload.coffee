@@ -36,10 +36,10 @@ dumpLocal =  ->
       currentlyUploading = false
       console.log b
       console.log c
-      console.log "Braindump failure"
+      console.log "Trajectory upload failure, retry in 30 seconds"
       debugger
       return
-  setTimeout dumpLocal, 5000
+  setTimeout dumpLocal, 30000
   return false
 
 
