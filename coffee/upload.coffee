@@ -32,8 +32,9 @@ dumpLocal =  ->
       localStorage.removeItem(trajectoryKey)
       return
     .fail (a,b,c)->
-      Pylon.trigger "upload:failure", a
+      Pylon.trigger "upload:failure", message: "upload queued"
       currentlyUploading = false
+      console.log a
       console.log b
       console.log c
       console.log "Trajectory upload failure, retry in 30 seconds"
@@ -72,7 +73,7 @@ uploader = ->
     urlRoot: Pylon.get 'hostUrl'
   }
   
-  console.log "Prepare brain"
+  console.log "Prepare upload"
   theClinic = sessionInfo.get 'clinic'
   brainDump = new hopper
   brainDump.set('readings',devicesData )
@@ -87,11 +88,11 @@ uploader = ->
   brainDump.set('testID',sessionInfo.get('protocolID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
 
-  console.log "Store brain"
+  console.log "Store upload"
   localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON())) 
-  console.log "Upload brain"
+  console.log "Upload upload"
   dumpLocal()
-  console.log "return from brain"
+  console.log "return from upload"
   return
 
 dumpLocal()

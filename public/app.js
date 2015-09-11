@@ -818,8 +818,8 @@ uploadViewTemplate = Backbone.View.extend({
       };
     })(this));
     Pylon.on('upload:failure', (function(_this) {
-      return function() {
-        _this.render('upload deferred');
+      return function(a) {
+        _this.render(a);
         return _this.$el.addClass('active');
       };
     })(this));
@@ -1345,8 +1345,11 @@ dumpLocal = function() {
     localStorage.removeItem(trajectoryKey);
   }).fail(function(a, b, c) {
     var currentlyUploading;
-    Pylon.trigger("upload:failure", a);
+    Pylon.trigger("upload:failure", {
+      message: "upload queued"
+    });
     currentlyUploading = false;
+    console.log(a);
     console.log(b);
     console.log(c);
     console.log("Trajectory upload failure, retry in 30 seconds");
@@ -1394,7 +1397,7 @@ uploader = function() {
     url: Pylon.get('hostUrl') + 'trajectory',
     urlRoot: Pylon.get('hostUrl')
   });
-  console.log("Prepare brain");
+  console.log("Prepare upload");
   theClinic = sessionInfo.get('clinic');
   brainDump = new hopper;
   brainDump.set('readings', devicesData);
@@ -1408,11 +1411,11 @@ uploader = function() {
   brainDump.set('protocolID', sessionInfo.get('protocolID'));
   brainDump.set('testID', sessionInfo.get('protocolID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  console.log("Store brain");
+  console.log("Store upload");
   localStorage.setItem(brainDump.cid, JSON.stringify(brainDump.toJSON()));
-  console.log("Upload brain");
+  console.log("Upload upload");
   dumpLocal();
-  console.log("return from brain");
+  console.log("return from upload");
 };
 
 dumpLocal();
