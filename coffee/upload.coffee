@@ -15,8 +15,15 @@ dumpLocal =  ->
   sessionInfo = Pylon.get "sessionInfo"
   trajectoryKey = localStorage.key(0)
   return if !trajectoryKey
-  brainDump = localStorage.getItem(trajectoryKey)
-  brainDump = JSON.parse(brainDump)
+  try
+    brainDump = localStorage.getItem(trajectoryKey)
+    brainDump = JSON.parse(brainDump)
+  catch e
+    localStorage.removeItem(trajectoryKey)
+    setTimeout dumpLocal, 30000
+    brainDump = false
+
+  return if !brainDump
 
   hopper = Backbone.Model.extend {
     url: Pylon.get('hostUrl')+'trajectory'

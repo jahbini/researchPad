@@ -1326,14 +1326,24 @@ localStorage = window.localStorage;
 Pylon = window.Pylon;
 
 dumpLocal = function() {
-  var brainDump, hopper, sessionInfo, trajectoryKey;
+  var brainDump, e, hopper, sessionInfo, trajectoryKey;
   sessionInfo = Pylon.get("sessionInfo");
   trajectoryKey = localStorage.key(0);
   if (!trajectoryKey) {
     return;
   }
-  brainDump = localStorage.getItem(trajectoryKey);
-  brainDump = JSON.parse(brainDump);
+  try {
+    brainDump = localStorage.getItem(trajectoryKey);
+    brainDump = JSON.parse(brainDump);
+  } catch (_error) {
+    e = _error;
+    localStorage.removeItem(trajectoryKey);
+    setTimeout(dumpLocal, 30000);
+    brainDump = false;
+  }
+  if (!brainDump) {
+    return;
+  }
   hopper = Backbone.Model.extend({
     url: Pylon.get('hostUrl') + 'trajectory',
     urlRoot: Pylon.get('hostUrl')
