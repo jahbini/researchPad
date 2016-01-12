@@ -54,13 +54,13 @@ class Pages
         h2 "Upload Status"
       tag "section", ->
         p "#upload-result", "Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis."
-      button ".one.column.close.toggleModle", "Close" 
+      button ".one.column.close.toggleModle", "Close"
     div "#count-down.modal", ->
       tag "header", ->
         h2 "Wubba Woo"
       tag "section", ->
         p "#downCount", "Lorem ipsum dolor so sad..."
-      button ".one.column.close.toggleModle", "Close" 
+      button ".one.column.close.toggleModle", "Close"
 
 
   scanContents: renderable (pylon)->
@@ -103,17 +103,25 @@ class Pages
                 modifier = ".fa.fa-signal.fa-3x"
                 span "#rssi-"+theUUID+modifier, style: 'color:'+color, sig
               td ->
-                if 'Right' != device.get 'role'
-                  button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                    ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
-                    ,device.get('buttonText') + "(L)"
-                else
+                if 'Right' != device.get 'role'  # if we are not already Right
+                  pylonLeft = Pylon.get('Left') || device  # is left taken?
+                  if  device == pylonLeft
+                    button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                      ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+                      ,device.get('buttonText') + "(L)"
+                  else
+                    button '.disabled.u-full-width', "unavailable"
+                else   # disable left side button with text to indicate right limb
                   button '.disabled.u-full-width', "Right"
               td ->
-                if 'Left' != device.get 'role'
-                  button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                    ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
-                    ,device.get('buttonText') + "(R)"
+                if 'Left' != device.get 'role' # have we been assigned as Left?
+                  pylonRight = Pylon.get('Right') || device  # No, is right taken?
+                  if device == pylonRight
+                    button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                      ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+                      ,device.get('buttonText') + "(R)"
+                  else
+                    button '.disabled.u-full-width', "unavailable"
                 else
                   button '.disabled.u-full-width', "Left"
             tr ->
@@ -123,7 +131,7 @@ class Pages
                 canvas '#accel-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
               td ->
                 canvas '#magnet-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
-            
+
 
   topButtons: renderable ()->
       div '.row', ->
@@ -146,7 +154,7 @@ class Pages
           label '#LeftStat', for: "clear", 'Items:0'
 
   tagSelector: renderable ()=>
-    
+
   forceTest: (color = 'violet') =>
     $('#ProtocolSelect').text('Must Select Test').css('color',color)
     $('#ProtocolID').val('Select --')

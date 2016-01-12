@@ -30,7 +30,7 @@ pView=Backbone.View.extend
         ()=>
           Pylon.set 'tagScan', false
           @render()
-          return 
+          return
         ,30000)
       return
   render: ->
@@ -44,7 +44,7 @@ pView=Backbone.View.extend
           .removeClass 'button-success'
           .addClass 'button-primary'
           .text 'Scan Devices'
-      if p=Pylon.get('pageGen') 
+      if p=Pylon.get('pageGen')
         $('#tagScanReport').html p.scanContents(@model)
       return
 Pylon.set 'tagViewer', new pView
@@ -65,7 +65,7 @@ readingCollection = Backbone.Collection.extend
 deviceModel = Backbone.Model.extend
   urlRoot: Pylon.get('hostUrl')+'sensor-tag'
   idAttribute: "UUID"
-  defaults: 
+  defaults:
     UUID: "00000000-0000-0000-0000-000000000000"
   initialize: ()->
       @.set 'nickname', glib(@.get 'UUID' )
@@ -90,10 +90,10 @@ class TiHandler
     Pylon.trigger 'sensorScanStatus', s
     return
   sensorScanner.errorCallback (e)->
-    return if e == "SCAN_FAILED" 
+    return if e == "SCAN_FAILED"
     console.log "Scan Error = "+e
     # Evothings reports SCAN_FAILED when it detects a tag.  Not cool
-    return if e == "SCAN_FAILED" 
+    return if e == "SCAN_FAILED"
     $('#StatusData').css("color", "red").html e
     Pylon.trigger 'sensorScanStatus', e
     return
@@ -133,7 +133,7 @@ class TiHandler
           buttonClass: 'button-primary'
           deviceStatus: '--'
         pd.push d
-        d.fetch 
+        d.fetch
           success: (model,response,options) ->
             name = d.get 'assignedName'
             if name
@@ -261,10 +261,10 @@ class TiHandler
       d.get('readings').reset []
     else
       d.set 'readings', new readingCollection
-    # triggers change:Right or change:Left 
+    # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
-        
+
     try
       if d.get( 'genericName').search(/BLE/) > -1
         d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
@@ -280,7 +280,7 @@ class TiHandler
         statusList = evothings.tisensortag.ble.status
         if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
           $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
-          d.set fwRev: sensorInstance.getFirmwareString() 
+          d.set fwRev: sensorInstance.getFirmwareString()
         sessionInfo = Pylon.get 'sessionInfo'
         sessionInfo.set role+'sensorUUID', d.id
         console.log "sensor status report: " +s + ' '+d.id
@@ -310,17 +310,18 @@ class TiHandler
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'reconnect'
           d.set 'deviceStatus', 'Disconnected'
+          d.unset 'role'
         widget = $('#status-'+uuid)
         widget.html s
         Pylon.trigger('change respondingDevices')
         return
-        
+
       setTimeout ()->
           return if 'Recieving' == d.get 'deviceStatus'
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
         ,5000
-    
+
       # bring the evothings data converters up to this device
       d.set 'getMagnetometerValues', sensorInstance.getMagnetometerValues
       d.set 'getAccelerometerValues', sensorInstance.getAccelerometerValues
@@ -331,7 +332,7 @@ class TiHandler
       if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
         handlers.accel.finalScale = 2
         handlers.mag.finalScale = 0.15
-      sensorInstance.accelerometerCallback (data)=> 
+      sensorInstance.accelerometerCallback (data)=>
           handlers.accel data
         ,100
       sensorInstance.magnetometerCallback (data)=>

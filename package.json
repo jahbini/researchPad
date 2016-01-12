@@ -1,50 +1,50 @@
 {
-    "name": "motility",
-    "description": "Retrotope acuire data for clinical mobility study",
-    "version": "0.2.0",
-    "author": "James A. Hinds",
-    "dependencies": {
-        "jquery":"latest",
-        "backbone":"latest",
-        "backbone-forms":"latest",
-        "seen": "themadcreator/seen.git",
-        "teacup":"latest",
-      	"hbsfy": "~2.2.1",
-        "winston":"latest",
-        "underscore":"latest",
-        "coffee-script":"latest"
-        },
-    "browser": {
-      "underscore": "backbone/node_modules/underscore",
-      "plugin": "./src/javascript/vendor/jquery-plugin.js"
-      },
-    "browserify": {
-      "transform": [
-        "browserify-shim",
-        "coffeeify",
-        "hbsfy"
-        ]
-      },
-    "browserify-shim": {
-      "plugin": {
-        "exports": "plugin",
-        "depends": [
-          "jquery:$"
-          ]
-        }
-      },
-    "devDependencies": {
-      "browser-sync": "~2.2.2",
-      "browserify": "^9.0.3",
-      "browserify-shim": "^3.8.2",
-      "coffeeify": "~1.0.0",
-      "handlebars": "^3.0.0",
-      "hbsfy": "~2.2.1",
-      "pretty-hrtime": "~1.0.0",
-      "require-dir": "^0.1.0",
-      "vinyl-source-stream": "~1.0.0",
-      "watchify": "^2.4.0",
-    	"docco":"latest",
-      "coffee-script":"latest"
+  "name": "motility",
+  "description": "Retrotope acuire data for clinical mobility study",
+  "version": "0.2.0",
+  "author": "James A. Hinds",
+  "dependencies": {
+    "backbone": "^1.2.3",
+    "backbone-forms": "latest",
+    "coffee-script": "latest",
+    "hbsfy": "~2.2.1",
+    "jquery": "latest",
+    "seen": "themadcreator/seen.git",
+    "teacup": "latest",
+    "underscore": "^1.8.3",
+    "winston": "latest"
+  },
+  "browser": {
+    "underscore": "backbone/node_modules/underscore",
+    "plugin": "./src/javascript/vendor/jquery-plugin.js"
+  },
+  "browserify": {
+    "transform": [
+      "browserify-shim",
+      "coffeeify",
+      "hbsfy"
+    ]
+  },
+  "browserify-shim": {
+    "plugin": {
+      "exports": "plugin",
+      "depends": [
+        "jquery:$"
+      ]
     }
+  },
+  "devDependencies": {
+    "browser-sync": "~2.2.2",
+    "browserify": "^9.0.3",
+    "browserify-shim": "^3.8.2",
+    "coffeeify": "~1.0.0",
+    "handlebars": "^3.0.0",
+    "hbsfy": "~2.2.1",
+    "pretty-hrtime": "~1.0.0",
+    "require-dir": "^0.1.0",
+    "vinyl-source-stream": "~1.0.0",
+    "watchify": "^2.4.0",
+    "docco": "latest",
+    "coffee-script": "latest"
+  }
 }
