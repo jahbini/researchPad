@@ -705,10 +705,10 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-development = false;
+development = true;
 
 if (development) {
-  Pylon.set('hostUrl', "http://Retro.local:3000/");
+  Pylon.set('hostUrl', "http://Tyriea.local:3000/");
 } else {
   Pylon.set('hostUrl', "http://sensor.retrotope.com:80/");
 }
@@ -1060,6 +1060,7 @@ enterClear = function() {
   });
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
+  $('#ProtocolID').prop("disabled", false);
   useButton(buttonModelActionRecord);
   setButtons();
   return false;
@@ -1118,6 +1119,7 @@ enterRecording = function() {
     return;
   }
   gs.set('recording', true);
+  $('#ProtocolID').prop("disabled", true);
   Pylon.trigger('recordCountDown:start', 5);
   return console.log('enter Recording --- actively recording sensor info');
 };

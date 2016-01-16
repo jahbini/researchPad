@@ -15,9 +15,9 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = false
+development = true
 if development
-  Pylon.set 'hostUrl', "http://Retro.local:3000/"
+  Pylon.set 'hostUrl', "http://Tyriea.local:3000/"
 else
   Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
 pages = require './pages.coffee'
@@ -280,9 +280,10 @@ enterClear = ->
   Pylon.get('devices').each (body)->
     readings = body.get('readings')
     readings.reset silent: true
-    readings.reset() 
-  buttonModelClear.set('active',false);
-  buttonModelUpload.set('active',false);
+    readings.reset()
+  buttonModelClear.set('active',false)
+  buttonModelUpload.set('active',false)
+  $('#ProtocolID').prop("disabled",false)
   useButton buttonModelActionRecord
   setButtons()
   return false
@@ -332,6 +333,7 @@ enterRecording = ->
   return if gs.get 'recording'
   # start recording and show a lead in timer of 5 seconds
   gs.set 'recording',  true
+  $('#ProtocolID').prop("disabled",true)
   Pylon.trigger 'recordCountDown:start', 5
   console.log('enter Recording --- actively recording sensor info')
 
@@ -360,7 +362,7 @@ Pylon.on 'stopCountDown:over', ->
 enterUpload = ->
   uploader()
   pageGen.forceTest()
-  enterClear() 
+  enterClear()
   return false
 
 # ## stopRecording
@@ -459,7 +461,7 @@ $(document).on 'deviceready', ->
 
 $ ->
   domIsReady = true
-  pageGen.renderPage() 
+  pageGen.renderPage()
   if $('#console-log')?
     window.console=console = new Console('console-log')
     exitDebug()
