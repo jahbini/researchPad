@@ -25,6 +25,14 @@
       "hbsfy"
     ]
   },
+  "scripts": {
+    "build-development": 
+	"cp coffee/development.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build-testing": 
+	"cp coffee/testing.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build-production": 
+	"cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js" 
+  },
   "browserify-shim": {
     "plugin": {
       "exports": "plugin",

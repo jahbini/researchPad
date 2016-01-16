@@ -15,7 +15,9 @@ if window? then window.Pylon = window.exports = Pylon
 if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
-development = true
+hostUrl = require './env.coffee'
+console.log "hostUrl =",hostUrl
+Pylon.set 'hostUrl', hostUrl
 if development
   Pylon.set 'hostUrl', "http://Tyriea.local:3000/"
 else

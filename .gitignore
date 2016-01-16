@@ -7,6 +7,7 @@ temp/
 x.*
 *.swp
 cordova.js
-app.js
+coffee/env.coffee
 docs/
 public/logon.js
+public/app.js
