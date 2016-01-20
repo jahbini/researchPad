@@ -18,10 +18,7 @@ Pylon.set 'spearCount', 5
 hostUrl = require './env.coffee'
 console.log "hostUrl =",hostUrl
 Pylon.set 'hostUrl', hostUrl
-if development
-  Pylon.set 'hostUrl', "http://Tyriea.local:3000/"
-else
-  Pylon.set 'hostUrl', "http://sensor.retrotope.com:80/"
+
 pages = require './pages.coffee'
 Pylon.set 'adminView', require('./adminView.coffee').adminView
 loadScript = require("./loadScript.coffee").loadScript

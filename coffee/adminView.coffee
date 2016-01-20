@@ -1,7 +1,7 @@
 # vim: et:ts=2:sw=2:sts=2:nowrap
 
 $=require('jquery')
-Backbone = require('Backbone')
+Backbone = require('backbone')
 Teacup = require('teacup')
 
 implementing = (mixins..., classReference) ->

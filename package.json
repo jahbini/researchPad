@@ -9,7 +9,7 @@
     "coffee-script": "latest",
     "hbsfy": "~2.2.1",
     "jquery": "latest",
-    "seen": "themadcreator/seen.git",
+    "seen": "git://github.com/themadcreator/seen",
     "teacup": "latest",
     "underscore": "^1.8.3",
     "winston": "latest"
@@ -26,12 +26,9 @@
     ]
   },
   "scripts": {
-    "build-development": 
-	"cp coffee/development.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
-    "build-testing": 
-	"cp coffee/testing.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
-    "build-production": 
-	"cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js" 
+    "build-development": "cp coffee/development.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build-testing": "cp coffee/testing.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build-production": "cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js"
   },
   "browserify-shim": {
     "plugin": {

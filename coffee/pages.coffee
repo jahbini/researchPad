@@ -1,6 +1,6 @@
 # vim: et:ts=2:sw=2:sts=2:nowrap
 
-Backbone = require('Backbone')
+Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
 

@@ -1,3 +1,3 @@
 
-exports = "sensor.retrotope.com:80"
+module.exports = "sensor.retrotope.com:80"
 

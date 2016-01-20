@@ -1,2 +1,2 @@
 
-exports = "http://Tyriea.local:3000/"
+module.exports = "http://Tyriea.local:3000/"
