@@ -320,7 +320,7 @@ class TiHandler
         return
 
       setTimeout ()->
-          return if 'Recieving' == d.get 'deviceStatus'
+          return if 'Receiving' == d.get 'deviceStatus'
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
         ,5000

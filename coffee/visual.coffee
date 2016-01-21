@@ -102,7 +102,7 @@ class visual
     (data) =>
       # data points from Evothings library are Seen.Point NOT compatible as sources
       try
-        o.device.set 'deviceStatus', 'Recieving'
+        o.device.set 'deviceStatus', 'Receiving'
         theUUID = o.device.id
         $("#status-"+theUUID).text (o.device.get 'deviceStatus')
         r = o.source(data)
