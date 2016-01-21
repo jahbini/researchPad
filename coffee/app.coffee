@@ -283,6 +283,7 @@ enterClear = ->
   buttonModelClear.set('active',false)
   buttonModelUpload.set('active',false)
   $('#ProtocolID').prop("disabled",false)
+  sessionInfo.set 'protocolID' , null
   useButton buttonModelActionRecord
   setButtons()
   return false
@@ -454,8 +455,8 @@ window.Buttons = buttonCollection
 
 $(document).on 'deviceready', ->
   sensorIsReady = true
-  startBlueTooth()
   rediness()
+  startBlueTooth()
   return
 
 $ ->

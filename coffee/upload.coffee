@@ -19,6 +19,9 @@ dumpLocal =  ->
     brainDump = localStorage.getItem(trajectoryKey)
     brainDump = JSON.parse(brainDump)
   catch e
+    console.log "Error in upload"
+    console.log e
+    console.log "upload item removed"
     localStorage.removeItem(trajectoryKey)
     setTimeout dumpLocal, 30000
     brainDump = false
@@ -73,13 +76,13 @@ uploader = ->
       assignedName: body.assignedName
       nickname: body.nickname
       readings: r.toJSON()
-  return false if noData  
+  return false if noData
 
   hopper = Backbone.Model.extend {
     url: Pylon.get('hostUrl')+'trajectory'
     urlRoot: Pylon.get 'hostUrl'
   }
-  
+
   console.log "Prepare upload"
   theClinic = sessionInfo.get 'clinic'
   brainDump = new hopper
@@ -96,7 +99,7 @@ uploader = ->
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
 
   console.log "Store upload"
-  localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON())) 
+  localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON()))
   console.log "Upload upload"
   dumpLocal()
   console.log "return from upload"

@@ -157,7 +157,7 @@ class Pages
 
   forceTest: (color = 'violet') =>
     $('#ProtocolSelect').text('Must Select Test').css('color',color)
-    $('#ProtocolID').val('Select --')
+    Pylon.trigger 'renderTest'
     Pylon.get('sessionInfo').unset 'protocolID', silent: true
 
   activateButtons: (buttonStruct) ->
@@ -194,18 +194,18 @@ class Pages
         session: Pylon.get('sessionInfo')
       initialize: ->
         @listenTo @collection, 'change', @render
+        Pylon.on "renderTest", =>
+          @render()
         @render()
       events:
         'change': ->
           @attributes.session.set 'protocolID',@$el.val()
           return false
       render: ->
+        console.log "Rendering Tests"
         @$el.html render =>
-          option "Select ---"
+          option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models
-            if protocol.get('force')
-              option '.forceSelect.selected', selected: 'selected', value: protocol.get('name'), protocol.get('name')
-            else
               option value: protocol.get('name'), protocol.get('name')
         return this
     @protocolView = new protocolViewTemplate
