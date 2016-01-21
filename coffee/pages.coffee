@@ -148,10 +148,10 @@ class Pages
           select "#ProtocolID.u-full-width"
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
-          label '#RightStat', for: "upload", 'Items:0'
+          label '#LeftStat', for: "clear", 'Items:0'
         div '.three.columns', ->
           button '#clear.u-full-width.disabled', 'Reset'
-          label '#LeftStat', for: "clear", 'Items:0'
+          label '#RightStat', for: "upload", 'Items:0'
 
   tagSelector: renderable ()=>
 
