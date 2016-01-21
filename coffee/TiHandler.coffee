@@ -249,6 +249,9 @@ class TiHandler
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
   attachDevice: (uuid,role="Right") ->
+    # reject attachDevice request if we are already recording
+    gs = Pylon.get('globalState')
+    return if gs.get 'recording'
     console.log "attach "+uuid
     d = Pylon.get('devices').get uuid
     d.set 'buttonText', 'connecting'
