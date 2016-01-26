@@ -106,9 +106,14 @@ class Pages
                 if 'Right' != device.get 'role'  # if we are not already Right
                   pylonLeft = Pylon.get('Left') || device  # is left taken?
                   if  device == pylonLeft
-                    button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                      ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
-                      ,device.get('buttonText') + "(L)"
+                    # when device is connected, disable my buttons - https://github.com/jahbini/stagapp/issues/73
+                    if device.get 'connected'
+                      button '#connect-l-'+theUUID+'.disabled.u-full-width.'+device.get('buttonClass')
+                        ,device.get('buttonText') + "(L)"
+                    else
+                      button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                        ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
+                        ,device.get('buttonText') + "(L)"
                   else
                     button '.disabled.u-full-width', "unavailable"
                 else   # disable left side button with text to indicate right limb
@@ -117,9 +122,14 @@ class Pages
                 if 'Left' != device.get 'role' # have we been assigned as Left?
                   pylonRight = Pylon.get('Right') || device  # No, is right taken?
                   if device == pylonRight
-                    button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                      ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
-                      ,device.get('buttonText') + "(R)"
+                    # when device is connected, disable my buttons - https://github.com/jahbini/stagapp/issues/73
+                    if device.get 'connected'
+                      button '#connect-r-'+theUUID+'.disabled.u-full-width.'+device.get('buttonClass')
+                        ,device.get('buttonText') + "(R)"
+                    else
+                      button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
+                        ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
+                        ,device.get('buttonText') + "(R)"
                   else
                     button '.disabled.u-full-width', "unavailable"
                 else
