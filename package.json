@@ -28,7 +28,11 @@
   "scripts": {
     "build-development": "cp coffee/development.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
     "build-testing": "cp coffee/testing.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
-    "build-production": "cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js"
+    "build-production": "cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build": "cp coffee/production.coffee coffee/env.coffee; echo 'exports.version = \"%s\"' >coffee/version.js; browserify coffee/app.coffee -o public/app.js; git add coffee public package.json",
+  "preversion": "echo Bumping version from %s not npm test ",
+  "version": "npm run build && git add -A dist",
+  "postversion": "git push && git push --tags && rm -rf build/temp"
   },
   "browserify-shim": {
     "plugin": {
