@@ -97,6 +97,7 @@ uploader = ->
   brainDump.set('protocolID',sessionInfo.get('protocolID') )
   brainDump.set('testID',sessionInfo.get('protocolID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
+  brainDump.set('applicationVersion',sessionInfo.get('version') )
 
   console.log "Store upload"
   localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON()))

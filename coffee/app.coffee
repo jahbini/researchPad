@@ -19,6 +19,7 @@ hostUrl = require './env.coffee'
 console.log "hostUrl =",hostUrl
 Pylon.set 'hostUrl', hostUrl
 
+
 pages = require './pages.coffee'
 Pylon.set 'adminView', require('./adminView.coffee').adminView
 loadScript = require("./loadScript.coffee").loadScript
@@ -92,6 +93,7 @@ admin = new adminData
     protocol: protocols
 
 rawSession = Backbone.Model.extend()
+applicationVersion = require './version.coffee'
 sessionInfo = new rawSession
   user: ''
   clinic: ''
@@ -99,6 +101,8 @@ sessionInfo = new rawSession
   protocolID: ''
   sensorUUID: ''
   platformUUID: ''
+  applicationVersion: applicationVersion
+console.log "app Ver:", sessionInfo.get 'applicationVersion'
 
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen

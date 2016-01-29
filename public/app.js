@@ -415,7 +415,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/console":11,"./glib.coffee":5,"./visual.coffee":10,"backbone":13,"jquery":15,"underscore":14}],2:[function(require,module,exports){
+},{"../libs/dbg/console":12,"./glib.coffee":5,"./visual.coffee":11,"backbone":14,"jquery":16,"underscore":15}],2:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -693,8 +693,8 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":13,"jquery":15,"teacup":16}],3:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, hostUrl, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, useButton;
+},{"backbone":14,"jquery":16,"teacup":17}],3:[function(require,module,exports){
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, hostUrl, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, useButton;
 
 $ = require('jquery');
 
@@ -826,14 +826,19 @@ admin = new adminData({
 
 rawSession = Backbone.Model.extend();
 
+applicationVersion = require('./version.coffee');
+
 sessionInfo = new rawSession({
   user: '',
   clinic: '',
   patient: '',
   protocolID: '',
   sensorUUID: '',
-  platformUUID: ''
+  platformUUID: '',
+  applicationVersion: applicationVersion
 });
+
+console.log("app Ver:", sessionInfo.get('applicationVersion'));
 
 pageGen = new pages.Pages(sessionInfo);
 
@@ -1295,7 +1300,7 @@ $(function() {
 
 
 
-},{"../libs/dbg/console":11,"./TiHandler.coffee":1,"./adminView.coffee":2,"./env.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"backbone":13,"jquery":15,"underscore":14}],4:[function(require,module,exports){
+},{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./env.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
 module.exports = "sensor.retrotope.com:80";
 
 
@@ -1404,7 +1409,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":14}],7:[function(require,module,exports){
+},{"underscore":15}],7:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
   slice = [].slice;
 
@@ -1529,7 +1534,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":13,"jquery":15,"teacup":16}],8:[function(require,module,exports){
+},{"backbone":14,"jquery":16,"teacup":17}],8:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -1959,7 +1964,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":2,"./modalViews.coffee":7,"backbone":13,"jquery":15,"teacup":16}],9:[function(require,module,exports){
+},{"./adminView.coffee":2,"./modalViews.coffee":7,"backbone":14,"jquery":16,"teacup":17}],9:[function(require,module,exports){
 var $, Backbone, Pylon, _, dumpLocal, localStorage, uploader;
 
 $ = require('jquery');
@@ -2073,6 +2078,7 @@ uploader = function() {
   brainDump.set('protocolID', sessionInfo.get('protocolID'));
   brainDump.set('testID', sessionInfo.get('protocolID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
+  brainDump.set('applicationVersion', sessionInfo.get('version'));
   console.log("Store upload");
   localStorage.setItem(brainDump.cid, JSON.stringify(brainDump.toJSON()));
   console.log("Upload upload");
@@ -2094,7 +2100,12 @@ module.exports = uploader;
 
 
 
-},{"../libs/dbg/console":11,"backbone":13,"jquery":15,"underscore":14}],10:[function(require,module,exports){
+},{"../libs/dbg/console":12,"backbone":14,"jquery":16,"underscore":15}],10:[function(require,module,exports){
+module.exports = '0.5.0';
+
+
+
+},{}],11:[function(require,module,exports){
 var $, Seen, _, visual;
 
 Seen = require('../libs/dbg/seen');
@@ -2398,7 +2409,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/seen":12,"jquery":15,"underscore":14}],11:[function(require,module,exports){
+},{"../libs/dbg/seen":13,"jquery":16,"underscore":15}],12:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -2680,7 +2691,7 @@ THE SOFTWARE.
 
   window.Console = Console;
 })();
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 /** seen.js v0.2.1 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 (function() {
   var ARRAY_POOL, Ambient, CUBE_COORDINATE_MAP, DEFAULT_FRAME_DELAY, DEFAULT_NORMAL, DiffusePhong, EQUILATERAL_TRIANGLE_ALTITUDE, EYE_NORMAL, Flat, ICOSAHEDRON_COORDINATE_MAP, ICOSAHEDRON_POINTS, ICOS_X, ICOS_Z, IDENTITY, NEXT_UNIQUE_ID, POINT_POOL, PYRAMID_COORDINATE_MAP, PathPainter, Phong, TETRAHEDRON_COORDINATE_MAP, TRANSPOSE_INDICES, TextPainter, requestAnimationFrame, seen, _ref, _ref1, _ref2, _svg,
@@ -5492,7 +5503,7 @@ THE SOFTWARE.
 
 }).call(this);
 
-},{}],13:[function(require,module,exports){
+},{}],14:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.2.3
 
@@ -7390,7 +7401,7 @@ THE SOFTWARE.
 }));
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":15,"underscore":14}],14:[function(require,module,exports){
+},{"jquery":16,"underscore":15}],15:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8940,7 +8951,7 @@ THE SOFTWARE.
   }
 }.call(this));
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v2.2.0
  * http://jquery.com/
@@ -18773,7 +18784,7 @@ if ( !noGlobal ) {
 return jQuery;
 }));
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
