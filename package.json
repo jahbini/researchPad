@@ -1,7 +1,7 @@
 {
   "name": "motility",
   "description": "Retrotope acuire data for clinical mobility study",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "author": "James A. Hinds",
   "dependencies": {
     "backbone": "^1.2.3",
@@ -29,7 +29,7 @@
     "build-development": "cp coffee/development.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
     "build-testing": "cp coffee/testing.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
     "build-production": "cp coffee/production.coffee coffee/env.coffee; browserify coffee/app.coffee -o public/app.js",
-    "build": "cp coffee/production.coffee coffee/env.coffee; echo 'exports.version = \"$npm_package_version\" >coffee/version.coffee; browserify coffee/app.coffee -o public/app.js",
+    "build": "cp coffee/production.coffee coffee/env.coffee; echo 'exports.version = \"$npm_package_version\"' >coffee/version.coffee; browserify coffee/app.coffee -o public/app.js",
     "preversion": "echo Bumping version from \"$npm_package_version\" not npm test ",
     "version": "npm run build && git add -A coffee public package.json",
     "postversion": "git push && git push --tags && rm -rf build/temp"
