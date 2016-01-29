@@ -1,1 +1,1 @@
-exports.version = "$npm_package_version"
+exports.version = '0.4.3'
