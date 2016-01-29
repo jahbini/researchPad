@@ -10,7 +10,7 @@ implementing = (mixins..., classReference) ->
       classReference::[key] = value
   classReference
 
-class adminView 
+class adminView
   tea = new Teacup.Teacup
   {table,tr,th,thead,tbody,td,ul,li,ol,a,render
     ,input,renderable,raw,div,img,h2,h3,h4,h5,label
@@ -47,7 +47,7 @@ class adminView
       #render the clinic drop down list -- if the server is responding
       render: ->
         @$el.html render =>
-          option "Select ---"
+          option "Select ---",value: ''
           for clinic in @collection.models
             if clinic.get('force')
               option '.forceSelect.selected',
@@ -70,7 +70,7 @@ class adminView
           return false
       render: ->
         temp = render =>
-          option "Select ---"
+          option "Select ---",value: ''
           for user in @collection.models
             n= user.get('name')
             option value: user.get('_id'), n.first + ' ' + n.last
@@ -90,7 +90,7 @@ class adminView
           return false
       render: ->
         @$el.html render =>
-          option "Select ---"
+          option "Select ---",value: ''
           for p in @collection.models
             n=p.get('name')
             option value: p.get('_id'), n.first + ' ' + n.last

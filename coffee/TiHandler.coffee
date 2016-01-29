@@ -254,6 +254,8 @@ class TiHandler
     return if gs.get 'recording'
     console.log "attach "+uuid
     d = Pylon.get('devices').get uuid
+    # reject attachDevice if it connected Github issue #73
+    return if d.get 'connected'
     d.set 'buttonText', 'connecting'
     d.set 'role',role
     d.set 'connected', false
