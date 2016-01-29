@@ -414,6 +414,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 }
 
 
+
 },{"../libs/dbg/console":11,"./glib.coffee":5,"./visual.coffee":10,"backbone":13,"jquery":15,"underscore":14}],2:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
@@ -689,6 +690,7 @@ adminView = (function() {
 })();
 
 exports.adminView = new adminView;
+
 
 
 },{"backbone":13,"jquery":15,"teacup":16}],3:[function(require,module,exports){
@@ -1292,8 +1294,10 @@ $(function() {
 });
 
 
+
 },{"../libs/dbg/console":11,"./TiHandler.coffee":1,"./adminView.coffee":2,"./env.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"backbone":13,"jquery":15,"underscore":14}],4:[function(require,module,exports){
-module.exports = "http://Tyriea.local:3000/";
+module.exports = "sensor.retrotope.com:80";
+
 
 
 },{}],5:[function(require,module,exports){
@@ -1340,6 +1344,7 @@ glib = function() {
 };
 
 exports.glib = new glib;
+
 
 
 },{}],6:[function(require,module,exports){
@@ -1396,6 +1401,7 @@ loadScript = function(url, callback) {
 };
 
 exports.loadScript = loadScript;
+
 
 
 },{"underscore":14}],7:[function(require,module,exports){
@@ -1520,6 +1526,7 @@ countDownViewTemplate = Backbone.View.extend({
 });
 
 exports.countDownView = new countDownViewTemplate;
+
 
 
 },{"backbone":13,"jquery":15,"teacup":16}],8:[function(require,module,exports){
@@ -1951,6 +1958,7 @@ Pages = (function() {
 exports.Pages = Pages;
 
 
+
 },{"./adminView.coffee":2,"./modalViews.coffee":7,"backbone":13,"jquery":15,"teacup":16}],9:[function(require,module,exports){
 var $, Backbone, Pylon, _, dumpLocal, localStorage, uploader;
 
@@ -2083,6 +2091,7 @@ dumpLocal();
  */
 
 module.exports = uploader;
+
 
 
 },{"../libs/dbg/console":11,"backbone":13,"jquery":15,"underscore":14}],10:[function(require,module,exports){
@@ -2386,6 +2395,7 @@ if (typeof window !== "undefined" && window !== null) {
 if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
   module.exports = visual;
 }
+
 
 
 },{"../libs/dbg/seen":12,"jquery":15,"underscore":14}],11:[function(require,module,exports){
