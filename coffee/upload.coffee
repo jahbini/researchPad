@@ -42,6 +42,12 @@ dumpLocal =  ->
       localStorage.removeItem(trajectoryKey)
       return
     .fail (a,b,c)->
+      failCode = a.status
+      # if the server cannot process the upload, throw it away
+      if failCode == 500 || failCode == 400
+        localStorage.removeItem(trajectoryKey)
+        return
+
       Pylon.trigger "upload:failure", message: "upload queued"
       currentlyUploading = false
       console.log a
@@ -83,7 +89,7 @@ uploader = ->
     urlRoot: Pylon.get 'hostUrl'
   }
 
-  console.log "Prepare upload"
+  console.log "Prepare upload on " + Date()
   theClinic = sessionInfo.get 'clinic'
   brainDump = new hopper
   brainDump.set('readings',devicesData )
@@ -97,7 +103,8 @@ uploader = ->
   brainDump.set('protocolID',sessionInfo.get('protocolID') )
   brainDump.set('testID',sessionInfo.get('protocolID') )
   brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
-  brainDump.set('applicationVersion',sessionInfo.get('version') )
+  brainDump.set('applicationVersion',sessionInfo.get('applicationVersion') )
+  brainDump.set('captureDate',Date())
 
   console.log "Store upload"
   localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON()))

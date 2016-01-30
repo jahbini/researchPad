@@ -33,16 +33,28 @@ class adminView
       events:
         'change': ->
           theOptionCid = @$el.val()
-          theClinic = @collection.get( theOptionCid )
-          @attributes.session.set 'clinic',theClinic
+          console.log 'Clinic Change, CID='+theOptionCid
+          if theOptionCid
+            theClinic = @collection.get( theOptionCid )
+            try
+              @attributes.session.set 'clinic',theClinic
+            catch error
+              console.log "Error from setting clinic"
+              console.log error
+          else
+            theClinic = null;
+            @attributes.session.unset 'clinic'
+          @attributes.session.unset 'clinician'
+          @attributes.session.unset 'client'
           temp = Pylon.get('clinicians')
           temp.reset()
-          temp.add theClinic.get('clinicians')
+          temp.add theClinic.get('clinicians') if theClinic
           temp.trigger('change')
           temp = Pylon.get('clients')
           temp.reset()
-          temp.add theClinic.get('clients')
+          temp.add theClinic.get('clients') if theClinic
           temp.trigger('change')
+          @attributes.session.trigger 'change'
           return false
       #render the clinic drop down list -- if the server is responding
       render: ->
@@ -66,7 +78,12 @@ class adminView
         @listenTo @collection, 'change', @render
       events:
         'change': ->
-          @attributes.session.set 'clinician',@$el.val()
+          temp = @$el.val()
+          if temp
+            @attributes.session.set 'clinician',temp
+          else
+            @attributes.session.unset 'clinician'
+          @attributes.session.trigger 'change'
           return false
       render: ->
         temp = render =>
@@ -86,7 +103,11 @@ class adminView
         @listenTo @collection, 'change', @render
       events:
         'change': ->
-          @attributes.session.set 'client',@$el.val()
+          if @$el.val()
+            @attributes.session.set 'client',@$el.val()
+          else
+            @attributes.session.unset 'client'
+          @attributes.session.trigger 'change'
           return false
       render: ->
         @$el.html render =>
@@ -109,10 +130,12 @@ class adminView
       render: ->
         if (@model.get 'clinic') && (@model.get 'clinician') &&
             (@model.get 'client') && 'retro2015' == (@model.get 'password')?.slice(0,9)
-          console.log('activating Admin Done Button')
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
           @$el.text "Done"
           @$el.show().fadeTo(500,1)
+        else
+          @$el.removeClass('button-primary').addClass('disabled').attr('disabled')
+          @$el.show().fadeTo(100,0.25)
         return this
 
     @doneView = new doneViewTemplate

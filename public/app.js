@@ -465,18 +465,37 @@ adminView = (function() {
       },
       events: {
         'change': function() {
-          var temp, theClinic, theOptionCid;
+          var error, error1, temp, theClinic, theOptionCid;
           theOptionCid = this.$el.val();
-          theClinic = this.collection.get(theOptionCid);
-          this.attributes.session.set('clinic', theClinic);
+          console.log('Clinic Change, CID=' + theOptionCid);
+          if (theOptionCid) {
+            theClinic = this.collection.get(theOptionCid);
+            try {
+              this.attributes.session.set('clinic', theClinic);
+            } catch (error1) {
+              error = error1;
+              console.log("Error from setting clinic");
+              console.log(error);
+            }
+          } else {
+            theClinic = null;
+            this.attributes.session.unset('clinic');
+          }
+          this.attributes.session.unset('clinician');
+          this.attributes.session.unset('client');
           temp = Pylon.get('clinicians');
           temp.reset();
-          temp.add(theClinic.get('clinicians'));
+          if (theClinic) {
+            temp.add(theClinic.get('clinicians'));
+          }
           temp.trigger('change');
           temp = Pylon.get('clients');
           temp.reset();
-          temp.add(theClinic.get('clients'));
+          if (theClinic) {
+            temp.add(theClinic.get('clients'));
+          }
           temp.trigger('change');
+          this.attributes.session.trigger('change');
           return false;
         }
       },
@@ -519,7 +538,14 @@ adminView = (function() {
       },
       events: {
         'change': function() {
-          this.attributes.session.set('clinician', this.$el.val());
+          var temp;
+          temp = this.$el.val();
+          if (temp) {
+            this.attributes.session.set('clinician', temp);
+          } else {
+            this.attributes.session.unset('clinician');
+          }
+          this.attributes.session.trigger('change');
           return false;
         }
       },
@@ -558,7 +584,12 @@ adminView = (function() {
       },
       events: {
         'change': function() {
-          this.attributes.session.set('client', this.$el.val());
+          if (this.$el.val()) {
+            this.attributes.session.set('client', this.$el.val());
+          } else {
+            this.attributes.session.unset('client');
+          }
+          this.attributes.session.trigger('change');
           return false;
         }
       },
@@ -600,10 +631,12 @@ adminView = (function() {
       render: function() {
         var ref1;
         if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
-          console.log('activating Admin Done Button');
           this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
           this.$el.text("Done");
           this.$el.show().fadeTo(500, 1);
+        } else {
+          this.$el.removeClass('button-primary').addClass('disabled').attr('disabled');
+          this.$el.show().fadeTo(100, 0.25);
         }
         return this;
       }
@@ -1301,7 +1334,7 @@ $(function() {
 
 
 },{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./env.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
-module.exports = "sensor.retrotope.com:80";
+module.exports = "http://Tyriea.local:3000/";
 
 
 
@@ -2011,7 +2044,12 @@ dumpLocal = function() {
     console.log("Save Complete " + a);
     localStorage.removeItem(trajectoryKey);
   }).fail(function(a, b, c) {
-    var currentlyUploading;
+    var currentlyUploading, failCode;
+    failCode = a.status;
+    if (failCode === 500 || failCode === 400) {
+      localStorage.removeItem(trajectoryKey);
+      return;
+    }
     Pylon.trigger("upload:failure", {
       message: "upload queued"
     });
@@ -2064,7 +2102,7 @@ uploader = function() {
     url: Pylon.get('hostUrl') + 'trajectory',
     urlRoot: Pylon.get('hostUrl')
   });
-  console.log("Prepare upload");
+  console.log("Prepare upload on " + Date());
   theClinic = sessionInfo.get('clinic');
   brainDump = new hopper;
   brainDump.set('readings', devicesData);
@@ -2078,7 +2116,8 @@ uploader = function() {
   brainDump.set('protocolID', sessionInfo.get('protocolID'));
   brainDump.set('testID', sessionInfo.get('protocolID'));
   brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  brainDump.set('applicationVersion', sessionInfo.get('version'));
+  brainDump.set('applicationVersion', sessionInfo.get('applicationVersion'));
+  brainDump.set('captureDate', Date());
   console.log("Store upload");
   localStorage.setItem(brainDump.cid, JSON.stringify(brainDump.toJSON()));
   console.log("Upload upload");
