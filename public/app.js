@@ -1334,7 +1334,7 @@ $(function() {
 
 
 },{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./env.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
-module.exports = "http://Tyriea.local:3000/";
+module.exports = "sensor.retrotope.com:80";
 
 
 
@@ -2140,7 +2140,7 @@ module.exports = uploader;
 
 
 },{"../libs/dbg/console":12,"backbone":14,"jquery":16,"underscore":15}],10:[function(require,module,exports){
-module.exports = '0.5.0';
+module.exports = '1.0.0-0';
 
 
 
