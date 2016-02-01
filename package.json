@@ -1,7 +1,7 @@
 {
   "name": "motility",
   "description": "Retrotope acuire data for clinical mobility study",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "author": "James A. Hinds",
   "dependencies": {
     "backbone": "^1.2.3",
