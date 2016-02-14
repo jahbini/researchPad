@@ -2131,7 +2131,7 @@ module.exports = uploader;
 
 
 },{"../libs/dbg/console":11,"backbone":13,"jquery":15,"underscore":14}],9:[function(require,module,exports){
-module.exports = '1.1.3';
+module.exports = '1.2.0';
 
 
 
