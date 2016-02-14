@@ -192,7 +192,6 @@ class visual
       model: model
       viewport: Seen.Viewports.center(width, height))
     cubie = Seen.Shapes.cube().scale(0.25)
-    sceneUse = 0
 
     spearPool = (many) ->
       i = undefined
@@ -200,17 +199,13 @@ class visual
       shapes = new Array(many)
       count = -1
       colors = new Array(many)
+      context = null
 
       newArrow = (model, x, y, z) ->
         alphaDecay = 255
         count = count + 1
         if count == many
           count = 0
-        if shapes[count]
-          model.remove shapes[count]
-        shapes[count] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
-        model.add(shapes[count])
-        shapes[count].bake()
         shapes[count].reset()
         # assign alpha to the arrows color
         j = 0
@@ -224,12 +219,12 @@ class visual
           if shapes[i]
             shapes[i].fill colors[j++]
           i++
-        shapes[count]
+        return shapes[count]
 
       i = 0
       while i < many
         shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025)
-        shapes[i].bake()
+        model.add shapes[i].bake()
         colors[i] = new (Seen.Material)(new (Seen.Color)(255, 80, 255, 255 - 250 / many * i))
         i++
       newArrow
@@ -251,13 +246,14 @@ class visual
       pBar.normalize()
       q = Seen.Quaternion.pointAngle(pBar, Math.PI)
       m = q.toMatrix()
-      spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
+      try
+        spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
+      catch problem
+        console.log "Death from spearPool"
+        console.log problem
       spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
       context = Seen.Context(viewport, scene) if !context
       context.render()
-      if sceneUse++ >  Math.random(500)+750
-        sceneUse = 0
-        scene.flushCache()
       return
 
     spearFromPool = new spearPool Pylon.get('spearCount')

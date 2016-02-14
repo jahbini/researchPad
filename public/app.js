@@ -2337,7 +2337,7 @@ visual = (function() {
   };
 
   visual.prototype.viewSensor = function(viewport, scaleFactor) {
-    var cubie, height, model, newValue, scene, sceneUse, spearFromPool, spearPool, width;
+    var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
     height = 200;
     width = 200;
     model = Seen.Models['default']();
@@ -2346,14 +2346,14 @@ visual = (function() {
       viewport: Seen.Viewports.center(width, height)
     });
     cubie = Seen.Shapes.cube().scale(0.25);
-    sceneUse = 0;
     spearPool = function(many) {
-      var colors, count, i, j, newArrow, shapes;
+      var colors, context, count, i, j, newArrow, shapes;
       i = void 0;
       j = void 0;
       shapes = new Array(many);
       count = -1;
       colors = new Array(many);
+      context = null;
       newArrow = function(model, x, y, z) {
         var alphaDecay;
         alphaDecay = 255;
@@ -2361,12 +2361,6 @@ visual = (function() {
         if (count === many) {
           count = 0;
         }
-        if (shapes[count]) {
-          model.remove(shapes[count]);
-        }
-        shapes[count] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
-        model.add(shapes[count]);
-        shapes[count].bake();
         shapes[count].reset();
         j = 0;
         i = count;
@@ -2388,14 +2382,14 @@ visual = (function() {
       i = 0;
       while (i < many) {
         shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
-        shapes[i].bake();
+        model.add(shapes[i].bake());
         colors[i] = new Seen.Material(new Seen.Color(255, 80, 255, 255 - 250 / many * i));
         i++;
       }
       return newArrow;
     };
     newValue = function(x, y, z) {
-      var context, cross, dot, leng, m, p1, pBar, pOriginal, q, spear;
+      var context, cross, dot, error1, leng, m, p1, pBar, pOriginal, problem, q, spear;
       p1 = Seen.P(x, y, z);
       spear = void 0;
       pOriginal = p1.copy();
@@ -2413,16 +2407,18 @@ visual = (function() {
       pBar.normalize();
       q = Seen.Quaternion.pointAngle(pBar, Math.PI);
       m = q.toMatrix();
-      spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
+      try {
+        spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
+      } catch (error1) {
+        problem = error1;
+        console.log("Death from spearPool");
+        console.log(problem);
+      }
       spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
       if (!context) {
         context = Seen.Context(viewport, scene);
       }
       context.render();
-      if (sceneUse++ > Math.random(500) + 750) {
-        sceneUse = 0;
-        scene.flushCache();
-      }
     };
     spearFromPool = new spearPool(Pylon.get('spearCount'));
     cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
