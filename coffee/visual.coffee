@@ -1,9 +1,9 @@
 #
 # vim: et:ts=2:sw=2:sts=2
 
-Seen = require '../libs/dbg/seen' 
-$=require 'jquery' 
-_=require 'underscore' 
+Seen = require '../libs/dbg/seen'
+$=require 'jquery'
+_=require 'underscore'
 
 ###
 #Pylon's globalStatus looks like this:
@@ -192,6 +192,7 @@ class visual
       model: model
       viewport: Seen.Viewports.center(width, height))
     cubie = Seen.Shapes.cube().scale(0.25)
+    sceneUse = 0
 
     spearPool = (many) ->
       i = undefined
@@ -254,6 +255,9 @@ class visual
       spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
       context = Seen.Context(viewport, scene) if !context
       context.render()
+      if sceneUse++ >  Math.random(500)+750
+        sceneUse = 0
+        scene.flushCache()
       return
 
     spearFromPool = new spearPool Pylon.get('spearCount')
