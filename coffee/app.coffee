@@ -361,10 +361,15 @@ Pylon.on 'stopCountDown:over', ->
   setButtons()
   return false
 
+#reject multiple key-press activity.  it created bad copies of uploads
+uploading = false
 enterUpload = ->
+  return if uploading
+  uploading = true
   uploader()
   pageGen.forceTest()
   enterClear()
+  uploading = false
   return false
 
 # ## stopRecording

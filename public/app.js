@@ -727,7 +727,7 @@ exports.adminView = new adminView;
 
 
 },{"backbone":13,"jquery":15,"teacup":16}],3:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, useButton;
+var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
 
 $ = require('jquery');
 
@@ -1199,10 +1199,17 @@ Pylon.on('stopCountDown:over', function() {
   return false;
 });
 
+uploading = false;
+
 enterUpload = function() {
+  if (uploading) {
+    return;
+  }
+  uploading = true;
   uploader();
   pageGen.forceTest();
   enterClear();
+  uploading = false;
   return false;
 };
 
