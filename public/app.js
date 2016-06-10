@@ -380,17 +380,17 @@ TiHandler = (function() {
         return function(data) {
           return handlers.accel(data);
         };
-      })(this), 100);
+      })(this), 20);
       sensorInstance.magnetometerCallback((function(_this) {
         return function(data) {
           return handlers.mag(data);
         };
-      })(this), 100);
+      })(this), 20);
       sensorInstance.gyroscopeCallback((function(_this) {
         return function(data) {
           return handlers.gyro(data);
         };
-      })(this), 100, 7);
+      })(this), 20, 7);
       sensorInstance.connectToDevice(d.get('rawDevice'));
     } catch (error) {
       e = error;
@@ -1622,7 +1622,7 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.two.columns', "Right Tag");
+        div('.two.columns', "Right sTag");
         div('.three.columns', function() {
           return span('#RightNick', '?');
         });
