@@ -30,7 +30,7 @@ class Pages
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
       buttons()
       div '.row',->
-        div '.two.columns',"Right sTag"
+        div '.two.columns',"Right Tag"
         div '.three.columns', ->
           span '#RightNick', '?'
         div '#Rightuuid.seven.columns' , ' '

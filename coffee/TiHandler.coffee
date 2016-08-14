@@ -339,13 +339,13 @@ class TiHandler
         handlers.mag.finalScale = 0.15
       sensorInstance.accelerometerCallback (data)=>
           handlers.accel data
-        ,20
+        ,10
       sensorInstance.magnetometerCallback (data)=>
           handlers.mag data
-        ,20
+        ,10
       sensorInstance.gyroscopeCallback (data)=>
           handlers.gyro data
-        ,20
+        ,10
         ,7
       sensorInstance.connectToDevice d.get('rawDevice')
     catch e
