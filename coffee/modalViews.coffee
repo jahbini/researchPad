@@ -40,7 +40,7 @@ uploadViewTemplate = Backbone.View.extend
           h1 "#upload-result", a.message
         button ".close"
           ,onClick: "Pylon.trigger('upload:close')"
-          ,"Close" 
+          ,"Close"
       @
 
 exports.uploadView = new uploadViewTemplate
@@ -63,14 +63,21 @@ countDownViewTemplate = Backbone.View.extend
           h2 "Time!"
         tag "section", ->
           h1 "#downCount", "count: "+t
-      if t<0
+          if sessionID=Pylon.get('sessionInfo').get('_id')
+            p "Waiting for host credential for protocol..."
+          else
+            p "Protocol credential recieved."
+      if t<0 && sessionID
         @$el.removeClass('active')
         Pylon.trigger(@response)
       else
-        @$el.addClass('active')
-        setTimeout ()->
-            Pylon.trigger('countDown:continue',t-1)
-          ,1000
+        if sessionID
+          @$el.addClass('active')
+          setTimeout ()->
+              Pylon.trigger('countDown:continue',t-1)
+            ,1000
+        else
+          Pylon.trigger('recordCountdown:fail')
       @
 
 exports.countDownView = new countDownViewTemplate

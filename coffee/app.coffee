@@ -90,7 +90,11 @@ admin = new adminData
     clients: clients
     protocol: protocols
 
-rawSession = Backbone.Model.extend()
+rawSession = Backbone.Model.extend {
+  url: Pylon.get('hostUrl')+'trajectory'
+  urlRoot: Pylon.get 'hostUrl'
+}
+
 applicationVersion = require './version.coffee'
 sessionInfo = new rawSession
   user: ''
@@ -105,6 +109,7 @@ console.log "app Ver:", sessionInfo.get 'applicationVersion'
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
 Pylon.set 'sessionInfo', sessionInfo
+console.log "sessionInfo created as: ", sessionInfo
 aButtonModel = Backbone.Model.extend
   defaults:
     active: false
@@ -326,9 +331,16 @@ exitCalibrate = ->
   return false
 
 enterRecording = ->
+  console.log "enterRecording", sessionInfo
   # reject record request if no protocol is selected
   if !sessionInfo.get('protocolID')
     pageGen.forceTest 'red'
+    return false
+  # sync the sessionInfo up to the server as an empty
+  # trajectory.  We need the UUID that the server
+  # sends back
+  if !sessionInfo.get 'ID'
+    sessionInfo.save()
     return false
   # reject record request if we are already recording
   gs = Pylon.get('globalState')
@@ -338,6 +350,11 @@ enterRecording = ->
   $('#ProtocolID').prop("disabled",true)
   Pylon.trigger 'recordCountDown:start', 5
   console.log('enter Recording --- actively recording sensor info')
+
+Pylon.on ('recordCountDown:fail'), ->
+    pageGen.forceTest 'orange'
+    gs.set 'recording',  false
+    $('#ProtocolID').prop("disabled",true)
 
 Pylon.on 'recordCountDown:over', ->
   # change the record button into the stop button

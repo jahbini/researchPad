@@ -57,10 +57,8 @@ reading = Backbone.Model.extend
   initialize: ->
     d = new Date
     @set 'time', d.getTime()
-# ### all sensor readings
-readingCollection = Backbone.Collection.extend
-  model: reading
-  initialize: ->
+# ### sensor readings are grouped into ten-second chunks, other events just have text
+Event = require './event.coffee'
 
 deviceModel = Backbone.Model.extend
   urlRoot: Pylon.get('hostUrl')+'sensor-tag'
@@ -339,13 +337,13 @@ class TiHandler
         handlers.mag.finalScale = 0.15
       sensorInstance.accelerometerCallback (data)=>
           handlers.accel data
-        ,10
+        ,100
       sensorInstance.magnetometerCallback (data)=>
           handlers.mag data
-        ,10
+        ,100
       sensorInstance.gyroscopeCallback (data)=>
           handlers.gyro data
-        ,10
+        ,100
         ,7
       sensorInstance.connectToDevice d.get('rawDevice')
     catch e
