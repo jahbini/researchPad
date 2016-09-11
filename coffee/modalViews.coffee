@@ -58,12 +58,13 @@ countDownViewTemplate = Backbone.View.extend
       Pylon.on 'countDown:continue', (time)=>
         @render time
     render: (t)->
+      sessionID=Pylon.get('sessionInfo').get('_id')
       @$el.html render =>
         tag "header", ->
           h2 "Time!"
         tag "section", ->
           h1 "#downCount", "count: "+t
-          if sessionID=Pylon.get('sessionInfo').get('_id')
+          if sessionID
             p "Waiting for host credential for protocol..."
           else
             p "Protocol credential recieved."

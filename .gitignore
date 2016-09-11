@@ -10,3 +10,6 @@ cordova.js
 coffee/env.coffee
 docs/
 public/logon.js
+plugins/*
+platforms/*
+www/*

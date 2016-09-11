@@ -750,7 +750,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "");
+Pylon.set('hostUrl', "http://Tyriea.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -1165,7 +1165,7 @@ enterRecording = function() {
     pageGen.forceTest('red');
     return false;
   }
-  if (!sessionInfo.get('ID')) {
+  if (!sessionInfo.get('_id')) {
     sessionInfo.save();
     return false;
   }
@@ -1578,15 +1578,16 @@ countDownViewTemplate = Backbone.View.extend({
     })(this));
   },
   render: function(t) {
+    var sessionID;
+    sessionID = Pylon.get('sessionInfo').get('_id');
     this.$el.html(render((function(_this) {
       return function() {
         tag("header", function() {
           return h2("Time!");
         });
         return tag("section", function() {
-          var sessionID;
           h1("#downCount", "count: " + t);
-          if (sessionID = Pylon.get('sessionInfo').get('_id')) {
+          if (sessionID) {
             return p("Waiting for host credential for protocol...");
           } else {
             return p("Protocol credential recieved.");
