@@ -57,10 +57,8 @@ reading = Backbone.Model.extend
   initialize: ->
     d = new Date
     @set 'time', d.getTime()
-# ### all sensor readings
-readingCollection = Backbone.Collection.extend
-  model: reading
-  initialize: ->
+# ### sensor readings are grouped into ten-second chunks, other events just have text
+Event = require './event.coffee'
 
 deviceModel = Backbone.Model.extend
   urlRoot: Pylon.get('hostUrl')+'sensor-tag'

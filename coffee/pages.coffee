@@ -189,6 +189,21 @@ class Pages
     $('#ProtocolID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
       model.set 'protocolID',$('#protocolID option:selected').val()
+      try
+        model.save
+          success: ()->
+            console.log "trajectory saved"
+            console.log "now =", model
+            console.log "attributes =", model.attributes
+          failure: (e)->
+            console.log "Trajectory save Fail"
+            console.log "Error =",e
+          error: ()->
+            console.log "Trajectory save Fail"
+      catch nasty
+        alert "sync fail"
+        console.log model
+        console.log model.attributes
       return false
 
   renderPage: ()=>

@@ -4,12 +4,12 @@
   "version": "1.2.1",
   "author": "James A. Hinds",
   "dependencies": {
-    "backbone": "^1.2.3",
+    "backbone": "^1.3.3",
     "backbone-forms": "latest",
     "coffee-script": "latest",
     "hbsfy": "~2.2.1",
     "jquery": "latest",
-    "seen": "git://github.com/themadcreator/seen",
+    "seen-js": "^0.2.7",
     "teacup": "latest",
     "underscore": "^1.8.3",
     "winston": "latest"
