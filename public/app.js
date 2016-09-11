@@ -752,6 +752,8 @@ Pylon.set('spearCount', 5);
 
 Pylon.set('hostUrl', "http://Tyriea.local:3030/");
 
+Pylon.set('hostUrl', "http://Alabaster.local:3030/");
+
 pages = require('./pages.coffee');
 
 Pylon.set('adminView', require('./adminView.coffee').adminView);
@@ -1111,6 +1113,7 @@ enterClear = function() {
   buttonModelUpload.set('active', false);
   $('#ProtocolID').prop("disabled", false);
   sessionInfo.set('protocolID', null);
+  sessionInfo.set('_id', null);
   useButton(buttonModelActionRecord);
   setButtons();
   return false;
@@ -1350,25 +1353,44 @@ $(function() {
 
 
 },{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
-var Backbone, Event;
+var Backbone, Event, upload;
 
 Backbone = require('backbone');
 
 require('../libs/dbg/console');
 
+upload = require('./upload.coffee');
+
 Event = Backbone.Model.extend({
   url: 'event',
-  initialize: function() {
-    return this;
+  initialize: function(kind) {
+    var sessionInfo;
+    this.set('kind', kind);
+    this.flusher = setInterval(flush, 10000);
+    sessionInfo = Pylon.get('sessionInfo');
+    return sessionInfo.listenTo('change:_id', function() {
+      return set('trajectory', sessionInfo.get('_id'));
+    });
   },
   flush: (function(_this) {
     return function() {
-      return _this.set('readings', '');
+      var flushTime;
+      flushTime = Date.now();
+      if ((_this.has('trajectory')) && (_this.has('readings'))) {
+        uploader.eventLoader(_.clone(_this));
+      }
+      _this.unset('readings');
+      _this.set('captureDate', flushTime);
     };
   })(this),
   addSample: function(sample) {
-    this.flush();
-    return this.push(s);
+    var samples;
+    if ('event' === this.get('kind')) {
+      this.flush();
+    }
+    samples = this.get('readings');
+    samples += sample.toString();
+    return this.set('readings', samples);
   }
 });
 
@@ -1376,7 +1398,7 @@ exports.Event = Event;
 
 
 
-},{"../libs/dbg/console":12,"backbone":14}],5:[function(require,module,exports){
+},{"../libs/dbg/console":12,"./upload.coffee":9,"backbone":14}],5:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -2069,7 +2091,7 @@ exports.Pages = Pages;
 
 
 },{"./adminView.coffee":2,"./modalViews.coffee":7,"backbone":14,"jquery":16,"teacup":17}],9:[function(require,module,exports){
-var $, Backbone, Pylon, _, dumpLocal, localStorage, uploader;
+var $, Backbone, Pylon, _, dumpLocal, eventLoader, localStorage, uploader;
 
 $ = require('jquery');
 
@@ -2084,41 +2106,41 @@ localStorage = window.localStorage;
 Pylon = window.Pylon;
 
 dumpLocal = function() {
-  var brainDump, e, error, hopper, sessionInfo, trajectoryKey;
+  var e, error, hopper, sessionInfo, uploadData, uploadKey;
   sessionInfo = Pylon.get("sessionInfo");
-  trajectoryKey = localStorage.key(0);
-  if (!trajectoryKey) {
+  uploadKey = localStorage.key(0);
+  if (!uploadKey) {
     return;
   }
   try {
-    brainDump = localStorage.getItem(trajectoryKey);
-    brainDump = JSON.parse(brainDump);
+    uploadData = localStorage.getItem(uploadKey);
+    uploadData = JSON.parse(uploadData);
   } catch (error) {
     e = error;
     console.log("Error in upload");
     console.log(e);
     console.log("upload item removed");
-    localStorage.removeItem(trajectoryKey);
+    localStorage.removeItem(uploadKey);
     setTimeout(dumpLocal, 30000);
-    brainDump = false;
+    uploadData = false;
   }
-  if (!brainDump) {
+  if (!uploadData) {
     return;
   }
   hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + 'trajectory',
+    url: e.attribute.url,
     urlRoot: Pylon.get('hostUrl')
   });
-  brainDump = new hopper(brainDump);
-  brainDump.save().done(function(a, b, c) {
+  uploadData = new hopper(uploadData);
+  uploadData.save().done(function(a, b, c) {
     Pylon.trigger("upload:complete", a);
     console.log("Save Complete " + a);
-    localStorage.removeItem(trajectoryKey);
+    localStorage.removeItem(uploadKey);
   }).fail(function(a, b, c) {
     var currentlyUploading, failCode;
     failCode = a.status;
     if (failCode === 500 || failCode === 400) {
-      localStorage.removeItem(trajectoryKey);
+      localStorage.removeItem(uploadKey);
       return;
     }
     Pylon.trigger("upload:failure", {
@@ -2135,8 +2157,14 @@ dumpLocal = function() {
   return false;
 };
 
+eventLoader = function(e) {
+  e.set('url', e.url);
+  localStorage.setItem(e.cid, JSON.stringify(e.toJSON()));
+  return dumpLocal();
+};
+
 uploader = function() {
-  var body, brainDump, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref, sessionInfo, theClinic;
+  var body, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref, sessionInfo, theClinic, uploadData;
   sessionInfo = Pylon.get("sessionInfo");
   console.log('enter Upload -- send data to localStorage queue to server');
   deviceSummary = Backbone.Model.extend();
@@ -2175,22 +2203,22 @@ uploader = function() {
   });
   console.log("Prepare upload on " + Date());
   theClinic = sessionInfo.get('clinic');
-  brainDump = new hopper;
-  brainDump.set('readings', devicesData);
-  brainDump.set('sensorUUID', "0-0-0");
-  brainDump.set('clinic', theClinic.get("_id"));
-  brainDump.set('patientID', sessionInfo.get('client'));
-  brainDump.set('client', sessionInfo.get('client'));
-  brainDump.set('user', sessionInfo.get('clinician'));
-  brainDump.set('clinician', sessionInfo.get('clinician'));
-  brainDump.set('password', sessionInfo.get('password'));
-  brainDump.set('protocolID', sessionInfo.get('protocolID'));
-  brainDump.set('testID', sessionInfo.get('protocolID'));
-  brainDump.set('platformUUID', sessionInfo.get('platformUUID'));
-  brainDump.set('applicationVersion', sessionInfo.get('applicationVersion'));
-  brainDump.set('captureDate', Date());
+  uploadData = new hopper;
+  uploadData.set('readings', devicesData);
+  uploadData.set('sensorUUID', "0-0-0");
+  uploadData.set('clinic', theClinic.get("_id"));
+  uploadData.set('patientID', sessionInfo.get('client'));
+  uploadData.set('client', sessionInfo.get('client'));
+  uploadData.set('user', sessionInfo.get('clinician'));
+  uploadData.set('clinician', sessionInfo.get('clinician'));
+  uploadData.set('password', sessionInfo.get('password'));
+  uploadData.set('protocolID', sessionInfo.get('protocolID'));
+  uploadData.set('testID', sessionInfo.get('protocolID'));
+  uploadData.set('platformUUID', sessionInfo.get('platformUUID'));
+  uploadData.set('applicationVersion', sessionInfo.get('applicationVersion'));
+  uploadData.set('captureDate', Date());
   console.log("Store upload");
-  localStorage.setItem(brainDump.cid, JSON.stringify(brainDump.toJSON()));
+  localStorage.setItem(uploadData.cid, JSON.stringify(uploadData.toJSON()));
   console.log("Upload upload");
   dumpLocal();
   console.log("return from upload");

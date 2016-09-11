@@ -13,39 +13,40 @@ Pylon = window.Pylon
 
 dumpLocal =  ->
   sessionInfo = Pylon.get "sessionInfo"
-  trajectoryKey = localStorage.key(0)
-  return if !trajectoryKey
+  uploadKey = localStorage.key(0)
+  return if !uploadKey
+
   try
-    brainDump = localStorage.getItem(trajectoryKey)
-    brainDump = JSON.parse(brainDump)
+    uploadData = localStorage.getItem(uploadKey)
+    uploadData = JSON.parse(uploadData)
   catch e
     console.log "Error in upload"
     console.log e
     console.log "upload item removed"
-    localStorage.removeItem(trajectoryKey)
+    localStorage.removeItem(uploadKey)
     setTimeout dumpLocal, 30000
-    brainDump = false
+    uploadData = false
 
-  return if !brainDump
+  return if !uploadData
 
   hopper = Backbone.Model.extend {
-    url: Pylon.get('hostUrl')+'trajectory'
+    url: e.attribute.url
     urlRoot: Pylon.get 'hostUrl'
   }
-  brainDump = new hopper brainDump
+  uploadData = new hopper uploadData
 
-  brainDump.save()
+  uploadData.save()
     .done (a,b,c)->
       Pylon.trigger "upload:complete", a
       console.log "Save Complete "+a
       #and clear out the collection of readings
-      localStorage.removeItem(trajectoryKey)
+      localStorage.removeItem(uploadKey)
       return
     .fail (a,b,c)->
       failCode = a.status
       # if the server cannot process the upload, throw it away
       if failCode == 500 || failCode == 400
-        localStorage.removeItem(trajectoryKey)
+        localStorage.removeItem(uploadKey)
         return
 
       Pylon.trigger "upload:failure", message: "upload queued"
@@ -59,6 +60,10 @@ dumpLocal =  ->
   setTimeout dumpLocal, 30000
   return false
 
+eventLoader = (e)->
+  e.set 'url',e.url
+  localStorage.setItem(e.cid,JSON.stringify(e.toJSON()))    
+  dumpLocal()
 
 uploader = ->
   sessionInfo = Pylon.get "sessionInfo"
@@ -91,23 +96,23 @@ uploader = ->
 
   console.log "Prepare upload on " + Date()
   theClinic = sessionInfo.get 'clinic'
-  brainDump = new hopper
-  brainDump.set('readings',devicesData )
-  brainDump.set('sensorUUID',"0-0-0")
-  brainDump.set('clinic',theClinic.get("_id") )
-  brainDump.set('patientID',sessionInfo.get('client') )
-  brainDump.set('client',sessionInfo.get('client') )
-  brainDump.set('user',sessionInfo.get('clinician') )
-  brainDump.set('clinician',sessionInfo.get('clinician') )
-  brainDump.set('password',sessionInfo.get('password') )
-  brainDump.set('protocolID',sessionInfo.get('protocolID') )
-  brainDump.set('testID',sessionInfo.get('protocolID') )
-  brainDump.set('platformUUID',sessionInfo.get('platformUUID') )
-  brainDump.set('applicationVersion',sessionInfo.get('applicationVersion') )
-  brainDump.set('captureDate',Date())
+  uploadData = new hopper
+  uploadData.set('readings',devicesData )
+  uploadData.set('sensorUUID',"0-0-0")
+  uploadData.set('clinic',theClinic.get("_id") )
+  uploadData.set('patientID',sessionInfo.get('client') )
+  uploadData.set('client',sessionInfo.get('client') )
+  uploadData.set('user',sessionInfo.get('clinician') )
+  uploadData.set('clinician',sessionInfo.get('clinician') )
+  uploadData.set('password',sessionInfo.get('password') )
+  uploadData.set('protocolID',sessionInfo.get('protocolID') )
+  uploadData.set('testID',sessionInfo.get('protocolID') )
+  uploadData.set('platformUUID',sessionInfo.get('platformUUID') )
+  uploadData.set('applicationVersion',sessionInfo.get('applicationVersion') )
+  uploadData.set('captureDate',Date())
 
   console.log "Store upload"
-  localStorage.setItem(brainDump.cid,JSON.stringify(brainDump.toJSON()))
+  localStorage.setItem(uploadData.cid,JSON.stringify(uploadData.toJSON()))
   console.log "Upload upload"
   dumpLocal()
   console.log "return from upload"

@@ -16,6 +16,7 @@ if module?.exports? then module.exports = Pylon
 
 Pylon.set 'spearCount', 5
 Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
 
 
 pages = require './pages.coffee'
@@ -291,6 +292,7 @@ enterClear = ->
   buttonModelUpload.set('active',false)
   $('#ProtocolID').prop("disabled",false)
   sessionInfo.set 'protocolID' , null
+  sessionInfo.set '_id',null
   useButton buttonModelActionRecord
   setButtons()
   return false
