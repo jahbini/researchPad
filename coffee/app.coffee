@@ -337,9 +337,9 @@ enterRecording = ->
     pageGen.forceTest 'red'
     return false
   # sync the sessionInfo up to the server as an empty
-  # trajectory.  We need the UUID that the server
+  # trajectory.  We need the mongo _id that the server
   # sends back
-  if !sessionInfo.get 'ID'
+  if !sessionInfo.get '_id'
     sessionInfo.save()
     return false
   # reject record request if we are already recording
