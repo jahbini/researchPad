@@ -7,6 +7,7 @@ Backbone = require('backbone')
 _ = require('underscore')
 require('../libs/dbg/console')
 $ = require('jquery')
+Event = require './event.coffee'
 glib = require('./glib.coffee').glib
 
 # #### View logic to watch and update the "start scanning" button and enable BLE device scan
@@ -263,7 +264,7 @@ class TiHandler
       d.get('readings').reset [], silent: true
       d.get('readings').reset []
     else
-      d.set 'readings', new readingCollection
+      d.set 'readings', new Event role, d
     # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')

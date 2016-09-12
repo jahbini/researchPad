@@ -82,6 +82,8 @@ class visual
   # create and return a function to handle a sensor's new data
 
   readingHandler: (o) ->
+    deccamator: 5
+    modCounter: 1
     dataCondition =
       curValue: Seen.P(0, 0, 0)
       cookedValue: Seen.P(0, 0, 0)
@@ -102,6 +104,19 @@ class visual
     (data) =>
       # data points from Evothings library are Seen.Point NOT compatible as sources
       try
+        # record the data from all three channels of old sensor
+        # New sensor data is identical for all channels, and only needs one
+        if Pylon.get('globalState').get 'recording'
+          if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
+            o.readings.add  _.toArray(data)
+          else if o.sensor == 'gyro'
+            o.readings.add  _.toArray(data)
+
+        #only display 1/5 of the readings
+        if --@.deccamator
+          @.modCounter = @.deccamator
+        else return
+
         o.device.set 'deviceStatus', 'Receiving'
         theUUID = o.device.id
         $("#status-"+theUUID).text (o.device.get 'deviceStatus')
@@ -124,15 +139,6 @@ class visual
         m = dataCondition.dataHistory
         o.viewer p.x, p.y, p.z
 
-        # record the data from all three channels of old sensor
-        # New sensor data is identical for all channels, and only needs one
-        if Pylon.get('globalState').get 'recording'
-          if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
-            o.readings.push sensor: o.sensor, raw: _.toArray(data)
-            o.readings.trigger 'change'
-          else if o.sensor == 'gyro'
-            o.readings.push sensor: "movement", raw: _.toArray(data)
-            o.readings.trigger 'change'
 
       catch error
         console.log error

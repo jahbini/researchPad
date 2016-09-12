@@ -9,6 +9,8 @@ require('../libs/dbg/console');
 
 $ = require('jquery');
 
+Event = require('./event.coffee');
+
 glib = require('./glib.coffee').glib;
 
 pView = Backbone.View.extend({
@@ -295,7 +297,7 @@ TiHandler = (function() {
       });
       d.get('readings').reset([]);
     } else {
-      d.set('readings', new readingCollection);
+      d.set('readings', new Event(role, d));
     }
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
@@ -1363,8 +1365,9 @@ upload = require('./upload.coffee');
 
 Event = Backbone.Model.extend({
   url: 'event',
-  initialize: function(kind) {
+  initialize: function(kind, device) {
     var sessionInfo;
+    this.device = device != null ? device : null;
     this.set('kind', kind);
     this.flusher = setInterval(flush, 10000);
     sessionInfo = Pylon.get('sessionInfo');
@@ -1383,15 +1386,17 @@ Event = Backbone.Model.extend({
       _this.set('captureDate', flushTime);
     };
   })(this),
-  addSample: function(sample) {
-    var samples;
-    if ('event' === this.get('kind')) {
-      this.flush();
-    }
-    samples = this.get('readings');
-    samples += sample.toString();
-    return this.set('readings', samples);
-  }
+  addSample: (function(_this) {
+    return function(sample) {
+      var samples;
+      if ('event' === _this.get('kind')) {
+        _this.flush();
+      }
+      samples = _this.get('readings');
+      samples += sample.toString();
+      return _this.set('readings', samples);
+    };
+  })(this)
 });
 
 exports.Event = Event;
@@ -2346,6 +2351,10 @@ visual = (function() {
 
   visual.prototype.readingHandler = function(o) {
     var dataCondition;
+    ({
+      deccamator: 5,
+      modCounter: 1
+    });
     dataCondition = {
       curValue: Seen.P(0, 0, 0),
       cookedValue: Seen.P(0, 0, 0),
@@ -2367,6 +2376,18 @@ visual = (function() {
       return function(data) {
         var error, error1, i, m, p, r, theUUID;
         try {
+          if (Pylon.get('globalState').get('recording')) {
+            if (o.device.get('type') !== evothings.tisensortag.CC2650_BLUETOOTH_SMART) {
+              o.readings.add(_.toArray(data));
+            } else if (o.sensor === 'gyro') {
+              o.readings.add(_.toArray(data));
+            }
+          }
+          if (--_this.deccamator) {
+            _this.modCounter = _this.deccamator;
+          } else {
+            return;
+          }
           o.device.set('deviceStatus', 'Receiving');
           theUUID = o.device.id;
           $("#status-" + theUUID).text(o.device.get('deviceStatus'));
@@ -2385,21 +2406,6 @@ visual = (function() {
           p = dataCondition.cookedValue.multiply(o.finalScale);
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
-          if (Pylon.get('globalState').get('recording')) {
-            if (o.device.get('type') !== evothings.tisensortag.CC2650_BLUETOOTH_SMART) {
-              o.readings.push({
-                sensor: o.sensor,
-                raw: _.toArray(data)
-              });
-              o.readings.trigger('change');
-            } else if (o.sensor === 'gyro') {
-              o.readings.push({
-                sensor: "movement",
-                raw: _.toArray(data)
-              });
-              o.readings.trigger('change');
-            }
-          }
         } catch (error1) {
           error = error1;
           console.log(error);

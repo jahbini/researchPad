@@ -7,7 +7,7 @@ upload = require './upload.coffee'
 
 Event = Backbone.Model.extend {
   url: 'event'
-  initialize: (kind)->
+  initialize: (kind,@device=null)->
     @set 'kind', kind
     @flusher = setInterval flush, 10000
     sessionInfo = Pylon.get 'sessionInfo'
@@ -22,7 +22,7 @@ Event = Backbone.Model.extend {
     @.set 'captureDate',flushTime   #new time for next auto flush
     return
 
-  addSample: (sample)->
+  addSample: (sample)=>
     # add the current sample to the collection
     if 'event' == @.get 'kind'
       @flush()
