@@ -23,7 +23,7 @@ loadScript = require("./loadScript.coffee").loadScript
 loadScript Pylon.get('hostUrl')+"logon.js", (status)->
   console.log "logon.js returns status of "+status
 
-uploader = require "./upload.coffee"
+{uploader,eventModelLoader} = require "./upload.coffee"
 
 ###
 Section: Data Structures
@@ -246,11 +246,7 @@ exitAdmin = () ->
 enterLogout = () ->
   g=Pylon.get 'globalState'
   g.set loggedIn: false, recording: false
-  Pylon.get('devices').each (body)->
-    readings = body.get('readings')
-    readings.reset silent: true
-    readings.reset silent: true
-    return
+  # devices no longer contain collections of readings, now is an EventModel
 
   model = Pylon.get('sessionInfo')
   model.unset 'clinic', silent: true
@@ -286,10 +282,6 @@ initAll = ->
 ## subsection State handlers that depend on the View
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
-  Pylon.get('devices').each (body)->
-    readings = body.get('readings')
-    readings.reset silent: true
-    readings.reset()
   buttonModelClear.set('active',false)
   buttonModelUpload.set('active',false)
   $('#ProtocolID').prop("disabled",false)
@@ -387,7 +379,7 @@ uploading = false
 enterUpload = ->
   return if uploading
   uploading = true
-  uploader()
+  # uploader()
   pageGen.forceTest()
   enterClear()
   uploading = false

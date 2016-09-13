@@ -108,9 +108,9 @@ class visual
         # New sensor data is identical for all channels, and only needs one
         if Pylon.get('globalState').get 'recording'
           if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
-            o.readings.add  _.toArray(data)
+            o.readings.addSample  _.toArray(data)
           else if o.sensor == 'gyro'
-            o.readings.add  _.toArray(data)
+            o.readings.addSample  _.toArray(data)
 
         #only display 1/5 of the readings
         if !--@.deccamator

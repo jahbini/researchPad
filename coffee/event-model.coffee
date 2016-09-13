@@ -4,7 +4,7 @@
 Backbone = require 'backbone'
 _ = require 'underscore'
 require('../libs/dbg/console')
-upload = require './upload.coffee'
+{eventModelLoader}  = require './upload.coffee'
 
 EventModel = Backbone.Model.extend {
   url: 'event'
@@ -12,7 +12,6 @@ EventModel = Backbone.Model.extend {
     @set 'kind', kind
     @flusher = setInterval _.bind(@flush,@), 10000
     sessionInfo = Pylon.get 'sessionInfo'
-    debugger
     @.listenTo sessionInfo, 'change:_id',()->
       @set 'trajectory',sessionInfo.get '_id'
     return
@@ -20,12 +19,12 @@ EventModel = Backbone.Model.extend {
   flush: ()->
     flushTime = Date.now()
     if (@.has 'trajectory') && (@.has 'readings')
-      uploader.eventModelLoader _.clone @
+      eventModelLoader _.clone @
     @.unset 'readings'
     @.set 'captureDate',flushTime   #new time for next auto flush
     return
 
-  addSample: (sample)=>
+  addSample: (sample)->
     # add the current sample to the collection
     kind = @.get 'kind'
     if kind == 'left' || 'right'
@@ -34,7 +33,6 @@ EventModel = Backbone.Model.extend {
       @.set 'readings',samples
     else
       @flush()
-      debugger
       @set 'readings' , sample
 }
 

@@ -55,7 +55,6 @@ dumpLocal =  ->
       console.log b
       console.log c
       console.log "Trajectory upload failure, retry in 30 seconds"
-      debugger
       return
   setTimeout dumpLocal, 30000
   return false
@@ -126,4 +125,4 @@ dumpLocal()
 #if module?.exports? then module.exports = seen # for node
 #
 ###
-module.exports = uploader
+module.exports = {uploader:uploader,eventModelLoader: eventModelLoader}

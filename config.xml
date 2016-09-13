@@ -1,11 +1,11 @@
 <?xml version='1.0' encoding='utf-8'?>
-<widget android-versionCode="8" id="com.evothings.evothingsclient" version="1.1.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
-    <name>Evothings</name>
+<widget android-versionCode="8" id="com.bamboocando.retroclient" version="1.1.0" xmlns="http://www.w3.org/ns/widgets" xmlns:cdv="http://cordova.apache.org/ns/1.0">
+    <name>Retrotope Client</name>
     <description>
-        Mobile app for Evothings Studio.
+        Mobile app for Retrotope clinical study.
     </description>
-    <author email="info@evothings.com" href="http://evothings.com">
-        Evothings AB
+    <author email="jim@bamboocando.com" href="http://retrotope.com">
+        Bamboo Jim
     </author>
     <content src="index.html" />
     <access origin="*" />

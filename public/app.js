@@ -724,7 +724,7 @@ exports.adminView = new adminView;
 
 
 },{"backbone":14,"jquery":16,"teacup":17}],3:[function(require,module,exports){
-var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
+var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, ref, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
 
 window.$ = $ = require('jquery');
 
@@ -756,7 +756,7 @@ loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
   return console.log("logon.js returns status of " + status);
 });
 
-uploader = require("./upload.coffee");
+ref = require("./upload.coffee"), uploader = ref.uploader, eventModelLoader = ref.eventModelLoader;
 
 
 /*
@@ -1047,16 +1047,6 @@ enterLogout = function() {
     loggedIn: false,
     recording: false
   });
-  Pylon.get('devices').each(function(body) {
-    var readings;
-    readings = body.get('readings');
-    readings.reset({
-      silent: true
-    });
-    readings.reset({
-      silent: true
-    });
-  });
   model = Pylon.get('sessionInfo');
   model.unset('clinic', {
     silent: true
@@ -1097,14 +1087,6 @@ initAll = function() {
 };
 
 enterClear = function() {
-  Pylon.get('devices').each(function(body) {
-    var readings;
-    readings = body.get('readings');
-    readings.reset({
-      silent: true
-    });
-    return readings.reset();
-  });
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
   $('#ProtocolID').prop("disabled", false);
@@ -1218,7 +1200,6 @@ enterUpload = function() {
     return;
   }
   uploading = true;
-  uploader();
   pageGen.forceTest();
   enterClear();
   uploading = false;
@@ -1349,7 +1330,7 @@ $(function() {
 
 
 },{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./event-model.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
-var Backbone, EventModel, _, upload;
+var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
 
@@ -1357,7 +1338,7 @@ _ = require('underscore');
 
 require('../libs/dbg/console');
 
-upload = require('./upload.coffee');
+eventModelLoader = require('./upload.coffee').eventModelLoader;
 
 EventModel = Backbone.Model.extend({
   url: 'event',
@@ -1367,7 +1348,6 @@ EventModel = Backbone.Model.extend({
     this.set('kind', kind);
     this.flusher = setInterval(_.bind(this.flush, this), 10000);
     sessionInfo = Pylon.get('sessionInfo');
-    debugger;
     this.listenTo(sessionInfo, 'change:_id', function() {
       return this.set('trajectory', sessionInfo.get('_id'));
     });
@@ -1376,26 +1356,23 @@ EventModel = Backbone.Model.extend({
     var flushTime;
     flushTime = Date.now();
     if ((this.has('trajectory')) && (this.has('readings'))) {
-      uploader.eventModelLoader(_.clone(this));
+      eventModelLoader(_.clone(this));
     }
     this.unset('readings');
     this.set('captureDate', flushTime);
   },
-  addSample: (function(_this) {
-    return function(sample) {
-      var kind, samples;
-      kind = _this.get('kind');
-      if (kind === 'left' || 'right') {
-        samples = _this.get('readings');
-        samples += sample.toString();
-        return _this.set('readings', samples);
-      } else {
-        _this.flush();
-        debugger;
-        return _this.set('readings', sample);
-      }
-    };
-  })(this)
+  addSample: function(sample) {
+    var kind, samples;
+    kind = this.get('kind');
+    if (kind === 'left' || 'right') {
+      samples = this.get('readings');
+      samples += sample.toString();
+      return this.set('readings', samples);
+    } else {
+      this.flush();
+      return this.set('readings', sample);
+    }
+  }
 });
 
 exports.EventModel = EventModel;
@@ -2155,7 +2132,6 @@ dumpLocal = function() {
     console.log(b);
     console.log(c);
     console.log("Trajectory upload failure, retry in 30 seconds");
-    debugger;
   });
   setTimeout(dumpLocal, 30000);
   return false;
@@ -2238,7 +2214,10 @@ dumpLocal();
  *
  */
 
-module.exports = uploader;
+module.exports = {
+  uploader: uploader,
+  eventModelLoader: eventModelLoader
+};
 
 
 
@@ -2377,9 +2356,9 @@ visual = (function() {
         try {
           if (Pylon.get('globalState').get('recording')) {
             if (o.device.get('type') !== evothings.tisensortag.CC2650_BLUETOOTH_SMART) {
-              o.readings.add(_.toArray(data));
+              o.readings.addSample(_.toArray(data));
             } else if (o.sensor === 'gyro') {
-              o.readings.add(_.toArray(data));
+              o.readings.addSample(_.toArray(data));
             }
           }
           if (!--_this.deccamator) {
