@@ -7,7 +7,7 @@ Backbone = require('backbone')
 _ = require('underscore')
 require('../libs/dbg/console')
 $ = require('jquery')
-Event = require './event.coffee'
+{EventModel} = require './event-model.coffee'
 glib = require('./glib.coffee').glib
 
 # #### View logic to watch and update the "start scanning" button and enable BLE device scan
@@ -59,7 +59,6 @@ reading = Backbone.Model.extend
     d = new Date
     @set 'time', d.getTime()
 # ### sensor readings are grouped into ten-second chunks, other events just have text
-Event = require './event.coffee'
 
 deviceModel = Backbone.Model.extend
   urlRoot: Pylon.get('hostUrl')+'sensor-tag'
@@ -264,7 +263,7 @@ class TiHandler
       d.get('readings').reset [], silent: true
       d.get('readings').reset []
     else
-      d.set 'readings', new Event role, d
+      d.set 'readings', new EventModel role, d
     # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')

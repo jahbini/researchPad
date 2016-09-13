@@ -113,7 +113,7 @@ class visual
             o.readings.add  _.toArray(data)
 
         #only display 1/5 of the readings
-        if --@.deccamator
+        if !--@.deccamator
           @.modCounter = @.deccamator
         else return
 

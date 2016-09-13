@@ -3,20 +3,18 @@
 # ## data handler for clinical recording of SensorTag data
 # SensorTag object.
 
-$ = require('jquery')
+window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
 require('../libs/dbg/console')
 
 PylonTemplate = Backbone.Model.extend
     scan: false
-Pylon = new PylonTemplate
-if window? then window.Pylon = window.exports = Pylon
-if module?.exports? then module.exports = Pylon
+window.Pylon = Pylon = new PylonTemplate
 
 Pylon.set 'spearCount', 5
-Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
 
 
 pages = require './pages.coffee'
@@ -111,6 +109,10 @@ pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
 Pylon.set 'sessionInfo', sessionInfo
 console.log "sessionInfo created as: ", sessionInfo
+
+{EventModel} = require "./event-model.coffee"
+adminEvent = new EventModel "Action"
+
 aButtonModel = Backbone.Model.extend
   defaults:
     active: false

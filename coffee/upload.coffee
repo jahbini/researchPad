@@ -27,10 +27,10 @@ dumpLocal =  ->
     setTimeout dumpLocal, 30000
     uploadData = false
 
-  return if !uploadData
+  return if !uploadData?.attribute?.url
 
   hopper = Backbone.Model.extend {
-    url: e.attribute.url
+    url: uploadData.attribute.url
     urlRoot: Pylon.get 'hostUrl'
   }
   uploadData = new hopper uploadData
@@ -60,9 +60,9 @@ dumpLocal =  ->
   setTimeout dumpLocal, 30000
   return false
 
-eventLoader = (e)->
+eventModelLoader = (e)->
   e.set 'url',e.url
-  localStorage.setItem(e.cid,JSON.stringify(e.toJSON()))    
+  localStorage.setItem(e.cid,JSON.stringify(e.toJSON()))
   dumpLocal()
 
 uploader = ->

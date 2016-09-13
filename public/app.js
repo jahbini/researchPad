@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Event, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading, visualHandler;
+var $, Backbone, EventModel, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading, visualHandler;
 
 Backbone = require('backbone');
 
@@ -9,7 +9,7 @@ require('../libs/dbg/console');
 
 $ = require('jquery');
 
-Event = require('./event.coffee');
+EventModel = require('./event-model.coffee').EventModel;
 
 glib = require('./glib.coffee').glib;
 
@@ -64,8 +64,6 @@ reading = Backbone.Model.extend({
     return this.set('time', d.getTime());
   }
 });
-
-Event = require('./event.coffee');
 
 deviceModel = Backbone.Model.extend({
   urlRoot: Pylon.get('hostUrl') + 'sensor-tag',
@@ -297,7 +295,7 @@ TiHandler = (function() {
       });
       d.get('readings').reset([]);
     } else {
-      d.set('readings', new Event(role, d));
+      d.set('readings', new EventModel(role, d));
     }
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
@@ -414,7 +412,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../libs/dbg/console":12,"./event.coffee":4,"./glib.coffee":5,"./visual.coffee":11,"backbone":14,"jquery":16,"underscore":15}],2:[function(require,module,exports){
+},{"../libs/dbg/console":12,"./event-model.coffee":4,"./glib.coffee":5,"./visual.coffee":11,"backbone":14,"jquery":16,"underscore":15}],2:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -726,9 +724,9 @@ exports.adminView = new adminView;
 
 
 },{"backbone":14,"jquery":16,"teacup":17}],3:[function(require,module,exports){
-var $, Backbone, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
+var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
 
-$ = require('jquery');
+window.$ = $ = require('jquery');
 
 _ = require('underscore');
 
@@ -740,21 +738,13 @@ PylonTemplate = Backbone.Model.extend({
   scan: false
 });
 
-Pylon = new PylonTemplate;
-
-if (typeof window !== "undefined" && window !== null) {
-  window.Pylon = window.exports = Pylon;
-}
-
-if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
-  module.exports = Pylon;
-}
+window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Tyriea.local:3030/");
-
 Pylon.set('hostUrl', "http://Alabaster.local:3030/");
+
+Pylon.set('hostUrl', "http://Tyriea.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -880,6 +870,10 @@ Pylon.set('pageGen', pageGen);
 Pylon.set('sessionInfo', sessionInfo);
 
 console.log("sessionInfo created as: ", sessionInfo);
+
+EventModel = require("./event-model.coffee").EventModel;
+
+adminEvent = new EventModel("Action");
 
 aButtonModel = Backbone.Model.extend({
   defaults: {
@@ -1354,56 +1348,61 @@ $(function() {
 
 
 
-},{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
-var Backbone, Event, upload;
+},{"../libs/dbg/console":12,"./TiHandler.coffee":1,"./adminView.coffee":2,"./event-model.coffee":4,"./loadScript.coffee":6,"./pages.coffee":8,"./upload.coffee":9,"./version.coffee":10,"backbone":14,"jquery":16,"underscore":15}],4:[function(require,module,exports){
+var Backbone, EventModel, _, upload;
 
 Backbone = require('backbone');
+
+_ = require('underscore');
 
 require('../libs/dbg/console');
 
 upload = require('./upload.coffee');
 
-Event = Backbone.Model.extend({
+EventModel = Backbone.Model.extend({
   url: 'event',
   initialize: function(kind, device) {
     var sessionInfo;
     this.device = device != null ? device : null;
     this.set('kind', kind);
-    this.flusher = setInterval(flush, 10000);
+    this.flusher = setInterval(_.bind(this.flush, this), 10000);
     sessionInfo = Pylon.get('sessionInfo');
-    return sessionInfo.listenTo('change:_id', function() {
-      return set('trajectory', sessionInfo.get('_id'));
+    debugger;
+    this.listenTo(sessionInfo, 'change:_id', function() {
+      return this.set('trajectory', sessionInfo.get('_id'));
     });
   },
-  flush: (function(_this) {
-    return function() {
-      var flushTime;
-      flushTime = Date.now();
-      if ((_this.has('trajectory')) && (_this.has('readings'))) {
-        uploader.eventLoader(_.clone(_this));
-      }
-      _this.unset('readings');
-      _this.set('captureDate', flushTime);
-    };
-  })(this),
+  flush: function() {
+    var flushTime;
+    flushTime = Date.now();
+    if ((this.has('trajectory')) && (this.has('readings'))) {
+      uploader.eventModelLoader(_.clone(this));
+    }
+    this.unset('readings');
+    this.set('captureDate', flushTime);
+  },
   addSample: (function(_this) {
     return function(sample) {
-      var samples;
-      if ('event' === _this.get('kind')) {
+      var kind, samples;
+      kind = _this.get('kind');
+      if (kind === 'left' || 'right') {
+        samples = _this.get('readings');
+        samples += sample.toString();
+        return _this.set('readings', samples);
+      } else {
         _this.flush();
+        debugger;
+        return _this.set('readings', sample);
       }
-      samples = _this.get('readings');
-      samples += sample.toString();
-      return _this.set('readings', samples);
     };
   })(this)
 });
 
-exports.Event = Event;
+exports.EventModel = EventModel;
 
 
 
-},{"../libs/dbg/console":12,"./upload.coffee":9,"backbone":14}],5:[function(require,module,exports){
+},{"../libs/dbg/console":12,"./upload.coffee":9,"backbone":14,"underscore":15}],5:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -2096,7 +2095,7 @@ exports.Pages = Pages;
 
 
 },{"./adminView.coffee":2,"./modalViews.coffee":7,"backbone":14,"jquery":16,"teacup":17}],9:[function(require,module,exports){
-var $, Backbone, Pylon, _, dumpLocal, eventLoader, localStorage, uploader;
+var $, Backbone, Pylon, _, dumpLocal, eventModelLoader, localStorage, uploader;
 
 $ = require('jquery');
 
@@ -2111,7 +2110,7 @@ localStorage = window.localStorage;
 Pylon = window.Pylon;
 
 dumpLocal = function() {
-  var e, error, hopper, sessionInfo, uploadData, uploadKey;
+  var e, error, hopper, ref, sessionInfo, uploadData, uploadKey;
   sessionInfo = Pylon.get("sessionInfo");
   uploadKey = localStorage.key(0);
   if (!uploadKey) {
@@ -2129,11 +2128,11 @@ dumpLocal = function() {
     setTimeout(dumpLocal, 30000);
     uploadData = false;
   }
-  if (!uploadData) {
+  if (!(uploadData != null ? (ref = uploadData.attribute) != null ? ref.url : void 0 : void 0)) {
     return;
   }
   hopper = Backbone.Model.extend({
-    url: e.attribute.url,
+    url: uploadData.attribute.url,
     urlRoot: Pylon.get('hostUrl')
   });
   uploadData = new hopper(uploadData);
@@ -2162,7 +2161,7 @@ dumpLocal = function() {
   return false;
 };
 
-eventLoader = function(e) {
+eventModelLoader = function(e) {
   e.set('url', e.url);
   localStorage.setItem(e.cid, JSON.stringify(e.toJSON()));
   return dumpLocal();
@@ -2383,7 +2382,7 @@ visual = (function() {
               o.readings.add(_.toArray(data));
             }
           }
-          if (--_this.deccamator) {
+          if (!--_this.deccamator) {
             _this.modCounter = _this.deccamator;
           } else {
             return;
