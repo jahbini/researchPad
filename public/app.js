@@ -2087,7 +2087,7 @@ localStorage = window.localStorage;
 Pylon = window.Pylon;
 
 dumpLocal = function() {
-  var e, error, hopper, ref, sessionInfo, uploadData, uploadKey;
+  var e, error, hopper, sessionInfo, uploadData, uploadKey;
   sessionInfo = Pylon.get("sessionInfo");
   uploadKey = localStorage.key(0);
   if (!uploadKey) {
@@ -2105,11 +2105,14 @@ dumpLocal = function() {
     setTimeout(dumpLocal, 30000);
     uploadData = false;
   }
-  if (!(uploadData != null ? (ref = uploadData.attribute) != null ? ref.url : void 0 : void 0)) {
+  if (uploadData.attribute) {
+    uploadData = uploadData.attribute;
+  }
+  if (!(uploadData != null ? uploadData.url : void 0)) {
     return;
   }
   hopper = Backbone.Model.extend({
-    url: uploadData.attribute.url,
+    url: Pylon.get('hostUrl') + uploadData.url,
     urlRoot: Pylon.get('hostUrl')
   });
   uploadData = new hopper(uploadData);

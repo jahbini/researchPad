@@ -26,11 +26,11 @@ dumpLocal =  ->
     localStorage.removeItem(uploadKey)
     setTimeout dumpLocal, 30000
     uploadData = false
-
-  return if !uploadData?.attribute?.url
+  uploadData = uploadData.attribute if uploadData.attribute
+  return if !uploadData?.url
 
   hopper = Backbone.Model.extend {
-    url: uploadData.attribute.url
+    url: Pylon.get('hostUrl')+uploadData.url
     urlRoot: Pylon.get 'hostUrl'
   }
   uploadData = new hopper uploadData
