@@ -158,38 +158,6 @@ class TiHandler
     Pylon.get 'TiHandler'
       .attachDevice uuid, 'Left'
 
-  ###
-  Section: Data Structures
-   Major data structures and interfaces to them
-
-  systemCommunicator = Backbone.Model.extend
-    defaults:
-      calibrating: false
-      recording: false
-      connected: false
-      calibrate: false
-      loggedIn:  false
-
-  globalState = new systemCommunicator
-
-  reading = Backbone.Model.extend
-    defaults:
-      sensor: 'gyro'
-    initialize: ->
-      d = new Date
-      @set 'time', d.getTime()
-      return @
-
-
-  rawSession = Backbone.Model.extend()
-  sessionInfo = new rawSession
-      user: ''
-      patient: ''
-      testID: ''
-      sensorUUID: ''
-      platformUUID: ''
-
-  ###
 
   constructor: (@sessionInfo) ->
 

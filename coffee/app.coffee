@@ -13,8 +13,8 @@ PylonTemplate = Backbone.Model.extend
 window.Pylon = Pylon = new PylonTemplate
 
 Pylon.set 'spearCount', 5
-Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
 
 
 pages = require './pages.coffee'
@@ -49,25 +49,23 @@ clinicCollection = Backbone.Collection.extend
 clinics = new clinicCollection
 Pylon.set('clinics',clinics)
 
-# #Clinicians -- users without 'patientOnly' attribute
+# #Clinicians --
 clinicianModel = Backbone.Model.extend
   defaults:
     name: 'Text'
     password: 'Password'
 clinicianCollection = Backbone.Collection.extend
   model: clinicianModel
-  url: '/users'
 clinicians = new clinicianCollection
 Pylon.set('clinicians',clinicians)
 
-# #Clients -- users with 'patientOnly' attribute
+# #Clients --
 clientModel = Backbone.Model.extend
   defaults:
     name: 'Text'
     patientOnly: 'Boolean'
 clientCollection = Backbone.Collection.extend
   model: clientModel
-  url: '/users'
 clients = new clientCollection
 Pylon.set('clients',clients)
 
@@ -91,7 +89,6 @@ admin = new adminData
 
 rawSession = Backbone.Model.extend {
   url: Pylon.get('hostUrl')+'trajectory'
-  urlRoot: Pylon.get 'hostUrl'
 }
 
 applicationVersion = require './version.coffee'
@@ -99,7 +96,7 @@ sessionInfo = new rawSession
   user: ''
   clinic: ''
   patient: ''
-  protocolID: ''
+  testID: ''
   sensorUUID: ''
   platformUUID: ''
   applicationVersion: applicationVersion
@@ -253,7 +250,7 @@ enterLogout = () ->
   model.unset 'clinician', silent: true
   model.unset 'password', silent: true
   model.unset 'client', silent: true
-  model.unset 'protocolID', silent: true
+  model.unset 'testID', silent: true
 
   $('#password').val('')
   $('option:selected').prop('selected',false)
@@ -284,8 +281,8 @@ enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
   buttonModelClear.set('active',false)
   buttonModelUpload.set('active',false)
-  $('#ProtocolID').prop("disabled",false)
-  sessionInfo.set 'protocolID' , null
+  $('#testID').prop("disabled",false)
+  sessionInfo.set 'testID' , null
   sessionInfo.set '_id',null
   useButton buttonModelActionRecord
   setButtons()
@@ -329,7 +326,7 @@ exitCalibrate = ->
 enterRecording = ->
   console.log "enterRecording", sessionInfo
   # reject record request if no protocol is selected
-  if !sessionInfo.get('protocolID')
+  if !sessionInfo.get('testID')
     pageGen.forceTest 'red'
     return false
   # sync the sessionInfo up to the server as an empty
@@ -343,14 +340,14 @@ enterRecording = ->
   return if gs.get 'recording'
   # start recording and show a lead in timer of 5 seconds
   gs.set 'recording',  true
-  $('#ProtocolID').prop("disabled",true)
+  $('#testID').prop("disabled",true)
   Pylon.trigger 'recordCountDown:start', 5
   console.log('enter Recording --- actively recording sensor info')
 
 Pylon.on ('recordCountDown:fail'), ->
     pageGen.forceTest 'orange'
     gs.set 'recording',  false
-    $('#ProtocolID').prop("disabled",true)
+    $('#testID').prop("disabled",true)
 
 Pylon.on 'recordCountDown:over', ->
   # change the record button into the stop button

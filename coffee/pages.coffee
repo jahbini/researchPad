@@ -154,8 +154,8 @@ class Pages
           button '#tagSelect.u-full-width.button-primary', 'Scan Devices'
           label '#StatusData',for: "upload", 'No connection'
         div '.three.columns', ->
-          label '#ProtocolSelect', for: "ProtocolID", 'Which Test?'
-          select "#ProtocolID.u-full-width"
+          label '#ProtocolSelect', for: "testID", 'Which Test?'
+          select "#testID.u-full-width"
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
           label '#LeftStat', for: "clear", 'Items:0'
@@ -168,7 +168,7 @@ class Pages
   forceTest: (color = 'violet') =>
     $('#ProtocolSelect').text('Must Select Test').css('color',color)
     Pylon.trigger 'renderTest'
-    Pylon.get('sessionInfo').unset 'protocolID', silent: true
+    Pylon.get('sessionInfo').unset 'testID', silent: true
 
   activateButtons: (buttonStruct) ->
     for key, btn of buttonStruct
@@ -186,9 +186,9 @@ class Pages
 
   wireButtons: =>
     model = Pylon.get('sessionInfo')
-    $('#ProtocolID').change (node)=>
+    $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
-      model.set 'protocolID',$('#protocolID option:selected').val()
+      model.set 'testID',$('#testID option:selected').val()
       try
         model.save
           success: ()->
@@ -213,7 +213,7 @@ class Pages
     require('./modalViews.coffee')
 
     protocolViewTemplate = Backbone.View.extend
-      el: '#ProtocolID'
+      el: '#testID'
       collection: Pylon.get('protocols')
       attributes:
         session: Pylon.get('sessionInfo')
@@ -224,7 +224,7 @@ class Pages
         @render()
       events:
         'change': ->
-          @attributes.session.set 'protocolID',@$el.val()
+          @attributes.session.set 'testID',@$el.val()
           return false
       render: ->
         console.log "Rendering Tests"

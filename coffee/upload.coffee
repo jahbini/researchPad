@@ -31,7 +31,6 @@ dumpLocal =  ->
 
   hopper = Backbone.Model.extend {
     url: Pylon.get('hostUrl')+uploadData.url
-    urlRoot: Pylon.get 'hostUrl'
   }
   uploadData = new hopper uploadData
 
@@ -65,56 +64,7 @@ eventModelLoader = (e)->
   dumpLocal()
 
 uploader = ->
-  sessionInfo = Pylon.get "sessionInfo"
-  console.log('enter Upload -- send data to localStorage queue to server')
-  deviceSummary = Backbone.Model.extend()
-  deviceDataCollection = Backbone.Collection.extend
-    model: deviceSummary
-  devicesData = new deviceDataCollection
-  noData = true
-  for i,body of Pylon.get('devices').toJSON()
-  #    eliminate empty uploads per : https://github.com/jahbini/stagapp/issues/15
-    continue if ! (r = body.readings)
-    continue if r.length == 0
-    noData = false
-    console.log body.nickname+" has "+body.readings.length+" readings for upload."
-    devicesData.push
-      sensorUUID: body.UUID
-      role: body.role
-      type: body.type
-      fwRev: body.fwRev
-      assignedName: body.assignedName
-      nickname: body.nickname
-      readings: r.toJSON()
-  return false if noData
-
-  hopper = Backbone.Model.extend {
-    url: Pylon.get('hostUrl')+'trajectory'
-    urlRoot: Pylon.get 'hostUrl'
-  }
-
-  console.log "Prepare upload on " + Date()
-  theClinic = sessionInfo.get 'clinic'
-  uploadData = new hopper
-  uploadData.set('readings',devicesData )
-  uploadData.set('sensorUUID',"0-0-0")
-  uploadData.set('clinic',theClinic.get("_id") )
-  uploadData.set('patientID',sessionInfo.get('client') )
-  uploadData.set('client',sessionInfo.get('client') )
-  uploadData.set('user',sessionInfo.get('clinician') )
-  uploadData.set('clinician',sessionInfo.get('clinician') )
-  uploadData.set('password',sessionInfo.get('password') )
-  uploadData.set('protocolID',sessionInfo.get('protocolID') )
-  uploadData.set('testID',sessionInfo.get('protocolID') )
-  uploadData.set('platformUUID',sessionInfo.get('platformUUID') )
-  uploadData.set('applicationVersion',sessionInfo.get('applicationVersion') )
-  uploadData.set('captureDate',Date())
-
-  console.log "Store upload"
-  localStorage.setItem(uploadData.cid,JSON.stringify(uploadData.toJSON()))
-  console.log "Upload upload"
-  dumpLocal()
-  console.log "return from upload"
+  alert "Uploader Called!"
   return
 
 dumpLocal()

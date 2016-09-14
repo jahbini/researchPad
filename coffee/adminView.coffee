@@ -88,9 +88,9 @@ class adminView
       render: ->
         temp = render =>
           option "Select ---",value: ''
-          for user in @collection.models
-            n= user.get('name')
-            option value: user.get('_id'), n.first + ' ' + n.last
+          for who in @collection.models
+            n= who.get('name')
+            option value: who.get('_id'), n.first + ' ' + n.last
         @$el.html temp
         return this
 

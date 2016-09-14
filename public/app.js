@@ -187,39 +187,6 @@ TiHandler = (function() {
     return Pylon.get('TiHandler').attachDevice(uuid, 'Left');
   });
 
-
-  /*
-  Section: Data Structures
-   Major data structures and interfaces to them
-  
-  systemCommunicator = Backbone.Model.extend
-    defaults:
-      calibrating: false
-      recording: false
-      connected: false
-      calibrate: false
-      loggedIn:  false
-  
-  globalState = new systemCommunicator
-  
-  reading = Backbone.Model.extend
-    defaults:
-      sensor: 'gyro'
-    initialize: ->
-      d = new Date
-      @set 'time', d.getTime()
-      return @
-  
-  
-  rawSession = Backbone.Model.extend()
-  sessionInfo = new rawSession
-      user: ''
-      patient: ''
-      testID: ''
-      sensorUUID: ''
-      platformUUID: ''
-   */
-
   function TiHandler(sessionInfo1) {
     this.sessionInfo = sessionInfo1;
   }
@@ -550,17 +517,17 @@ adminView = (function() {
         var temp;
         temp = render((function(_this) {
           return function() {
-            var i, len, n, ref1, results, user;
+            var i, len, n, ref1, results, who;
             option("Select ---", {
               value: ''
             });
             ref1 = _this.collection.models;
             results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
-              user = ref1[i];
-              n = user.get('name');
+              who = ref1[i];
+              n = who.get('name');
               results.push(option({
-                value: user.get('_id')
+                value: who.get('_id')
               }, n.first + ' ' + n.last));
             }
             return results;
@@ -742,9 +709,9 @@ window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Alabaster.local:3030/");
-
 Pylon.set('hostUrl', "http://Tyriea.local:3030/");
+
+Pylon.set('hostUrl', "http://Alabaster.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -795,8 +762,7 @@ clinicianModel = Backbone.Model.extend({
 });
 
 clinicianCollection = Backbone.Collection.extend({
-  model: clinicianModel,
-  url: '/users'
+  model: clinicianModel
 });
 
 clinicians = new clinicianCollection;
@@ -811,8 +777,7 @@ clientModel = Backbone.Model.extend({
 });
 
 clientCollection = Backbone.Collection.extend({
-  model: clientModel,
-  url: '/users'
+  model: clientModel
 });
 
 clients = new clientCollection;
@@ -845,8 +810,7 @@ admin = new adminData({
 });
 
 rawSession = Backbone.Model.extend({
-  url: Pylon.get('hostUrl') + 'trajectory',
-  urlRoot: Pylon.get('hostUrl')
+  url: Pylon.get('hostUrl') + 'trajectory'
 });
 
 applicationVersion = require('./version.coffee');
@@ -855,7 +819,7 @@ sessionInfo = new rawSession({
   user: '',
   clinic: '',
   patient: '',
-  protocolID: '',
+  testID: '',
   sensorUUID: '',
   platformUUID: '',
   applicationVersion: applicationVersion
@@ -1060,7 +1024,7 @@ enterLogout = function() {
   model.unset('client', {
     silent: true
   });
-  model.unset('protocolID', {
+  model.unset('testID', {
     silent: true
   });
   $('#password').val('');
@@ -1089,8 +1053,8 @@ initAll = function() {
 enterClear = function() {
   buttonModelClear.set('active', false);
   buttonModelUpload.set('active', false);
-  $('#ProtocolID').prop("disabled", false);
-  sessionInfo.set('protocolID', null);
+  $('#testID').prop("disabled", false);
+  sessionInfo.set('testID', null);
   sessionInfo.set('_id', null);
   useButton(buttonModelActionRecord);
   setButtons();
@@ -1142,7 +1106,7 @@ exitCalibrate = function() {
 enterRecording = function() {
   var gs;
   console.log("enterRecording", sessionInfo);
-  if (!sessionInfo.get('protocolID')) {
+  if (!sessionInfo.get('testID')) {
     pageGen.forceTest('red');
     return false;
   }
@@ -1155,7 +1119,7 @@ enterRecording = function() {
     return;
   }
   gs.set('recording', true);
-  $('#ProtocolID').prop("disabled", true);
+  $('#testID').prop("disabled", true);
   Pylon.trigger('recordCountDown:start', 5);
   return console.log('enter Recording --- actively recording sensor info');
 };
@@ -1163,7 +1127,7 @@ enterRecording = function() {
 Pylon.on('recordCountDown:fail', function() {
   pageGen.forceTest('orange');
   gs.set('recording', false);
-  return $('#ProtocolID').prop("disabled", true);
+  return $('#testID').prop("disabled", true);
 });
 
 Pylon.on('recordCountDown:over', function() {
@@ -1858,9 +1822,9 @@ Pages = (function() {
       });
       div('.three.columns', function() {
         label('#ProtocolSelect', {
-          "for": "ProtocolID"
+          "for": "testID"
         }, 'Which Test?');
-        return select("#ProtocolID.u-full-width");
+        return select("#testID.u-full-width");
       });
       div('.three.columns', function() {
         button('#upload.disabled.u-full-width', 'Upload');
@@ -1885,7 +1849,7 @@ Pages = (function() {
     }
     $('#ProtocolSelect').text('Must Select Test').css('color', color);
     Pylon.trigger('renderTest');
-    return Pylon.get('sessionInfo').unset('protocolID', {
+    return Pylon.get('sessionInfo').unset('testID', {
       silent: true
     });
   };
@@ -1920,11 +1884,11 @@ Pages = (function() {
   Pages.prototype.wireButtons = function() {
     var model;
     model = Pylon.get('sessionInfo');
-    return $('#ProtocolID').change((function(_this) {
+    return $('#testID').change((function(_this) {
       return function(node) {
         var error, nasty;
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
-        model.set('protocolID', $('#protocolID option:selected').val());
+        model.set('testID', $('#testID option:selected').val());
         try {
           model.save({
             success: function() {
@@ -1958,7 +1922,7 @@ Pages = (function() {
     this.wireButtons();
     require('./modalViews.coffee');
     protocolViewTemplate = Backbone.View.extend({
-      el: '#ProtocolID',
+      el: '#testID',
       collection: Pylon.get('protocols'),
       attributes: {
         session: Pylon.get('sessionInfo')
@@ -1974,7 +1938,7 @@ Pages = (function() {
       },
       events: {
         'change': function() {
-          this.attributes.session.set('protocolID', this.$el.val());
+          this.attributes.session.set('testID', this.$el.val());
           return false;
         }
       },
@@ -2112,8 +2076,7 @@ dumpLocal = function() {
     return;
   }
   hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + uploadData.url,
-    urlRoot: Pylon.get('hostUrl')
+    url: Pylon.get('hostUrl') + uploadData.url
   });
   uploadData = new hopper(uploadData);
   uploadData.save().done(function(a, b, c) {
@@ -2147,64 +2110,7 @@ eventModelLoader = function(e) {
 };
 
 uploader = function() {
-  var body, deviceDataCollection, deviceSummary, devicesData, hopper, i, noData, r, ref, sessionInfo, theClinic, uploadData;
-  sessionInfo = Pylon.get("sessionInfo");
-  console.log('enter Upload -- send data to localStorage queue to server');
-  deviceSummary = Backbone.Model.extend();
-  deviceDataCollection = Backbone.Collection.extend({
-    model: deviceSummary
-  });
-  devicesData = new deviceDataCollection;
-  noData = true;
-  ref = Pylon.get('devices').toJSON();
-  for (i in ref) {
-    body = ref[i];
-    if (!(r = body.readings)) {
-      continue;
-    }
-    if (r.length === 0) {
-      continue;
-    }
-    noData = false;
-    console.log(body.nickname + " has " + body.readings.length + " readings for upload.");
-    devicesData.push({
-      sensorUUID: body.UUID,
-      role: body.role,
-      type: body.type,
-      fwRev: body.fwRev,
-      assignedName: body.assignedName,
-      nickname: body.nickname,
-      readings: r.toJSON()
-    });
-  }
-  if (noData) {
-    return false;
-  }
-  hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + 'trajectory',
-    urlRoot: Pylon.get('hostUrl')
-  });
-  console.log("Prepare upload on " + Date());
-  theClinic = sessionInfo.get('clinic');
-  uploadData = new hopper;
-  uploadData.set('readings', devicesData);
-  uploadData.set('sensorUUID', "0-0-0");
-  uploadData.set('clinic', theClinic.get("_id"));
-  uploadData.set('patientID', sessionInfo.get('client'));
-  uploadData.set('client', sessionInfo.get('client'));
-  uploadData.set('user', sessionInfo.get('clinician'));
-  uploadData.set('clinician', sessionInfo.get('clinician'));
-  uploadData.set('password', sessionInfo.get('password'));
-  uploadData.set('protocolID', sessionInfo.get('protocolID'));
-  uploadData.set('testID', sessionInfo.get('protocolID'));
-  uploadData.set('platformUUID', sessionInfo.get('platformUUID'));
-  uploadData.set('applicationVersion', sessionInfo.get('applicationVersion'));
-  uploadData.set('captureDate', Date());
-  console.log("Store upload");
-  localStorage.setItem(uploadData.cid, JSON.stringify(uploadData.toJSON()));
-  console.log("Upload upload");
-  dumpLocal();
-  console.log("return from upload");
+  alert("Uploader Called!");
 };
 
 dumpLocal();
