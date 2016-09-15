@@ -709,9 +709,9 @@ window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Alabaster.local:3030/");
-
 Pylon.set('hostUrl', "http://Tyriea.local:3030/");
+
+Pylon.set('hostUrl', "http://Alabaster.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -810,6 +810,7 @@ admin = new adminData({
 });
 
 rawSession = Backbone.Model.extend({
+  idAttribute: '_id',
   url: Pylon.get('hostUrl') + 'trajectory'
 });
 
@@ -839,7 +840,7 @@ EventModel = require("./event-model.coffee").EventModel;
 
 adminEvent = new EventModel("Action");
 
-Pylon.on('all', function(what) {
+Pylon.on('bogo', function(what) {
   if (sessionInfo.id) {
     return adminEvent.addSample(what);
   }
@@ -1254,6 +1255,7 @@ rediness = function() {
       return console.log(collection);
     }
   });
+  console.log("Clinics Fetched");
   sessionInfo.set('platformUUID', window.device.uuid);
   return $("#platformUUID").text(window.device.uuid);
 };
@@ -1328,20 +1330,25 @@ EventModel = Backbone.Model.extend({
     if ((this.has('trajectory')) && (this.has('readings'))) {
       eventModelLoader(_.clone(this));
     }
-    this.set('readings', '');
+    this.unset('readings', '');
     this.set('captureDate', flushTime);
   },
   addSample: function(sample) {
     var role, samples;
     role = (this.get('role')).toLowerCase();
     if (role === 'left' || role === 'right') {
-      samples = this.get('readings');
-      samples += sample.toString();
+      if (samples = this.get('readings')) {
+        samples += ',' + sample.toString();
+      } else {
+        this.set('captureDate', Date.now());
+        samples = sample.toString();
+      }
       return this.set('readings', samples);
     } else {
-      console.log("Action Event ", sample);
-      this.flush();
-      return this.set('readings', sample);
+      console.log("Action Event:", sample);
+      this.set('captureDate', Date.now());
+      this.set('readings', sample);
+      return this.flush();
     }
   }
 });
@@ -1562,9 +1569,9 @@ countDownViewTemplate = Backbone.View.extend({
         return tag("section", function() {
           h1("#downCount", "count: " + t);
           if (sessionID) {
-            return p("Waiting for host credential for protocol...");
+            return p("Protocol credential recieved: " + sessionID);
           } else {
-            return p("Protocol credential recieved.");
+            return p("Waiting for host credential for protocol...");
           }
         });
       };

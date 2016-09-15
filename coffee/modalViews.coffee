@@ -65,9 +65,9 @@ countDownViewTemplate = Backbone.View.extend
         tag "section", ->
           h1 "#downCount", "count: "+t
           if sessionID
-            p "Waiting for host credential for protocol..."
+            p "Protocol credential recieved: #{sessionID}"
           else
-            p "Protocol credential recieved."
+            p "Waiting for host credential for protocol..."
       if t<0 && sessionID
         @$el.removeClass('active')
         Pylon.trigger(@response)
