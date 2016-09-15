@@ -8,8 +8,8 @@ require('../libs/dbg/console')
 
 EventModel = Backbone.Model.extend {
   url: 'event'
-  initialize: (kind,@device=null)->
-    @set 'kind', kind
+  initialize: (role ,@device=null)->
+    @set 'role', role
     @flusher = setInterval _.bind(@flush,@), 10000
     sessionInfo = Pylon.get 'sessionInfo'
     @.listenTo sessionInfo, 'change:_id',()->
@@ -20,18 +20,19 @@ EventModel = Backbone.Model.extend {
     flushTime = Date.now()
     if (@.has 'trajectory') && (@.has 'readings')
       eventModelLoader _.clone @
-    @.unset 'readings'
+    @.set 'readings',''
     @.set 'captureDate',flushTime   #new time for next auto flush
     return
 
   addSample: (sample)->
     # add the current sample to the collection
-    kind = @.get 'kind'
-    if kind == 'left' || 'right'
+    role = (@.get 'role').toLowerCase()
+    if role == 'left' || role == 'right'
       samples = @.get 'readings'
       samples += sample.toString()
       @.set 'readings',samples
     else
+      console.log "Action Event ",sample
       @flush()
       @set 'readings' , sample
 }

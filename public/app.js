@@ -709,9 +709,9 @@ window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Tyriea.local:3030/");
-
 Pylon.set('hostUrl', "http://Alabaster.local:3030/");
+
+Pylon.set('hostUrl', "http://Tyriea.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -838,6 +838,12 @@ console.log("sessionInfo created as: ", sessionInfo);
 EventModel = require("./event-model.coffee").EventModel;
 
 adminEvent = new EventModel("Action");
+
+Pylon.on('all', function(what) {
+  if (sessionInfo.id) {
+    return adminEvent.addSample(what);
+  }
+});
 
 aButtonModel = Backbone.Model.extend({
   defaults: {
@@ -1306,10 +1312,10 @@ eventModelLoader = require('./upload.coffee').eventModelLoader;
 
 EventModel = Backbone.Model.extend({
   url: 'event',
-  initialize: function(kind, device) {
+  initialize: function(role, device) {
     var sessionInfo;
     this.device = device != null ? device : null;
-    this.set('kind', kind);
+    this.set('role', role);
     this.flusher = setInterval(_.bind(this.flush, this), 10000);
     sessionInfo = Pylon.get('sessionInfo');
     this.listenTo(sessionInfo, 'change:_id', function() {
@@ -1322,17 +1328,18 @@ EventModel = Backbone.Model.extend({
     if ((this.has('trajectory')) && (this.has('readings'))) {
       eventModelLoader(_.clone(this));
     }
-    this.unset('readings');
+    this.set('readings', '');
     this.set('captureDate', flushTime);
   },
   addSample: function(sample) {
-    var kind, samples;
-    kind = this.get('kind');
-    if (kind === 'left' || 'right') {
+    var role, samples;
+    role = (this.get('role')).toLowerCase();
+    if (role === 'left' || role === 'right') {
       samples = this.get('readings');
       samples += sample.toString();
       return this.set('readings', samples);
     } else {
+      console.log("Action Event ", sample);
       this.flush();
       return this.set('readings', sample);
     }
