@@ -840,7 +840,7 @@ EventModel = require("./event-model.coffee").EventModel;
 
 adminEvent = new EventModel("Action");
 
-Pylon.on('bogo', function(what) {
+Pylon.on('systemEvent', function(what) {
   if (sessionInfo.id) {
     return adminEvent.addSample(what);
   }
@@ -1877,11 +1877,11 @@ Pages = (function() {
       selector = '#' + btn.selector;
       if (btn.active) {
         b = $(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click');
-        if (btn.funct != null) {
-          b.on('click', btn.funct);
-        }
         if (btn.text != null) {
           b.text(btn.text);
+        }
+        if (btn.funct != null) {
+          b.on('click', Pylon.trigger('systemEvent', b.text()), btn.funct);
         }
         results.push(b.show().fadeTo(500, 1));
       } else {

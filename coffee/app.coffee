@@ -110,7 +110,7 @@ console.log "sessionInfo created as: ", sessionInfo
 
 {EventModel} = require "./event-model.coffee"
 adminEvent = new EventModel "Action"
-Pylon.on 'bogo', (what)->
+Pylon.on 'systemEvent', (what)->
   if sessionInfo.id
     adminEvent.addSample what
 
@@ -457,7 +457,7 @@ rediness = ->
       console.log "clinics fetch error - collection"
       console.log collection
   console.log "Clinics Fetched"
-  
+
   sessionInfo.set('platformUUID',window.device.uuid)
   $("#platformUUID").text(window.device.uuid)
 

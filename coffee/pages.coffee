@@ -176,8 +176,10 @@ class Pages
       selector = '#' + btn.selector
       if btn.active
         b=$(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click')
-        if btn.funct? then b.on('click',btn.funct)
         if btn.text? then b.text(btn.text)
+        if btn.funct? then b.on 'click',
+          Pylon.trigger 'systemEvent',  b.text()
+          btn.funct
         b.show().fadeTo(500,1)
       else
         b=$(selector).removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
