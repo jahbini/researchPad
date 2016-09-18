@@ -15,6 +15,7 @@ window.Pylon = Pylon = new PylonTemplate
 Pylon.set 'spearCount', 5
 Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://sensor-test.retrotope.com/"  #QA server
 
 
 pages = require './pages.coffee'
