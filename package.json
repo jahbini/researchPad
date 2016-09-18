@@ -1,7 +1,7 @@
 {
   "name": "stagApp",
   "description": "Retrotope acuire data for clinical mobility study",
-  "version": "1.2.1",
+  "version": "2.0.0",
   "author": "James A. Hinds",
   "dependencies": {
     "backbone": "^1.3.3",
@@ -26,15 +26,14 @@
     ]
   },
   "scripts": {
-    "clean-cordova":"rm -rf platforms/*; rm -rf plugins/*",
-    "prepare-cordova":"cordova prepare",
-    "build-xcode":"open platforms/ios/*xcode*",
-    "make-app":"npm run build && npm run prepare-cordova && npm run build-xcode",
+    "clean-cordova": "rm -rf platforms/*; rm -rf plugins/*",
+    "prepare-cordova": "cordova prepare",
+    "build-xcode": "open platforms/ios/*xcode*",
+    "make-app": "npm run build && npm run prepare-cordova && npm run build-xcode",
     "build": "echo \"module.exports = '$npm_package_version'\" >coffee/version.coffee; browserify coffee/app.coffee -o public/app.js",
     "preversion": "echo Bumping version to \"$npm_package_version\" not npm test ",
     "version": "npm run build && git add -A coffee public package.json",
     "postversion": "git push && git push --tags && rm -rf build/temp"
-
   },
   "browserify-shim": {
     "plugin": {
