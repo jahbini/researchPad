@@ -13,8 +13,8 @@ PylonTemplate = Backbone.Model.extend
 window.Pylon = Pylon = new PylonTemplate
 
 Pylon.set 'spearCount', 5
-Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
 
 
 pages = require './pages.coffee'

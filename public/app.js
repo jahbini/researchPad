@@ -709,9 +709,9 @@ window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Tyriea.local:3030/");
-
 Pylon.set('hostUrl', "http://Alabaster.local:3030/");
+
+Pylon.set('hostUrl', "http://Tyriea.local:3030/");
 
 pages = require('./pages.coffee');
 
@@ -1338,7 +1338,7 @@ EventModel = Backbone.Model.extend({
     role = (this.get('role')).toLowerCase();
     if (role === 'left' || role === 'right') {
       if (samples = this.get('readings')) {
-        samples += ',' + sample.toString();
+        samples += ';' + sample.toString();
       } else {
         this.set('captureDate', Date.now());
         samples = sample.toString();
@@ -1492,8 +1492,9 @@ ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead
 uploadViewTemplate = Backbone.View.extend({
   el: "#upload-report",
   initialize: function() {
+    return;
     this.render();
-    Pylon.on('upload:complete', (function(_this) {
+    Pylon.on('upload:no-complete', (function(_this) {
       return function(a) {
         _this.render(a);
         return _this.$el.addClass('active');
@@ -1512,6 +1513,7 @@ uploadViewTemplate = Backbone.View.extend({
     })(this));
   },
   render: function(a) {
+    return;
     if (!a) {
       a = {
         message: '---'

@@ -29,7 +29,7 @@ EventModel = Backbone.Model.extend {
     role = (@.get 'role').toLowerCase()
     if role == 'left' || role == 'right'
       if  samples = @.get 'readings'
-        samples += ','+sample.toString()
+        samples += ';'+sample.toString()
       else
         @.set 'captureDate',Date.now()   #new time for next auto flush
         samples = sample.toString()

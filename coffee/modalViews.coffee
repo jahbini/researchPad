@@ -16,11 +16,13 @@ tea = new Teacup.Teacup
     ,button,p,text,span,canvas,option,select,form
     ,body,head,doctype,hr,br,password,tag} = tea.tags()
 
+#upload view template is now non-functional -- noop for initialize,render
 uploadViewTemplate = Backbone.View.extend
     el: "#upload-report"
     initialize: ()->
+      return
       @render()
-      Pylon.on 'upload:complete', (a)=>
+      Pylon.on 'upload:no-complete', (a)=>
         @render a
         @$el.addClass 'active'
 
@@ -32,6 +34,7 @@ uploadViewTemplate = Backbone.View.extend
         @$el.removeClass 'active'
     # the upload report success/fail
     render: (a)->
+      return
       a={message: '---'} if !a
       @$el.html render =>
         tag "header", ->
