@@ -28,6 +28,9 @@ class Pages
         div '#dud.one.columns', ->
           raw '&nbsp;'
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
+      div '#net-info.row', ->
+        div '#net-wifi.six.columns'
+        div '#net-ble.six.columns'
       buttons()
       div '.row',->
         div '.two.columns',"Right Tag"
@@ -40,8 +43,11 @@ class Pages
           span '#LeftNick', '?'
         div '#Leftuuid.seven.columns' , ' '
       div '.row', ->
-        div '.five.columns',"Platform UUID"
-        div '#platformUUID.seven.columns', ->
+        div '.three.columns',"Platform UUID"
+        div '#platformUUID.five.columns', ->
+          raw '&nbsp;'
+        div '.two.columns',"OS V"
+        div '#platformIosVersion.two.columns', ->
           raw '&nbsp;'
       raw contents1()
       div "#tagScanReport"

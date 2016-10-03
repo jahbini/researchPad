@@ -101,6 +101,7 @@ sessionInfo = new rawSession
   testID: ''
   sensorUUID: ''
   platformUUID: ''
+  platformIosVersion: ''
   applicationVersion: applicationVersion
 console.log "app Ver:", sessionInfo.get 'applicationVersion'
 
@@ -460,7 +461,9 @@ rediness = ->
   console.log "Clinics Fetched"
 
   sessionInfo.set('platformUUID',window.device.uuid)
+  sessionInfo.set('platformIosVersion',window.device.version)
   $("#platformUUID").text(window.device.uuid)
+  $("#platformIosVersion").text(window.device.version)
 
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
@@ -485,6 +488,15 @@ $(document).on 'deviceready', ->
 
 $ ->
   domIsReady = true
+  # Force a page reload if put in background to wipe the sessionInfo and other state
+  document.addEventListener 'resume',()->
+    window.location.reload()
+  document.addEventListener(
+    "online"
+    ()-> require './net-view.coffee'
+    false
+    )
+
   pageGen.renderPage()
   if $('#console-log')?
     window.console=console = new Console('console-log')
