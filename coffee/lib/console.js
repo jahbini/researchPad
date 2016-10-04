@@ -277,5 +277,7 @@ THE SOFTWARE.
     });
   }
 
+  Console.log = function(){return;}
+
   window.Console = Console;
 })();

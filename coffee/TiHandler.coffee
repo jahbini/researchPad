@@ -5,10 +5,10 @@
 
 Backbone = require('backbone')
 _ = require('underscore')
-require('../libs/dbg/console')
+require('./lib/console')
 $ = require('jquery')
-{EventModel} = require './event-model.coffee'
-glib = require('./glib.coffee').glib
+{EventModel} = require './models/event-model.coffee'
+glib = require('./lib/glib.coffee').glib
 
 # #### View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
@@ -72,7 +72,7 @@ deviceCollection = Backbone.Collection.extend
   model: deviceModel
 Pylon.set 'devices', new deviceCollection
 
-visualHandler = require('./visual.coffee')
+Pipeline = require('./pipeline.coffee')
 
 class TiHandler
   evothings = window.evothings
@@ -162,7 +162,7 @@ class TiHandler
   constructor: (@sessionInfo) ->
 
   createVisualChain: (device) ->
-    smoother = new visualHandler
+    smoother = new Pipeline
     accelerometerHandler = smoother.readingHandler
       device: device
       sensor: 'accel'

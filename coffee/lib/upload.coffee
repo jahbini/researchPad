@@ -6,7 +6,7 @@
 $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-require('../libs/dbg/console')
+require('./console')
 
 localStorage = window.localStorage
 Pylon = window.Pylon

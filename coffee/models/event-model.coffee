@@ -3,8 +3,8 @@
 
 Backbone = require 'backbone'
 _ = require 'underscore'
-require('../libs/dbg/console')
-{eventModelLoader}  = require './upload.coffee'
+require('../lib/console')
+{eventModelLoader}  = require '../lib/upload.coffee'
 
 EventModel = Backbone.Model.extend {
   url: 'event'

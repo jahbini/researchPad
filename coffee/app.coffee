@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-require('../libs/dbg/console')
+require('./lib/console')
 
 PylonTemplate = Backbone.Model.extend
     scan: false
@@ -18,13 +18,13 @@ Pylon.set 'hostUrl', "http://Tyriea.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://sensor-test.retrotope.com/"  #QA server
 
 
-pages = require './pages.coffee'
-Pylon.set 'adminView', require('./adminView.coffee').adminView
-loadScript = require("./loadScript.coffee").loadScript
+pages = require './views/pages.coffee'
+Pylon.set 'adminView', require('./views/adminView.coffee').adminView
+loadScript = require("./lib/loadScript.coffee").loadScript
 loadScript Pylon.get('hostUrl')+"logon.js", (status)->
   console.log "logon.js returns status of "+status
 
-{uploader,eventModelLoader} = require "./upload.coffee"
+{uploader,eventModelLoader} = require "./lib/upload.coffee"
 
 ###
 Section: Data Structures
@@ -110,7 +110,7 @@ Pylon.set 'pageGen', pageGen
 Pylon.set 'sessionInfo', sessionInfo
 console.log "sessionInfo created as: ", sessionInfo
 
-{EventModel} = require "./event-model.coffee"
+{EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
 Pylon.on 'systemEvent', (what)->
   if sessionInfo.id
@@ -493,7 +493,7 @@ $ ->
     window.location.reload()
   document.addEventListener(
     "online"
-    ()-> require './net-view.coffee'
+    ()-> require './lib/net-view.coffee'
     false
     )
 

@@ -1,7 +1,7 @@
 #
 # vim: et:ts=2:sw=2:sts=2
 
-Seen = require '../libs/dbg/seen'
+Seen = require 'seen-js'
 $=require 'jquery'
 _=require 'underscore'
 
@@ -17,7 +17,7 @@ _=require 'underscore'
 #  Pylon.set 'globalState',  new systemCommunicator
 ###
 
-class visual
+class pipeline
   constructor: () ->
 
   calibratorAverage: (dataCondition, calibrate, calibrating) ->
@@ -268,5 +268,5 @@ class visual
     newValue
 
 
-if window? then window.exports = visual
-if module?.exports? then module.exports = visual
+if window? then window.exports = pipeline
+if module?.exports? then module.exports = pipeline
