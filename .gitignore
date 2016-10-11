@@ -7,5 +7,6 @@ temp/
 x.*
 *.swp
 cordova.js
+*.X
 plugins/*
 platforms/*
