@@ -1,0 +1,271 @@
+---
+swagger: "2.0"
+info:
+  version: "1.0.0"
+  title: "Retrotope Clinical api"
+  description: "An API that for access and creation of data that records the movements detected by the Texas Instruments _SensorTag 2.0_ during clinical diagnostic protocols"
+  termsOfService: "http://swagger.io/terms/"
+  contact:
+    name: "jim@BambooCanDo.com"
+  license:
+    name: "Whatever Harry Wants"
+host: "sensor-test.retrotope.com"
+#basePath: "/api"
+schemes:
+  - "http"
+consumes:
+  - "application/json"
+produces:
+  - "application/json"
+paths:
+  /clinics:
+    get:
+      summary: all the clinics
+      responses:
+        200:
+          description: returns drilldown of all clinics
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Clinic"
+
+  /sensor-tag/{uuid}:
+    get:
+      summary: request new firmware version
+      parameters:
+        - name: uuid
+          in: path
+          description: UUID of the sensorTag
+          type: string
+          required: true
+      responses:
+        200:
+          description: valid url of newer firmware to OAD to sensorTag
+          schema:
+            $ref: "#/definitions/SensorTag"
+
+  /sensor-tag/{uuid}/{version}:
+    get:
+      summary: request new firmware version
+      parameters:
+        - name: uuid
+          in: path
+          description: UUID of the sensorTag
+          type: string
+          required: true
+        - name: version
+          in: path
+          description: current firmware version of the sensorTag
+          type: string
+          required: true
+      responses:
+        200:
+          description: valid url of newer firmware to OAD to sensorTag
+          schema:
+            $ref: "#/definitions/SensorTag"
+
+
+  /protocols:
+    get:
+      summary: what tests can we use
+      description: all the valid protocols for clinics to administer
+      responses:
+        200:
+          description: all the valid protocols
+          schema:
+            type: array
+            items:
+              $ref: "#/definitions/Protocol"
+
+
+  /trajectory:
+    post:
+      summary: create a new session for protocols and events
+      description: add date, time, client, clinician, sensor and platform data
+      parameters:
+        - name: trajectory
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Trajectory"
+      responses:
+        200:
+          description: patient test session ID
+          schema:
+            type: integer
+            format: int64
+
+  /event/{id}:
+    get:
+      summary: retrieve event by id
+      description: return data structure of event
+      parameters:
+        - name: id
+          in: path
+          description: ID of event to fetch
+          required: true
+          type: integer
+          format: int64
+      responses:
+        200:
+          description: Event Response
+          schema:
+            $ref: '#/definitions/Event'
+
+  /event:
+    post:
+      summary: add a new event to a trajectory
+      description: each event will be a button press or a sequence of movement data values.
+      parameters:
+        - name: event
+          in: body
+          description: new event data to add to trajectory
+          required: true
+          schema:
+            $ref: '#/definitions/Event'
+      responses:
+
+        200:
+          description: OK
+
+definitions:
+  Protocol:
+    type: object
+    properties:
+      name:
+        type: string
+  Event:
+    type: object
+    properties:
+      captureDate:
+        description: The time stamp created on javascript creation of this event object.
+        type: string
+        format: date-time
+      role:
+        description: is this a system or user event or a series of sensor readings. Values are "left", "rignt", "button"
+        type: string
+      readings:
+        description: button name, or a JSON encoded array of sensor data
+        type: string
+      trajectory:
+        description: ID of trajectory session that created this event
+        type: integer
+        format: int64
+
+  Trajectory:
+    type: object
+    required:
+      - clinicID
+      - captureDate
+      - clinicianID
+      - testID
+    properties:
+      id:
+        type: integer
+        format: int64
+      captureDate:
+        type: string
+        format: date-time
+      readings:
+        type: string
+      events:
+        type: array
+        items:
+          description: EventID values, valid on get only
+          type: integer
+          format: int64
+      clinicID:
+        description: Clinic Id value
+        type: integer
+        format: int64
+      clientID:
+        description: client UserID (patient)
+        type: integer
+        format: int64
+      clinicianID:
+        description: clinician UserID (operator)
+        type: integer
+        format: int64
+      testID:
+        description: protocol selected for this session, multiple protocols require multiple trajectory objects
+        type: string
+      platformUUID:
+        description: Unique identifier for iOS device used during capture
+        type: string
+      platformIosVersion:
+        type: string
+      applicationVersion:
+        type: "string"
+
+
+  User:
+    type: "object"
+    required:
+      - "id"
+      - "name"
+    properties:
+      id:
+        type: integer
+        format: int64
+      name:
+        type: string
+      email:
+        description: optional for patients (they never log in)
+        type: string
+      password:
+        type: string
+        format: password
+      patientOnly:
+        type: boolean
+        default: false
+      canAccessKeystone:
+        type: boolean
+        default: false
+      clinic:
+        description: Clinic ID value where session takes place
+        type: integer
+        format: int64
+
+  Clinic:
+    type: "object"
+    required:
+      - "id"
+      - "name"
+    properties:
+      id:
+        type: "integer"
+        format: "int64"
+      location:
+        type: "string"
+      name:
+        type: "string"
+      clinicians:
+        description: UserID values of all clinicians working out of this clinic.
+        type: array
+        items:
+          type: integer
+          format: int64
+      clients:
+        description: UserID values of all patients registered at this clinic - no personally identifiable information.
+        type: array
+        items:
+          type: integer
+          format: int64
+  SensorTag:
+    type: object
+    required:
+      - UUID
+    properties:
+      UUID:
+        description: unique identifier sent by sensorTag device to app
+        type: string
+      nickName:
+        description: human readable name generated by hash code
+        type: string
+      unit:
+        type: string
+      assignedName:
+        description: name assigned by administrator
+        type: string
+      comments:
+        type: string
