@@ -9,7 +9,7 @@ info:
     name: "jim@BambooCanDo.com"
   license:
     name: "Whatever Harry Wants"
-host: "sensor-test.retrotope.com"
+host: "sensor-test.tell140.com"
 #basePath: "/api"
 schemes:
   - "http"
