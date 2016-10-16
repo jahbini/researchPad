@@ -277,15 +277,15 @@ class Pages
     return
 
   activateAdminPage: (buttonSpec)->
-    $('#sensorPage').hide()
-    $('#adminForm').show()
+    $('#adminForm').addClass 'active'
+    $('#sensorPage').removeClass 'active'
     Pylon.get('adminView').inspectAdminPage()
     @activateButtons buttonSpec if buttonSpec?
 
 
   activateSensorPage: (buttonSpec)->
-    $('#adminForm').hide()
-    $('#sensorPage').show()
+    $('#adminForm').removeClass 'active'
+    $('#sensorPage').addClass 'active'
     @activateButtons buttonSpec if buttonSpec?
 
 

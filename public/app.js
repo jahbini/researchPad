@@ -400,9 +400,9 @@ Pylon.set('spearCount', 5);
 
 Pylon.set('hostUrl', "http://Alabaster.local:3030/");
 
-Pylon.set('hostUrl', "http://Tyriea.local:3030/");
-
 Pylon.set('hostUrl', "http://sensor-test.retrotope.com/");
+
+Pylon.set('hostUrl', "http://Tyriea.local:9000/");
 
 pages = require('./views/pages.coffee');
 
@@ -659,7 +659,7 @@ buttonModelAdminLogout = new aButtonModel({
 });
 
 buttonCollection = {
-  admin: buttonModelAdminDisabled,
+  admin: buttonModelAdmin,
   calibrate: buttonModelCalibrateOff,
   debug: buttonModelDebugOff,
   action: buttonModelActionDisabled,
@@ -747,6 +747,7 @@ initAll = function() {
   rtemp = void 0;
   exitDebug();
   $('#uuid').html("Must connect to sensor").css('color', "violet");
+  enterAdmin();
 };
 
 enterClear = function() {
@@ -765,7 +766,7 @@ enterConnected = function() {
   noCalibration = true;
   console.log('enterConnected -- enable recording button');
   g = Pylon.get('globalState');
-  useButton(buttonModelAdminDisabled);
+  useButton(buttonModelAdmin);
   if (noCalibration) {
     if (g.get('loggedIn')) {
       useButton(buttonModelActionRecord);
@@ -912,6 +913,7 @@ sensorIsReady = false;
 domIsReady = false;
 
 rediness = function() {
+  var ref1, ref2;
   if (!(sensorIsReady && domIsReady)) {
     return;
   }
@@ -948,10 +950,10 @@ rediness = function() {
     }
   });
   console.log("Clinics Fetched");
-  sessionInfo.set('platformUUID', window.device.uuid);
-  sessionInfo.set('platformIosVersion', window.device.version);
-  $("#platformUUID").text(window.device.uuid);
-  return $("#platformIosVersion").text(window.device.version);
+  sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
+  sessionInfo.set('platformIosVersion', ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform");
+  $("#platformUUID").text(sessionInfo.attributes.platformUUID);
+  return $("#platformIosVersion").text(sessionInfo.attributes.platformIosVersion);
 };
 
 
@@ -974,14 +976,13 @@ window.Me = this;
 window.Buttons = buttonCollection;
 
 $(document).on('deviceready', function() {
-  sensorIsReady = true;
-  rediness();
   startBlueTooth();
 });
 
 $(function() {
   var console;
   domIsReady = true;
+  sensorIsReady = true;
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
@@ -2432,7 +2433,7 @@ adminView = (function() {
 
   adminView.prototype.adminContents = function() {
     return render(function() {
-      return div('#adminForm', function() {
+      return div('#adminForm.modal', function() {
         hr();
         return form(function() {
           div('.row', function() {
@@ -3082,8 +3083,8 @@ Pages = (function() {
   };
 
   Pages.prototype.activateAdminPage = function(buttonSpec) {
-    $('#sensorPage').hide();
-    $('#adminForm').show();
+    $('#adminForm').addClass('active');
+    $('#sensorPage').removeClass('active');
     Pylon.get('adminView').inspectAdminPage();
     if (buttonSpec != null) {
       return this.activateButtons(buttonSpec);
@@ -3091,8 +3092,8 @@ Pages = (function() {
   };
 
   Pages.prototype.activateSensorPage = function(buttonSpec) {
-    $('#adminForm').hide();
-    $('#sensorPage').show();
+    $('#adminForm').removeClass('active');
+    $('#sensorPage').addClass('active');
     if (buttonSpec != null) {
       return this.activateButtons(buttonSpec);
     }

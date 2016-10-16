@@ -148,7 +148,8 @@ class adminView
 
   adminContents: =>
     render () ->
-     div '#adminForm', ->
+     div '#adminForm.modal', ->
+      h1 "Enter Session Information"
       hr()
       form ->
         div '.row', ->
