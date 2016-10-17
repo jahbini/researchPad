@@ -398,11 +398,11 @@ window.Pylon = Pylon = new PylonTemplate;
 
 Pylon.set('spearCount', 5);
 
-Pylon.set('hostUrl', "http://Alabaster.local:3030/");
-
 Pylon.set('hostUrl', "http://sensor-test.retrotope.com/");
 
 Pylon.set('hostUrl', "http://Tyriea.local:9000/");
+
+Pylon.set('hostUrl', "http://Alabaster.local:9000/");
 
 pages = require('./views/pages.coffee');
 
@@ -478,7 +478,8 @@ Pylon.set('clients', clients);
 protocol = Backbone.Model.extend({
   defaults: {
     name: "Other",
-    Description: "Other"
+    comments: "Other",
+    mileStones: "initiation,completion"
   }
 });
 
@@ -792,7 +793,6 @@ enterCalibrate = function() {
 
 exitCalibrate = function() {
   var calibrating;
-  console.log('exitCalibrate -- not used currently');
   calibrating = false;
   if (Pylon.get('globalState').get('loggedIn')) {
     useButton(buttonModelActionRecord);
@@ -805,7 +805,6 @@ exitCalibrate = function() {
 
 enterRecording = function() {
   var gs;
-  console.log("enterRecording", sessionInfo);
   if (!sessionInfo.get('testID')) {
     pageGen.forceTest('red');
     return false;
@@ -926,11 +925,7 @@ rediness = function() {
       return collection.trigger('change');
     },
     error: function(collection, response, options) {
-      console.log(Pylon.get('hostUrl') + 'protocols');
-      console.log("protocols fetch error - response");
-      console.log(response.statusText);
-      console.log("protocols fetch error - collection");
-      return console.log(collection);
+      return console.log(Pylon.get('hostUrl') + 'protocols', "protocols fetch error - response:", response.statusText);
     }
   });
   clinics.on('change', function() {
@@ -2434,6 +2429,7 @@ adminView = (function() {
   adminView.prototype.adminContents = function() {
     return render(function() {
       return div('#adminForm.modal', function() {
+        tea.h1("Enter Session Information");
         hr();
         return form(function() {
           div('.row', function() {
@@ -2613,10 +2609,11 @@ countDownViewTemplate = Backbone.View.extend({
     sessionID = Pylon.get('sessionInfo').get('_id');
     this.$el.html(render((function(_this) {
       return function() {
+        var btn, i, len, mileStones, protocol, ref1, results, theTest;
         tag("header", function() {
           return h2("Time!");
         });
-        return tag("section", function() {
+        tag("section", function() {
           h1("#downCount", "count: " + t);
           if (sessionID) {
             return p("Protocol credential recieved: " + sessionID);
@@ -2624,6 +2621,23 @@ countDownViewTemplate = Backbone.View.extend({
             return p("Waiting for host credential for protocol...");
           }
         });
+        tea.hr;
+        tea.div(".flex");
+        protocol = Pylon.get('protocols');
+        theTest = protocol.findWhere({
+          name: sessionInfo.get('testID')
+        });
+        if (theTest) {
+          mileStones = (ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0;
+          results = [];
+          for (i = 0, len = mileStones.length; i < len; i++) {
+            btn = mileStones[i];
+            results.push(tea.button('.primary', {
+              onClick: "Pylon.trigger('systemEvent','" + btn + "')"
+            }, btn));
+          }
+          return results;
+        }
       };
     })(this)));
     if (t < 0 && sessionID) {

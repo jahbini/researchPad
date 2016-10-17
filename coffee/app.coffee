@@ -13,9 +13,9 @@ PylonTemplate = Backbone.Model.extend
 window.Pylon = Pylon = new PylonTemplate
 
 Pylon.set 'spearCount', 5
-Pylon.set 'hostUrl', "http://Alabaster.local:3030/"  #JAH DEVELOPMENT
 Pylon.set 'hostUrl', "http://sensor-test.retrotope.com/"  #QA server
 Pylon.set 'hostUrl', "http://Tyriea.local:9000/"  #JAH DEVELOPMENT
+Pylon.set 'hostUrl', "http://Alabaster.local:9000/"  #JAH DEVELOPMENT
 
 
 pages = require './views/pages.coffee'
@@ -74,7 +74,8 @@ Pylon.set('clients',clients)
 protocol = Backbone.Model.extend
   defaults:
     name: "Other"
-    Description: "Other"
+    comments: "Other"
+    mileStones: "initiation,completion"
 protocolCollection = Backbone.Collection.extend
   model: protocol
   url: Pylon.get('hostUrl')+'protocols'
@@ -322,7 +323,6 @@ enterCalibrate = ->
   return false
 
 exitCalibrate = ->
-  console.log('exitCalibrate -- not used currently')
   calibrating = false
   if Pylon.get('globalState').get 'loggedIn'
     useButton buttonModelActionRecord
@@ -332,9 +332,8 @@ exitCalibrate = ->
   return false
 
 enterRecording = ->
-  console.log "enterRecording", sessionInfo
   # reject record request if no protocol is selected
-  if !sessionInfo.get('testID')
+  if !sessionInfo.get 'testID'
     pageGen.forceTest 'red'
     return false
   # sync the sessionInfo up to the server as an empty
@@ -440,11 +439,7 @@ rediness = ->
       console.log "protocols request success"
       collection.trigger 'change'
     error: (collection,response,options)->
-      console.log (Pylon.get('hostUrl')+'protocols')
-      console.log "protocols fetch error - response"
-      console.log response.statusText
-      console.log "protocols fetch error - collection"
-      console.log collection
+      console.log (Pylon.get('hostUrl')+'protocols'), "protocols fetch error - response:", response.statusText
 
 
   clinics.on 'change', ()->

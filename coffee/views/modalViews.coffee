@@ -71,6 +71,17 @@ countDownViewTemplate = Backbone.View.extend
             p "Protocol credential recieved: #{sessionID}"
           else
             p "Waiting for host credential for protocol..."
+        tea.hr
+        tea.div ".flex"
+        protocol= Pylon.get 'protocols'
+        theTest = protocol.findWhere
+          name: sessionInfo.get 'testID'
+        if theTest
+          mileStones = theTest.get('mileStones')?.split ','
+          for btn in mileStones
+            tea.button '.primary',
+              {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
+              btn
       if t<0 && sessionID
         @$el.removeClass('active')
         Pylon.trigger(@response)

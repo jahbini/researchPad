@@ -94,6 +94,21 @@ paths:
           schema:
             type: integer
             format: int64
+    put:
+      summary: create a new session for protocols and events
+      description: add date, time, client, clinician, sensor and platform data
+      parameters:
+        - name: trajectory
+          in: body
+          required: true
+          schema:
+            $ref: "#/definitions/Trajectory"
+      responses:
+        200:
+          description: patient test session ID
+          schema:
+            type: integer
+            format: int64
 
   /event/{id}:
     get:
@@ -134,6 +149,12 @@ definitions:
     properties:
       name:
         type: string
+        description: which test?
+      comments:
+        type: string
+      mileStones:
+        type: string
+        description: Comma separated list of actions clinician should note during test
   Event:
     type: object
     properties:
@@ -160,7 +181,7 @@ definitions:
       - clinicianID
       - testID
     properties:
-      id:
+      _id:
         type: integer
         format: int64
       captureDate:
