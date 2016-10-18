@@ -400,8 +400,6 @@ Pylon.set('spearCount', 5);
 
 Pylon.set('hostUrl', hostUrl);
 
-alert(hostUrl);
-
 pages = require('./views/pages.coffee');
 
 Pylon.set('adminView', require('./views/adminView.coffee').adminView);
@@ -991,9 +989,7 @@ Pylon.test = function(page) {
   if (page == null) {
     page = 'test.html';
   }
-  alert(page);
-  window.location.assign(page);
-  return alert("xfer?");
+  return window.location.assign(page);
 };
 
 $(document).on('deviceready', function() {
