@@ -4,6 +4,8 @@ $=require('jquery')
 Backbone = require('backbone')
 Teacup = require('teacup')
 
+onOnline = ()->
+  console.log "OnLine Event"
 CommoState = Backbone.Model.extend
   netState: ()->
     navigator.connection.type
@@ -13,25 +15,28 @@ CommoState = Backbone.Model.extend
   bleState: "Bluetooth OK!"
   bleAbility: true
   initialize: ()->
-    document.addEventListener("online", onOnline, false);
-    Connection= navigator.connection
-    @states[Connection.UNKNOWN]  = 'Unknown connection';
-    @states[Connection.ETHERNET] = 'Ethernet connection';
-    @states[Connection.WIFI]     = 'WiFi connection';
-    @states[Connection.CELL_2G]  = 'Cell 2G connection';
-    @states[Connection.CELL_3G]  = 'Cell 3G connection';
-    @states[Connection.CELL_4G]  = 'Cell 4G connection';
-    @states[Connection.CELL]     = 'Cell generic connection';
-    @states[Connection.NONE]     = 'No network connection';
+    try
+      document.addEventListener("online", onOnline, false);
+      Connection= navigator.connection
+      @states[Connection.UNKNOWN]  = 'Unknown connection';
+      @states[Connection.ETHERNET] = 'Ethernet connection';
+      @states[Connection.WIFI]     = 'WiFi connection';
+      @states[Connection.CELL_2G]  = 'Cell 2G connection';
+      @states[Connection.CELL_3G]  = 'Cell 3G connection';
+      @states[Connection.CELL_4G]  = 'Cell 4G connection';
+      @states[Connection.CELL]     = 'Cell generic connection';
+      @states[Connection.NONE]     = 'No network connection';
 
-    @ability[Connection.UNKNOWN]  = false
-    @ability[Connection.ETHERNET] = true
-    @ability[Connection.WIFI]     = true
-    @ability[Connection.CELL_2G]  = true
-    @ability[Connection.CELL_3G]  = true
-    @ability[Connection.CELL_4G]  = true
-    @ability[Connection.CELL]     = true
-    @ability[Connection.NONE]     = false
+      @ability[Connection.UNKNOWN]  = false
+      @ability[Connection.ETHERNET] = true
+      @ability[Connection.WIFI]     = true
+      @ability[Connection.CELL_2G]  = true
+      @ability[Connection.CELL_3G]  = true
+      @ability[Connection.CELL_4G]  = true
+      @ability[Connection.CELL]     = true
+      @ability[Connection.NONE]     = false
+    catch
+      console.log "ERROR IN ONLINE"
 commoState = new CommoState
 
 implementing = (mixins..., classReference) ->

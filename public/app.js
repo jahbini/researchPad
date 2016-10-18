@@ -379,8 +379,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":8,"./pipeline.coffee":9,"backbone":14,"jquery":16,"underscore":15}],2:[function(require,module,exports){
-var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicianCollection, clinicianModel, clinicians, clinics, domIsReady, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitDebug, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocols, rawSession, rediness, ref, sensorIsReady, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":7,"./pipeline.coffee":8,"backbone":13,"jquery":15,"underscore":14}],2:[function(require,module,exports){
+var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitDebug, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, rawSession, ref, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
 
 window.$ = $ = require('jquery');
 
@@ -534,6 +534,9 @@ EventModel = require("./models/event-model.coffee").EventModel;
 adminEvent = new EventModel("Action");
 
 Pylon.on('systemEvent', function(what) {
+  if (!what || what === "Hide log") {
+    debugger;
+  }
   if (sessionInfo.id) {
     return adminEvent.addSample(what);
   }
@@ -907,34 +910,35 @@ Pylon.on('adminDone', function() {
   return false;
 });
 
-sensorIsReady = false;
-
-domIsReady = false;
-
-rediness = function() {
-  var ref1, ref2;
-  if (!(sensorIsReady && domIsReady)) {
-    return;
-  }
+getProtocol = function() {
   protocols.on('change', function() {
     return console.log("got reply from server for protocol collection");
   });
-  protocols.fetch({
+  return protocols.fetch({
     success: function(collection, response, options) {
       console.log("protocols request success");
-      return collection.trigger('change');
+      return collection.trigger('fetched');
     },
     error: function(collection, response, options) {
       return console.log(Pylon.get('hostUrl') + 'protocols', "protocols fetch error - response:", response.statusText);
     }
   });
+};
+
+protocolTimer = setInterval(getProtocol, 500);
+
+protocols.on('fetched', function() {
+  return clearInterval(protocolTimer);
+});
+
+getClinics = function() {
   clinics.on('change', function() {
     return console.log("got reply from server for clinics collection");
   });
-  clinics.fetch({
+  return clinics.fetch({
     success: function(collection, response, options) {
       console.log("clinic request success");
-      return collection.trigger('change');
+      return collection.trigger('fetched');
     },
     error: function(collection, response, options) {
       console.log(Pylon.get('hostUrl') + 'clinics');
@@ -944,12 +948,13 @@ rediness = function() {
       return console.log(collection);
     }
   });
-  console.log("Clinics Fetched");
-  sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
-  sessionInfo.set('platformIosVersion', ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform");
-  $("#platformUUID").text(sessionInfo.attributes.platformUUID);
-  return $("#platformIosVersion").text(sessionInfo.attributes.platformIosVersion);
 };
+
+clinicTimer = setInterval(getClinics, 600);
+
+clinics.on('fetched', function() {
+  return clearInterval(clinicTimer);
+});
 
 
 /* this is how seen exports things -- it's clean.  we use it as example
@@ -971,19 +976,19 @@ window.Me = this;
 window.Buttons = buttonCollection;
 
 $(document).on('deviceready', function() {
+  var ref1, ref2;
+  sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
+  sessionInfo.set('platformIosVersion', ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform");
+  $("#platformUUID").text(sessionInfo.attributes.platformUUID);
+  $("#platformIosVersion").text(sessionInfo.attributes.platformIosVersion);
   startBlueTooth();
 });
 
 $(function() {
   var console;
-  domIsReady = true;
-  sensorIsReady = true;
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
-  document.addEventListener("online", function() {
-    return require('./lib/net-view.coffee');
-  }, false);
   pageGen.renderPage();
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
@@ -991,13 +996,12 @@ $(function() {
   }
   initAll();
   setSensor();
-  rediness();
   return false;
 });
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":7,"./models/event-model.coffee":8,"./version.coffee":10,"./views/adminView.coffee":11,"./views/pages.coffee":13,"backbone":14,"jquery":16,"underscore":15}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/upload.coffee":6,"./models/event-model.coffee":7,"./version.coffee":9,"./views/adminView.coffee":10,"./views/pages.coffee":12,"backbone":13,"jquery":15,"underscore":14}],3:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1386,352 +1390,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":15}],6:[function(require,module,exports){
-var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
-  slice = [].slice,
-  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
-
-$ = require('jquery');
-
-Backbone = require('backbone');
-
-Teacup = require('teacup');
-
-CommoState = Backbone.Model.extend({
-  netState: function() {
-    return navigator.connection.type;
-  },
-  netAbility: function() {
-    return this.abiity[this.netState()];
-  },
-  bleState: "Bluetooth OK!",
-  bleAbility: true,
-  initialize: function() {
-    var Connection;
-    document.addEventListener("online", onOnline, false);
-    Connection = navigator.connection;
-    this.states[Connection.UNKNOWN] = 'Unknown connection';
-    this.states[Connection.ETHERNET] = 'Ethernet connection';
-    this.states[Connection.WIFI] = 'WiFi connection';
-    this.states[Connection.CELL_2G] = 'Cell 2G connection';
-    this.states[Connection.CELL_3G] = 'Cell 3G connection';
-    this.states[Connection.CELL_4G] = 'Cell 4G connection';
-    this.states[Connection.CELL] = 'Cell generic connection';
-    this.states[Connection.NONE] = 'No network connection';
-    this.ability[Connection.UNKNOWN] = false;
-    this.ability[Connection.ETHERNET] = true;
-    this.ability[Connection.WIFI] = true;
-    this.ability[Connection.CELL_2G] = true;
-    this.ability[Connection.CELL_3G] = true;
-    this.ability[Connection.CELL_4G] = true;
-    this.ability[Connection.CELL] = true;
-    return this.ability[Connection.NONE] = false;
-  }
-});
-
-commoState = new CommoState;
-
-implementing = function() {
-  var classReference, i, j, key, len, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
-  for (j = 0, len = mixins.length; j < len; j++) {
-    mixin = mixins[j];
-    ref = mixin.prototype;
-    for (key in ref) {
-      value = ref[key];
-      classReference.prototype[key] = value;
-    }
-  }
-  return classReference;
-};
-
-netView = (function() {
-  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
-
-  tea = new Teacup.Teacup;
-
-  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
-
-  function netView() {
-    this.wireAdmin = bind(this.wireAdmin, this);
-    this.adminContents = bind(this.adminContents, this);
-  }
-
-  netView.prototype.netViewer = function() {
-    var clientViewTemplate, clinicianViewTemplate, doneViewTemplate, netViewTemplate;
-    netViewTemplate = Backbone.View.extend({
-      el: '#net-info',
-      model: commoState,
-      initialize: function() {
-        document.addEventListener("offline", this.render, false);
-        document.addEventListener("online", this.render, false);
-        document.addEventListener("offline", this.render, false);
-        return document.addEventListener("offline", this.render, false);
-      },
-      events: {
-        'change': function() {
-          var error, error1, temp, theClinic, theOptionCid;
-          theOptionCid = this.$el.val();
-          console.log('Clinic Change, CID=' + theOptionCid);
-          if (theOptionCid) {
-            theClinic = this.collection.get(theOptionCid);
-            try {
-              this.attributes.session.set('clinic', theClinic);
-            } catch (error1) {
-              error = error1;
-              console.log("Error from setting clinic");
-              console.log(error);
-            }
-          } else {
-            theClinic = null;
-            this.attributes.session.unset('clinic');
-          }
-          this.attributes.session.unset('clinician');
-          this.attributes.session.unset('client');
-          temp = Pylon.get('clinicians');
-          temp.reset();
-          if (theClinic) {
-            temp.add(theClinic.get('clinicians'));
-          }
-          temp.trigger('change');
-          temp = Pylon.get('clients');
-          temp.reset();
-          if (theClinic) {
-            temp.add(theClinic.get('clients'));
-          }
-          temp.trigger('change');
-          this.attributes.session.trigger('change');
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var clinic, i, len, ref1, results;
-            option("Select ---", {
-              value: ''
-            });
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              clinic = ref1[i];
-              if (clinic.get('force')) {
-                results.push(option('.forceSelect.selected', {
-                  selected: 'selected',
-                  value: clinic.cid
-                }, clinic.get('name')));
-              } else {
-                results.push(option({
-                  value: clinic.cid
-                }, clinic.get('name')));
-              }
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    clinicianViewTemplate = Backbone.View.extend({
-      el: '#desiredClinician',
-      collection: Pylon.get('clinicians'),
-      attributes: {
-        session: Pylon.get('sessionInfo')
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          var temp;
-          temp = this.$el.val();
-          if (temp) {
-            this.attributes.session.set('clinician', temp);
-          } else {
-            this.attributes.session.unset('clinician');
-          }
-          this.attributes.session.trigger('change');
-          return false;
-        }
-      },
-      render: function() {
-        var temp;
-        temp = render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results, who;
-            option("Select ---", {
-              value: ''
-            });
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              who = ref1[i];
-              n = who.get('name');
-              results.push(option({
-                value: who.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this));
-        this.$el.html(temp);
-        return this;
-      }
-    });
-    clientViewTemplate = Backbone.View.extend({
-      el: '#desiredClient',
-      collection: Pylon.get('clients'),
-      attributes: {
-        session: Pylon.get('sessionInfo')
-      },
-      initialize: function() {
-        return this.listenTo(this.collection, 'change', this.render);
-      },
-      events: {
-        'change': function() {
-          if (this.$el.val()) {
-            this.attributes.session.set('client', this.$el.val());
-          } else {
-            this.attributes.session.unset('client');
-          }
-          this.attributes.session.trigger('change');
-          return false;
-        }
-      },
-      render: function() {
-        this.$el.html(render((function(_this) {
-          return function() {
-            var i, len, n, ref1, results;
-            option("Select ---", {
-              value: ''
-            });
-            ref1 = _this.collection.models;
-            results = [];
-            for (i = 0, len = ref1.length; i < len; i++) {
-              p = ref1[i];
-              n = p.get('name');
-              results.push(option({
-                value: p.get('_id')
-              }, n.first + ' ' + n.last));
-            }
-            return results;
-          };
-        })(this)));
-        return this;
-      }
-    });
-    doneViewTemplate = Backbone.View.extend({
-      el: '#done',
-      model: Pylon.get('sessionInfo'),
-      initialize: function() {
-        this.listenTo(this.model, 'change', this.render);
-        return this;
-      },
-      events: {
-        'click': function() {
-          Pylon.trigger('adminDone');
-          return false;
-        }
-      },
-      render: function() {
-        var ref1;
-        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
-          this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
-          this.$el.text("Done");
-          this.$el.show().fadeTo(500, 1);
-        } else {
-          this.$el.removeClass('button-primary').addClass('disabled').attr('disabled');
-          this.$el.show().fadeTo(100, 0.25);
-        }
-        return this;
-      }
-    });
-    this.doneView = new doneViewTemplate;
-    this.clientView = new clientViewTemplate;
-    this.clinicView = new clinicViewTemplate;
-    this.clinicianView = new clinicianViewTemplate;
-    Pylon.get('clinics').trigger('change');
-  };
-
-  netView.prototype.adminContents = function() {
-    return render(function() {
-      return div('#adminForm', function() {
-        hr();
-        return form(function() {
-          div('.row', function() {
-            return div('.five.columns', function() {
-              label('Clinic');
-              return select('#desiredClinic.u-full-width', 'Clinic', '');
-            });
-          });
-          div('.row', function() {
-            div('.four.columns', function() {
-              label({
-                "for": 'desiredClinician'
-              }, 'Clinician');
-              select('#desiredClinician.u-full-width');
-              br();
-              label({
-                "for": "password"
-              }, "Password");
-              return input("#password", {
-                type: 'password'
-              });
-            });
-            return div('.four.columns', function() {
-              label({
-                "for": 'desiredClient'
-              }, 'Client');
-              return select('#desiredClient.u-full-width');
-            });
-          });
-          return div('.row', function() {
-            div('.nine.columns', function() {
-              return raw("&nbsp;");
-            });
-            return button('#done.three.columns', {
-              disabled: true
-            }, "Done");
-          });
-        });
-      });
-    });
-  };
-
-  netView.prototype.wireAdmin = function() {
-    var model;
-    model = Pylon.get('sessionInfo');
-    $('#password').keypress((function(_this) {
-      return function(node) {
-        var ref1;
-        if (node.keyCode === 13 && !node.shiftKey) {
-          node.preventDefault();
-          if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-            model.set('password', $('#password').val());
-            return false;
-          }
-        }
-      };
-    })(this)).on('blur', (function(_this) {
-      return function(node) {
-        var ref1;
-        if ((ref1 = $('#password')) != null ? ref1.val : void 0) {
-          model.set('password', $('#password').val());
-          return false;
-        }
-      };
-    })(this));
-  };
-
-  return netView;
-
-})();
-
-exports.netView = new netView;
-
-
-
-},{"backbone":14,"jquery":16,"teacup":18}],7:[function(require,module,exports){
+},{"underscore":14}],6:[function(require,module,exports){
 var $, Backbone, Pylon, _, dumpLocal, eventModelLoader, localStorage, uploader;
 
 $ = require('jquery');
@@ -1826,7 +1485,7 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":14,"jquery":16,"underscore":15}],8:[function(require,module,exports){
+},{"./console":3,"backbone":13,"jquery":15,"underscore":14}],7:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -1882,7 +1541,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/console":3,"../lib/upload.coffee":7,"backbone":14,"underscore":15}],9:[function(require,module,exports){
+},{"../lib/console":3,"../lib/upload.coffee":6,"backbone":13,"underscore":14}],8:[function(require,module,exports){
 var $, Seen, _, pipeline;
 
 Seen = require('seen-js');
@@ -2188,12 +1847,12 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"jquery":16,"seen-js":17,"underscore":15}],10:[function(require,module,exports){
+},{"jquery":15,"seen-js":16,"underscore":14}],9:[function(require,module,exports){
 module.exports = '2.0.0-pre';
 
 
 
-},{}],11:[function(require,module,exports){
+},{}],10:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2505,7 +2164,7 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":14,"jquery":16,"teacup":18}],12:[function(require,module,exports){
+},{"backbone":13,"jquery":15,"teacup":17}],11:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
   slice = [].slice;
 
@@ -2585,6 +2244,7 @@ exports.uploadView = new uploadViewTemplate;
 countDownViewTemplate = Backbone.View.extend({
   el: "#count-down",
   initialize: function() {
+    this.keepAlive = true;
     this.render(-1);
     Pylon.on('recordCountDown:start', (function(_this) {
       return function(time) {
@@ -2595,6 +2255,7 @@ countDownViewTemplate = Backbone.View.extend({
     Pylon.on('stopCountDown:start', (function(_this) {
       return function(time) {
         _this.response = 'stopCountDown:over';
+        _this.keepAlive = false;
         return _this.render(time);
       };
     })(this));
@@ -2632,7 +2293,7 @@ countDownViewTemplate = Backbone.View.extend({
           results = [];
           for (i = 0, len = mileStones.length; i < len; i++) {
             btn = mileStones[i];
-            results.push(tea.button('.primary', {
+            results.push(tea.button('.primary.p1', {
               onClick: "Pylon.trigger('systemEvent','" + btn + "')"
             }, btn));
           }
@@ -2641,7 +2302,10 @@ countDownViewTemplate = Backbone.View.extend({
       };
     })(this)));
     if (t < 0 && sessionID) {
-      this.$el.removeClass('active');
+      if (!keepAlive) {
+        this.$el.removeClass('active');
+      }
+      Pylon.trigger('systemEvent', "Timer! " + this.response);
       Pylon.trigger(this.response);
     } else {
       if (sessionID) {
@@ -2661,7 +2325,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":14,"jquery":16,"teacup":18}],13:[function(require,module,exports){
+},{"backbone":13,"jquery":15,"teacup":17}],12:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3121,7 +2785,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":11,"./modalViews.coffee":12,"backbone":14,"jquery":16,"teacup":18}],14:[function(require,module,exports){
+},{"./adminView.coffee":10,"./modalViews.coffee":11,"backbone":13,"jquery":15,"teacup":17}],13:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5045,7 +4709,7 @@ exports.Pages = Pages;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":16,"underscore":15}],15:[function(require,module,exports){
+},{"jquery":15,"underscore":14}],14:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6595,7 +6259,7 @@ exports.Pages = Pages;
   }
 }.call(this));
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -16671,7 +16335,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],17:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 /** seen.js v0.2.7 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 
 (function(){
@@ -21269,7 +20933,7 @@ seen.Simplex3D = (function() {
 })();
 
 })(this);
-},{}],18:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,

@@ -51,12 +51,14 @@ exports.uploadView = new uploadViewTemplate
 countDownViewTemplate = Backbone.View.extend
     el: "#count-down"
     initialize: ()->
+      @keepAlive = true
       @render -1
       Pylon.on 'recordCountDown:start', (time)=>
         @response = 'recordCountDown:over'
         @render time
       Pylon.on 'stopCountDown:start', (time)=>
         @response = 'stopCountDown:over'
+        @keepAlive = false
         @render time
       Pylon.on 'countDown:continue', (time)=>
         @render time
@@ -79,11 +81,13 @@ countDownViewTemplate = Backbone.View.extend
         if theTest
           mileStones = theTest.get('mileStones')?.split ','
           for btn in mileStones
-            tea.button '.primary',
+            tea.button '.primary.p1',
               {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
               btn
       if t<0 && sessionID
-        @$el.removeClass('active')
+        if !keepAlive
+          @$el.removeClass('active')
+        Pylon.trigger 'systemEvent', "Timer! "+@response
         Pylon.trigger(@response)
       else
         if sessionID
