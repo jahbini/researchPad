@@ -85,7 +85,7 @@ countDownViewTemplate = Backbone.View.extend
               {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
               btn
       if t<0 && sessionID
-        if !keepAlive
+        if !@keepAlive
           @$el.removeClass('active')
         Pylon.trigger 'systemEvent', "Timer! "+@response
         Pylon.trigger(@response)
