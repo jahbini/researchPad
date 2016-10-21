@@ -125,7 +125,8 @@ class adminView
         return @
       events:
         'click':  ->
-          Pylon.trigger('adminDone')
+          Pylon.trigger 'adminDone'
+          Pylon.trigger 'renderTest'
           return false
       render: ->
         if (@model.get 'clinic') && (@model.get 'clinician') &&

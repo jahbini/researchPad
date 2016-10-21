@@ -18,32 +18,32 @@ tea = new Teacup.Teacup
 
 #upload view template is now non-functional -- noop for initialize,render
 uploadViewTemplate = Backbone.View.extend
-    el: "#upload-report"
+    el: "#protocol-report"
     initialize: ()->
-      return
-      @render()
-      Pylon.on 'upload:no-complete', (a)=>
-        @render a
+      Pylon.on 'recordCountDown:over', ()=>
         @$el.addClass 'active'
+        @render()
 
-      Pylon.on 'upload:failure', (a)=>
-        @render a
-        @$el.addClass 'active'
-
-      Pylon.on 'upload:close', (a)=>
+      Pylon.on 'stopCountDown:start', (time)=>
         @$el.removeClass 'active'
-    # the upload report success/fail
-    render: (a)->
-      return
-      a={message: '---'} if !a
+    # show panel of action buttons
+    render: ()->
       @$el.html render =>
         tag "header", ->
-          h2 "Upload Status"
+          h2 "Testing In Progress"
         tag "section", ->
-          h1 "#upload-result", a.message
-        button ".close"
-          ,onClick: "Pylon.trigger('upload:close')"
-          ,"Close"
+          h4 "#protocol-result", "record these activity events"
+        tea.hr
+        protocol= Pylon.get 'protocols'
+        theTest = protocol.findWhere
+          name: sessionInfo.get 'testID'
+        if theTest
+          mileStones = theTest.get('mileStones')?.split ','
+          tea.div ".flex", ->
+            for btn in mileStones
+              tea.button '.primary.mx1',
+                {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
+                btn
       @
 
 exports.uploadView = new uploadViewTemplate
@@ -51,14 +51,16 @@ exports.uploadView = new uploadViewTemplate
 countDownViewTemplate = Backbone.View.extend
     el: "#count-down"
     initialize: ()->
-      @keepAlive = true
       @render -1
       Pylon.on 'recordCountDown:start', (time)=>
+        @$el.addClass 'active'
+        console.log "recordCountDown Start"
         @response = 'recordCountDown:over'
         @render time
       Pylon.on 'stopCountDown:start', (time)=>
+        @$el.addClass 'active'
+        console.log "stopCountDown Start"
         @response = 'stopCountDown:over'
-        @keepAlive = false
         @render time
       Pylon.on 'countDown:continue', (time)=>
         @render time
@@ -73,20 +75,8 @@ countDownViewTemplate = Backbone.View.extend
             p "Protocol credential recieved: #{sessionID}"
           else
             p "Waiting for host credential for protocol..."
-        tea.hr
-        tea.div ".flex"
-        protocol= Pylon.get 'protocols'
-        theTest = protocol.findWhere
-          name: sessionInfo.get 'testID'
-        if theTest
-          mileStones = theTest.get('mileStones')?.split ','
-          for btn in mileStones
-            tea.button '.primary.p1',
-              {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
-              btn
       if t<0 && sessionID
-        if !@keepAlive
-          @$el.removeClass('active')
+        @$el.removeClass('active')
         Pylon.trigger 'systemEvent', "Timer! "+@response
         Pylon.trigger(@response)
       else

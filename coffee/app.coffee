@@ -242,7 +242,7 @@ enterAdmin = ->
   try
     pageGen.activateAdminPage()
   catch e
-    console.log e
+    console.log "failure in activatAdminPage",e
   return false
 
 exitAdmin = () ->

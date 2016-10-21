@@ -54,20 +54,10 @@ class Pages
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
-    # the upload report success/fail
-    div "#upload-report.modal", ->
-      tag "header", ->
-        h2 "Upload Status"
-      tag "section", ->
-        p "#upload-result", "Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis."
-      button ".one.column.close.toggleModle", "Close"
-    div "#count-down.modal", ->
-      tag "header", ->
-        h2 "Wubba Woo"
-      tag "section", ->
-        p "#downCount", "Lorem ipsum dolor so sad..."
-      button ".one.column.close.toggleModle", "Close"
-
+    # the test activity portal -- populated in modalView.coffee
+    div "#protocol-report.modal"
+    div "#count-down.modal"
+    return
 
   scanContents: renderable (pylon)->
       sensorTags = pylon.get('devices')?.models || []

@@ -693,7 +693,7 @@ enterAdmin = function() {
     pageGen.activateAdminPage();
   } catch (error) {
     e = error;
-    console.log(e);
+    console.log("failure in activatAdminPage", e);
   }
   return false;
 };
@@ -2183,6 +2183,7 @@ adminView = (function() {
       events: {
         'click': function() {
           Pylon.trigger('adminDone');
+          Pylon.trigger('renderTest');
           return false;
         }
       },
@@ -2314,46 +2315,49 @@ tea = new Teacup.Teacup;
 ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h1 = ref.h1, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
 
 uploadViewTemplate = Backbone.View.extend({
-  el: "#upload-report",
+  el: "#protocol-report",
   initialize: function() {
-    return;
-    this.render();
-    Pylon.on('upload:no-complete', (function(_this) {
-      return function(a) {
-        _this.render(a);
-        return _this.$el.addClass('active');
+    Pylon.on('recordCountDown:over', (function(_this) {
+      return function() {
+        _this.$el.addClass('active');
+        return _this.render();
       };
     })(this));
-    Pylon.on('upload:failure', (function(_this) {
-      return function(a) {
-        _this.render(a);
-        return _this.$el.addClass('active');
-      };
-    })(this));
-    return Pylon.on('upload:close', (function(_this) {
-      return function(a) {
+    return Pylon.on('stopCountDown:start', (function(_this) {
+      return function(time) {
         return _this.$el.removeClass('active');
       };
     })(this));
   },
-  render: function(a) {
-    return;
-    if (!a) {
-      a = {
-        message: '---'
-      };
-    }
+  render: function() {
     this.$el.html(render((function(_this) {
       return function() {
+        var mileStones, protocol, ref1, theTest;
         tag("header", function() {
-          return h2("Upload Status");
+          return h2("Testing In Progress");
         });
         tag("section", function() {
-          return h1("#upload-result", a.message);
+          return h4("#protocol-result", "record these activity events");
         });
-        return button(".close", {
-          onClick: "Pylon.trigger('upload:close')"
-        }, "Close");
+        tea.hr;
+        protocol = Pylon.get('protocols');
+        theTest = protocol.findWhere({
+          name: sessionInfo.get('testID')
+        });
+        if (theTest) {
+          mileStones = (ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0;
+          return tea.div(".flex", function() {
+            var btn, i, len, results;
+            results = [];
+            for (i = 0, len = mileStones.length; i < len; i++) {
+              btn = mileStones[i];
+              results.push(tea.button('.primary.mx1', {
+                onClick: "Pylon.trigger('systemEvent','" + btn + "')"
+              }, btn));
+            }
+            return results;
+          });
+        }
       };
     })(this)));
     return this;
@@ -2365,18 +2369,20 @@ exports.uploadView = new uploadViewTemplate;
 countDownViewTemplate = Backbone.View.extend({
   el: "#count-down",
   initialize: function() {
-    this.keepAlive = true;
     this.render(-1);
     Pylon.on('recordCountDown:start', (function(_this) {
       return function(time) {
+        _this.$el.addClass('active');
+        console.log("recordCountDown Start");
         _this.response = 'recordCountDown:over';
         return _this.render(time);
       };
     })(this));
     Pylon.on('stopCountDown:start', (function(_this) {
       return function(time) {
+        _this.$el.addClass('active');
+        console.log("stopCountDown Start");
         _this.response = 'stopCountDown:over';
-        _this.keepAlive = false;
         return _this.render(time);
       };
     })(this));
@@ -2391,11 +2397,10 @@ countDownViewTemplate = Backbone.View.extend({
     sessionID = Pylon.get('sessionInfo').get('_id');
     this.$el.html(render((function(_this) {
       return function() {
-        var btn, i, len, mileStones, protocol, ref1, results, theTest;
         tag("header", function() {
           return h2("Time!");
         });
-        tag("section", function() {
+        return tag("section", function() {
           h1("#downCount", "count: " + t);
           if (sessionID) {
             return p("Protocol credential recieved: " + sessionID);
@@ -2403,29 +2408,10 @@ countDownViewTemplate = Backbone.View.extend({
             return p("Waiting for host credential for protocol...");
           }
         });
-        tea.hr;
-        tea.div(".flex");
-        protocol = Pylon.get('protocols');
-        theTest = protocol.findWhere({
-          name: sessionInfo.get('testID')
-        });
-        if (theTest) {
-          mileStones = (ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0;
-          results = [];
-          for (i = 0, len = mileStones.length; i < len; i++) {
-            btn = mileStones[i];
-            results.push(tea.button('.primary.p1', {
-              onClick: "Pylon.trigger('systemEvent','" + btn + "')"
-            }, btn));
-          }
-          return results;
-        }
       };
     })(this)));
     if (t < 0 && sessionID) {
-      if (!this.keepAlive) {
-        this.$el.removeClass('active');
-      }
+      this.$el.removeClass('active');
       Pylon.trigger('systemEvent', "Timer! " + this.response);
       Pylon.trigger(this.response);
     } else {
@@ -2537,24 +2523,8 @@ Pages = (function() {
         return div('#console-log.container');
       });
     });
-    div("#upload-report.modal", function() {
-      tag("header", function() {
-        return h2("Upload Status");
-      });
-      tag("section", function() {
-        return p("#upload-result", "Lorem ipsum dolor sit amet, consectetur amis at adipisicing elit. Maiores quaerat est officia aut nam amet ipsum natus corporis adipisci cupiditate voluptas unde totam quae vel error neque odio id etas lasf reiciendis.");
-      });
-      return button(".one.column.close.toggleModle", "Close");
-    });
-    return div("#count-down.modal", function() {
-      tag("header", function() {
-        return h2("Wubba Woo");
-      });
-      tag("section", function() {
-        return p("#downCount", "Lorem ipsum dolor so sad...");
-      });
-      return button(".one.column.close.toggleModle", "Close");
-    });
+    div("#protocol-report.modal");
+    div("#count-down.modal");
   });
 
   Pages.prototype.scanContents = renderable(function(pylon) {

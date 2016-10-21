@@ -7,7 +7,7 @@
   height: auto;
   margin-left: -200px;
   margin-top: -150px;
-  background-color: #888888;
+  background-color: #70D8a8;
   padding: 25px;
   border-radius: 5px;
   z-index: 10;
@@ -28,6 +28,8 @@
   right: 0;
   margin: 0;
 }
+
+.modal button {margin-right:5px}
 
 .icon {
   display: inline-block;
