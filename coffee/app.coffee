@@ -15,6 +15,8 @@ window.Pylon = Pylon = new PylonTemplate
 
 Pylon.set 'spearCount', 5
 Pylon.set 'hostUrl', hostUrl
+# set the button MpdelView
+Pylon.set 'BV', BV = require './views/button-view.coffee'
 
 
 pages = require './views/pages.coffee'
@@ -90,7 +92,7 @@ admin = new adminData
 
 rawSession = Backbone.Model.extend {
   idAttribute: '_id'
-  url: Pylon.get('hostUrl')+'trajectory'
+  url: Pylon.get('hostUrl')+'session'
 }
 
 applicationVersion = require './version.coffee'
@@ -126,117 +128,60 @@ aButtonModel = Backbone.Model.extend
     text: '--'
     selector: 'button'
 
-buttonModelDebugOn = new aButtonModel
-  active: true
-  selector: 'debug'
-  text: "Hide Log"
-  funct: ->
-    exitDebug()
+activateNewButtons = ->
+  DebugButton = new BV 'debug'
+  DebugButton.set
+    legend: "Show Log"
+    enabled: true
 
-buttonModelDebugOff = new aButtonModel
-  active: true
-  selector: 'debug'
-  text: "Show Log"
-  funct: ->
-    enterDebug()
+  Pylon.on "systemEvent:debug:show-log",() ->
+    DebugButton.set legend: "Hide Log"
+    $('#footer').show()
+    return false
 
-buttonModelActionRecord = new aButtonModel
-  active: true
-  selector: 'action',
-  text: 'Record',
-  funct: ->
-    enterRecording()
-
-buttonModelActionStop = new aButtonModel
-  active: true
-  selector: 'action',
-  text: 'Stop',
-  funct: ->
-    enterStop()
-
-buttonModelActionDisabled = new aButtonModel
-  selector: 'action',
-  text: 'no connect',
-
-buttonModelActionRecorded = new aButtonModel
-  selector: 'action',
-  text: 'Recorded',
-
-buttonModelClear = new aButtonModel
-  active: false
-  selector: 'clear'
-  text: 'Clear'
-  funct: ()->
-    enterClear()
-
-buttonModelUpload = new aButtonModel
-  active: false
-  selector: 'upload'
-  text: 'Upload'
-  funct: ->
-    enterUpload()
-
-buttonModelCalibrating = new aButtonModel
-  active: true
-  selector: 'calibrate'
-  text: 'Stop Calib'
-  funct: ->
-    exitCalibrate()
-
-buttonModelCalibrate = new aButtonModel
-  active: true
-  selector: 'calibrate'
-  text: 'Calibrate'
-  funct: ->
-    enterCalibrate()
-
-buttonModelCalibrateOff = new aButtonModel
-  selector: 'calibrate'
-  text: 'Calibrate'
-
-buttonModelAdmin = new aButtonModel
-  active: true
-  selector: 'admin'
-  text: 'Log In'
-  funct: ->
-    enterAdmin()
-
-buttonModelAdminDisabled = new aButtonModel
-  active: false
-  selector: 'admin'
-  text: 'Log In'
-
-buttonModelAdminLogout = new aButtonModel
-  active: true
-  selector: 'admin'
-  text: 'Log out'
-  funct: ->
-    exitAdmin()
-
-buttonCollection = {
-  admin: buttonModelAdmin
-  calibrate: buttonModelCalibrateOff
-  debug: buttonModelDebugOff
-  action: buttonModelActionDisabled
-  upload: buttonModelUpload
-  clear: buttonModelClear
-  }
-
-useButton= (model) ->
-  key = model.get('selector')
-  buttonCollection[key] = model
-
-enterDebug = () ->
-  useButton  buttonModelDebugOn
-  setButtons()
-  $('#footer').show()
-  return false
-
-exitDebug = () ->
-  useButton  buttonModelDebugOff
-  setButtons()
+  Pylon.on "systemEvent:debug:hide-log", ()->
+    DebugButton.set legend: "Show Log"
+    $('#footer').hide()
+    return false
   $('#footer').hide()
-  return false
+
+  ActionButton = new BV 'admin'
+  ActionButton.set
+    legend: "Log In"
+    enabled: true
+  Pylon.on "systemEvent:admin:log-in", enterAdmin
+  Pylon.on "systemEvent:admin:log-out", exitAdmin
+
+  Pylon.on "admin:disable", ->
+    ActionButton.set 'enabled',false
+  Pylon.on "admin:enable", ->
+    ActionButton.set 'enabled',true
+
+  ClearButton = new BV 'clear',"u-full-width"
+  ClearButton.set
+    legend: "Clear"
+    enabled: false
+  Pylon.on "systemEvent:clear:clear", enterClear
+
+  UploadButton = new BV 'upload',"u-full-width"
+  UploadButton.set
+    legend: "Upload"
+    enabled: false
+  Pylon.on "systemEvent:upload:upload", enterUpload
+
+  CalibrateButton = new BV 'calibrate'
+  CalibrateButton.set
+    legend: "Calibrate"
+    enabled: true
+  Pylon.on "systemEvent:calibrate:calibrate", enterCalibrate
+  Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
+
+  ActionButton = new BV 'action'
+  ActionButton.set
+    legend: "No Connect"
+    enabled: false
+  Pylon.on "systemEvent:action:record", enterRecording
+  Pylon.on "systemEvent:action:stop", exitRecording
 
 enterAdmin = ->
   try
@@ -267,21 +212,19 @@ enterLogout = () ->
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
 
   useButton buttonModelActionDisabled
-  useButton buttonModelAdmin
-  buttonModelUpload.set('active',false)
-  buttonModelClear.set('active',false)
-  setButtons()
+  Pylon.trigger 'admin:enable'
+  (Pylon.get 'button-admin').set 'legend',"Log In"
+
+  (pylon.get 'button-upload').set 'enabled',false
+  (pylon.get 'button-clear').set 'enabled',false
   return false
 
-setButtons = () ->
-  pageGen.activateButtons buttonCollection
-  return
 # ## Section State Handlers
 
 initAll = ->
   rtemp = undefined
   # start with the logging info suppressed
-  exitDebug()
+  Pylon.trigger "systemEvent:debug:Hide Log"
   $('#uuid').html("Must connect to sensor").css('color',"violet")
   enterAdmin()
   return
@@ -289,13 +232,15 @@ initAll = ->
 ## subsection State handlers that depend on the View
 enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
-  buttonModelClear.set('active',false)
-  buttonModelUpload.set('active',false)
+  (Pylon.get 'button-clear').set 'enabled',false
+  (Pylon.get 'button-upload').set 'enabled',false
+
   $('#testID').prop("disabled",false)
   sessionInfo.set 'testID' , null
   sessionInfo.set '_id',null
-  useButton buttonModelActionRecord
-  setButtons()
+  (Pylon.get 'button-action').set
+    legend: "Record"
+    enabled: true
   return false
 
 enterConnected = ->
@@ -303,33 +248,33 @@ enterConnected = ->
   noCalibration = true #for temporarily
   console.log('enterConnected -- enable recording button')
   g=Pylon.get('globalState')
-  useButton buttonModelAdmin
+  (Pylon.get 'button-admin').set 'enabled',false
 #  eliminate Calibrate button functionality
   if noCalibration
     if g.get 'loggedIn'
-      useButton buttonModelActionRecord
+      (Pylon.get 'button-action').set
+        legend: "Record"
+        enabled: true
     else
-      useButton buttonModelAdmin
+      (Pylon.get 'button-admin').set 'enabled',false
   else
     useButton buttonModelActionDisabled
-    useButton buttonModelCalibrate
-  setButtons()
   return false
 
 enterCalibrate = ->
   console.log('enterCalibrate -- not used currently')
   calibrating = true
-  useButton  buttonModelCalibrating
-  setButtons()
+  (Pylon.get 'button-action').set
+    enabled: true
+    legend: "Record"
+  (Pylon.get 'button-calibrate').set
+    legend: "Exit Calibration"
+    enabled: false
   return false
 
 exitCalibrate = ->
   calibrating = false
-  if Pylon.get('globalState').get 'loggedIn'
-    useButton buttonModelActionRecord
-  useButton buttonModelAdmin
-  useButton buttonModelCalibrateOff
-  setButtons()
+  (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
   return false
 
 enterRecording = ->
@@ -338,7 +283,7 @@ enterRecording = ->
     pageGen.forceTest 'red'
     return false
   # sync the sessionInfo up to the server as an empty
-  # trajectory.  We need the mongo _id that the server
+  # session structure.  We need the mongo _id that the server
   # sends back
   if !sessionInfo.get '_id'
     sessionInfo.save()
@@ -359,11 +304,12 @@ Pylon.on ('recordCountDown:fail'), ->
 
 Pylon.on 'recordCountDown:over', ->
   # change the record button into the stop button
-  useButton buttonModelActionStop
-  setButtons()
+  (Pylon.get 'button-action').set
+    enabled: true
+    legend: "Stop"
   return false
 
-enterStop = ->
+exitRecording = -> # Stop Recording
   gs = Pylon.get('globalState')
   return if 'stopping' == gs.get 'recording'
   gs.set 'recording', 'stopping'
@@ -373,10 +319,11 @@ enterStop = ->
 Pylon.on 'stopCountDown:over', ->
   console.log('enter Stop -- stop recording')
   Pylon.get('globalState').set 'recording',  false
-  useButton buttonModelActionRecorded
-  buttonModelUpload.set('active',true)
-  buttonModelClear.set('active',true)
-  setButtons()
+  (Pylon.get 'button-action').set
+    legend: "Record"
+    enabled: true
+  (Pylon.get 'button-upload').set 'enabled',true
+  (Pylon.get 'button-clear').set 'enabled',true
   return false
 
 #reject multiple key-press activity.  it created bad copies of uploads
@@ -390,18 +337,6 @@ enterUpload = ->
   uploading = false
   return false
 
-# ## stopRecording
-# halt the record session -- no restart allowed
-# upload button remains enabled, clear button remains enabled
-
-stopRecording = ->
-  g=Pylon.get('globalState')
-  if g.get 'recording'
-    g.set 'recording', false
-    $('#record').prop('disabled', true).text('finished').fadeTo 200, 0.3
-  return
-
-
 Pylon.on 'connected', enterConnected
 #
 # ### Subsection State Handlers that depend on the Hardware
@@ -413,18 +348,18 @@ startBlueTooth = ->
 
 setSensor = ->
   pageGen.activateSensorPage()
-  setButtons()
   return false
 
 Pylon.on 'adminDone', ->
+  (Pylon.get 'button-admin').set 'legend',"Log Out"
   g=Pylon.get('globalState')
   g.set 'loggedIn',  true
-  useButton  buttonModelAdminLogout
-  if Pylon.get('devices').pluck('connected')
+  if Pylon.get('devices')?.pluck('connected')
       .length  > 0
-    useButton buttonModelActionRecord
+    (Pylon.get 'button-action').set
+      enabled:true
+      legend: "Record"
   pageGen.activateSensorPage()
-  setButtons()
   return false
 
 protocolsShowedErrors=1
@@ -478,7 +413,6 @@ window.$=$
 window.sessionInfo = sessionInfo
 window.Pages = pageGen
 window.Me = this
-window.Buttons = buttonCollection
 #---
 # generated by js2coffee 2.0.1
 Pylon.test = (page='test.html')->
@@ -499,9 +433,10 @@ $ ->
   document.addEventListener( "online", ()-> require './lib/net-view.coffee', false )
 
   pageGen.renderPage()
+  activateNewButtons()
   if $('#console-log')?
     window.console=console = new Console('console-log')
-    exitDebug()
+    Pylon.trigger "systemEvent:debug:Hide Log"
   initAll()
   setSensor()
   return false

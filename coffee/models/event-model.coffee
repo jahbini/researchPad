@@ -13,12 +13,12 @@ EventModel = Backbone.Model.extend {
     @flusher = setInterval _.bind(@flush,@), 10000
     sessionInfo = Pylon.get 'sessionInfo'
     @.listenTo sessionInfo, 'change:_id',()->
-      @set 'trajectory',sessionInfo.get '_id'
+      @set 'session',sessionInfo.get '_id'
     return
 
   flush: ()->
     flushTime = Date.now()
-    if (@.has 'trajectory') && (@.has 'readings')
+    if (@.has 'session') && (@.has 'readings')
       eventModelLoader _.clone @
     @.unset 'readings',''
     @.set 'captureDate',flushTime   #new time for next auto flush

@@ -379,8 +379,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":8,"./pipeline.coffee":9,"backbone":14,"jquery":16,"underscore":15}],2:[function(require,module,exports){
-var $, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, admin, adminData, adminEvent, applicationVersion, buttonCollection, buttonModelActionDisabled, buttonModelActionRecord, buttonModelActionRecorded, buttonModelActionStop, buttonModelAdmin, buttonModelAdminDisabled, buttonModelAdminLogout, buttonModelCalibrate, buttonModelCalibrateOff, buttonModelCalibrating, buttonModelClear, buttonModelDebugOff, buttonModelDebugOn, buttonModelUpload, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enterAdmin, enterCalibrate, enterClear, enterConnected, enterDebug, enterLogout, enterRecording, enterStop, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitDebug, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setButtons, setSensor, startBlueTooth, stopRecording, systemCommunicator, uploader, uploading, useButton;
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":8,"./pipeline.coffee":9,"backbone":15,"jquery":17,"underscore":16}],2:[function(require,module,exports){
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enterAdmin, enterCalibrate, enterClear, enterConnected, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader, uploading;
 
 window.$ = $ = require('jquery');
 
@@ -399,6 +399,8 @@ window.Pylon = Pylon = new PylonTemplate;
 Pylon.set('spearCount', 5);
 
 Pylon.set('hostUrl', hostUrl);
+
+Pylon.set('BV', BV = require('./views/button-view.coffee'));
 
 pages = require('./views/pages.coffee');
 
@@ -499,7 +501,7 @@ admin = new adminData({
 
 rawSession = Backbone.Model.extend({
   idAttribute: '_id',
-  url: Pylon.get('hostUrl') + 'trajectory'
+  url: Pylon.get('hostUrl') + 'session'
 });
 
 applicationVersion = require('./version.coffee');
@@ -547,144 +549,67 @@ aButtonModel = Backbone.Model.extend({
   }
 });
 
-buttonModelDebugOn = new aButtonModel({
-  active: true,
-  selector: 'debug',
-  text: "Hide Log",
-  funct: function() {
-    return exitDebug();
-  }
-});
-
-buttonModelDebugOff = new aButtonModel({
-  active: true,
-  selector: 'debug',
-  text: "Show Log",
-  funct: function() {
-    return enterDebug();
-  }
-});
-
-buttonModelActionRecord = new aButtonModel({
-  active: true,
-  selector: 'action',
-  text: 'Record',
-  funct: function() {
-    return enterRecording();
-  }
-});
-
-buttonModelActionStop = new aButtonModel({
-  active: true,
-  selector: 'action',
-  text: 'Stop',
-  funct: function() {
-    return enterStop();
-  }
-});
-
-buttonModelActionDisabled = new aButtonModel({
-  selector: 'action',
-  text: 'no connect'
-});
-
-buttonModelActionRecorded = new aButtonModel({
-  selector: 'action',
-  text: 'Recorded'
-});
-
-buttonModelClear = new aButtonModel({
-  active: false,
-  selector: 'clear',
-  text: 'Clear',
-  funct: function() {
-    return enterClear();
-  }
-});
-
-buttonModelUpload = new aButtonModel({
-  active: false,
-  selector: 'upload',
-  text: 'Upload',
-  funct: function() {
-    return enterUpload();
-  }
-});
-
-buttonModelCalibrating = new aButtonModel({
-  active: true,
-  selector: 'calibrate',
-  text: 'Stop Calib',
-  funct: function() {
-    return exitCalibrate();
-  }
-});
-
-buttonModelCalibrate = new aButtonModel({
-  active: true,
-  selector: 'calibrate',
-  text: 'Calibrate',
-  funct: function() {
-    return enterCalibrate();
-  }
-});
-
-buttonModelCalibrateOff = new aButtonModel({
-  selector: 'calibrate',
-  text: 'Calibrate'
-});
-
-buttonModelAdmin = new aButtonModel({
-  active: true,
-  selector: 'admin',
-  text: 'Log In',
-  funct: function() {
-    return enterAdmin();
-  }
-});
-
-buttonModelAdminDisabled = new aButtonModel({
-  active: false,
-  selector: 'admin',
-  text: 'Log In'
-});
-
-buttonModelAdminLogout = new aButtonModel({
-  active: true,
-  selector: 'admin',
-  text: 'Log out',
-  funct: function() {
-    return exitAdmin();
-  }
-});
-
-buttonCollection = {
-  admin: buttonModelAdmin,
-  calibrate: buttonModelCalibrateOff,
-  debug: buttonModelDebugOff,
-  action: buttonModelActionDisabled,
-  upload: buttonModelUpload,
-  clear: buttonModelClear
-};
-
-useButton = function(model) {
-  var key;
-  key = model.get('selector');
-  return buttonCollection[key] = model;
-};
-
-enterDebug = function() {
-  useButton(buttonModelDebugOn);
-  setButtons();
-  $('#footer').show();
-  return false;
-};
-
-exitDebug = function() {
-  useButton(buttonModelDebugOff);
-  setButtons();
+activateNewButtons = function() {
+  var ActionButton, CalibrateButton, ClearButton, DebugButton, UploadButton;
+  DebugButton = new BV('debug');
+  DebugButton.set({
+    legend: "Show Log",
+    enabled: true
+  });
+  Pylon.on("systemEvent:debug:show-log", function() {
+    DebugButton.set({
+      legend: "Hide Log"
+    });
+    $('#footer').show();
+    return false;
+  });
+  Pylon.on("systemEvent:debug:hide-log", function() {
+    DebugButton.set({
+      legend: "Show Log"
+    });
+    $('#footer').hide();
+    return false;
+  });
   $('#footer').hide();
-  return false;
+  ActionButton = new BV('admin');
+  ActionButton.set({
+    legend: "Log In",
+    enabled: true
+  });
+  Pylon.on("systemEvent:admin:log-in", enterAdmin);
+  Pylon.on("systemEvent:admin:log-out", exitAdmin);
+  Pylon.on("admin:disable", function() {
+    return ActionButton.set('enabled', false);
+  });
+  Pylon.on("admin:enable", function() {
+    return ActionButton.set('enabled', true);
+  });
+  ClearButton = new BV('clear', "u-full-width");
+  ClearButton.set({
+    legend: "Clear",
+    enabled: false
+  });
+  Pylon.on("systemEvent:clear:clear", enterClear);
+  UploadButton = new BV('upload', "u-full-width");
+  UploadButton.set({
+    legend: "Upload",
+    enabled: false
+  });
+  Pylon.on("systemEvent:upload:upload", enterUpload);
+  CalibrateButton = new BV('calibrate');
+  CalibrateButton.set({
+    legend: "Calibrate",
+    enabled: true
+  });
+  Pylon.on("systemEvent:calibrate:calibrate", enterCalibrate);
+  Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
+  ActionButton = new BV('action');
+  ActionButton.set({
+    legend: "No Connect",
+    enabled: false
+  });
+  Pylon.on("systemEvent:action:record", enterRecording);
+  return Pylon.on("systemEvent:action:stop", exitRecording);
 };
 
 enterAdmin = function() {
@@ -731,33 +656,31 @@ enterLogout = function() {
   $('option.forceSelect').prop('selected', true);
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
   useButton(buttonModelActionDisabled);
-  useButton(buttonModelAdmin);
-  buttonModelUpload.set('active', false);
-  buttonModelClear.set('active', false);
-  setButtons();
+  Pylon.trigger('admin:enable');
+  (Pylon.get('button-admin')).set('legend', "Log In");
+  (pylon.get('button-upload')).set('enabled', false);
+  (pylon.get('button-clear')).set('enabled', false);
   return false;
-};
-
-setButtons = function() {
-  pageGen.activateButtons(buttonCollection);
 };
 
 initAll = function() {
   var rtemp;
   rtemp = void 0;
-  exitDebug();
+  Pylon.trigger("systemEvent:debug:Hide Log");
   $('#uuid').html("Must connect to sensor").css('color', "violet");
   enterAdmin();
 };
 
 enterClear = function() {
-  buttonModelClear.set('active', false);
-  buttonModelUpload.set('active', false);
+  (Pylon.get('button-clear')).set('enabled', false);
+  (Pylon.get('button-upload')).set('enabled', false);
   $('#testID').prop("disabled", false);
   sessionInfo.set('testID', null);
   sessionInfo.set('_id', null);
-  useButton(buttonModelActionRecord);
-  setButtons();
+  (Pylon.get('button-action')).set({
+    legend: "Record",
+    enabled: true
+  });
   return false;
 };
 
@@ -766,18 +689,19 @@ enterConnected = function() {
   noCalibration = true;
   console.log('enterConnected -- enable recording button');
   g = Pylon.get('globalState');
-  useButton(buttonModelAdmin);
+  (Pylon.get('button-admin')).set('enabled', false);
   if (noCalibration) {
     if (g.get('loggedIn')) {
-      useButton(buttonModelActionRecord);
+      (Pylon.get('button-action')).set({
+        legend: "Record",
+        enabled: true
+      });
     } else {
-      useButton(buttonModelAdmin);
+      (Pylon.get('button-admin')).set('enabled', false);
     }
   } else {
     useButton(buttonModelActionDisabled);
-    useButton(buttonModelCalibrate);
   }
-  setButtons();
   return false;
 };
 
@@ -785,20 +709,21 @@ enterCalibrate = function() {
   var calibrating;
   console.log('enterCalibrate -- not used currently');
   calibrating = true;
-  useButton(buttonModelCalibrating);
-  setButtons();
+  (Pylon.get('button-action')).set({
+    enabled: true,
+    legend: "Record"
+  });
+  (Pylon.get('button-calibrate')).set({
+    legend: "Exit Calibration",
+    enabled: false
+  });
   return false;
 };
 
 exitCalibrate = function() {
   var calibrating;
   calibrating = false;
-  if (Pylon.get('globalState').get('loggedIn')) {
-    useButton(buttonModelActionRecord);
-  }
-  useButton(buttonModelAdmin);
-  useButton(buttonModelCalibrateOff);
-  setButtons();
+  (Pylon.get('button-calibrate')).set('legend', "Calibrate");
   return false;
 };
 
@@ -829,12 +754,14 @@ Pylon.on('recordCountDown:fail', function() {
 });
 
 Pylon.on('recordCountDown:over', function() {
-  useButton(buttonModelActionStop);
-  setButtons();
+  (Pylon.get('button-action')).set({
+    enabled: true,
+    legend: "Stop"
+  });
   return false;
 });
 
-enterStop = function() {
+exitRecording = function() {
   var gs;
   gs = Pylon.get('globalState');
   if ('stopping' === gs.get('recording')) {
@@ -848,10 +775,12 @@ enterStop = function() {
 Pylon.on('stopCountDown:over', function() {
   console.log('enter Stop -- stop recording');
   Pylon.get('globalState').set('recording', false);
-  useButton(buttonModelActionRecorded);
-  buttonModelUpload.set('active', true);
-  buttonModelClear.set('active', true);
-  setButtons();
+  (Pylon.get('button-action')).set({
+    legend: "Record",
+    enabled: true
+  });
+  (Pylon.get('button-upload')).set('enabled', true);
+  (Pylon.get('button-clear')).set('enabled', true);
   return false;
 });
 
@@ -868,15 +797,6 @@ enterUpload = function() {
   return false;
 };
 
-stopRecording = function() {
-  var g;
-  g = Pylon.get('globalState');
-  if (g.get('recording')) {
-    g.set('recording', false);
-    $('#record').prop('disabled', true).text('finished').fadeTo(200, 0.3);
-  }
-};
-
 Pylon.on('connected', enterConnected);
 
 startBlueTooth = function() {
@@ -889,20 +809,21 @@ startBlueTooth = function() {
 
 setSensor = function() {
   pageGen.activateSensorPage();
-  setButtons();
   return false;
 };
 
 Pylon.on('adminDone', function() {
-  var g;
+  var g, ref1;
+  (Pylon.get('button-admin')).set('legend', "Log Out");
   g = Pylon.get('globalState');
   g.set('loggedIn', true);
-  useButton(buttonModelAdminLogout);
-  if (Pylon.get('devices').pluck('connected').length > 0) {
-    useButton(buttonModelActionRecord);
+  if (((ref1 = Pylon.get('devices')) != null ? ref1.pluck('connected').length : void 0) > 0) {
+    (Pylon.get('button-action')).set({
+      enabled: true,
+      legend: "Record"
+    });
   }
   pageGen.activateSensorPage();
-  setButtons();
   return false;
 });
 
@@ -983,8 +904,6 @@ window.Pages = pageGen;
 
 window.Me = this;
 
-window.Buttons = buttonCollection;
-
 Pylon.test = function(page) {
   if (page == null) {
     page = 'test.html';
@@ -1010,9 +929,10 @@ $(function() {
     return require('./lib/net-view.coffee', false);
   });
   pageGen.renderPage();
+  activateNewButtons();
   if ($('#console-log') != null) {
     window.console = console = new Console('console-log');
-    exitDebug();
+    Pylon.trigger("systemEvent:debug:Hide Log");
   }
   initAll();
   setSensor();
@@ -1021,7 +941,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":7,"./models/event-model.coffee":8,"./version.coffee":10,"./views/adminView.coffee":11,"./views/pages.coffee":13,"backbone":14,"jquery":16,"underscore":15}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":7,"./models/event-model.coffee":8,"./version.coffee":10,"./views/adminView.coffee":11,"./views/button-view.coffee":12,"./views/pages.coffee":14,"backbone":15,"jquery":17,"underscore":16}],3:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1410,7 +1330,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":15}],6:[function(require,module,exports){
+},{"underscore":16}],6:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
   slice = [].slice;
 
@@ -1511,7 +1431,7 @@ exports.netView = new netView;
 
 
 
-},{"backbone":14,"jquery":16,"teacup":18}],7:[function(require,module,exports){
+},{"backbone":15,"jquery":17,"teacup":19}],7:[function(require,module,exports){
 var $, Backbone, Pylon, _, dumpLocal, eventModelLoader, localStorage, uploader;
 
 $ = require('jquery');
@@ -1570,10 +1490,7 @@ dumpLocal = function() {
       message: "upload queued"
     });
     currentlyUploading = false;
-    console.log(a);
-    console.log(b);
-    console.log(c);
-    console.log("Trajectory upload failure, retry in 30 seconds");
+    console.log("session/event upload failure,code " + a + ", retry in 30 seconds");
   });
   setTimeout(dumpLocal, 30000);
   return false;
@@ -1606,7 +1523,7 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":14,"jquery":16,"underscore":15}],8:[function(require,module,exports){
+},{"./console":3,"backbone":15,"jquery":17,"underscore":16}],8:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -1626,13 +1543,13 @@ EventModel = Backbone.Model.extend({
     this.flusher = setInterval(_.bind(this.flush, this), 10000);
     sessionInfo = Pylon.get('sessionInfo');
     this.listenTo(sessionInfo, 'change:_id', function() {
-      return this.set('trajectory', sessionInfo.get('_id'));
+      return this.set('session', sessionInfo.get('_id'));
     });
   },
   flush: function() {
     var flushTime;
     flushTime = Date.now();
-    if ((this.has('trajectory')) && (this.has('readings'))) {
+    if ((this.has('session')) && (this.has('readings'))) {
       eventModelLoader(_.clone(this));
     }
     this.unset('readings', '');
@@ -1662,7 +1579,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/console":3,"../lib/upload.coffee":7,"backbone":14,"underscore":15}],9:[function(require,module,exports){
+},{"../lib/console":3,"../lib/upload.coffee":7,"backbone":15,"underscore":16}],9:[function(require,module,exports){
 var $, Seen, _, pipeline;
 
 Seen = require('seen-js');
@@ -1968,7 +1885,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"jquery":16,"seen-js":17,"underscore":15}],10:[function(require,module,exports){
+},{"jquery":17,"seen-js":18,"underscore":16}],10:[function(require,module,exports){
 module.exports = '2.0.0-pre';
 
 
@@ -2286,7 +2203,97 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":14,"jquery":16,"teacup":18}],12:[function(require,module,exports){
+},{"backbone":15,"jquery":17,"teacup":19}],12:[function(require,module,exports){
+var $, Backbone, T, V;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+V = Backbone.View.extend({
+  tagName: "button",
+  initialize: function(model, name, classes1) {
+    this.model = model;
+    this.name = name;
+    this.classes = classes1;
+    this.model.on('change:legend', this.render, this);
+    this.model.on('change:enabled', this.render, this);
+    this.render();
+    return this;
+  },
+  render: function() {
+    var m, newVisual, old, visual;
+    m = this.model;
+    if (m.get('enabled')) {
+      visual = T.render((function(_this) {
+        return function() {
+          return T.button("#" + _this.name + "." + _this.classes + ".button-primary", _this.model.get('legend'));
+        };
+      })(this));
+    } else {
+      visual = T.render((function(_this) {
+        return function() {
+          return T.button("#" + _this.name + "." + _this.classes + ".disabled", {
+            disabled: "disabled"
+          }, _this.model.get('legend'));
+        };
+      })(this));
+    }
+    newVisual = $(visual);
+    if ((old = this.$el)) {
+      this.setElement(newVisual);
+      old.replaceWith(newVisual);
+    }
+    return this;
+  },
+  events: {
+    click: function() {
+      if (Pylon.get('debug')) {
+        debugger;
+      }
+      if (this.model.get('enabled')) {
+        return Pylon.trigger("systemEvent:" + this.model.get('trigger'));
+      }
+    }
+  }
+});
+
+Pylon.on("systemEvent", function(ev) {
+  if (Pylon.get('debug')) {
+    debugger;
+  }
+});
+
+module.exports = Backbone.Model.extend({
+  defaults: {
+    legend: "disabled",
+    enabled: false
+  },
+  setTrigger: function() {
+    var trigger;
+    trigger = this.get('legend');
+    return this.set('trigger', this.name + ":" + (trigger.replace(/ /g, '-').toLocaleLowerCase()));
+  },
+  initialize: function(name, classes) {
+    this.name = name;
+    if (classes == null) {
+      classes = "three.columns";
+    }
+    Pylon.set("button-" + this.name, this);
+    this.setTrigger();
+    this.on("change:legend", this.setTrigger, this);
+    this.view = new V(this, this.name, classes);
+    this.view.setElement($("#" + this.name));
+    this.on("change:enabled", this.view.render, this.view);
+    return this;
+  }
+});
+
+
+
+},{"backbone":15,"jquery":17,"teacup":19}],13:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul, uploadViewTemplate,
   slice = [].slice;
 
@@ -2432,7 +2439,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":14,"jquery":16,"teacup":18}],13:[function(require,module,exports){
+},{"backbone":15,"jquery":17,"teacup":19}],14:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2733,16 +2740,18 @@ Pages = (function() {
         try {
           model.save({
             success: function() {
-              console.log("trajectory saved");
+              console.log("session logged with host");
               console.log("now =", model);
               return console.log("attributes =", model.attributes);
             },
             failure: function(e) {
-              console.log("Trajectory save Fail");
-              return console.log("Error =", e);
+              return console.log("Session save Fail: " + e);
             },
-            error: function() {
-              return console.log("Trajectory save Fail");
+            error: function(e) {
+              if (e == null) {
+                e = "unknown";
+              }
+              return console.log("Session save Fail: " + e);
             }
           });
         } catch (error) {
@@ -2876,7 +2885,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":11,"./modalViews.coffee":12,"backbone":14,"jquery":16,"teacup":18}],14:[function(require,module,exports){
+},{"./adminView.coffee":11,"./modalViews.coffee":13,"backbone":15,"jquery":17,"teacup":19}],15:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -4800,7 +4809,7 @@ exports.Pages = Pages;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":16,"underscore":15}],15:[function(require,module,exports){
+},{"jquery":17,"underscore":16}],16:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6350,7 +6359,7 @@ exports.Pages = Pages;
   }
 }.call(this));
 
-},{}],16:[function(require,module,exports){
+},{}],17:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -16426,7 +16435,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],17:[function(require,module,exports){
+},{}],18:[function(require,module,exports){
 /** seen.js v0.2.7 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 
 (function(){
@@ -21024,7 +21033,7 @@ seen.Simplex3D = (function() {
 })();
 
 })(this);
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,

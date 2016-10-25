@@ -50,10 +50,7 @@ dumpLocal =  ->
 
       Pylon.trigger "upload:failure", message: "upload queued"
       currentlyUploading = false
-      console.log a
-      console.log b
-      console.log c
-      console.log "Trajectory upload failure, retry in 30 seconds"
+      console.log "session/event upload failure,code #{a}, retry in 30 seconds"
       return
   setTimeout dumpLocal, 30000
   return false

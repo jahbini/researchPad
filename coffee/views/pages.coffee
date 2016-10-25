@@ -190,14 +190,13 @@ class Pages
       try
         model.save
           success: ()->
-            console.log "trajectory saved"
+            console.log "session logged with host"
             console.log "now =", model
             console.log "attributes =", model.attributes
           failure: (e)->
-            console.log "Trajectory save Fail"
-            console.log "Error =",e
-          error: ()->
-            console.log "Trajectory save Fail"
+            console.log "Session save Fail: #{e}"
+          error: (e="unknown")->
+            console.log "Session save Fail: #{e}"
       catch nasty
         alert "sync fail"
         console.log model

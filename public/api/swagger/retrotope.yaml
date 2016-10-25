@@ -173,7 +173,54 @@ definitions:
         type: integer
         format: int64
 
+
+  Session:
+    description: new event orientd format for test collection
+    type: object
+    required:
+      - clinicID
+      - captureDate
+      - clinicianID
+      - testID
+    properties:
+      _id:
+        type: integer
+        format: int64
+      captureDate:
+        type: string
+        format: date-time
+      events:
+        type: array
+        items:
+          description: EventID values, valid on get only
+          type: integer
+          format: int64
+      clinicID:
+        description: Clinic Id value
+        type: integer
+        format: int64
+      clientID:
+        description: client UserID (patient)
+        type: integer
+        format: int64
+      clinicianID:
+        description: clinician UserID (operator)
+        type: integer
+        format: int64
+      testID:
+        description: protocol selected for this session, multiple protocols require multiple trajectory objects
+        type: string
+      platformUUID:
+        description: Unique identifier for iOS device used during capture
+        type: string
+      platformIosVersion:
+        type: string
+      applicationVersion:
+        type: "string"
+
   Trajectory:
+    description: old format for sensor readings
+    deprecated: Retrotope iOS app no longer creates this structure: use Session
     type: object
     required:
       - clinicID
@@ -189,12 +236,6 @@ definitions:
         format: date-time
       readings:
         type: string
-      events:
-        type: array
-        items:
-          description: EventID values, valid on get only
-          type: integer
-          format: int64
       clinicID:
         description: Clinic Id value
         type: integer
