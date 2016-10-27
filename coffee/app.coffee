@@ -13,7 +13,7 @@ PylonTemplate = Backbone.Model.extend
 
 window.Pylon = Pylon = new PylonTemplate
 
-Pylon.set 'spearCount', 5
+Pylon.set 'spearCount', 1
 Pylon.set 'hostUrl', hostUrl
 # set the button MpdelView
 Pylon.set 'BV', BV = require './views/button-view.coffee'
@@ -178,9 +178,12 @@ activateNewButtons = ->
 
   ActionButton = new BV 'action'
   ActionButton.set
-    legend: "No Connect"
+    legend: "Record"
     enabled: false
   Pylon.on "systemEvent:action:record", enterRecording
+  Pylon.on "systemEvent:action:record", (x)->
+    debugger
+    return false
   Pylon.on "systemEvent:action:stop", exitRecording
 
 enterAdmin = ->
@@ -211,9 +214,9 @@ enterLogout = () ->
   $('option.forceSelect').prop('selected',true)
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
 
-  useButton buttonModelActionDisabled
+  (Pylon.get 'button-action').set enabled: false
   Pylon.trigger 'admin:enable'
-  (Pylon.get 'button-admin').set 'legend',"Log In"
+  (Pylon.get 'button-admin').set legend:"Log In" , enabled: true
 
   (pylon.get 'button-upload').set 'enabled',false
   (pylon.get 'button-clear').set 'enabled',false
@@ -243,23 +246,6 @@ enterClear = ->
     enabled: true
   return false
 
-enterConnected = ->
-  # enable the recording button
-  noCalibration = true #for temporarily
-  console.log('enterConnected -- enable recording button')
-  g=Pylon.get('globalState')
-  (Pylon.get 'button-admin').set 'enabled',false
-#  eliminate Calibrate button functionality
-  if noCalibration
-    if g.get 'loggedIn'
-      (Pylon.get 'button-action').set
-        legend: "Record"
-        enabled: true
-    else
-      (Pylon.get 'button-admin').set 'enabled',false
-  else
-    useButton buttonModelActionDisabled
-  return false
 
 enterCalibrate = ->
   console.log('enterCalibrate -- not used currently')
@@ -288,6 +274,7 @@ enterRecording = ->
   if !sessionInfo.get '_id'
     sessionInfo.save()
     return false
+  (Pylon.get 'button-admin').set 'enabled',false
   # reject record request if we are already recording
   gs = Pylon.get('globalState')
   return if gs.get 'recording'
@@ -314,6 +301,7 @@ exitRecording = -> # Stop Recording
   return if 'stopping' == gs.get 'recording'
   gs.set 'recording', 'stopping'
   Pylon.trigger 'stopCountDown:start', 5
+  (Pylon.get 'button-admin').set 'enabled',true
   return false
 
 Pylon.on 'stopCountDown:over', ->
@@ -324,6 +312,7 @@ Pylon.on 'stopCountDown:over', ->
     enabled: true
   (Pylon.get 'button-upload').set 'enabled',true
   (Pylon.get 'button-clear').set 'enabled',true
+  (Pylon.get 'button-admin').set 'enabled',true
   return false
 
 #reject multiple key-press activity.  it created bad copies of uploads
@@ -337,7 +326,6 @@ enterUpload = ->
   uploading = false
   return false
 
-Pylon.on 'connected', enterConnected
 #
 # ### Subsection State Handlers that depend on the Hardware
 startBlueTooth = ->
@@ -350,17 +338,29 @@ setSensor = ->
   pageGen.activateSensorPage()
   return false
 
+enableRecordButtonOK= (globalState)->
+  canRecord = true
+  if ! globalState.get 'connected'
+    canRecord = false
+    (Pylon.get "button-scan").set enabled: true
+  if ! globalState.get 'loggedIn'
+    canRecord = false
+    (Pylon.get "button-admin").set enabled: true, legend: "log in"
+  (Pylon.get 'button-action').set legend: "record", enabled: true
+  return false
+
+Pylon.on 'connected', ->
+  console.log('enterConnected -- enable recording button')
+  g=Pylon.get('globalState')
+  g.set connected: true
+  enableRecordButtonOK g
+
 Pylon.on 'adminDone', ->
   (Pylon.get 'button-admin').set 'legend',"Log Out"
   g=Pylon.get('globalState')
   g.set 'loggedIn',  true
-  if Pylon.get('devices')?.pluck('connected')
-      .length  > 0
-    (Pylon.get 'button-action').set
-      enabled:true
-      legend: "Record"
   pageGen.activateSensorPage()
-  return false
+  enableRecordButtonOK g
 
 protocolsShowedErrors=1
 getProtocol = ->

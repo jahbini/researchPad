@@ -82,8 +82,7 @@ class pipeline
   # create and return a function to handle a sensor's new data
 
   readingHandler: (o) ->
-    deccamator: 5
-    modCounter: 1
+    lastDisplay = 0
     dataCondition =
       curValue: Seen.P(0, 0, 0)
       cookedValue: Seen.P(0, 0, 0)
@@ -112,11 +111,10 @@ class pipeline
           else if o.sensor == 'gyro'
             o.readings.addSample  _.toArray(data)
 
-        #only display 1/5 of the readings
-        if !--@.deccamator
-          @.modCounter = @.deccamator
-        else return
-
+        #only display 10 or so readings per second
+        if lastDisplay + 100 > Date.now()
+          return
+        lastDisplay = Date.now()
         o.device.set 'deviceStatus', 'Receiving'
         theUUID = o.device.id
         $("#status-"+theUUID).text (o.device.get 'deviceStatus')

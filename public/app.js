@@ -20,7 +20,7 @@ pView = Backbone.View.extend({
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
     Pylon.set('tagScan', false);
-    return this.listenTo(this.model, 'change respondingDevices', function(devices) {
+    return this.listenTo(this.model, 'change respondingDevices', function() {
       this.render();
       return this;
     });
@@ -325,10 +325,12 @@ TiHandler = (function() {
         widget.html(s);
         Pylon.trigger('change respondingDevices');
       });
+      console.log("Setting Time-out now", Date.now());
       setTimeout(function() {
         if ('Receiving' === d.get('deviceStatus')) {
           return;
         }
+        console.log("Device connection Time-out ", Date.now());
         sensorInstance.callErrorCallback("No Response");
         return sensorInstance.disconnectDevice();
       }, 5000);
@@ -344,17 +346,17 @@ TiHandler = (function() {
         return function(data) {
           return handlers.accel(data);
         };
-      })(this), 100);
+      })(this), 10);
       sensorInstance.magnetometerCallback((function(_this) {
         return function(data) {
           return handlers.mag(data);
         };
-      })(this), 100);
+      })(this), 10);
       sensorInstance.gyroscopeCallback((function(_this) {
         return function(data) {
           return handlers.gyro(data);
         };
-      })(this), 100, 7);
+      })(this), 10, 7);
       sensorInstance.connectToDevice(d.get('rawDevice'));
     } catch (error) {
       e = error;
@@ -380,7 +382,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":8,"./pipeline.coffee":9,"backbone":15,"jquery":17,"underscore":16}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enterAdmin, enterCalibrate, enterClear, enterConnected, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader, uploading;
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader, uploading;
 
 window.$ = $ = require('jquery');
 
@@ -396,7 +398,7 @@ PylonTemplate = Backbone.Model.extend({
 
 window.Pylon = Pylon = new PylonTemplate;
 
-Pylon.set('spearCount', 5);
+Pylon.set('spearCount', 1);
 
 Pylon.set('hostUrl', hostUrl);
 
@@ -605,10 +607,14 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
   ActionButton = new BV('action');
   ActionButton.set({
-    legend: "No Connect",
+    legend: "Record",
     enabled: false
   });
   Pylon.on("systemEvent:action:record", enterRecording);
+  Pylon.on("systemEvent:action:record", function(x) {
+    debugger;
+    return false;
+  });
   return Pylon.on("systemEvent:action:stop", exitRecording);
 };
 
@@ -655,9 +661,14 @@ enterLogout = function() {
   $('option:selected').prop('selected', false);
   $('option.forceSelect').prop('selected', true);
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-  useButton(buttonModelActionDisabled);
+  (Pylon.get('button-action')).set({
+    enabled: false
+  });
   Pylon.trigger('admin:enable');
-  (Pylon.get('button-admin')).set('legend', "Log In");
+  (Pylon.get('button-admin')).set({
+    legend: "Log In",
+    enabled: true
+  });
   (pylon.get('button-upload')).set('enabled', false);
   (pylon.get('button-clear')).set('enabled', false);
   return false;
@@ -681,27 +692,6 @@ enterClear = function() {
     legend: "Record",
     enabled: true
   });
-  return false;
-};
-
-enterConnected = function() {
-  var g, noCalibration;
-  noCalibration = true;
-  console.log('enterConnected -- enable recording button');
-  g = Pylon.get('globalState');
-  (Pylon.get('button-admin')).set('enabled', false);
-  if (noCalibration) {
-    if (g.get('loggedIn')) {
-      (Pylon.get('button-action')).set({
-        legend: "Record",
-        enabled: true
-      });
-    } else {
-      (Pylon.get('button-admin')).set('enabled', false);
-    }
-  } else {
-    useButton(buttonModelActionDisabled);
-  }
   return false;
 };
 
@@ -737,6 +727,7 @@ enterRecording = function() {
     sessionInfo.save();
     return false;
   }
+  (Pylon.get('button-admin')).set('enabled', false);
   gs = Pylon.get('globalState');
   if (gs.get('recording')) {
     return;
@@ -769,6 +760,7 @@ exitRecording = function() {
   }
   gs.set('recording', 'stopping');
   Pylon.trigger('stopCountDown:start', 5);
+  (Pylon.get('button-admin')).set('enabled', true);
   return false;
 };
 
@@ -781,6 +773,7 @@ Pylon.on('stopCountDown:over', function() {
   });
   (Pylon.get('button-upload')).set('enabled', true);
   (Pylon.get('button-clear')).set('enabled', true);
+  (Pylon.get('button-admin')).set('enabled', true);
   return false;
 });
 
@@ -797,8 +790,6 @@ enterUpload = function() {
   return false;
 };
 
-Pylon.on('connected', enterConnected);
-
 startBlueTooth = function() {
   var TiHandler, TiHandlerDef;
   TiHandlerDef = require('./TiHandler.coffee');
@@ -812,19 +803,46 @@ setSensor = function() {
   return false;
 };
 
+enableRecordButtonOK = function(globalState) {
+  var canRecord;
+  canRecord = true;
+  if (!globalState.get('connected')) {
+    canRecord = false;
+    (Pylon.get("button-scan")).set({
+      enabled: true
+    });
+  }
+  if (!globalState.get('loggedIn')) {
+    canRecord = false;
+    (Pylon.get("button-admin")).set({
+      enabled: true,
+      legend: "log in"
+    });
+  }
+  (Pylon.get('button-action')).set({
+    legend: "record",
+    enabled: true
+  });
+  return false;
+};
+
+Pylon.on('connected', function() {
+  var g;
+  console.log('enterConnected -- enable recording button');
+  g = Pylon.get('globalState');
+  g.set({
+    connected: true
+  });
+  return enableRecordButtonOK(g);
+});
+
 Pylon.on('adminDone', function() {
-  var g, ref1;
+  var g;
   (Pylon.get('button-admin')).set('legend', "Log Out");
   g = Pylon.get('globalState');
   g.set('loggedIn', true);
-  if (((ref1 = Pylon.get('devices')) != null ? ref1.pluck('connected').length : void 0) > 0) {
-    (Pylon.get('button-action')).set({
-      enabled: true,
-      legend: "Record"
-    });
-  }
   pageGen.activateSensorPage();
-  return false;
+  return enableRecordButtonOK(g);
 });
 
 protocolsShowedErrors = 1;
@@ -1681,11 +1699,8 @@ pipeline = (function() {
   };
 
   pipeline.prototype.readingHandler = function(o) {
-    var dataCondition;
-    ({
-      deccamator: 5,
-      modCounter: 1
-    });
+    var dataCondition, lastDisplay;
+    lastDisplay = 0;
     dataCondition = {
       curValue: Seen.P(0, 0, 0),
       cookedValue: Seen.P(0, 0, 0),
@@ -1714,11 +1729,10 @@ pipeline = (function() {
               o.readings.addSample(_.toArray(data));
             }
           }
-          if (!--_this.deccamator) {
-            _this.modCounter = _this.deccamator;
-          } else {
+          if (lastDisplay + 100 > Date.now()) {
             return;
           }
+          lastDisplay = Date.now();
           o.device.set('deviceStatus', 'Receiving');
           theUUID = o.device.id;
           $("#status-" + theUUID).text(o.device.get('deviceStatus'));
@@ -2689,8 +2703,6 @@ Pages = (function() {
     });
   });
 
-  Pages.prototype.tagSelector = renderable(function() {});
-
   Pages.prototype.forceTest = function(color) {
     if (color == null) {
       color = 'violet';
@@ -2863,18 +2875,12 @@ Pages = (function() {
   Pages.prototype.activateAdminPage = function(buttonSpec) {
     $('#adminForm').addClass('active');
     $('#sensorPage').removeClass('active');
-    Pylon.get('adminView').inspectAdminPage();
-    if (buttonSpec != null) {
-      return this.activateButtons(buttonSpec);
-    }
+    return Pylon.get('adminView').inspectAdminPage();
   };
 
   Pages.prototype.activateSensorPage = function(buttonSpec) {
     $('#adminForm').removeClass('active');
-    $('#sensorPage').addClass('active');
-    if (buttonSpec != null) {
-      return this.activateButtons(buttonSpec);
-    }
+    return $('#sensorPage').addClass('active');
   };
 
   return Pages;

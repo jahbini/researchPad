@@ -159,8 +159,6 @@ class Pages
           button '#clear.u-full-width.disabled', 'Reset'
           label '#RightStat', for: "upload", 'Items:0'
 
-  tagSelector: renderable ()=>
-
   forceTest: (color = 'violet') =>
     $('#ProtocolSelect').text('Must Select Test').css('color',color)
     Pylon.trigger 'renderTest'
@@ -269,14 +267,10 @@ class Pages
     $('#adminForm').addClass 'active'
     $('#sensorPage').removeClass 'active'
     Pylon.get('adminView').inspectAdminPage()
-    @activateButtons buttonSpec if buttonSpec?
-
 
   activateSensorPage: (buttonSpec)->
     $('#adminForm').removeClass 'active'
     $('#sensorPage').addClass 'active'
-    @activateButtons buttonSpec if buttonSpec?
-
 
 exports.Pages = Pages
 #if window? then window.exports = Pages

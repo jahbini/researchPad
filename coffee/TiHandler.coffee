@@ -18,7 +18,7 @@ pView=Backbone.View.extend
     $('#StatusData').html 'Ready to connect'
     $('#FirmwareData').html '?'
     Pylon.set 'tagScan', false
-    @listenTo @model, 'change respondingDevices', (devices)->
+    @listenTo @model, 'change respondingDevices', ()->
       @render()
       return @
   events:
@@ -286,9 +286,10 @@ class TiHandler
         widget.html s
         Pylon.trigger('change respondingDevices')
         return
-
+      console.log "Setting Time-out now",Date.now()
       setTimeout ()->
           return if 'Receiving' == d.get 'deviceStatus'
+          console.log "Device connection Time-out ", Date.now()
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
         ,5000
@@ -305,13 +306,13 @@ class TiHandler
         handlers.mag.finalScale = 0.15
       sensorInstance.accelerometerCallback (data)=>
           handlers.accel data
-        ,100
+        ,10  # allow 10 ms response for 100 samples/second
       sensorInstance.magnetometerCallback (data)=>
           handlers.mag data
-        ,100
+        ,10
       sensorInstance.gyroscopeCallback (data)=>
           handlers.gyro data
-        ,100
+        ,10
         ,7
       sensorInstance.connectToDevice d.get('rawDevice')
     catch e
