@@ -1925,7 +1925,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":17,"seen-js":18,"underscore":16}],10:[function(require,module,exports){
-module.exports = '1.2.0';
+module.exports = '1.2.2';
 
 
 
