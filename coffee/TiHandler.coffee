@@ -10,14 +10,14 @@ $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 
-# #### View logic to watch and update the "start scanning" button and enable BLE device scan
+# View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
-  el: '#tagSelect'
+  el: '#scanDevices'
   model: Pylon
   initialize: ->
     $('#StatusData').html 'Ready to connect'
     $('#FirmwareData').html '?'
-    Pylon.set 'tagScan', false
+    Pylon.set 'scanActive', false
     @listenTo @model, 'change respondingDevices', ()->
       @render()
       return @
@@ -25,17 +25,17 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       console.log "Start Scan button activated"
-      Pylon.set 'tagScan', true
+      Pylon.set 'scanActive', true
       @render()
       setTimeout(
         ()=>
-          Pylon.set 'tagScan', false
+          Pylon.set 'scanActive', false
           @render()
           return
         ,30000)
       return
   render: ->
-      if Pylon.get 'tagScan'
+      if Pylon.get 'scanActive'
         @$el.prop "disabled",true
           .removeClass 'button-primary'
           .addClass 'button-success'
@@ -46,7 +46,7 @@ pView=Backbone.View.extend
           .addClass 'button-primary'
           .text 'Scan Devices'
       if p=Pylon.get('pageGen')
-        $('#tagScanReport').html p.scanContents(@model)
+        $('#scanActiveReport').html p.scanContents(@model)
       return
 Pylon.set 'tagViewer', new pView
 
@@ -61,7 +61,8 @@ reading = Backbone.Model.extend
 # ### sensor readings are grouped into ten-second chunks, other events just have text
 
 deviceModel = Backbone.Model.extend
-  urlRoot: Pylon.get('hostUrl')+'sensor-tag'
+  urlRoot: ->
+    Pylon.get('hostUrl')+'sensor-tag'
   idAttribute: "UUID"
   defaults:
     UUID: "00000000-0000-0000-0000-000000000000"
@@ -88,16 +89,31 @@ class TiHandler
     Pylon.trigger 'sensorScanStatus', s
     return
   sensorScanner.errorCallback (e)->
-    return if e == "SCAN_FAILED"
-    console.log "Scan Error = "+e
     # Evothings reports SCAN_FAILED when it detects a tag.  Not cool
     return if e == "SCAN_FAILED"
+    console.log "Scan Error = "+e
     $('#StatusData').css("color", "red").html e
     Pylon.trigger 'sensorScanStatus', e
     return
 
-  Pylon.on "tagScan change",  =>
-    if Pylon.get('tagScan')
+
+  queryHostDevice = (d)->
+    d.fetch
+      success: (model,response,options) ->
+        console.log "DEVICE FETCH--"+d.UUID
+        name = d.get 'assignedName'
+        if name
+          $("#assignedName-"+d.id).text name
+
+      error: (model,response,options)->
+        console.log (Pylon.get('hostUrl')+'/sensorTag')
+        console.log "sensorTag fetch error - response"
+        console.log response.statusText
+        console.log "sensorTag fetch error - model"
+        console.log model
+
+  Pylon.on "scanActive change",  =>
+    if Pylon.get('scanActive')
       sensorScanner.startScanningForDevices (device)->
         return unless sensorScanner.deviceIsSensorTag device
         pd =Pylon.get('devices')
@@ -131,18 +147,7 @@ class TiHandler
           buttonClass: 'button-primary'
           deviceStatus: '--'
         pd.push d
-        d.fetch
-          success: (model,response,options) ->
-            name = d.get 'assignedName'
-            if name
-              $("#assignedName-"+d.id).text name
-
-          error: (model,response,options)->
-            console.log (Pylon.get('hostUrl')+'/sensorTag')
-            console.log "sensorTag fetch error - response"
-            console.log response.statusText
-            console.log "sensorTag fetch error - model"
-            console.log model
+        queryHostDevice(d)
 
         Pylon.trigger('change respondingDevices')
         return
@@ -225,16 +230,24 @@ class TiHandler
     d.set 'buttonText', 'connecting'
     d.set 'role',role
     d.set 'connected', false
-  #throw away any previous reading
-    if d.has 'readings'
-      #reset twice to clean up storage
-      d.get('readings').reset [], silent: true
-      d.get('readings').reset []
-    else
-      d.set 'readings', new EventModel role, d
+
+    d.set 'readings', new EventModel role, d
     # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
+    console.log "Role of Device set, attempt connect"
+
+    askForData= (sensorInstance,delay)->
+      sensorInstance.accelerometerCallback (data)=>
+          sensorInstance.handlers.accel data
+        ,delay  # allow 10 ms response for 100 samples/second
+      sensorInstance.magnetometerCallback (data)=>
+          sensorInstance.handlers.mag data
+        ,delay
+      sensorInstance.gyroscopeCallback (data)=>
+          sensorInstance.handlers.gyro data
+        ,delay
+        ,7
 
     try
       if d.get( 'genericName').search(/BLE/) > -1
@@ -246,14 +259,18 @@ class TiHandler
       rawDevice.sensorInstance= sensorInstance
       d.set sensorInstance: sensorInstance
 
+      console.log "Device instance attributes set, attempt connect"
+
       # status handler is set -- d.get('sensorInstance').statusCallback (s)-> {something}
       sensorInstance.statusCallback (s)->
+        console.log "StatusCallback -#{s}"
         statusList = evothings.tisensortag.ble.status
         if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
           $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
           d.set fwRev: sensorInstance.getFirmwareString()
         sessionInfo = Pylon.get 'sessionInfo'
         sessionInfo.set role+'sensorUUID', d.id
+        queryHostDevice d
         console.log "sensor status report: " +s + ' '+d.id
 
         if statusList.SENSORTAG_ONLINE == s
@@ -264,8 +281,19 @@ class TiHandler
           d.set 'deviceStatus', 'Listening'
           s= d.get 'buttonText'
           $('#status-'+uuid).html s
-          $('#'+role+'Nick').text d.get("nickname")
-          $('#'+role+'uuid').text (d.get('assignedName') || d.id)
+          newID = sensorInstance.softwareVersion
+          if newID != "N.A."  # do we have a new tag
+            $('#'+role+'Nick').text newID
+            $('#'+role+'uuid').text sensorInstance.serialNumber if sensorInstance.serialNumber
+            newID = "#{newID}-#{sensorInstance.serialNumber}"
+            sessionInfo.set role+'sensorUUID', newID
+            d.set UUID: newID
+            queryHostDevice d
+            # raise sample data rate to 10ms per sample
+            askForData sensorInstance, 10
+          else
+            $('#'+role+'Nick').text d.get("nickname")
+            $('#'+role+'uuid').text (d.get('assignedName') || d.id)
           Pylon.trigger('change respondingDevices')
         return
 
@@ -299,22 +327,16 @@ class TiHandler
       d.set 'getAccelerometerValues', sensorInstance.getAccelerometerValues
       d.set 'getGyroscopeValues', sensorInstance.getGyroscopeValues
 
+      console.log "evothings sensor callbacks registered, attempt connect"
       # and plug our data handlers into the evothings scheme
-      handlers= @createVisualChain d
-      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
-        handlers.accel.finalScale = 2
-        handlers.mag.finalScale = 0.15
-      sensorInstance.accelerometerCallback (data)=>
-          handlers.accel data
-        ,10  # allow 10 ms response for 100 samples/second
-      sensorInstance.magnetometerCallback (data)=>
-          handlers.mag data
-        ,10
-      sensorInstance.gyroscopeCallback (data)=>
-          handlers.gyro data
-        ,10
-        ,7
+      sensorInstance.handlers= @createVisualChain d
       sensorInstance.connectToDevice d.get('rawDevice')
+      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
+        sensorInstance.handlers.accel.finalScale = 2
+        sensorInstance.handlers.mag.finalScale = 0.15
+      #start off with data rate of 100ms per sample
+      askForData sensorInstance, 100
+
     catch e
       alert('Error in attachSensor -- check LOG')
       console.log "error in attachSensor"

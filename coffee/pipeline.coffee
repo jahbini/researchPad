@@ -106,13 +106,17 @@ class pipeline
         # record the data from all three channels of old sensor
         # New sensor data is identical for all channels, and only needs one
         if Pylon.get('globalState').get 'recording'
+          try
+            o.device.attributes.numReadings += 1
+          catch
+            alert "device numReadings fail"
           if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
             o.readings.addSample  _.toArray(data)
           else if o.sensor == 'gyro'
             o.readings.addSample  _.toArray(data)
 
         #only display 10 or so readings per second
-        if lastDisplay + 100 > Date.now()
+        if lastDisplay + 90 > Date.now()
           return
         lastDisplay = Date.now()
         o.device.set 'deviceStatus', 'Receiving'

@@ -50,7 +50,7 @@ class Pages
         div '#platformIosVersion.two.columns', ->
           raw '&nbsp;'
       raw contents1()
-      div "#tagScanReport"
+      div "#scanActiveReport"
       div '#footer','style="display:none;"', ->
         hr()
         div '#console-log.container'
@@ -147,7 +147,7 @@ class Pages
         button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
-          button '#tagSelect.u-full-width.button-primary', 'Scan Devices'
+          button '#scanDevices.u-full-width.button-primary', 'Scan Devices'
           label '#StatusData',for: "upload", 'No connection'
         div '.three.columns', ->
           label '#ProtocolSelect', for: "testID", 'Which Test?'
@@ -232,32 +232,35 @@ class Pages
 
     Pylon.on 'change:Right', ()=>
       dev = Pylon.get 'Right'
-      readings = dev.get 'readings'
       console.log "activating Right"
+      if old = Pylon.get 'RightView'
+        old.clearTimer()
       statusRightViewTemplate = Backbone.View.extend
-        collection: readings
+        model: dev
         el: "#RightStat"
+        clearTimer: ->
+          clearInterval @timeScanner
         initialize: ->
-          console.log "Creation of readings (collection) for Right"
-          @listenTo @collection, 'change', @render
-          @listenTo @collection, 'reset', @render
+          @timeScanner= setInterval @render.bind(@), 40
+          @model.set 'numReadings',0
         render: ->
-          @$el.html "Items: "+@collection.length
+          @$el.html "Items: "+ @model.get 'numReadings'
       Pylon.set("RightView", new statusRightViewTemplate)
       return
 
     Pylon.on 'change:Left', ()=>
       dev = Pylon.get 'Left'
-      readings = dev.get 'readings'
-      console.log "Creation of readings (collection) for Left"
+      console.log "activating Left"
       statusLeftViewTemplate = Backbone.View.extend
+        model: dev
         el: "#LeftStat"
-        collection: readings
+        clearTimer: ->
+          clearInterval @timeScanner
         initialize: ->
-          @listenTo @collection, 'change', @render
-          @listenTo @collection, 'reset', @render
+          @timeScanner= setInterval @render.bind(@), 40
+          @model.set 'numReadings',0
         render: ->
-          @$el.html "Items: "+@collection.length
+          @$el.html "Items: "+ @model.get 'numReadings'
       Pylon.set("LeftView", new statusLeftViewTemplate)
       return
     Pylon.get('adminView').wireAdmin()

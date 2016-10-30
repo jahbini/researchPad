@@ -101,8 +101,8 @@ sessionInfo = new rawSession
   clinic: ''
   patient: ''
   testID: ''
-  sensorUUID: ''
-  platformUUID: ''
+  leftSensorUUID: ''
+  rightSensorUUID: ''
   platformIosVersion: ''
   applicationVersion: applicationVersion
 console.log "app Ver:", sessionInfo.get 'applicationVersion'

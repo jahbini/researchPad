@@ -38,7 +38,7 @@ dumpLocal =  ->
     .done (a,b,c)->
       Pylon.trigger "upload:complete", a
       console.log "Save Complete "+a
-      #and clear out the collection of readings
+      #and clear out the event
       localStorage.removeItem(uploadKey)
       return
     .fail (a,b,c)->

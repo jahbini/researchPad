@@ -123,6 +123,8 @@
 		instance.DEVICEINFO_SERVICE = '0000180a-0000-1000-8000-00805f9b34fb'
 		instance.FIRMWARE_DATA = '00002a26-0000-1000-8000-00805f9b34fb'
 		instance.MODELNUMBER_DATA = '00002a24-0000-1000-8000-00805f9b34fb'
+		instance.SERIAL_NUMBER = '00002a25-0000-1000-8000-00805f9b34fb'
+		instance.SOFTWARE_REV = '00002a28-0000-1000-8000-00805f9b34fb'
 
 		instance.TEMPERATURE_SERVICE = 'f000aa00-0451-4000-b000-000000000000'
 		instance.TEMPERATURE_DATA = 'f000aa01-0451-4000-b000-000000000000'
@@ -512,6 +514,8 @@
 				// Reading of model is disabled. See comment below.
 				//readModelNumber()
 				readFirmwareVersion()
+				readSerialNumber()
+				readSoftwareRev()
 			}
 
 			/*
@@ -551,6 +555,7 @@
 			}
 			*/
 
+
 			function readFirmwareVersion()
 			{
 				instance.device.readCharacteristic(
@@ -571,6 +576,38 @@
 				// Read services requested by the application.
 				readRequestedServices()
 			}
+
+
+			function readSerialNumber()
+			{
+				instance.device.readCharacteristic(
+					instance.SERIAL_NUMBER,
+					gotSerialNumber,
+					instance.errorFun)
+			}
+
+			function gotSerialNumber(data)
+			{
+				// Set firmware string.
+				var fw = evothings.ble.fromUtf8(data)
+				instance.serialNumber = fw
+			}
+
+			function readSoftwareRev()
+			{
+				instance.device.readCharacteristic(
+					instance.SOFTWARE_REV,
+					gotSoftwareVersion,
+					instance.errorFun)
+			}
+
+			function gotSoftwareVersion(data)
+			{
+				// Set firmware string.
+				var fw = evothings.ble.fromUtf8(data)
+				instance.softwareVersion = fw
+			}
+
 
 			function readRequestedServices()
 			{

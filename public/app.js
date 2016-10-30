@@ -14,12 +14,12 @@ EventModel = require('./models/event-model.coffee').EventModel;
 glib = require('./lib/glib.coffee').glib;
 
 pView = Backbone.View.extend({
-  el: '#tagSelect',
+  el: '#scanDevices',
   model: Pylon,
   initialize: function() {
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
-    Pylon.set('tagScan', false);
+    Pylon.set('scanActive', false);
     return this.listenTo(this.model, 'change respondingDevices', function() {
       this.render();
       return this;
@@ -30,24 +30,24 @@ pView = Backbone.View.extend({
   },
   changer: function() {
     console.log("Start Scan button activated");
-    Pylon.set('tagScan', true);
+    Pylon.set('scanActive', true);
     this.render();
     setTimeout((function(_this) {
       return function() {
-        Pylon.set('tagScan', false);
+        Pylon.set('scanActive', false);
         _this.render();
       };
     })(this), 30000);
   },
   render: function() {
     var p;
-    if (Pylon.get('tagScan')) {
+    if (Pylon.get('scanActive')) {
       this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
     } else {
       this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
     }
     if (p = Pylon.get('pageGen')) {
-      $('#tagScanReport').html(p.scanContents(this.model));
+      $('#scanActiveReport').html(p.scanContents(this.model));
     }
   }
 });
@@ -66,7 +66,9 @@ reading = Backbone.Model.extend({
 });
 
 deviceModel = Backbone.Model.extend({
-  urlRoot: Pylon.get('hostUrl') + 'sensor-tag',
+  urlRoot: function() {
+    return Pylon.get('hostUrl') + 'sensor-tag';
+  },
   idAttribute: "UUID",
   defaults: {
     UUID: "00000000-0000-0000-0000-000000000000"
@@ -85,7 +87,7 @@ Pylon.set('devices', new deviceCollection);
 Pipeline = require('./pipeline.coffee');
 
 TiHandler = (function() {
-  var evothings, sensorScanner;
+  var evothings, queryHostDevice, sensorScanner;
 
   evothings = window.evothings;
 
@@ -110,15 +112,32 @@ TiHandler = (function() {
       return;
     }
     console.log("Scan Error = " + e);
-    if (e === "SCAN_FAILED") {
-      return;
-    }
     $('#StatusData').css("color", "red").html(e);
     Pylon.trigger('sensorScanStatus', e);
   });
 
-  Pylon.on("tagScan change", function() {
-    if (Pylon.get('tagScan')) {
+  queryHostDevice = function(d) {
+    return d.fetch({
+      success: function(model, response, options) {
+        var name;
+        console.log("DEVICE FETCH--" + d.UUID);
+        name = d.get('assignedName');
+        if (name) {
+          return $("#assignedName-" + d.id).text(name);
+        }
+      },
+      error: function(model, response, options) {
+        console.log(Pylon.get('hostUrl') + '/sensorTag');
+        console.log("sensorTag fetch error - response");
+        console.log(response.statusText);
+        console.log("sensorTag fetch error - model");
+        return console.log(model);
+      }
+    });
+  };
+
+  Pylon.on("scanActive change", function() {
+    if (Pylon.get('scanActive')) {
       return sensorScanner.startScanningForDevices(function(device) {
         var color, d, pd, rssi, sig, uuid;
         if (!sensorScanner.deviceIsSensorTag(device)) {
@@ -156,22 +175,7 @@ TiHandler = (function() {
           deviceStatus: '--'
         });
         pd.push(d);
-        d.fetch({
-          success: function(model, response, options) {
-            var name;
-            name = d.get('assignedName');
-            if (name) {
-              return $("#assignedName-" + d.id).text(name);
-            }
-          },
-          error: function(model, response, options) {
-            console.log(Pylon.get('hostUrl') + '/sensorTag');
-            console.log("sensorTag fetch error - response");
-            console.log(response.statusText);
-            console.log("sensorTag fetch error - model");
-            return console.log(model);
-          }
-        });
+        queryHostDevice(d);
         Pylon.trigger('change respondingDevices');
       });
     } else {
@@ -240,7 +244,7 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(uuid, role) {
-    var d, e, error, gs, handlers, rawDevice, sensorInstance;
+    var askForData, d, e, error, gs, rawDevice, sensorInstance;
     if (role == null) {
       role = "Right";
     }
@@ -256,16 +260,27 @@ TiHandler = (function() {
     d.set('buttonText', 'connecting');
     d.set('role', role);
     d.set('connected', false);
-    if (d.has('readings')) {
-      d.get('readings').reset([], {
-        silent: true
-      });
-      d.get('readings').reset([]);
-    } else {
-      d.set('readings', new EventModel(role, d));
-    }
+    d.set('readings', new EventModel(role, d));
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
+    console.log("Role of Device set, attempt connect");
+    askForData = function(sensorInstance, delay) {
+      sensorInstance.accelerometerCallback((function(_this) {
+        return function(data) {
+          return sensorInstance.handlers.accel(data);
+        };
+      })(this), delay);
+      sensorInstance.magnetometerCallback((function(_this) {
+        return function(data) {
+          return sensorInstance.handlers.mag(data);
+        };
+      })(this), delay);
+      return sensorInstance.gyroscopeCallback((function(_this) {
+        return function(data) {
+          return sensorInstance.handlers.gyro(data);
+        };
+      })(this), delay, 7);
+    };
     try {
       if (d.get('genericName').search(/BLE/) > -1) {
         d.set('type', evothings.tisensortag.CC2541_BLUETOOTH_SMART);
@@ -278,8 +293,10 @@ TiHandler = (function() {
       d.set({
         sensorInstance: sensorInstance
       });
+      console.log("Device instance attributes set, attempt connect");
       sensorInstance.statusCallback(function(s) {
-        var sessionInfo, statusList;
+        var newID, sessionInfo, statusList;
+        console.log("StatusCallback -" + s);
         statusList = evothings.tisensortag.ble.status;
         if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
           $('#version-' + uuid).html('Ver. ' + sensorInstance.getFirmwareString());
@@ -289,6 +306,7 @@ TiHandler = (function() {
         }
         sessionInfo = Pylon.get('sessionInfo');
         sessionInfo.set(role + 'sensorUUID', d.id);
+        queryHostDevice(d);
         console.log("sensor status report: " + s + ' ' + d.id);
         if (statusList.SENSORTAG_ONLINE === s) {
           if (!d.get('connected')) {
@@ -300,8 +318,23 @@ TiHandler = (function() {
           d.set('deviceStatus', 'Listening');
           s = d.get('buttonText');
           $('#status-' + uuid).html(s);
-          $('#' + role + 'Nick').text(d.get("nickname"));
-          $('#' + role + 'uuid').text(d.get('assignedName') || d.id);
+          newID = sensorInstance.softwareVersion;
+          if (newID !== "N.A.") {
+            $('#' + role + 'Nick').text(newID);
+            if (sensorInstance.serialNumber) {
+              $('#' + role + 'uuid').text(sensorInstance.serialNumber);
+            }
+            newID = newID + "-" + sensorInstance.serialNumber;
+            sessionInfo.set(role + 'sensorUUID', newID);
+            d.set({
+              UUID: newID
+            });
+            queryHostDevice(d);
+            askForData(sensorInstance, 10);
+          } else {
+            $('#' + role + 'Nick').text(d.get("nickname"));
+            $('#' + role + 'uuid').text(d.get('assignedName') || d.id);
+          }
           Pylon.trigger('change respondingDevices');
         }
       });
@@ -337,27 +370,14 @@ TiHandler = (function() {
       d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
       d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
       d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
-      handlers = this.createVisualChain(d);
-      if (d.get('type' === evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
-        handlers.accel.finalScale = 2;
-        handlers.mag.finalScale = 0.15;
-      }
-      sensorInstance.accelerometerCallback((function(_this) {
-        return function(data) {
-          return handlers.accel(data);
-        };
-      })(this), 10);
-      sensorInstance.magnetometerCallback((function(_this) {
-        return function(data) {
-          return handlers.mag(data);
-        };
-      })(this), 10);
-      sensorInstance.gyroscopeCallback((function(_this) {
-        return function(data) {
-          return handlers.gyro(data);
-        };
-      })(this), 10, 7);
+      console.log("evothings sensor callbacks registered, attempt connect");
+      sensorInstance.handlers = this.createVisualChain(d);
       sensorInstance.connectToDevice(d.get('rawDevice'));
+      if (d.get('type' === evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
+        sensorInstance.handlers.accel.finalScale = 2;
+        sensorInstance.handlers.mag.finalScale = 0.15;
+      }
+      askForData(sensorInstance, 100);
     } catch (error) {
       e = error;
       alert('Error in attachSensor -- check LOG');
@@ -513,8 +533,8 @@ sessionInfo = new rawSession({
   clinic: '',
   patient: '',
   testID: '',
-  sensorUUID: '',
-  platformUUID: '',
+  leftSensorUUID: '',
+  rightSensorUUID: '',
   platformIosVersion: '',
   applicationVersion: applicationVersion
 });
@@ -1720,16 +1740,21 @@ pipeline = (function() {
     });
     return (function(_this) {
       return function(data) {
-        var error, error1, i, m, p, r, theUUID;
+        var error, error1, error2, i, m, p, r, theUUID;
         try {
           if (Pylon.get('globalState').get('recording')) {
+            try {
+              o.device.attributes.numReadings += 1;
+            } catch (error1) {
+              alert("device numReadings fail");
+            }
             if (o.device.get('type') !== evothings.tisensortag.CC2650_BLUETOOTH_SMART) {
               o.readings.addSample(_.toArray(data));
             } else if (o.sensor === 'gyro') {
               o.readings.addSample(_.toArray(data));
             }
           }
-          if (lastDisplay + 100 > Date.now()) {
+          if (lastDisplay + 90 > Date.now()) {
             return;
           }
           lastDisplay = Date.now();
@@ -1751,8 +1776,8 @@ pipeline = (function() {
           p = dataCondition.cookedValue.multiply(o.finalScale);
           m = dataCondition.dataHistory;
           o.viewer(p.x, p.y, p.z);
-        } catch (error1) {
-          error = error1;
+        } catch (error2) {
+          error = error2;
           console.log(error);
           console.log("in readinghandler");
         }
@@ -1900,7 +1925,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":17,"seen-js":18,"underscore":16}],10:[function(require,module,exports){
-module.exports = '2.0.0-pre';
+module.exports = '1.2.0';
 
 
 
@@ -2538,7 +2563,7 @@ Pages = (function() {
         });
       });
       raw(contents1());
-      div("#tagScanReport");
+      div("#scanActiveReport");
       return div('#footer', 'style="display:none;"', function() {
         hr();
         return div('#console-log.container');
@@ -2677,7 +2702,7 @@ Pages = (function() {
     });
     return div('.row', function() {
       div('.three.columns', function() {
-        button('#tagSelect.u-full-width.button-primary', 'Scan Devices');
+        button('#scanDevices.u-full-width.button-primary', 'Scan Devices');
         return label('#StatusData', {
           "for": "upload"
         }, 'No connection');
@@ -2830,20 +2855,24 @@ Pages = (function() {
     this.protocolView = new protocolViewTemplate;
     Pylon.on('change:Right', (function(_this) {
       return function() {
-        var dev, readings, statusRightViewTemplate;
+        var dev, old, statusRightViewTemplate;
         dev = Pylon.get('Right');
-        readings = dev.get('readings');
         console.log("activating Right");
+        if (old = Pylon.get('RightView')) {
+          old.clearTimer();
+        }
         statusRightViewTemplate = Backbone.View.extend({
-          collection: readings,
+          model: dev,
           el: "#RightStat",
+          clearTimer: function() {
+            return clearInterval(this.timeScanner);
+          },
           initialize: function() {
-            console.log("Creation of readings (collection) for Right");
-            this.listenTo(this.collection, 'change', this.render);
-            return this.listenTo(this.collection, 'reset', this.render);
+            this.timeScanner = setInterval(this.render.bind(this), 40);
+            return this.model.set('numReadings', 0);
           },
           render: function() {
-            return this.$el.html("Items: " + this.collection.length);
+            return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
         Pylon.set("RightView", new statusRightViewTemplate);
@@ -2851,19 +2880,21 @@ Pages = (function() {
     })(this));
     Pylon.on('change:Left', (function(_this) {
       return function() {
-        var dev, readings, statusLeftViewTemplate;
+        var dev, statusLeftViewTemplate;
         dev = Pylon.get('Left');
-        readings = dev.get('readings');
-        console.log("Creation of readings (collection) for Left");
+        console.log("activating Left");
         statusLeftViewTemplate = Backbone.View.extend({
+          model: dev,
           el: "#LeftStat",
-          collection: readings,
+          clearTimer: function() {
+            return clearInterval(this.timeScanner);
+          },
           initialize: function() {
-            this.listenTo(this.collection, 'change', this.render);
-            return this.listenTo(this.collection, 'reset', this.render);
+            this.timeScanner = setInterval(this.render.bind(this), 40);
+            return this.model.set('numReadings', 0);
           },
           render: function() {
-            return this.$el.html("Items: " + this.collection.length);
+            return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
         Pylon.set("LeftView", new statusLeftViewTemplate);
