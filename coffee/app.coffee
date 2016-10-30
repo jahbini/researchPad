@@ -171,8 +171,8 @@ activateNewButtons = ->
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
-    legend: "Calibrate"
-    enabled: true
+    legend: "--" # was Calibrate to generate the SystemEvent triggers below
+    enabled: false
   Pylon.on "systemEvent:calibrate:calibrate", enterCalibrate
   Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
 
@@ -248,6 +248,7 @@ enterClear = ->
 
 
 enterCalibrate = ->
+  return
   console.log('enterCalibrate -- not used currently')
   calibrating = true
   (Pylon.get 'button-action').set
@@ -346,7 +347,8 @@ enableRecordButtonOK= (globalState)->
   if ! globalState.get 'loggedIn'
     canRecord = false
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
-  (Pylon.get 'button-action').set legend: "record", enabled: true
+  if canRecord
+    (Pylon.get 'button-action').set legend: "record", enabled: true
   return false
 
 Pylon.on 'connected', ->
@@ -437,7 +439,7 @@ $ ->
   pageGen.renderPage()
   activateNewButtons()
   if $('#console-log')?
-    window.console=console = new Console('console-log')
+    window.console=console = new Console('console-log',this)
     Pylon.trigger "systemEvent:debug:Hide Log"
   initAll()
   setSensor()
