@@ -17,6 +17,8 @@ EventModel = Backbone.Model.extend {
     return
 
   flush: ()->
+    if @device
+      @set 'UUID', @device.id
     flushTime = Date.now()
     if (@.has 'session') && (@.has 'readings')
       eventModelLoader _.clone @

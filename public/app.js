@@ -169,6 +169,7 @@ TiHandler = (function() {
           signalStrength: rssi,
           genericName: device.name,
           UUID: uuid,
+          origUUID: uuid,
           rawDevice: device,
           buttonText: 'connect',
           buttonClass: 'button-primary',
@@ -208,7 +209,7 @@ TiHandler = (function() {
       },
       units: 'G',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      viewer: smoother.viewSensor('accel-view-' + device.id, 0.4),
+      viewer: smoother.viewSensor('accel-view-' + device.attributes.origUUID, 0.4),
       finalScale: 1
     });
     magnetometerHandler = smoother.readingHandler({
@@ -221,7 +222,7 @@ TiHandler = (function() {
         return (device.get('getMagnetometerValues'))(data);
       },
       units: '&micro;T',
-      viewer: smoother.viewSensor('magnet-view-' + device.id, 0.05),
+      viewer: smoother.viewSensor('magnet-view-' + device.attributes.origUUID, 0.05),
       finalScale: 1
     });
     gyroscopeHandler = smoother.readingHandler({
@@ -233,7 +234,7 @@ TiHandler = (function() {
       source: function(data) {
         return (device.get('getGyroscopeValues'))(data);
       },
-      viewer: smoother.viewSensor('gyro-view-' + device.id, 0.005),
+      viewer: smoother.viewSensor('gyro-view-' + device.attributes.origUUID, 0.005),
       finalScale: 1
     });
     return {
@@ -949,6 +950,10 @@ Pylon.test = function(page) {
   return window.location.assign(page);
 };
 
+Pylon.a = function() {
+  return window.location.assign('alabaster.html');
+};
+
 $(document).on('deviceready', function() {
   var ref1, ref2;
   sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
@@ -1314,7 +1319,7 @@ exports.glib = new glib;
 },{}],5:[function(require,module,exports){
 var _, loadScript, loadedScripts;
 
-loadedScripts = [];
+loadedScripts = {};
 
 _ = require('underscore');
 
@@ -1353,12 +1358,16 @@ loadScript = function(url, callback) {
   script.src = url;
   script.onload = function() {
     loadedScripts[url].status = "loaded";
-    _(loadedScripts[url].callees).each(callback("loaded"));
+    _(loadedScripts[url].callees).each(function(callback) {
+      return callback("loaded");
+    });
     return loadedScripts[url].callees = [];
   };
   script.onerror = function() {
     loadedScripts[url] = "error";
-    _(loadedScripts[url].callees).each(callback("error"));
+    _(loadedScripts[url].callees).each(function(callback) {
+      return callback("error");
+    });
     return loadedScripts[url].callees = [];
   };
   return document.head.appendChild(script);
@@ -1586,6 +1595,9 @@ EventModel = Backbone.Model.extend({
   },
   flush: function() {
     var flushTime;
+    if (this.device) {
+      this.set('UUID', this.device.id);
+    }
     flushTime = Date.now();
     if ((this.has('session')) && (this.has('readings'))) {
       eventModelLoader(_.clone(this));
@@ -1925,7 +1937,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":17,"seen-js":18,"underscore":16}],10:[function(require,module,exports){
-module.exports = '1.2.2';
+module.exports = '1.2.3';
 
 
 
@@ -2594,7 +2606,7 @@ Pages = (function() {
       results = [];
       for (i = 0, len = sensorTags.length; i < len; i++) {
         device = sensorTags[i];
-        theUUID = device.get('UUID');
+        theUUID = device.get('origUUID');
         results.push(tbody(function() {
           tr(function() {
             td(function() {

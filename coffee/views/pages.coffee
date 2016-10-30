@@ -74,7 +74,7 @@ class Pages
             th "Accelerometer"
             th "Magnetometer"
         for device in sensorTags
-          theUUID = device.get 'UUID'
+          theUUID = device.get 'origUUID'
           tbody ->
             tr ->
               td ->

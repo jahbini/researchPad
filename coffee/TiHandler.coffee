@@ -96,7 +96,7 @@ class TiHandler
     Pylon.trigger 'sensorScanStatus', e
     return
 
-
+  # send a GET request to the server to sync up this tag
   queryHostDevice = (d)->
     d.fetch
       success: (model,response,options) ->
@@ -142,6 +142,7 @@ class TiHandler
           signalStrength: rssi
           genericName: device.name
           UUID: uuid
+          origUUID: uuid
           rawDevice: device
           buttonText: 'connect'
           buttonClass: 'button-primary'
@@ -180,7 +181,7 @@ class TiHandler
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      viewer: smoother.viewSensor 'accel-view-'+device.id, 0.4
+      viewer: smoother.viewSensor 'accel-view-'+device.attributes.origUUID, 0.4
       finalScale: 1
 
     magnetometerHandler = smoother.readingHandler
@@ -195,7 +196,7 @@ class TiHandler
       source: (data)->
         (device.get 'getMagnetometerValues') data
       units: '&micro;T'
-      viewer: smoother.viewSensor 'magnet-view-'+device.id, 0.05
+      viewer: smoother.viewSensor 'magnet-view-'+device.attributes.origUUID, 0.05
       finalScale: 1
 
     gyroscopeHandler = smoother.readingHandler
@@ -209,7 +210,7 @@ class TiHandler
       ]
       source: (data)->
         (device.get 'getGyroscopeValues') data
-      viewer: smoother.viewSensor 'gyro-view-'+device.id, 0.005
+      viewer: smoother.viewSensor 'gyro-view-'+device.attributes.origUUID, 0.005
       finalScale: 1
 
     return gyro: gyroscopeHandler
