@@ -621,8 +621,8 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:upload:upload", enterUpload);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
-    legend: "Calibrate",
-    enabled: true
+    legend: "--",
+    enabled: false
   });
   Pylon.on("systemEvent:calibrate:calibrate", enterCalibrate);
   Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
@@ -718,6 +718,7 @@ enterClear = function() {
 
 enterCalibrate = function() {
   var calibrating;
+  return;
   console.log('enterCalibrate -- not used currently');
   calibrating = true;
   (Pylon.get('button-action')).set({
@@ -840,10 +841,12 @@ enableRecordButtonOK = function(globalState) {
       legend: "log in"
     });
   }
-  (Pylon.get('button-action')).set({
-    legend: "record",
-    enabled: true
-  });
+  if (canRecord) {
+    (Pylon.get('button-action')).set({
+      legend: "record",
+      enabled: true
+    });
+  }
   return false;
 };
 
@@ -974,7 +977,7 @@ $(function() {
   pageGen.renderPage();
   activateNewButtons();
   if ($('#console-log') != null) {
-    window.console = console = new Console('console-log');
+    window.console = console = new Console('console-log', this);
     Pylon.trigger("systemEvent:debug:Hide Log");
   }
   initAll();
