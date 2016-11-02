@@ -81,7 +81,7 @@ class Pages
                 name = device.get 'assignedName'
                 name  = '' unless name
                 div "#assignedName-"+theUUID, name
-                text (device.get 'nickname')
+                text (device.get 'UUID')
                 br()
                 span "#status-"+theUUID, (device.get 'deviceStatus')
                 br()

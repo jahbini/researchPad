@@ -12,7 +12,8 @@
     "seen-js": "^0.2.7",
     "teacup": "latest",
     "underscore": "^1.8.3",
-    "winston": "latest"
+    "winston": "latest",
+    "case": "~1.4.1"
   },
   "browser": {
     "underscore": "backbone/node_modules/underscore",
@@ -27,9 +28,11 @@
   },
   "scripts": {
     "clean-cordova": "rm -rf platforms/*; rm -rf plugins/*",
-    "prepare-cordova": "cordova prepare",
+    "prepare-cordova": "cordova prepare;",
+    "fix-icons": "cp -r icons/ios/AppIcon.appiconset platforms/ios/Retrotope' 'Client/Images.xcassets/",
+    "fix-splash": "cp -r image-gen/Images.xcassets/LaunchImage.launchimage platforms/ios/Retrotope' 'Client/Images.xcassets/",
     "build-xcode": "open platforms/ios/*xcode*",
-    "make-app": "npm run build && npm run prepare-cordova && npm run build-xcode",
+    "make-app": "npm run build && npm run prepare-cordova && npm run fix-splash && npm run fix-icons && npm run build-xcode",
     "build": "echo \"module.exports = '$npm_package_version'\" >coffee/version.coffee; browserify coffee/app.coffee -o public/app.js",
     "preversion": "echo '/*Retrotope App Version  \"'$npm_package_version'\" */' | tee -a public/logon.js",
     "version": "npm run build && git add -A coffee public package.json",

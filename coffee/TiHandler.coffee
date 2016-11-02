@@ -9,6 +9,7 @@ require('./lib/console')
 $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
+Case = require 'Case'
 
 # View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
@@ -286,7 +287,7 @@ class TiHandler
           if newID != "N.A."  # do we have a new tag
             $('#'+role+'Nick').text newID
             $('#'+role+'uuid').text sensorInstance.serialNumber if sensorInstance.serialNumber
-            newID = "#{newID}-#{sensorInstance.serialNumber}"
+            newID = Case.kebab "#{newID} #{sensorInstance.serialNumber}"
             sessionInfo.set role+'sensorUUID', newID
             d.set UUID: newID
             queryHostDevice d
