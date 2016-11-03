@@ -7,12 +7,11 @@ Teacup = require('teacup')
 CommoState = Backbone.Model.extend
   netState: ()->
     navigator.connection.type
-  netAbility: ()->
-    return @abiity[@netState()]
-    return
-  bleState: "Bluetooth OK!"
+  bleState: ()->
+    "Bluetooth OK"
   bleAbility: true
   initialize: ()->
+    return
     try
       Connection= navigator.connection
       @states[Connection.UNKNOWN]  = 'Unknown connection';
@@ -56,17 +55,13 @@ class netView
       el: '#net-info'
       model: commoState
       initialize: ->
-        document.addEventListener("offline", @render, false);
-        document.addEventListener("online", @render, false);
-        document.addEventListener("offline", @render, false);
-        document.addEventListener("offline", @render, false);
+        document.addEventListener "offline", @render
+        document.addEventListener "online", @render
       events:
         'change': ->
           render()
       render: ()->
         debugger
         return false
-
-
 
 exports.netView = new netView

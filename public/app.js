@@ -122,7 +122,7 @@ TiHandler = (function() {
     return d.fetch({
       success: function(model, response, options) {
         var name;
-        console.log("DEVICE FETCH--" + d.UUID);
+        console.log("DEVICE FETCH from Host--", response);
         name = d.get('assignedName');
         if (name) {
           return $("#assignedName-" + d.id).text(name);
@@ -300,18 +300,30 @@ TiHandler = (function() {
       sensorInstance.statusCallback(function(s) {
         var newID, sessionInfo, statusList;
         console.log("StatusCallback -" + s);
+        if (s === "CONNECTING") {
+          queryHostDevice(d);
+          return;
+        }
+        if (s === "CONNECTED") {
+          return;
+        }
+        if (s === "READING_DEVICE_INFO") {
+          return;
+        }
+        if (s === "READING_SERVICES") {
+          return;
+        }
         statusList = evothings.tisensortag.ble.status;
-        if (statusList.SENSORTAG_ONLINE === s || statusList.DEVICE_INFO_AVAILABLE === s) {
+        if (statusList.DEVICE_INFO_AVAILABLE === s) {
           $('#version-' + uuid).html('Ver. ' + sensorInstance.getFirmwareString());
           d.set({
             fwRev: sensorInstance.getFirmwareString()
           });
+          return;
         }
-        sessionInfo = Pylon.get('sessionInfo');
-        sessionInfo.set(role + 'sensorUUID', d.id);
-        queryHostDevice(d);
-        console.log("sensor status report: " + s + ' ' + d.id);
         if (statusList.SENSORTAG_ONLINE === s) {
+          sessionInfo = Pylon.get('sessionInfo');
+          sessionInfo.set(role + 'sensorUUID', d.id);
           if (!d.get('connected')) {
             Pylon.trigger('connected');
           }
@@ -335,6 +347,7 @@ TiHandler = (function() {
             queryHostDevice(d);
             askForData(sensorInstance, 10);
           } else {
+            askForData(sensorInstance, 100);
             $('#' + role + 'Nick').text(d.get("nickname"));
             $('#' + role + 'uuid').text(d.get('assignedName') || d.id);
           }
@@ -380,7 +393,7 @@ TiHandler = (function() {
         sensorInstance.handlers.accel.finalScale = 2;
         sensorInstance.handlers.mag.finalScale = 0.15;
       }
-      askForData(sensorInstance, 100);
+      askForData(sensorInstance, 10);
     } catch (error) {
       e = error;
       alert('Error in attachSensor -- check LOG');
@@ -557,8 +570,8 @@ EventModel = require("./models/event-model.coffee").EventModel;
 adminEvent = new EventModel("Action");
 
 Pylon.on('systemEvent', function(what) {
-  if (!what || what === "Hide log") {
-    debugger;
+  if (what == null) {
+    what = "unknown";
   }
   if (sessionInfo.id) {
     return adminEvent.addSample(what);
@@ -634,10 +647,6 @@ activateNewButtons = function() {
     enabled: false
   });
   Pylon.on("systemEvent:action:record", enterRecording);
-  Pylon.on("systemEvent:action:record", function(x) {
-    debugger;
-    return false;
-  });
   return Pylon.on("systemEvent:action:stop", exitRecording);
 };
 
@@ -784,6 +793,9 @@ exitRecording = function() {
   }
   gs.set('recording', 'stopping');
   Pylon.trigger('stopCountDown:start', 5);
+  Pylon.get('button-action').set({
+    enabled: false
+  });
   (Pylon.get('button-admin')).set('enabled', true);
   return false;
 };
@@ -963,8 +975,8 @@ $(function() {
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
-  document.addEventListener("online", function() {
-    return require('./lib/net-view.coffee', false);
+  document.addEventListener('online', function() {
+    return require('./lib/net-view.coffee');
   });
   pageGen.renderPage();
   activateNewButtons();
@@ -1386,13 +1398,13 @@ CommoState = Backbone.Model.extend({
   netState: function() {
     return navigator.connection.type;
   },
-  netAbility: function() {
-    return this.abiity[this.netState()];
+  bleState: function() {
+    return "Bluetooth OK";
   },
-  bleState: "Bluetooth OK!",
   bleAbility: true,
   initialize: function() {
     var Connection;
+    return;
     try {
       Connection = navigator.connection;
       this.states[Connection.UNKNOWN] = 'Unknown connection';
@@ -1448,10 +1460,8 @@ netView = (function() {
       el: '#net-info',
       model: commoState,
       initialize: function() {
-        document.addEventListener("offline", this.render, false);
-        document.addEventListener("online", this.render, false);
-        document.addEventListener("offline", this.render, false);
-        return document.addEventListener("offline", this.render, false);
+        document.addEventListener("offline", this.render);
+        return document.addEventListener("online", this.render);
       },
       events: {
         'change': function() {
@@ -2320,19 +2330,10 @@ V = Backbone.View.extend({
   },
   events: {
     click: function() {
-      if (Pylon.get('debug')) {
-        debugger;
-      }
       if (this.model.get('enabled')) {
         return Pylon.trigger("systemEvent:" + this.model.get('trigger'));
       }
     }
-  }
-});
-
-Pylon.on("systemEvent", function(ev) {
-  if (Pylon.get('debug')) {
-    debugger;
   }
 });
 
@@ -2901,7 +2902,7 @@ Pages = (function() {
           initialize: function() {
             this.timeScanner = setInterval(this.render.bind(this), 40);
             this.model.set('numReadings', 0);
-            return this.model.listenTo('change', this.render, this);
+            return this.listenTo(this.model, 'change', this.render);
           },
           render: function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
@@ -2924,7 +2925,7 @@ Pages = (function() {
           initialize: function() {
             this.timeScanner = setInterval(this.render.bind(this), 40);
             this.model.set('numReadings', 0);
-            return this.model.listenTo('change', this.render, this);
+            return this.listenTo(this.model, 'change', this.render);
           },
           render: function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));

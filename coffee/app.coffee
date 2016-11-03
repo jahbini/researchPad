@@ -114,9 +114,7 @@ console.log "sessionInfo created as: ", sessionInfo
 
 {EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
-Pylon.on 'systemEvent', (what)->
-  if !what || what == "Hide log"
-    debugger
+Pylon.on 'systemEvent', (what="unknown")->
   if sessionInfo.id
     adminEvent.addSample what
 
@@ -181,9 +179,6 @@ activateNewButtons = ->
     legend: "Record"
     enabled: false
   Pylon.on "systemEvent:action:record", enterRecording
-  Pylon.on "systemEvent:action:record", (x)->
-    debugger
-    return false
   Pylon.on "systemEvent:action:stop", exitRecording
 
 enterAdmin = ->
@@ -302,6 +297,7 @@ exitRecording = -> # Stop Recording
   return if 'stopping' == gs.get 'recording'
   gs.set 'recording', 'stopping'
   Pylon.trigger 'stopCountDown:start', 5
+  Pylon.get('button-action').set enabled: false
   (Pylon.get 'button-admin').set 'enabled',true
   return false
 
@@ -423,7 +419,8 @@ $ ->
   # Force a page reload if put in background to wipe the sessionInfo and other state
   document.addEventListener 'resume',()->
     window.location.reload()
-  document.addEventListener( "online", ()-> require './lib/net-view.coffee', false )
+  document.addEventListener 'online', ()->
+    require './lib/net-view.coffee'
 
   pageGen.renderPage()
   activateNewButtons()

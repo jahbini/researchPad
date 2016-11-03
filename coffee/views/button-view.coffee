@@ -53,13 +53,7 @@ V = Backbone.View.extend
     return this
   events:
     click: ->
-      if Pylon.get 'debug'
-        debugger
       Pylon.trigger "systemEvent:"+@model.get 'trigger' if @model.get 'enabled'
-
-Pylon.on "systemEvent",(ev)->
-  if Pylon.get 'debug'
-    debugger
 
 module.exports = Backbone.Model.extend
   defaults:

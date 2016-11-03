@@ -101,7 +101,7 @@ class TiHandler
   queryHostDevice = (d)->
     d.fetch
       success: (model,response,options) ->
-        console.log "DEVICE FETCH--"+d.UUID
+        console.log "DEVICE FETCH from Host--",response
         name = d.get 'assignedName'
         if name
           $("#assignedName-"+d.id).text name
@@ -266,16 +266,24 @@ class TiHandler
       # status handler is set -- d.get('sensorInstance').statusCallback (s)-> {something}
       sensorInstance.statusCallback (s)->
         console.log "StatusCallback -#{s}"
+        if s == "CONNECTING"
+          queryHostDevice d
+          return
+        if s == "CONNECTED"
+          return
+        if s == "READING_DEVICE_INFO"
+          return
+        if s == "READING_SERVICES"
+          return
         statusList = evothings.tisensortag.ble.status
-        if statusList.SENSORTAG_ONLINE== s || statusList.DEVICE_INFO_AVAILABLE == s
+        if statusList.DEVICE_INFO_AVAILABLE == s
           $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
           d.set fwRev: sensorInstance.getFirmwareString()
-        sessionInfo = Pylon.get 'sessionInfo'
-        sessionInfo.set role+'sensorUUID', d.id
-        queryHostDevice d
-        console.log "sensor status report: " +s + ' '+d.id
+          return
 
         if statusList.SENSORTAG_ONLINE == s
+          sessionInfo = Pylon.get 'sessionInfo'
+          sessionInfo.set role+'sensorUUID', d.id
           Pylon.trigger 'connected' unless d.get 'connected'
           d.set 'connected', true
           d.set 'buttonText', 'on-line'
@@ -294,6 +302,8 @@ class TiHandler
             # raise sample data rate to 10ms per sample
             askForData sensorInstance, 10
           else
+            #start off with data rate of 100ms per sample
+            askForData sensorInstance, 100
             $('#'+role+'Nick').text d.get("nickname")
             $('#'+role+'uuid').text (d.get('assignedName') || d.id)
           Pylon.trigger('change respondingDevices')
@@ -316,6 +326,7 @@ class TiHandler
         widget.html s
         Pylon.trigger('change respondingDevices')
         return
+
       console.log "Setting Time-out now",Date.now()
       setTimeout ()->
           return if 'Receiving' == d.get 'deviceStatus'
@@ -336,8 +347,7 @@ class TiHandler
       if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
         sensorInstance.handlers.accel.finalScale = 2
         sensorInstance.handlers.mag.finalScale = 0.15
-      #start off with data rate of 100ms per sample
-      askForData sensorInstance, 100
+      askForData sensorInstance, 10
 
     catch e
       alert('Error in attachSensor -- check LOG')
