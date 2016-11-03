@@ -405,7 +405,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":8,"./pipeline.coffee":9,"Case":15,"backbone":16,"jquery":18,"underscore":17}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader, uploading;
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader;
 
 window.$ = $ = require('jquery');
 
@@ -611,16 +611,16 @@ activateNewButtons = function() {
   });
   ClearButton = new BV('clear', "u-full-width");
   ClearButton.set({
-    legend: "Clear",
+    legend: "Reject",
     enabled: false
   });
-  Pylon.on("systemEvent:clear:clear", enterClear);
+  Pylon.on("systemEvent:clear:reject", enterClear);
   UploadButton = new BV('upload', "u-full-width");
   UploadButton.set({
-    legend: "Upload",
+    legend: "Accept",
     enabled: false
   });
-  Pylon.on("systemEvent:upload:upload", enterUpload);
+  Pylon.on("systemEvent:upload:accept", enterUpload);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
     legend: "--",
@@ -709,13 +709,13 @@ enterClear = function() {
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
   $('#testID').prop("disabled", false);
-  sessionInfo.set('testID', null);
+  pageGen.forceTest();
   sessionInfo.set('_id', null);
-  (Pylon.get('button-action')).set({
-    legend: "Record",
-    enabled: true
-  });
-  return false;
+  return enableRecordButtonOK();
+};
+
+enterUpload = function() {
+  return enterClear();
 };
 
 enterCalibrate = function() {
@@ -791,28 +791,11 @@ exitRecording = function() {
 Pylon.on('stopCountDown:over', function() {
   console.log('enter Stop -- stop recording');
   Pylon.get('globalState').set('recording', false);
-  (Pylon.get('button-action')).set({
-    legend: "Record",
-    enabled: true
-  });
   (Pylon.get('button-upload')).set('enabled', true);
   (Pylon.get('button-clear')).set('enabled', true);
   (Pylon.get('button-admin')).set('enabled', true);
   return false;
 });
-
-uploading = false;
-
-enterUpload = function() {
-  if (uploading) {
-    return;
-  }
-  uploading = true;
-  pageGen.forceTest();
-  enterClear();
-  uploading = false;
-  return false;
-};
 
 startBlueTooth = function() {
   var TiHandler, TiHandlerDef;
@@ -827,16 +810,27 @@ setSensor = function() {
   return false;
 };
 
-enableRecordButtonOK = function(globalState) {
-  var canRecord;
+enableRecordButtonOK = function() {
+  var canRecord, gs, ref1, ref2;
+  if ((ref1 = Pylon.get('Left')) != null) {
+    ref1.set({
+      numReadings: 0
+    });
+  }
+  if ((ref2 = Pylon.get('Right')) != null) {
+    ref2.set({
+      numReadings: 0
+    });
+  }
   canRecord = true;
-  if (!globalState.get('connected')) {
+  gs = Pylon.get('globalState');
+  if (!gs.get('connected')) {
     canRecord = false;
     (Pylon.get("button-scan")).set({
       enabled: true
     });
   }
-  if (!globalState.get('loggedIn')) {
+  if (!gs.get('loggedIn')) {
     canRecord = false;
     (Pylon.get("button-admin")).set({
       enabled: true,
@@ -853,22 +847,18 @@ enableRecordButtonOK = function(globalState) {
 };
 
 Pylon.on('connected', function() {
-  var g;
   console.log('enterConnected -- enable recording button');
-  g = Pylon.get('globalState');
-  g.set({
+  Pylon.get('globalState').set({
     connected: true
   });
-  return enableRecordButtonOK(g);
+  return enableRecordButtonOK();
 });
 
 Pylon.on('adminDone', function() {
-  var g;
   (Pylon.get('button-admin')).set('legend', "Log Out");
-  g = Pylon.get('globalState');
-  g.set('loggedIn', true);
+  Pylon.get('globalState').set('loggedIn', true);
   pageGen.activateSensorPage();
-  return enableRecordButtonOK(g);
+  return enableRecordButtonOK();
 });
 
 protocolsShowedErrors = 1;
@@ -2268,6 +2258,30 @@ $ = require('jquery');
 
 T = require('teacup');
 
+
+/*
+DebugButton = new BV 'debug'
+ * initialize with legend and enabled boolean
+ * BV sets Pylon with the attribute 'button-name'
+ *  NB. BV sets Pylon with event triggers like 'systemEvent:name:legend'
+DebugButton.set
+  legend: "Show Log"
+  enabled: true
+ * when DebugButton is pressed, the legend above generates this event
+Pylon.on "systemEvent:debug:show-log",() ->
+  DebugButton.set legend: "Hide Log"
+  $('#footer').show()
+  return false
+
+ * when DebugButton is pressed, the legend 'Hide Log' above generates this event
+Pylon.on "systemEvent:debug:hide-log", ()->
+  DebugButton.set legend: "Show Log"
+  $('#footer').hide()
+  return false
+$('#footer').hide()
+assert DebugButton == Pylon.get 'debug-button'
+ */
+
 V = Backbone.View.extend({
   tagName: "button",
   initialize: function(model, name, classes1) {
@@ -2886,7 +2900,8 @@ Pages = (function() {
           },
           initialize: function() {
             this.timeScanner = setInterval(this.render.bind(this), 40);
-            return this.model.set('numReadings', 0);
+            this.model.set('numReadings', 0);
+            return this.model.listenTo('change', this.render, this);
           },
           render: function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
@@ -2908,7 +2923,8 @@ Pages = (function() {
           },
           initialize: function() {
             this.timeScanner = setInterval(this.render.bind(this), 40);
-            return this.model.set('numReadings', 0);
+            this.model.set('numReadings', 0);
+            return this.model.listenTo('change', this.render, this);
           },
           render: function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));

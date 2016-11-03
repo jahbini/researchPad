@@ -5,6 +5,29 @@ $=require('jquery')
 T = require('teacup')
 
 # The very model of a button interface
+#usage
+###
+DebugButton = new BV 'debug'
+# initialize with legend and enabled boolean
+# BV sets Pylon with the attribute 'button-name'
+#  NB. BV sets Pylon with event triggers like 'systemEvent:name:legend'
+DebugButton.set
+  legend: "Show Log"
+  enabled: true
+# when DebugButton is pressed, the legend above generates this event
+Pylon.on "systemEvent:debug:show-log",() ->
+  DebugButton.set legend: "Hide Log"
+  $('#footer').show()
+  return false
+
+# when DebugButton is pressed, the legend 'Hide Log' above generates this event
+Pylon.on "systemEvent:debug:hide-log", ()->
+  DebugButton.set legend: "Show Log"
+  $('#footer').hide()
+  return false
+$('#footer').hide()
+assert DebugButton == Pylon.get 'debug-button'
+###
 
 V = Backbone.View.extend
   tagName: "button"

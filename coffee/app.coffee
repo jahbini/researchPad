@@ -159,15 +159,15 @@ activateNewButtons = ->
 
   ClearButton = new BV 'clear',"u-full-width"
   ClearButton.set
-    legend: "Clear"
+    legend: "Reject"
     enabled: false
-  Pylon.on "systemEvent:clear:clear", enterClear
+  Pylon.on "systemEvent:clear:reject", enterClear
 
   UploadButton = new BV 'upload',"u-full-width"
   UploadButton.set
-    legend: "Upload"
+    legend: "Accept"
     enabled: false
-  Pylon.on "systemEvent:upload:upload", enterUpload
+  Pylon.on "systemEvent:upload:accept", enterUpload
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
@@ -239,13 +239,13 @@ enterClear = ->
   (Pylon.get 'button-upload').set 'enabled',false
 
   $('#testID').prop("disabled",false)
-  sessionInfo.set 'testID' , null
+  pageGen.forceTest()
   sessionInfo.set '_id',null
-  (Pylon.get 'button-action').set
-    legend: "Record"
-    enabled: true
-  return false
+  return enableRecordButtonOK()
 
+# upload and clear keys are equivalent and only suggest failure or success
+enterUpload = ->
+  return enterClear()
 
 enterCalibrate = ->
   return
@@ -308,24 +308,11 @@ exitRecording = -> # Stop Recording
 Pylon.on 'stopCountDown:over', ->
   console.log('enter Stop -- stop recording')
   Pylon.get('globalState').set 'recording',  false
-  (Pylon.get 'button-action').set
-    legend: "Record"
-    enabled: true
   (Pylon.get 'button-upload').set 'enabled',true
   (Pylon.get 'button-clear').set 'enabled',true
   (Pylon.get 'button-admin').set 'enabled',true
   return false
 
-#reject multiple key-press activity.  it created bad copies of uploads
-uploading = false
-enterUpload = ->
-  return if uploading
-  uploading = true
-  # uploader()
-  pageGen.forceTest()
-  enterClear()
-  uploading = false
-  return false
 
 #
 # ### Subsection State Handlers that depend on the Hardware
@@ -339,12 +326,16 @@ setSensor = ->
   pageGen.activateSensorPage()
   return false
 
-enableRecordButtonOK= (globalState)->
+enableRecordButtonOK= ()->
+  #clear out any readings from an old session
+  (Pylon.get 'Left')?.set numReadings: 0
+  (Pylon.get 'Right')?.set numReadings: 0
   canRecord = true
-  if ! globalState.get 'connected'
+  gs=Pylon.get('globalState')
+  if ! gs.get 'connected'
     canRecord = false
     (Pylon.get "button-scan").set enabled: true
-  if ! globalState.get 'loggedIn'
+  if ! gs.get 'loggedIn'
     canRecord = false
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
   if canRecord
@@ -353,16 +344,14 @@ enableRecordButtonOK= (globalState)->
 
 Pylon.on 'connected', ->
   console.log('enterConnected -- enable recording button')
-  g=Pylon.get('globalState')
-  g.set connected: true
-  enableRecordButtonOK g
+  Pylon.get('globalState').set connected: true
+  return enableRecordButtonOK()
 
 Pylon.on 'adminDone', ->
   (Pylon.get 'button-admin').set 'legend',"Log Out"
-  g=Pylon.get('globalState')
-  g.set 'loggedIn',  true
+  Pylon.get('globalState').set 'loggedIn',  true
   pageGen.activateSensorPage()
-  enableRecordButtonOK g
+  return enableRecordButtonOK()
 
 protocolsShowedErrors=1
 getProtocol = ->

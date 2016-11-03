@@ -243,6 +243,7 @@ class Pages
         initialize: ->
           @timeScanner= setInterval @render.bind(@), 40
           @model.set 'numReadings',0
+          @model.listenTo 'change', @render, @
         render: ->
           @$el.html "Items: "+ @model.get 'numReadings'
       Pylon.set("RightView", new statusRightViewTemplate)
@@ -259,6 +260,7 @@ class Pages
         initialize: ->
           @timeScanner= setInterval @render.bind(@), 40
           @model.set 'numReadings',0
+          @model.listenTo 'change', @render, @
         render: ->
           @$el.html "Items: "+ @model.get 'numReadings'
       Pylon.set("LeftView", new statusLeftViewTemplate)
