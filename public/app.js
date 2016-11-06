@@ -210,7 +210,7 @@ TiHandler = (function() {
         return (device.get('getAccelerometerValues'))(data);
       },
       units: 'G',
-      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      calibrator: [smoother.calibratorSmooth],
       viewer: smoother.viewSensor('accel-view-' + device.attributes.origUUID, 0.4),
       finalScale: 1
     });
@@ -1726,7 +1726,7 @@ pipeline = (function() {
   pipeline.prototype.calibratorSmooth = function(dataCondition, calibrate, calibrating) {
     var e;
     try {
-      if (dataCondition.dataHistory.runniongSum === void 0) {
+      if (dataCondition.dataHistory.runningSum === void 0) {
         dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy();
       }
       dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
@@ -1779,6 +1779,9 @@ pipeline = (function() {
           theUUID = o.device.id;
           $("#status-" + theUUID).text(o.device.get('deviceStatus'));
           r = o.source(data);
+          if (o.sensor === 'accel') {
+            r.y = -r.y;
+          }
           p = void 0;
           m = void 0;
           r = Seen.P(r.x, r.y, r.z);
@@ -1942,7 +1945,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":18,"seen-js":19,"underscore":17}],10:[function(require,module,exports){
-module.exports = '1.2.4';
+module.exports = '1.2.5';
 
 
 

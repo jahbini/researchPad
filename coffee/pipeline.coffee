@@ -70,7 +70,7 @@ class pipeline
 
   calibratorSmooth: (dataCondition, calibrate, calibrating) ->
     try
-      if dataCondition.dataHistory.runniongSum == undefined
+      if dataCondition.dataHistory.runningSum == undefined
         dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy()
       dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy()
     catch e
@@ -123,6 +123,8 @@ class pipeline
         theUUID = o.device.id
         $("#status-"+theUUID).text (o.device.get 'deviceStatus')
         r = o.source(data)
+        if o.sensor == 'accel'   # point gravity down on screen
+          r.y = -r.y
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
         m = undefined

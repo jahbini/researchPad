@@ -179,7 +179,6 @@ class TiHandler
         (device.get 'getAccelerometerValues') data
       units: 'G'
       calibrator: [
-        smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
       viewer: smoother.viewSensor 'accel-view-'+device.attributes.origUUID, 0.4
