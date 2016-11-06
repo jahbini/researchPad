@@ -1781,9 +1781,6 @@ pipeline = (function() {
           theUUID = o.device.id;
           $("#status-" + theUUID).text(o.device.get('deviceStatus'));
           r = o.source(data);
-          if (o.sensor === 'accel') {
-            r.y = -r.y;
-          }
           p = void 0;
           m = void 0;
           r = Seen.P(r.x, r.y, r.z);
@@ -1947,7 +1944,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":18,"seen-js":19,"underscore":17}],10:[function(require,module,exports){
-module.exports = '1.2.5';
+module.exports = '1.2.6';
 
 
 

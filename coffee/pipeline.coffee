@@ -123,8 +123,6 @@ class pipeline
         theUUID = o.device.id
         $("#status-"+theUUID).text (o.device.get 'deviceStatus')
         r = o.source(data)
-        if o.sensor == 'accel'   # point gravity down on screen
-          r.y = -r.y
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
         m = undefined
