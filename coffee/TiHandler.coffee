@@ -120,9 +120,9 @@ class TiHandler
         pd =Pylon.get('devices')
         uuid = device.address
         rssi = device.rssi
-        if d=pd.get(uuid)
-          # just update the signal strength and do not trigger any changes
+        if d=pd.findWhere(origUUID: uuid)
           d.set 'SignalStrength', rssi
+          # just update the signal strength and do not trigger any changes
           sig = rssi
           if sig < -90
             color = "#800000"

@@ -148,7 +148,9 @@ TiHandler = (function() {
         pd = Pylon.get('devices');
         uuid = device.address;
         rssi = device.rssi;
-        if (d = pd.get(uuid)) {
+        if (d = pd.findWhere({
+          origUUID: uuid
+        })) {
           d.set('SignalStrength', rssi);
           sig = rssi;
           if (sig < -90) {
