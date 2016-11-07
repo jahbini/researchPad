@@ -169,9 +169,15 @@ activateNewButtons = ->
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
-    legend: "--" # was Calibrate to generate the SystemEvent triggers below
-    enabled: false
-  Pylon.on "systemEvent:calibrate:calibrate", enterCalibrate
+    legend: "BackDoor" # was Calibrate to generate the SystemEvent triggers below
+    enabled: true
+  Pylon.on "systemEvent:calibrate:backdoor", ()->
+  # reject backdoor request if no protocol is selected
+    if !sessionInfo.get 'testID'
+      pageGen.forceTest 'red'
+    Pylon.trigger 'recordCountDown:start', 5
+    console.log('enter Recording --- actively recording sensor info')
+
   Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
 
   ActionButton = new BV 'action'
@@ -232,6 +238,7 @@ enterClear = ->
   # Clear only clears the data -- does NOT disconnedt
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
+  Pylon.trigger "removeRecorderWindow"
 
   $('#testID').prop("disabled",false)
   pageGen.forceTest()

@@ -16,48 +16,35 @@ tea = new Teacup.Teacup
     ,button,p,text,span,canvas,option,select,form
     ,body,head,doctype,hr,br,password,tag} = tea.tags()
 
-#upload view template is now non-functional -- noop for initialize,render
-uploadViewTemplate = Backbone.View.extend
-    el: "#protocol-report"
-    initialize: ()->
-      Pylon.on 'recordCountDown:over', ()=>
-        @$el.addClass 'active'
-        @render()
+###
+a modal dialog that counts in the test, and then counts out the test
+count duration is five seconds - window to show count-down
+This is intended to record five seconds of padding to the actual test
+###
+#recorder
+recorderViewTemplate = Backbone.View.extend
+  el: "#recorder"
+  render: ->
 
-      Pylon.on 'stopCountDown:start', (time)=>
-        @$el.removeClass 'active'
-    # show panel of action buttons
-    render: ()->
-      @$el.html render =>
-        tag "header", ->
-          h2 "Testing In Progress"
-        tag "section", ->
-          h4 "#protocol-result", "record these activity events"
-        tea.hr
-        protocol= Pylon.get 'protocols'
-        theTest = protocol.findWhere
-          name: sessionInfo.get 'testID'
-        if theTest
-          mileStones = theTest.get('mileStones')?.split ','
-          tea.div ".flex", ->
-            for btn in mileStones
-              tea.button '.primary.mx1',
-                {onClick: "Pylon.trigger('systemEvent','#{btn}')"},
-                btn
-      @
-
-exports.uploadView = new uploadViewTemplate
+  initialize: ()->
+    Pylon.on 'recordCountDown:start', (time)=>
+      @$el.addClass 'active'
+    Pylon.on 'removeRecorderWindow', ()=>
+      @$el.removeClass('active')
+exports.recorderViewTemplate = new recorderViewTemplate
 
 countDownViewTemplate = Backbone.View.extend
     el: "#count-down"
     initialize: ()->
       @render -1
       Pylon.on 'recordCountDown:start', (time)=>
-        @$el.addClass 'active'
+        @headline = "Test in Progress"
         console.log "recordCountDown Start"
+        # this trigger will stamp an event, and enable protocol-report widget
         @response = 'recordCountDown:over'
         @render time
       Pylon.on 'stopCountDown:start', (time)=>
+        @headline = "Test Over"
         @$el.addClass 'active'
         console.log "stopCountDown Start"
         @response = 'stopCountDown:over'
@@ -67,21 +54,20 @@ countDownViewTemplate = Backbone.View.extend
     render: (t)->
       sessionID=Pylon.get('sessionInfo').get('_id')
       @$el.html render =>
-        tag "header", ->
-          h2 "Time!"
-        tag "section", ->
-          h1 "#downCount", "count: "+t
+        tag "section", =>
+          if t>0
+            h3 "#downCount", "count down: "+t
+          else
+            h3 @headline
           if sessionID
             p "Protocol credential recieved: #{sessionID}"
           else
             p "Waiting for host credential for protocol..."
-      if t<0 && sessionID
-        @$el.removeClass('active')
+      if t==0 && sessionID
         Pylon.trigger 'systemEvent', "Timer! "+@response
         Pylon.trigger(@response)
       else
         if sessionID
-          @$el.addClass('active')
           setTimeout ()->
               Pylon.trigger('countDown:continue',t-1)
             ,1000

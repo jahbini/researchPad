@@ -55,8 +55,9 @@ class Pages
         hr()
         div '#console-log.container'
     # the test activity portal -- populated in modalView.coffee
-    div "#protocol-report.modal"
-    div "#count-down.modal"
+    div "#recorder.modal",->
+      div "#count-down"
+      div "#protocol-report"
     return
 
   scanContents: renderable (pylon)->
@@ -205,7 +206,8 @@ class Pages
     bodyHtml = @theBody @topButtons , Pylon.get('adminView').adminContents
     $('body').html bodyHtml
     @wireButtons()
-    require('./modalViews.coffee')
+    require('./count-up-down.coffee')
+    require('./protocol-active.coffee')
 
     protocolViewTemplate = Backbone.View.extend
       el: '#testID'
