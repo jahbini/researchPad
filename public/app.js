@@ -638,8 +638,8 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:upload:accept", enterUpload);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
-    legend: "BackDoor",
-    enabled: true
+    legend: "--",
+    enabled: false
   });
   Pylon.on("systemEvent:calibrate:backdoor", function() {
     if (!sessionInfo.get('testID')) {

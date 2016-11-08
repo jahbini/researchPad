@@ -169,8 +169,8 @@ activateNewButtons = ->
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
-    legend: "BackDoor" # was Calibrate to generate the SystemEvent triggers below
-    enabled: true
+    legend: "--" # was Calibrate to generate the SystemEvent triggers below
+    enabled: false
   Pylon.on "systemEvent:calibrate:backdoor", ()->
   # reject backdoor request if no protocol is selected
     if !sessionInfo.get 'testID'
