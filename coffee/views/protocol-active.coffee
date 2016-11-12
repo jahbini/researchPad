@@ -28,16 +28,25 @@ ProtocolReportTemplate = Backbone.View.extend
       @goTime =0
       @stopwatch = new Stopwatch 100,true, (stopwatch)->
         $('#button-go-time').text stopwatch.toString()
+
       Pylon.on 'systemEvent:goButton:go', =>
         @stopwatch.start()
+
       Pylon.on 'recordCountDown:over', ()=>
         @$el.addClass 'active'
         @render()
+        # start with only the goButton enabled
+        @$('button').prop disabled: true
+        @$('goButton').prop disabled: false
+
+      Pylon.on 'systemEvent.goButton:go', (time)=>
+        @$('button').prop disabled: false
 
       Pylon.on 'stopCountDown:start', (time)=>
         @stopwatch.stop()
         @$el.removeClass 'active'
         @$('button').prop disabled: true
+        
     # show panel of action buttons
     render: ()->
       @$el.html render =>
@@ -51,7 +60,7 @@ ProtocolReportTemplate = Backbone.View.extend
           mileStones = theTest.get('mileStones')?.split ','
           tea.ul =>
             tea.li "#goList", =>
-              tea.button '.primary.my1',
+              tea.button '#goButton.primary.my1',
                 {onClick: "Pylon.trigger('systemEvent:goButton:go')"},
                 "Go"
               tea.span  "Total Duration"
