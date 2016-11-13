@@ -1,7 +1,7 @@
 ﻿/* http://keith-wood.name/svg.html
    SVG plotting extension for jQuery v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) December 2008.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
@@ -9,7 +9,7 @@
 $.svg.addExtension('plot', SVGPlot);
 
 /** The SVG plotting manager.
-	<p>Use the singleton instance of this class, $.svg.plot, 
+	<p>Use the singleton instance of this class, $.svg.plot,
 	to interact with the SVG plotting functionality.</p>
 	@module SVGPlot */
 function SVGPlot(wrapper) {
@@ -455,7 +455,7 @@ $.extend(SVGPlot.prototype, {
 
 /** A plot function definition.
 	@module SVGPlotFunction */
-	
+
 /** Details about each plot function.
 	<p>Created through <code>plot.addFunction()</code>.</p>
 	@param plot {SVGPlot} The owning plot.
@@ -602,7 +602,7 @@ function identity(x) {
 
 /** A plot axis definition.
 	@module SVGPlotAxis */
-	
+
 /** Details about each plot axis.
 	<p>Accessed through <code>plot.xAxis</code> or <code>plot.yAxis</code>.</p>
 	@param plot {SVGPlot} The owning plot.
@@ -665,7 +665,7 @@ $.extend(SVGPlotAxis.prototype, {
 	/** Set or retrieve the title for this axis.
 		@param title {string} The title text
 		@param [offset] {number} The distance to offset the title position.
-		@param [colour] {string} How to colour the title. 
+		@param [colour] {string} How to colour the title.
 		@param [format] {object} Formatting settings for the title.
 		@return {SVGPlotAxis|object} This axis object or title, offset, and format values (if no parameters). */
 	title: function(title, offset, colour, format) {
@@ -691,7 +691,7 @@ $.extend(SVGPlotAxis.prototype, {
 	},
 
 	/** Set or retrieve the label format for this axis.
-		@param [colour] {string} How to colour the labels. 
+		@param [colour] {string} How to colour the labels.
 		@param [format] {object} Formatting settings for the labels.
 		@return {SVGPlotAxis|object} This axis object or format values (if no parameters). */
 	format: function(colour, format) {
@@ -734,7 +734,7 @@ $.extend(SVGPlotAxis.prototype, {
 
 /** A plot legend definition.
 	@module SVGPlotLegend */
-	
+
 /** Details about each plot legend.
 	<p>Accessed through <code>plot.legend</code>.</p>
 	@param plot {SVGPlot} The owning plot.
@@ -810,4 +810,4 @@ $.extend(SVGPlotLegend.prototype, {
 	}
 });
 
-})(jQuery)
+})(window.$)

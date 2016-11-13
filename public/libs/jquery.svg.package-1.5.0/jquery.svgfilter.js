@@ -1,7 +1,7 @@
 ﻿/* http://keith-wood.name/svg.html
    SVG filters for jQuery v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
@@ -27,7 +27,7 @@ $.extend($.svg._wrapperClass.prototype, {
 });
 
 /** The SVG filters manager.
-	<p>Use the singleton instance of this class, $.svg.filters, 
+	<p>Use the singleton instance of this class, $.svg.filters,
 	to interact with the SVG filters functionality.</p>
 	@module SVGFilter */
 function SVGFilter(wrapper) {
@@ -365,4 +365,4 @@ $.extend(SVGFilter.prototype, {
 	}
 });
 
-})(jQuery)
+})(window.$)

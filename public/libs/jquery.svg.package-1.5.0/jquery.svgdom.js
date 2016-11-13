@@ -1,11 +1,11 @@
 ﻿/* http://keith-wood.name/svg.html
    jQuery DOM compatibility for jQuery SVG v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) April 2009.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
- 
+
 var rclass = /[\t\r\n]/g,
 	rspace = /\s+/,
 	rwhitespace = "[\\x20\\t\\r\\n\\f]";
@@ -236,4 +236,4 @@ if ($.cssProps) {
 	}($.css);
 }
 
-})(jQuery);
+})(window.$);

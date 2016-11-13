@@ -1,13 +1,13 @@
 ﻿/* http://keith-wood.name/svg.html
    SVG for jQuery v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
 
 /** The SVG manager.
-	<p>Use the singleton instance of this class, $.svg, 
+	<p>Use the singleton instance of this class, $.svg,
 	to interact with the SVG functionality.</p>
 	<p>Expects HTML like:</p>
 	<pre>&lt;div>&lt;/div></pre>
@@ -147,7 +147,7 @@ $.extend(SVGManager.prototype, {
 
 	/** Extend the SVGWrapper object with an embedded class.
 		<p>The constructor function must take a single parameter that is
-	   a reference to the owning SVG root object. This allows the 
+	   a reference to the owning SVG root object. This allows the
 		extension to access the basic SVG functionality.</p>
 		@param name {string} The name of the <code>SVGWrapper</code> attribute to access the new class.
 		@param extClass {function} The extension class constructor. */
@@ -210,7 +210,7 @@ $.extend(SVGWrapper.prototype, {
 		if (clear) {
 			for (var i = node.attributes.length - 1; i >= 0; i--) {
 				var attr = node.attributes.item(i);
-				if (!(attr.nodeName === 'onload' || attr.nodeName === 'version' || 
+				if (!(attr.nodeName === 'onload' || attr.nodeName === 'version' ||
 						attr.nodeName.substring(0, 5) === 'xmlns')) {
 					node.attributes.removeNamedItem(attr.nodeName);
 				}
@@ -341,7 +341,7 @@ $.extend(SVGWrapper.prototype, {
 	marker: function(parent, id, refX, refY, mWidth, mHeight, orient, settings) {
 		var args = this._args(arguments, ['id', 'refX', 'refY', 'mWidth', 'mHeight', 'orient'], ['orient']);
 		return this._makeNode(args.parent, 'marker', $.extend(
-			{id: args.id, refX: args.refX, refY: args.refY, markerWidth: args.mWidth, 
+			{id: args.id, refX: args.refX, refY: args.refY, markerWidth: args.mWidth,
 			markerHeight: args.mHeight, orient: args.orient || 'auto'}, args.settings || {}));
 	},
 
@@ -425,7 +425,7 @@ $.extend(SVGWrapper.prototype, {
 		var node = this._makeNode(parent, name, settings);
 		for (var i = 0; i < stops.length; i++) {
 			var stop = stops[i];
-			this._makeNode(node, 'stop', $.extend({offset: stop[0], stopColor: stop[1]}, 
+			this._makeNode(node, 'stop', $.extend({offset: stop[0], stopColor: stop[1]},
 				(stop[2] != null ? {stopOpacity: stop[2]} : {})));
 		}
 		return node;
@@ -509,7 +509,7 @@ $.extend(SVGWrapper.prototype, {
 		@return {SVGElement} The new svg node. */
 	svg: function(parent, x, y, width, height, vx, vy, vwidth, vheight, settings) {
 		var args = this._args(arguments, ['x', 'y', 'width', 'height', 'vx', 'vy', 'vwidth', 'vheight'], ['vx']);
-		var sets = $.extend({x: args.x, y: args.y, width: args.width, height: args.height}, 
+		var sets = $.extend({x: args.x, y: args.y, width: args.width, height: args.height},
 			(args.vx != null ? {viewBox: args.vx + ' ' + args.vy + ' ' + args.vwidth + ' ' + args.vheight} : {}));
 		return this._makeNode(args.parent, 'svg', $.extend(sets, args.settings || {}));
 	},
@@ -901,7 +901,7 @@ $.extend(SVGWrapper.prototype, {
 	load: function(url, settings) {
 		settings = (typeof settings === 'boolean' ? {addTo: settings} :
 				(typeof settings === 'function' ? {onLoad: settings} :
-				(typeof settings === 'string' ? {parent: settings} : 
+				(typeof settings === 'string' ? {parent: settings} :
 				(typeof settings === 'object' && settings.nodeName ? {parent: settings} :
 				(typeof settings === 'object' && settings.jquery ? {parent: settings} : settings || {})))));
 		if (!settings.parent && !settings.addTo) {
@@ -1055,7 +1055,7 @@ $.extend(SVGWrapper.prototype, {
 							attr.nodeName + '="' + attr.nodeValue + '"';
 					}
 				}
-			}	
+			}
 			if (node.firstChild) {
 				svgDoc += '>';
 				var child = node.firstChild;
@@ -1211,7 +1211,7 @@ $.extend(SVGPath.prototype, {
 			}
 		}
 		else {
-			this._path += cmd + x1 + ',' + y1 + 
+			this._path += cmd + x1 + ',' + y1 +
 				(x2 == null ? '' : ' ' + x2 + ',' + y2 + (x3 == null ? '' : ' ' + x3 + ',' + y3));
 		}
 		return this;
@@ -1342,11 +1342,11 @@ $.fn.svg = function(options) {
 		}
 		else {
 			$.svg._attachSVG(this, options || {});
-		} 
+		}
 	});
 };
 
 // Singleton primary SVG interface
 $.svg = new SVGManager();
 
-})(jQuery);
+})(window.$);

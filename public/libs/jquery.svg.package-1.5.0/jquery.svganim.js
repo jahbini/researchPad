@@ -1,7 +1,7 @@
 ﻿/* http://keith-wood.name/svg.html
    SVG attribute animations for jQuery v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) June 2008.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
@@ -170,7 +170,7 @@ $.fx.step['svgTransform'] = $.fx.step['svg-transform'] = function(fx) {
 				var matrix = '';
 				for (var j = 0; j < 6; j++) {
 					matrix += ',' + (fx.pos * (fx.end.matrix[j] - fx.start.matrix[j]) + fx.start.matrix[j]);
-				}				
+				}
 				transform += ' matrix(' + matrix.substr(1) + ')';
 				break;
 		}
@@ -278,7 +278,7 @@ $.svg._getColour = function(elem, attr) {
 		colour = elem.attr(attr) || elem.css(attr);
 		// Keep going until we find an element that has colour, or exit SVG
 		if ((colour !== '' && colour !== 'none') || elem.hasClass($.svg.markerClassName)) {
-			break; 
+			break;
 		}
 	} while (elem = elem.parent());
 	return $.svg._getRGB(colour);
@@ -468,4 +468,4 @@ var colours = {
 	yellowgreen:			[154, 205, 50]
 };
 
-})(jQuery);
+})(window.$);

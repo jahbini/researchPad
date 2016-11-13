@@ -4,6 +4,8 @@ Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
 
+RssiView = require './rssi-view.coffee'
+
 implementing = (mixins..., classReference) ->
   for mixin in mixins
     for key, value of mixin::
@@ -87,18 +89,7 @@ class Pages
                 span "#status-"+theUUID, (device.get 'deviceStatus')
                 br()
                 sig = device.get 'signalStrength'
-                if sig < -90
-                  color = "#800000"
-                else if sig < -75
-                  color = "#533659"
-                else if sig < -60
-                  color = "#2d63a6"
-                else if sig < -50
-                  color = "#2073Bf"
-                else if sig < -40
-                  color = "#0099ff"
-                modifier = ".fa.fa-signal.fa-3x"
-                span "#rssi-"+theUUID+modifier, style: 'color:'+color, sig
+                tea.tag "svg", "#rssi-"+theUUID, height: "3em", width: "3em"
               td ->
                 if 'Right' != device.get 'role'  # if we are not already Right
                   pylonLeft = Pylon.get('Left') || device  # is left taken?

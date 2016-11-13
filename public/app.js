@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, Pipeline, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading;
+var $, Backbone, Case, EventModel, Pipeline, RssiView, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -14,6 +14,8 @@ EventModel = require('./models/event-model.coffee').EventModel;
 glib = require('./lib/glib.coffee').glib;
 
 Case = require('Case');
+
+RssiView = require('./views/rssi-view.coffee');
 
 pView = Backbone.View.extend({
   el: '#scanDevices',
@@ -141,7 +143,7 @@ TiHandler = (function() {
   Pylon.on("scanActive change", function() {
     if (Pylon.get('scanActive')) {
       return sensorScanner.startScanningForDevices(function(device) {
-        var color, d, pd, rssi, sig, uuid;
+        var d, pd, rssi, sig, uuid, v;
         if (!sensorScanner.deviceIsSensorTag(device)) {
           return;
         }
@@ -153,18 +155,19 @@ TiHandler = (function() {
         })) {
           d.set('SignalStrength', rssi);
           sig = rssi;
+          v = 8;
           if (sig < -90) {
-            color = "#800000";
+            v = 0;
           } else if (sig < -75) {
-            color = "#533659";
+            v = 2;
           } else if (sig < -60) {
-            color = "#2d63a6";
+            v = 4;
           } else if (sig < -50) {
-            color = "#2073Bf";
+            v = 6;
           } else if (sig < -40) {
-            color = "#0099ff";
+            v = 7;
           }
-          $('#rssi-' + uuid).css("color", color).html(rssi);
+          Pylon.trigger("rssi-" + uuid + ":setRSSI", v);
           return;
         }
         console.log("got new device");
@@ -182,6 +185,7 @@ TiHandler = (function() {
         pd.push(d);
         queryHostDevice(d);
         Pylon.trigger('change respondingDevices');
+        new RssiView("#rssi-" + uuid);
       });
     } else {
       sensorScanner.stopScanningForDevices();
@@ -419,7 +423,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"Case":17,"backbone":18,"jquery":20,"underscore":19}],2:[function(require,module,exports){
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"./views/rssi-view.coffee":17,"Case":18,"backbone":19,"jquery":21,"underscore":20}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader;
 
 window.$ = $ = require('jquery');
@@ -1000,7 +1004,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":8,"./models/event-model.coffee":9,"./version.coffee":11,"./views/adminView.coffee":12,"./views/button-view.coffee":13,"./views/pages.coffee":15,"backbone":18,"jquery":20,"underscore":19}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":8,"./models/event-model.coffee":9,"./version.coffee":11,"./views/adminView.coffee":12,"./views/button-view.coffee":13,"./views/pages.coffee":15,"backbone":19,"jquery":21,"underscore":20}],3:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1393,7 +1397,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":19}],6:[function(require,module,exports){
+},{"underscore":20}],6:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
   slice = [].slice;
 
@@ -1492,7 +1496,7 @@ exports.netView = new netView;
 
 
 
-},{"backbone":18,"jquery":20,"teacup":22}],7:[function(require,module,exports){
+},{"backbone":19,"jquery":21,"teacup":23}],7:[function(require,module,exports){
 
 /*
  * Javascript Stopwatch class
@@ -1743,7 +1747,7 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":18,"jquery":20,"underscore":19}],9:[function(require,module,exports){
+},{"./console":3,"backbone":19,"jquery":21,"underscore":20}],9:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -1802,7 +1806,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/console":3,"../lib/upload.coffee":8,"backbone":18,"underscore":19}],10:[function(require,module,exports){
+},{"../lib/console":3,"../lib/upload.coffee":8,"backbone":19,"underscore":20}],10:[function(require,module,exports){
 var $, Seen, _, pipeline;
 
 Seen = require('seen-js');
@@ -2109,7 +2113,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"jquery":20,"seen-js":21,"underscore":19}],11:[function(require,module,exports){
+},{"jquery":21,"seen-js":22,"underscore":20}],11:[function(require,module,exports){
 module.exports = '1.2.8';
 
 
@@ -2427,7 +2431,7 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":18,"jquery":20,"teacup":22}],13:[function(require,module,exports){
+},{"backbone":19,"jquery":21,"teacup":23}],13:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -2532,7 +2536,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":18,"jquery":20,"teacup":22}],14:[function(require,module,exports){
+},{"backbone":19,"jquery":21,"teacup":23}],14:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -2652,8 +2656,8 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":18,"jquery":20,"teacup":22}],15:[function(require,module,exports){
-var $, Backbone, Pages, Teacup, implementing,
+},{"backbone":19,"jquery":21,"teacup":23}],15:[function(require,module,exports){
+var $, Backbone, Pages, RssiView, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2662,6 +2666,8 @@ Backbone = require('backbone');
 $ = require('jquery');
 
 Teacup = require('teacup');
+
+RssiView = require('./rssi-view.coffee');
 
 implementing = function() {
   var classReference, i, j, key, len, mixin, mixins, ref, value;
@@ -2774,7 +2780,7 @@ Pages = (function() {
         results.push(tbody(function() {
           tr(function() {
             td(function() {
-              var color, modifier, name, sig;
+              var name, sig;
               name = device.get('assignedName');
               if (!name) {
                 name = '';
@@ -2785,21 +2791,10 @@ Pages = (function() {
               span("#status-" + theUUID, device.get('deviceStatus'));
               br();
               sig = device.get('signalStrength');
-              if (sig < -90) {
-                color = "#800000";
-              } else if (sig < -75) {
-                color = "#533659";
-              } else if (sig < -60) {
-                color = "#2d63a6";
-              } else if (sig < -50) {
-                color = "#2073Bf";
-              } else if (sig < -40) {
-                color = "#0099ff";
-              }
-              modifier = ".fa.fa-signal.fa-3x";
-              return span("#rssi-" + theUUID + modifier, {
-                style: 'color:' + color
-              }, sig);
+              return tea.tag("svg", "#rssi-" + theUUID, {
+                height: "3em",
+                width: "3em"
+              });
             });
             td(function() {
               var pylonLeft;
@@ -3101,7 +3096,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":12,"./count-up-down.coffee":14,"./protocol-active.coffee":16,"backbone":18,"jquery":20,"teacup":22}],16:[function(require,module,exports){
+},{"./adminView.coffee":12,"./count-up-down.coffee":14,"./protocol-active.coffee":16,"./rssi-view.coffee":17,"backbone":19,"jquery":21,"teacup":23}],16:[function(require,module,exports){
 var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3150,7 +3145,20 @@ ProtocolReportTemplate = Backbone.View.extend({
     Pylon.on('recordCountDown:over', (function(_this) {
       return function() {
         _this.$el.addClass('active');
-        return _this.render();
+        _this.render();
+        _this.$('button').prop({
+          disabled: true
+        });
+        return _this.$('goButton').prop({
+          disabled: false
+        });
+      };
+    })(this));
+    Pylon.on('systemEvent.goButton:go', (function(_this) {
+      return function(time) {
+        return _this.$('button').prop({
+          disabled: false
+        });
       };
     })(this));
     return Pylon.on('stopCountDown:start', (function(_this) {
@@ -3180,7 +3188,7 @@ ProtocolReportTemplate = Backbone.View.extend({
           return tea.ul(function() {
             var btn, btnName, i, len, results;
             tea.li("#goList", function() {
-              tea.button('.primary.my1', {
+              tea.button('#goButton.primary.my1', {
                 onClick: "Pylon.trigger('systemEvent:goButton:go')"
               }, "Go");
               tea.span("Total Duration");
@@ -3217,7 +3225,58 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":7,"./button-view.coffee":13,"backbone":18,"jquery":20,"teacup":22}],17:[function(require,module,exports){
+},{"../lib/stopwatch.coffee":7,"./button-view.coffee":13,"backbone":19,"jquery":21,"teacup":23}],17:[function(require,module,exports){
+var $, Backbone, RssiView, T;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+module.exports = RssiView = Backbone.View.extend({
+  initialize: function(elementId) {
+    var clearRssi, eventName, i, ref, rssiTimer, t;
+    this.elementId = elementId;
+    this.setElement(this.elementId);
+    this.limit = 8;
+    $(this.elementId).svg({
+      initPath: '',
+      settings: {
+        height: '100px',
+        width: '100px'
+      }
+    });
+    this.domElement = $(this.elementId).svg('get');
+    for (t = i = 0, ref = this.limit; 0 <= ref ? i <= ref : i >= ref; t = 0 <= ref ? ++i : --i) {
+      this.domElement.circle(50, 100 - t * 10, t * 5, {
+        id: "cir-" + (t * 5),
+        fill: "none",
+        stroke: "gray"
+      });
+    }
+    eventName = (this.elementId.match('#?(.*)'))[1];
+    Pylon.on(eventName + ":setRSSI", (function(_this) {
+      return function(t) {
+        var c, j, ref1;
+        for (c = j = 0, ref1 = _this.limit; 0 <= ref1 ? j <= ref1 : j >= ref1; c = 0 <= ref1 ? ++j : --j) {
+          _this.domElement.change(_this.domElement.getElementById("cir-" + (c * 5)), {
+            stroke: c <= t ? "black" : "none"
+          });
+        }
+        return null;
+      };
+    })(this));
+    clearRssi = function() {
+      return Pylon.trigger(eventName + ":setRSSI", 0);
+    };
+    return rssiTimer = setInterval(clearRssi, 1000);
+  }
+});
+
+
+
+},{"backbone":19,"jquery":21,"teacup":23}],18:[function(require,module,exports){
 /*! Case - v1.4.1 - 2016-02-08
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -3371,7 +3430,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 }).call(this);
 
-},{}],18:[function(require,module,exports){
+},{}],19:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5295,7 +5354,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":20,"underscore":19}],19:[function(require,module,exports){
+},{"jquery":21,"underscore":20}],20:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6845,7 +6904,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
   }
 }.call(this));
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.1.1
  * https://jquery.com/
@@ -17067,7 +17126,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],21:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 /** seen.js v0.2.7 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 
 (function(){
@@ -21665,7 +21724,7 @@ seen.Simplex3D = (function() {
 })();
 
 })(this);
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,

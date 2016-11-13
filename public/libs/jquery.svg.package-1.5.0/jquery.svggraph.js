@@ -1,7 +1,7 @@
 ﻿/* http://keith-wood.name/svg.html
    SVG graphing extension for jQuery v1.5.0.
    Written by Keith Wood (kbwood{at}iinet.com.au) August 2007.
-   Available under the MIT (http://keith-wood.name/licence.html) license. 
+   Available under the MIT (http://keith-wood.name/licence.html) license.
    Please attribute the author if you use it. */
 
 (function($) { // Hide scope, no $ conflict
@@ -11,7 +11,7 @@ $.svg.addExtension('graph', SVGGraph);
 $.svg.graphing = new SVGGraphing();
 
 /** The SVG graphing manager.
-	<p>Use the singleton instance of this class, $.svg.graphing, 
+	<p>Use the singleton instance of this class, $.svg.graphing,
 	to interact with the SVG graphing functionality.</p>
 	@module SVGGraphing */
 function SVGGraphing() {
@@ -40,7 +40,7 @@ $.extend(SVGGraphing.prototype, {
 });
 
 /** The SVG graph manager.
-	<p>Use the singleton instance of this class, $.svg.graph, 
+	<p>Use the singleton instance of this class, $.svg.graph,
 	to interact with the SVG graph functionality.</p>
 	@module SVGGraph */
 function SVGGraph(wrapper) {
@@ -59,7 +59,7 @@ function SVGGraph(wrapper) {
 	this._series = []; // The series to be plotted, each is an object
 	this._onstatus = null; // The callback function for status updates
 	this._chartCont = this._wrapper.svg(0, 0, 0, 0, {class_: 'svg-graph'}); // The main container for the graph
-	
+
 	this.xAxis = new SVGGraphAxis(this); // The main x-axis
 	this.xAxis.title('', 40);
 	this.yAxis = new SVGGraphAxis(this); // The main y-axis
@@ -502,7 +502,7 @@ $.extend(SVGGraph.prototype, {
 	},
 
 	/** Calculate the column totals across all the series.
-		@private 
+		@private
 		@return {number[]} The column totals. */
 	_getTotals: function() {
 		var totals = [];
@@ -542,7 +542,7 @@ $.extend(SVGGraph.prototype, {
 	},
 
 	/** Show the current value status on hover.
-		@private 
+		@private
 		@param elem {string|SVGElement} The selector or SVG element to show the status in.
 		@param label {string} The current label.
 		@param value {number} The current value. */
@@ -557,7 +557,7 @@ $.extend(SVGGraph.prototype, {
 
 /** A graph series definition.
 	@module SVGGraphSeries */
-	
+
 /** Details about each graph series.
 	<p>Created through <code>graph.addSeries()</code>.</p>
 	@param graph {SVGGraph} The owning graph.
@@ -664,7 +664,7 @@ $.extend(SVGGraphSeries.prototype, {
 
 /** A graph axis definition.
 	@module SVGGraphAxis */
-	
+
 /** Details about each graph axis.
 	@param graph {SVGGraph} The owning graph.
 	@param title {string} The title of the axis.
@@ -727,7 +727,7 @@ $.extend(SVGGraphAxis.prototype, {
 	/** Set or retrieve the title for this axis.
 		@param title {string} The title text
 		@param [offset] {number} The distance to offset the title position.
-		@param [colour] {string} How to colour the title. 
+		@param [colour] {string} How to colour the title.
 		@param [format] {object} Formatting settings for the title.
 		@return {SVGGraphAxis|object} This axis object or title, offset, and format values (if no parameters). */
 	title: function(title, offset, colour, format) {
@@ -754,7 +754,7 @@ $.extend(SVGGraphAxis.prototype, {
 
 	/** Set or retrieve the labels for this axis.
 		@param labels {string[]} The text for each entry.
-		@param [colour] {string} How to colour the labels. 
+		@param [colour] {string} How to colour the labels.
 		@param [format] {object} Formatting settings for the labels.
 		@return {SVGGraphAxis|object} This axis object or labels and format values (if no parameters). */
 	labels: function(labels, colour, format) {
@@ -800,7 +800,7 @@ $.extend(SVGGraphAxis.prototype, {
 
 /** A graph legend definition.
 	@module SVGGraphLegend */
-	
+
 /** Details about each graph legend.
 	@param graph {SVGGraph} The owning graph.
 	@param [bgSettings] {object} Additional formatting settings for the legend background.
@@ -1382,7 +1382,7 @@ $.extend(SVGLineChart.prototype, {
 	options: function() {
 		return [];
 	},
-	
+
 	/** Actually draw the graph in this type's style.
 		@param graph {SVGGraph} The graph object. */
 	drawGraph: function(graph) {
@@ -1536,4 +1536,4 @@ $.svg.graphing.addChartType('stackedRow', new SVGStackedRowChart());
 $.svg.graphing.addChartType('line', new SVGLineChart());
 $.svg.graphing.addChartType('pie', new SVGPieChart());
 
-})(jQuery)
+})(window.$)

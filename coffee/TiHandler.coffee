@@ -10,6 +10,7 @@ $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
+RssiView = require './views/rssi-view.coffee'
 
 # View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
@@ -48,6 +49,7 @@ pView=Backbone.View.extend
           .text 'Scan Devices'
       if p=Pylon.get('pageGen')
         $('#scanActiveReport').html p.scanContents(@model)
+
       return
 Pylon.set 'tagViewer', new pView
 
@@ -124,17 +126,18 @@ class TiHandler
           d.set 'SignalStrength', rssi
           # just update the signal strength and do not trigger any changes
           sig = rssi
+          v=8
           if sig < -90
-            color = "#800000"
+            v=0
           else if sig < -75
-            color = "#533659"
+            v=2
           else if sig < -60
-            color = "#2d63a6"
+            v=4
           else if sig < -50
-            color = "#2073Bf"
+            v=6
           else if sig < -40
-            color = "#0099ff"
-          $('#rssi-'+uuid).css("color",color).html rssi
+            v=7
+          Pylon.trigger "rssi-#{uuid}:setRSSI", v
           return
 
         console.log "got new device"
@@ -152,6 +155,7 @@ class TiHandler
         queryHostDevice(d)
 
         Pylon.trigger('change respondingDevices')
+        new RssiView "#rssi-#{uuid}"
         return
     else
       sensorScanner.stopScanningForDevices()
