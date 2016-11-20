@@ -3,14 +3,24 @@
 
 Backbone = require 'backbone'
 _ = require 'underscore'
-require('../lib/console')
 {eventModelLoader}  = require '../lib/upload.coffee'
 
 EventModel = Backbone.Model.extend {
   url: 'event'
+  # flush and prevent firing of time-out after test is complete
+  close: ->
+    clearInterval @flusher
+    @flush()
+    #this may be overkill, but we really want no further data for the session
+    if @device
+      @.unset 'session',null
+
   initialize: (role ,@device=null)->
     @set 'role', role
+    #set auto flush to terminate on endRecording
     @flusher = setInterval _.bind(@flush,@), 10000
+    Pylon.on 'systemEvent:endRecording', _.bind @close,@
+
     sessionInfo = Pylon.get 'sessionInfo'
     @.listenTo sessionInfo, 'change:_id',()->
       @set 'session',sessionInfo.get '_id'
@@ -37,7 +47,6 @@ EventModel = Backbone.Model.extend {
         samples = sample.toString()
       @.set 'readings',samples
     else
-      console.log "Action Event:",sample
       @.set 'captureDate',Date.now()   #new time for next auto flush
       @set 'readings' , sample
       @flush()

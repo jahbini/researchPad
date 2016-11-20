@@ -16,7 +16,7 @@ function buildParams( prefix, obj, traditional, add ) {
 	var name;
 
 	if ( jQuery.isArray( obj ) ) {
-		// Serialize array item.
+		// coffeeize array item.
 		jQuery.each( obj, function( i, v ) {
 			if ( traditional || rbracket.test( prefix ) ) {
 				// Treat each array item as a scalar.
@@ -29,18 +29,18 @@ function buildParams( prefix, obj, traditional, add ) {
 		});
 
 	} else if ( !traditional && jQuery.type( obj ) === "object" ) {
-		// Serialize object item.
+		// coffeeize object item.
 		for ( name in obj ) {
 			buildParams( prefix + "[" + name + "]", obj[ name ], traditional, add );
 		}
 
 	} else {
-		// Serialize scalar item.
+		// coffeeize scalar item.
 		add( prefix, obj );
 	}
 }
 
-// Serialize an array of form elements or a set of
+// coffeeize an array of form elements or a set of
 // key/values into a query string
 jQuery.param = function( a, traditional ) {
 	var prefix,
@@ -58,7 +58,7 @@ jQuery.param = function( a, traditional ) {
 
 	// If an array was passed in, assume that it is an array of form elements.
 	if ( jQuery.isArray( a ) || ( a.jquery && !jQuery.isPlainObject( a ) ) ) {
-		// Serialize the form elements
+		// coffeeize the form elements
 		jQuery.each( a, function() {
 			add( this.name, this.value );
 		});
@@ -71,15 +71,15 @@ jQuery.param = function( a, traditional ) {
 		}
 	}
 
-	// Return the resulting serialization
+	// Return the resulting coffeeization
 	return s.join( "&" ).replace( r20, "+" );
 };
 
 jQuery.fn.extend({
-	serialize: function() {
-		return jQuery.param( this.serializeArray() );
+	coffeeize: function() {
+		return jQuery.param( this.coffeeizeArray() );
 	},
-	serializeArray: function() {
+	coffeeizeArray: function() {
 		return this.map(function() {
 			// Can add propHook for "elements" to filter or add form elements
 			var elements = jQuery.prop( this, "elements" );

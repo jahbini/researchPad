@@ -39,14 +39,12 @@ countDownViewTemplate = Backbone.View.extend
       @render -1
       Pylon.on 'recordCountDown:start', (time)=>
         @headline = "Test in Progress"
-        console.log "recordCountDown Start"
         # this trigger will stamp an event, and enable protocol-report widget
         @response = 'recordCountDown:over'
         @render time
       Pylon.on 'stopCountDown:start', (time)=>
         @headline = "Test Over"
         @$el.addClass 'active'
-        console.log "stopCountDown Start"
         @response = 'stopCountDown:over'
         @render time
       Pylon.on 'countDown:continue', (time)=>
@@ -64,7 +62,7 @@ countDownViewTemplate = Backbone.View.extend
           else
             p "Waiting for host credential for protocol..."
       if t==0 && sessionID
-        Pylon.trigger 'systemEvent', "Timer! "+@response
+        Pylon.trigger "systemEvent:#{@response}"
         Pylon.trigger(@response)
       else
         if sessionID

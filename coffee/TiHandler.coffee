@@ -297,9 +297,16 @@ class TiHandler
           newID = sensorInstance.softwareVersion
           if newID != "N.A."  # do we have a new tag
             $('#'+role+'Nick').text newID
-            $('#'+role+'uuid').text sensorInstance.serialNumber if sensorInstance.serialNumber
-            newID = Case.kebab "#{newID} #{sensorInstance.serialNumber}"
+            $('#'+role+'uuid').text sensorInstance.coffeeNumber if sensorInstance.coffeeNumber
+            newID = Case.kebab "#{newID} #{sensorInstance.coffeeNumber}"
             sessionInfo.set role+'sensorUUID', newID
+            if role == "Left"
+              sessionInfo.set 'SerialNoL', sensorInstance.coffeeNumber
+              sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
+            else
+              sessionInfo.set 'SerialNoR', sensorInstance.coffeeNumber
+              sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
+
             d.set UUID: newID
             queryHostDevice d
             # raise sample data rate to 10ms per sample

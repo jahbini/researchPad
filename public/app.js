@@ -342,11 +342,18 @@ TiHandler = (function() {
           newID = sensorInstance.softwareVersion;
           if (newID !== "N.A.") {
             $('#' + role + 'Nick').text(newID);
-            if (sensorInstance.serialNumber) {
-              $('#' + role + 'uuid').text(sensorInstance.serialNumber);
+            if (sensorInstance.coffeeNumber) {
+              $('#' + role + 'uuid').text(sensorInstance.coffeeNumber);
             }
-            newID = Case.kebab(newID + " " + sensorInstance.serialNumber);
+            newID = Case.kebab(newID + " " + sensorInstance.coffeeNumber);
             sessionInfo.set(role + 'sensorUUID', newID);
+            if (role === "Left") {
+              sessionInfo.set('SerialNoL', sensorInstance.coffeeNumber);
+              sessionInfo.set('FWLevelL', sensorInstance.getFirmwareString());
+            } else {
+              sessionInfo.set('SerialNoR', sensorInstance.coffeeNumber);
+              sessionInfo.set('FWLevelR', sensorInstance.getFirmwareString());
+            }
             d.set({
               UUID: newID
             });
@@ -424,7 +431,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"./views/rssi-view.coffee":17,"Case":18,"backbone":19,"jquery":21,"underscore":20}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader;
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader,
+  slice = [].slice;
 
 window.$ = $ = require('jquery');
 
@@ -439,6 +447,18 @@ PylonTemplate = Backbone.Model.extend({
 });
 
 window.Pylon = Pylon = new PylonTemplate;
+
+Pylon.on('all', function() {
+  var event, mim, rest;
+  event = arguments[0], rest = 2 <= arguments.length ? slice.call(arguments, 1) : [];
+  mim = event.match(/((.*):.*):/);
+  if (!mim || mim[2] !== 'systemEvent') {
+    return null;
+  }
+  Pylon.trigger(mim[1], event, rest);
+  Pylon.trigger(mim[2], event, rest);
+  return null;
+});
 
 Pylon.set('spearCount', 1);
 
@@ -726,18 +746,30 @@ initAll = function() {
   enterAdmin();
 };
 
-enterClear = function() {
-  (Pylon.get('button-clear')).set('enabled', false);
-  (Pylon.get('button-upload')).set('enabled', false);
+enterClear = function(accept) {
+  if (accept == null) {
+    accept = false;
+  }
   Pylon.trigger("removeRecorderWindow");
   $('#testID').prop("disabled", false);
   pageGen.forceTest();
-  sessionInfo.set('_id', null);
-  return enableRecordButtonOK();
+  sessionInfo.set({
+    accepted: accept
+  });
+  return sessionInfo.save().done(function() {
+    sessionInfo.set('_id', null, {
+      silent: true
+    });
+    enableRecordButtonOK();
+    (Pylon.get('button-clear')).set('enabled', false);
+    return (Pylon.get('button-upload')).set('enabled', false);
+  }).fail(function(errorResponse) {
+    return alert("Host Reject:" + errorResponse.status);
+  });
 };
 
 enterUpload = function() {
-  return enterClear();
+  return enterClear(true);
 };
 
 enterCalibrate = function() {
@@ -815,6 +847,7 @@ exitRecording = function() {
 
 Pylon.on('stopCountDown:over', function() {
   console.log('enter Stop -- stop recording');
+  Pylon.trigger('systemEvent:endRecording');
   Pylon.get('globalState').set('recording', false);
   (Pylon.get('button-upload')).set('enabled', true);
   (Pylon.get('button-clear')).set('enabled', true);
@@ -1754,17 +1787,23 @@ Backbone = require('backbone');
 
 _ = require('underscore');
 
-require('../lib/console');
-
 eventModelLoader = require('../lib/upload.coffee').eventModelLoader;
 
 EventModel = Backbone.Model.extend({
   url: 'event',
+  close: function() {
+    clearInterval(this.flusher);
+    this.flush();
+    if (this.device) {
+      return this.unset('session', null);
+    }
+  },
   initialize: function(role, device) {
     var sessionInfo;
     this.device = device != null ? device : null;
     this.set('role', role);
     this.flusher = setInterval(_.bind(this.flush, this), 10000);
+    Pylon.on('systemEvent:endRecording', _.bind(this.close, this));
     sessionInfo = Pylon.get('sessionInfo');
     this.listenTo(sessionInfo, 'change:_id', function() {
       return this.set('session', sessionInfo.get('_id'));
@@ -1794,7 +1833,6 @@ EventModel = Backbone.Model.extend({
       }
       return this.set('readings', samples);
     } else {
-      console.log("Action Event:", sample);
       this.set('captureDate', Date.now());
       this.set('readings', sample);
       return this.flush();
@@ -1806,7 +1844,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/console":3,"../lib/upload.coffee":8,"backbone":19,"underscore":20}],10:[function(require,module,exports){
+},{"../lib/upload.coffee":8,"backbone":19,"underscore":20}],10:[function(require,module,exports){
 var $, Seen, _, pipeline;
 
 Seen = require('seen-js');
@@ -2170,15 +2208,13 @@ adminView = (function() {
         'change': function() {
           var error, temp, theClinic, theOptionCid;
           theOptionCid = this.$el.val();
-          console.log('Clinic Change, CID=' + theOptionCid);
           if (theOptionCid) {
             theClinic = this.collection.get(theOptionCid);
             try {
               this.attributes.session.set('clinic', theClinic);
             } catch (error1) {
               error = error1;
-              console.log("Error from setting clinic");
-              console.log(error);
+              console.log("Error from setting clinic", error);
             }
           } else {
             theClinic = null;
@@ -2597,7 +2633,6 @@ countDownViewTemplate = Backbone.View.extend({
     Pylon.on('recordCountDown:start', (function(_this) {
       return function(time) {
         _this.headline = "Test in Progress";
-        console.log("recordCountDown Start");
         _this.response = 'recordCountDown:over';
         return _this.render(time);
       };
@@ -2606,7 +2641,6 @@ countDownViewTemplate = Backbone.View.extend({
       return function(time) {
         _this.headline = "Test Over";
         _this.$el.addClass('active');
-        console.log("stopCountDown Start");
         _this.response = 'stopCountDown:over';
         return _this.render(time);
       };
@@ -2637,7 +2671,7 @@ countDownViewTemplate = Backbone.View.extend({
       };
     })(this)));
     if (t === 0 && sessionID) {
-      Pylon.trigger('systemEvent', "Timer! " + this.response);
+      Pylon.trigger("systemEvent:" + this.response);
       Pylon.trigger(this.response);
     } else {
       if (sessionID) {
@@ -3149,12 +3183,12 @@ ProtocolReportTemplate = Backbone.View.extend({
         _this.$('button').prop({
           disabled: true
         });
-        return _this.$('goButton').prop({
+        return _this.$('#goButton').prop({
           disabled: false
         });
       };
     })(this));
-    Pylon.on('systemEvent.goButton:go', (function(_this) {
+    Pylon.on('systemEvent:goButton:go', (function(_this) {
       return function(time) {
         return _this.$('button').prop({
           disabled: false
@@ -6339,7 +6373,7 @@ module.exports = RssiView = Backbone.View.extend({
     return pairs;
   };
 
-  // Invert the keys and values of an object. The values must be serializable.
+  // Invert the keys and values of an object. The values must be coffeeizable.
   _.invert = function(obj) {
     var result = {};
     var keys = _.keys(obj);
@@ -7601,8 +7635,8 @@ var i,
 				String.fromCharCode( high >> 10 | 0xD800, high & 0x3FF | 0xDC00 );
 	},
 
-	// CSS string/identifier serialization
-	// https://drafts.csswg.org/cssom/#common-serializing-idioms
+	// CSS string/identifier coffeeization
+	// https://drafts.csswg.org/cssom/#common-coffeeizing-idioms
 	rcssescape = /([\0-\x1f\x7f]|^-?\d)|^-$|[^\0-\x1f\x7f-\uFFFF\w-]/g,
 	fcssescape = function( ch, asCodePoint ) {
 		if ( asCodePoint ) {
@@ -11692,7 +11726,7 @@ function buildFragment( elems, context, scripts, selection, ignored ) {
 			} else {
 				tmp = tmp || fragment.appendChild( context.createElement( "div" ) );
 
-				// Deserialize a standard representation
+				// Decoffeeize a standard representation
 				tag = ( rtagName.exec( elem ) || [ "", "" ] )[ 1 ].toLowerCase();
 				wrap = wrapMap[ tag ] || wrapMap._default;
 				tmp.innerHTML = wrap[ 1 ] + jQuery.htmlPrefilter( elem ) + wrap[ 2 ];
@@ -15262,7 +15296,7 @@ function buildParams( prefix, obj, traditional, add ) {
 
 	if ( jQuery.isArray( obj ) ) {
 
-		// Serialize array item.
+		// coffeeize array item.
 		jQuery.each( obj, function( i, v ) {
 			if ( traditional || rbracket.test( prefix ) ) {
 
@@ -15283,19 +15317,19 @@ function buildParams( prefix, obj, traditional, add ) {
 
 	} else if ( !traditional && jQuery.type( obj ) === "object" ) {
 
-		// Serialize object item.
+		// coffeeize object item.
 		for ( name in obj ) {
 			buildParams( prefix + "[" + name + "]", obj[ name ], traditional, add );
 		}
 
 	} else {
 
-		// Serialize scalar item.
+		// coffeeize scalar item.
 		add( prefix, obj );
 	}
 }
 
-// Serialize an array of form elements or a set of
+// coffeeize an array of form elements or a set of
 // key/values into a query string
 jQuery.param = function( a, traditional ) {
 	var prefix,
@@ -15314,7 +15348,7 @@ jQuery.param = function( a, traditional ) {
 	// If an array was passed in, assume that it is an array of form elements.
 	if ( jQuery.isArray( a ) || ( a.jquery && !jQuery.isPlainObject( a ) ) ) {
 
-		// Serialize the form elements
+		// coffeeize the form elements
 		jQuery.each( a, function() {
 			add( this.name, this.value );
 		} );
@@ -15328,15 +15362,15 @@ jQuery.param = function( a, traditional ) {
 		}
 	}
 
-	// Return the resulting serialization
+	// Return the resulting coffeeization
 	return s.join( "&" );
 };
 
 jQuery.fn.extend( {
-	serialize: function() {
-		return jQuery.param( this.serializeArray() );
+	coffeeize: function() {
+		return jQuery.param( this.coffeeizeArray() );
 	},
-	serializeArray: function() {
+	coffeeizeArray: function() {
 		return this.map( function() {
 
 			// Can add propHook for "elements" to filter or add form elements
@@ -15385,7 +15419,7 @@ var
 	 * 1) They are useful to introduce custom dataTypes (see ajax/jsonp.js for an example)
 	 * 2) These are called:
 	 *    - BEFORE asking for a transport
-	 *    - AFTER param serialization (s.data is a string if s.processData is true)
+	 *    - AFTER param coffeeization (s.data is a string if s.processData is true)
 	 * 3) key is the dataType
 	 * 4) the catchall symbol "*" can be used
 	 * 5) execution will start with transport dataType and THEN continue down to "*" if needed

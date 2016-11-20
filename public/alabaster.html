@@ -16,14 +16,16 @@
         @import 'skeleton-ui/examples/custom.css';
         @import 'css/modal.css';
         @import 'css/console.css';
+        @import 'libs/jquery.svg.package-1.5.0/jquery.svg.css';
     button.disabled {border: 1px dashed darkgray;}
     .button, button, input[type="submit"], input[type="reset"], input[type="button"] { padding: 0 15px; }
     .dump {
       font: normal 14px/1.3 Consolas,'Andale Mono','Courier New',Courier,monospace;
     }
-  </style>
-<script>hostUrl="http://sensor-test.tell140.com/";</script>
-<script>hostUrl="http://alabaster.local/";</script>
+ </style>
+<script>hostUrl="http://tyriea.local:9000/";</script>
+<script>hostUrl= "http://sensor-test.tell140.com/" ;</script>
+<script>hostUrl= "http://alabaster.local/" ;</script>
 <script src="cordova.js"></script>
 <script src="libs/evothings/evothings.js"></script>
 <script src="libs/evothings/easyble/easyble.js"></script>
@@ -32,13 +34,15 @@
 <script src="libs/evothings/tisensortag/tisensortag-ble-cc2541.js"></script>
 <script src="libs/evothings/tisensortag/tisensortag-ble-cc2650.js"></script>
 </head>
-<body id="theBody" style="margin:0;padding:0;background:ivory">
+<body id="theBody" style="margin:0;padding:0">
   <!--
   <iframe src="steady.html" style="border:0;padding:0" height="100%" width="100%">
   </iframe>
 -->
 <script src="app.js"> </script>
 <script src="skeleton-ui/js/skeleton-ui.js"></script>
+<script src="libs/jquery.svg.package-1.5.0/jquery.svg.js"></script>
+<script src="libs/jquery.svg.package-1.5.0/jquery.svgdom.js"></script>
 </body>
 
 </html>

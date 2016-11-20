@@ -33,14 +33,12 @@ class adminView
       events:
         'change': ->
           theOptionCid = @$el.val()
-          console.log 'Clinic Change, CID='+theOptionCid
           if theOptionCid
             theClinic = @collection.get( theOptionCid )
             try
               @attributes.session.set 'clinic',theClinic
             catch error
-              console.log "Error from setting clinic"
-              console.log error
+              console.log "Error from setting clinic",error
           else
             theClinic = null;
             @attributes.session.unset 'clinic'

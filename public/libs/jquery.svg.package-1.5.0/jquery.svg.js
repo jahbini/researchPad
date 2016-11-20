@@ -1021,18 +1021,18 @@ $.extend(SVGWrapper.prototype, {
 		return this;
 	},
 
-	/** Serialise the current diagram into an SVG text document.
+	/** coffeeise the current diagram into an SVG text document.
 		@param [node] {SVGElement} The starting node, or SVG root if not specified .
 		@return {string} The SVG as text. */
 	toSVG: function(node) {
 		node = node || this._svg;
-		return (typeof XMLSerializer === 'undefined' ? this._toSVG(node) : new XMLSerializer().serializeToString(node));
+		return (typeof XMLcoffeeizer === 'undefined' ? this._toSVG(node) : new XMLcoffeeizer().coffeeizeToString(node));
 	},
 
-	/** Serialise one node in the SVG hierarchy.
+	/** coffeeise one node in the SVG hierarchy.
 		@private
-		@param node {SVGElement} The current node to serialise.
-		@return {string} The serialised SVG. */
+		@param node {SVGElement} The current node to coffeeise.
+		@return {string} The coffeeised SVG. */
 	_toSVG: function(node) {
 		var svgDoc = '';
 		if (!node) {

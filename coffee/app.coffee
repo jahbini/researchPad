@@ -12,6 +12,12 @@ PylonTemplate = Backbone.Model.extend
     scan: false
 
 window.Pylon = Pylon = new PylonTemplate
+Pylon.on 'all', (event,rest...)->
+  mim = event.match /((.*):.*):/
+  return null if !mim || mim[2] != 'systemEvent'
+  Pylon.trigger mim[1],event,rest
+  Pylon.trigger mim[2],event,rest
+  return null
 
 Pylon.set 'spearCount', 1
 Pylon.set 'hostUrl', hostUrl
@@ -234,20 +240,25 @@ initAll = ->
   return
 
 ## subsection State handlers that depend on the View
-enterClear = ->
+enterClear = (accept=false)->
   # Clear only clears the data -- does NOT disconnedt
-  (Pylon.get 'button-clear').set 'enabled',false
-  (Pylon.get 'button-upload').set 'enabled',false
   Pylon.trigger "removeRecorderWindow"
 
   $('#testID').prop("disabled",false)
   pageGen.forceTest()
-  sessionInfo.set '_id',null
-  return enableRecordButtonOK()
+  sessionInfo.set accepted: accept
+  sessionInfo.save()
+    .done ->  # only remove clear, upload buttons on success
+      sessionInfo.set '_id',null,{silent:true}
+      enableRecordButtonOK()
+      (Pylon.get 'button-clear').set 'enabled',false
+      (Pylon.get 'button-upload').set 'enabled',false
+    .fail (errorResponse)->
+      alert "Host Reject:#{errorResponse.status}"
 
 # upload and clear keys are equivalent and only suggest failure or success
 enterUpload = ->
-  return enterClear()
+  return enterClear true
 
 enterCalibrate = ->
   return
@@ -271,6 +282,7 @@ enterRecording = ->
   if !sessionInfo.get 'testID'
     pageGen.forceTest 'red'
     return false
+
   # sync the sessionInfo up to the server as an empty
   # session structure.  We need the mongo _id that the server
   # sends back
@@ -310,6 +322,7 @@ exitRecording = -> # Stop Recording
 
 Pylon.on 'stopCountDown:over', ->
   console.log('enter Stop -- stop recording')
+  Pylon.trigger 'systemEvent:endRecording'
   Pylon.get('globalState').set 'recording',  false
   (Pylon.get 'button-upload').set 'enabled',true
   (Pylon.get 'button-clear').set 'enabled',true

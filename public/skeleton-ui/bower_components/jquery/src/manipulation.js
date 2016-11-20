@@ -213,7 +213,7 @@ jQuery.extend({
 				} else {
 					tmp = tmp || fragment.appendChild( context.createElement("div") );
 
-					// Deserialize a standard representation
+					// Decoffeeize a standard representation
 					tag = ( rtagName.exec( elem ) || [ "", "" ] )[ 1 ].toLowerCase();
 					wrap = wrapMap[ tag ] || wrapMap._default;
 					tmp.innerHTML = wrap[ 1 ] + elem.replace( rxhtmlTag, "<$1></$2>" ) + wrap[ 2 ];

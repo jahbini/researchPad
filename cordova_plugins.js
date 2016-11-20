@@ -285,10 +285,10 @@ module.exports = [
         ]
     },
     {
-        "file": "plugins/com.megster.cordova.bluetoothserial/www/bluetoothSerial.js",
-        "id": "com.megster.cordova.bluetoothserial.bluetoothSerial",
+        "file": "plugins/com.megster.cordova.bluetoothcoffee/www/bluetoothcoffee.js",
+        "id": "com.megster.cordova.bluetoothcoffee.bluetoothcoffee",
         "clobbers": [
-            "window.bluetoothSerial"
+            "window.bluetoothcoffee"
         ]
     }
 ];
@@ -317,7 +317,7 @@ module.exports.metadata =
     "com.unarin.cordova.beacon": "3.1.2",
     "pl.makingwaves.estimotebeacons": "0.5.0",
     "de.appplant.cordova.plugin.local-notification": "0.7.6",
-    "com.megster.cordova.bluetoothserial": "0.3.1"
+    "com.megster.cordova.bluetoothcoffee": "0.3.1"
 }
 // BOTTOM OF METADATA
 });

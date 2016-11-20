@@ -37,16 +37,16 @@ ProtocolReportTemplate = Backbone.View.extend
         @render()
         # start with only the goButton enabled
         @$('button').prop disabled: true
-        @$('goButton').prop disabled: false
+        @$('#goButton').prop disabled: false
 
-      Pylon.on 'systemEvent.goButton:go', (time)=>
+      Pylon.on 'systemEvent:goButton:go', (time)=>
         @$('button').prop disabled: false
 
       Pylon.on 'stopCountDown:start', (time)=>
         @stopwatch.stop()
         @$el.removeClass 'active'
         @$('button').prop disabled: true
-        
+
     # show panel of action buttons
     render: ()->
       @$el.html render =>

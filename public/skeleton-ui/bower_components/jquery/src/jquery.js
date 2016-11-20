@@ -16,7 +16,7 @@ define([
 	"./wrap",
 	"./css",
 	"./css/hiddenVisibleSelectors",
-	"./serialize",
+	"./coffeeize",
 	"./ajax",
 	"./ajax/xhr",
 	"./ajax/script",
