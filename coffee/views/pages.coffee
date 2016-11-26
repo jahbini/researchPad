@@ -151,8 +151,8 @@ class Pages
           button '#clear.u-full-width.disabled', 'Reset'
           label '#RightStat', for: "upload", 'Items:0'
 
-  forceTest: (color = 'violet') =>
-    $('#ProtocolSelect').text('Must Select Test').css('color',color)
+  forceTest: (color = 'violet',txt='Must Select Test') =>
+    $('#ProtocolSelect').text(txt).css('color',color)
     Pylon.trigger 'renderTest'
     Pylon.get('sessionInfo').unset 'testID', silent: true
 

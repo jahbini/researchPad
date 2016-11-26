@@ -1,0 +1,334 @@
+{
+    "console": {
+        "@expanded": true,
+        "@height": "153",
+        "@maximized": "false",
+        "json()": {
+            "meta": {
+                "accessList": [
+                    "searchResults",
+                    "tab1",
+                    "tab0"
+                ]
+            },
+            "name": "pane1",
+            "nodes": [
+                {
+                    "type": "tab",
+                    "name": "tab0",
+                    "path": "",
+                    "className": [
+                        "tab0"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479453295562
+                        },
+                        "filter": true,
+                        "title": "bash - \"BambooCanDo.local\" ",
+                        "tooltip": "bash - \"BambooCanDo.local\" ",
+                        "terminal": {
+                            "id": "devel_726",
+                            "cwd": "",
+                            "width": 0,
+                            "height": 0
+                        }
+                    },
+                    "editorType": "terminal",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab1",
+                    "path": "",
+                    "className": [],
+                    "document": {
+                        "filter": true,
+                        "title": "Immediate",
+                        "tooltip": "bash - \"BambooCanDo.local\" ",
+                        "terminal": {
+                            "id": "devel_749",
+                            "cwd": "",
+                            "width": 876,
+                            "height": 127,
+                            "scrollTop": 29
+                        },
+                        "hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "meta": {
+                            "timestamp": 1479452594188
+                        },
+                        "changed": false
+                    },
+                    "editorType": "immediate",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "searchResults",
+                    "path": "/.c9/searchresults",
+                    "className": [
+                        "searchResults",
+                        "changed"
+                    ],
+                    "document": {
+                        "changed": true,
+                        "meta": {
+                            "searchResults": true,
+                            "ignoreSave": true,
+                            "newfile": true,
+                            "timestamp": 1480187822363
+                        },
+                        "filter": true,
+                        "title": "Search Results",
+                        "tooltip": "/.c9/searchresults",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": true
+                }
+            ],
+            "skin": "editor_tab",
+            "skinset": "default",
+            "type": "pane"
+        }
+    },
+    "experiments": {
+        "@@enabled": true,
+        "@autosave": 0,
+        "@flat-dark": 0,
+        "@git": 1,
+        "@go_completion": 0,
+        "@plugin-manager": 1,
+        "@plugins": 0,
+        "@sdk": 0,
+        "@test": 0
+    },
+    "ext": {
+        "counters": {
+            "@ace": 2,
+            "@acestatus": 2,
+            "@divider": 5,
+            "@document": 9,
+            "@form": 5,
+            "@menu": 5,
+            "@menuitem": 13,
+            "@pane": 2,
+            "@session": 8,
+            "@tab": 8,
+            "@undoManager": 9
+        }
+    },
+    "findinfiles": {
+        "@console": "true",
+        "@matchcase": "false",
+        "@regex": "false",
+        "@scope": "selection",
+        "@wholeword": "false"
+    },
+    "menus": {
+        "@minimized": "false"
+    },
+    "nak": {
+        "@installed": true
+    },
+    "panecycle": {
+        "json()": [
+            "tab7",
+            "searchResults"
+        ]
+    },
+    "panels": {
+        "@active-left": "tree",
+        "commands.panel": {
+            "@enabled": "true",
+            "@name": "commands.panel"
+        },
+        "debugger": {
+            "@enabled": "true",
+            "@name": "debugger"
+        },
+        "navigate": {
+            "@enabled": "true",
+            "@name": "navigate"
+        },
+        "outline": {
+            "@enabled": "true",
+            "@name": "outline"
+        },
+        "scm": {
+            "@enabled": "true",
+            "@name": "scm"
+        },
+        "tree": {
+            "@enabled": "true",
+            "@name": "tree"
+        }
+    },
+    "projecttree": {
+        "@showfs": true,
+        "expanded": {
+            "json()": [
+                "/"
+            ]
+        }
+    },
+    "recentfiles": {
+        "json()": []
+    },
+    "search-history": {
+        "searchfiles": {
+            "json()": [
+                "forceTest"
+            ]
+        }
+    },
+    "tabs": {
+        "json()": {
+            "focus": "/.dockerignore",
+            "meta": {
+                "accessList": [
+                    "tab7",
+                    "tab5",
+                    "tab6",
+                    "tab4",
+                    "tab3",
+                    "tab2"
+                ]
+            },
+            "name": "pane0",
+            "nodes": [
+                {
+                    "type": "tab",
+                    "name": "tab2",
+                    "path": "/coffee/models/event-model.coffee",
+                    "className": [
+                        "tab2"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479604648000
+                        },
+                        "filter": true,
+                        "title": "event-model.coffee",
+                        "tooltip": "/coffee/models/event-model.coffee",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab3",
+                    "path": "/coffee/app.coffee",
+                    "className": [
+                        "tab3",
+                        "changed"
+                    ],
+                    "document": {
+                        "changed": true,
+                        "meta": {
+                            "timestamp": 1479613159000
+                        },
+                        "filter": true,
+                        "title": "app.coffee",
+                        "tooltip": "/coffee/app.coffee",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab4",
+                    "path": "/coffee/views/pages.coffee",
+                    "className": [
+                        "tab4"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1480187893909
+                        },
+                        "filter": true,
+                        "title": "pages.coffee",
+                        "tooltip": "/coffee/views/pages.coffee",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab5",
+                    "path": "/Dockerfile",
+                    "className": [
+                        "tab5"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1480199965393
+                        },
+                        "filter": true,
+                        "title": "Dockerfile",
+                        "tooltip": "/Dockerfile",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab6",
+                    "path": "/package.json",
+                    "className": [
+                        "tab6"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479617432000
+                        },
+                        "filter": true,
+                        "title": "package.json",
+                        "tooltip": "/package.json",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab7",
+                    "path": "/.dockerignore",
+                    "className": [
+                        "tab7",
+                        "focus"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1480199978000
+                        },
+                        "filter": true,
+                        "title": ".dockerignore",
+                        "tooltip": "/.dockerignore",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": true
+                }
+            ],
+            "skin": "editor_tab",
+            "skinset": "default",
+            "type": "pane"
+        }
+    },
+    "tree_selection": {
+        "json()": [
+            "/.dockerignore"
+        ]
+    }
+}

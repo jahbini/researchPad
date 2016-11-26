@@ -1,0 +1,6 @@
+# files NOT to include in the docker build environment
+node_modules/*
+platforms/*
+image-gen/*
+.git
+.c9
