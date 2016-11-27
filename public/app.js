@@ -330,6 +330,7 @@ TiHandler = (function() {
         if (statusList.SENSORTAG_ONLINE === s) {
           sessionInfo = Pylon.get('sessionInfo');
           sessionInfo.set(role + 'sensorUUID', d.id);
+          sessionInfo.set("FWLevel" + (role === "Left" ? 'L' : 'R'), d.fwRev);
           if (!d.get('connected')) {
             Pylon.trigger('connected');
           }
@@ -430,7 +431,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"./views/rssi-view.coffee":17,"Case":18,"backbone":19,"jquery":21,"underscore":20}],2:[function(require,module,exports){
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"./views/rssi-view.coffee":17,"Case":20,"backbone":18,"jquery":21,"underscore":24}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, uploader,
   slice = [].slice;
 
@@ -1037,7 +1038,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":8,"./models/event-model.coffee":9,"./version.coffee":11,"./views/adminView.coffee":12,"./views/button-view.coffee":13,"./views/pages.coffee":15,"backbone":19,"jquery":21,"underscore":20}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":8,"./models/event-model.coffee":9,"./version.coffee":11,"./views/adminView.coffee":12,"./views/button-view.coffee":13,"./views/pages.coffee":15,"backbone":18,"jquery":21,"underscore":24}],3:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1430,7 +1431,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":20}],6:[function(require,module,exports){
+},{"underscore":24}],6:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
   slice = [].slice;
 
@@ -1529,7 +1530,7 @@ exports.netView = new netView;
 
 
 
-},{"backbone":19,"jquery":21,"teacup":23}],7:[function(require,module,exports){
+},{"backbone":18,"jquery":21,"teacup":23}],7:[function(require,module,exports){
 
 /*
  * Javascript Stopwatch class
@@ -1780,7 +1781,7 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":19,"jquery":21,"underscore":20}],9:[function(require,module,exports){
+},{"./console":3,"backbone":18,"jquery":21,"underscore":24}],9:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -1844,7 +1845,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":8,"backbone":19,"underscore":20}],10:[function(require,module,exports){
+},{"../lib/upload.coffee":8,"backbone":18,"underscore":24}],10:[function(require,module,exports){
 var $, Seen, _, pipeline;
 
 Seen = require('seen-js');
@@ -2151,8 +2152,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"jquery":21,"seen-js":22,"underscore":20}],11:[function(require,module,exports){
-module.exports = '1.3.0';
+},{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
+module.exports = '1.3.1';
 
 
 
@@ -2467,7 +2468,7 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":19,"jquery":21,"teacup":23}],13:[function(require,module,exports){
+},{"backbone":18,"jquery":21,"teacup":23}],13:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -2572,7 +2573,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":19,"jquery":21,"teacup":23}],14:[function(require,module,exports){
+},{"backbone":18,"jquery":21,"teacup":23}],14:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -2690,7 +2691,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":19,"jquery":21,"teacup":23}],15:[function(require,module,exports){
+},{"backbone":18,"jquery":21,"teacup":23}],15:[function(require,module,exports){
 var $, Backbone, Pages, RssiView, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2933,11 +2934,14 @@ Pages = (function() {
     });
   });
 
-  Pages.prototype.forceTest = function(color) {
+  Pages.prototype.forceTest = function(color, txt) {
     if (color == null) {
       color = 'violet';
     }
-    $('#ProtocolSelect').text('Must Select Test').css('color', color);
+    if (txt == null) {
+      txt = 'Must Select Test';
+    }
+    $('#ProtocolSelect').text(txt).css('color', color);
     Pylon.trigger('renderTest');
     return Pylon.get('sessionInfo').unset('testID', {
       silent: true
@@ -3130,7 +3134,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":12,"./count-up-down.coffee":14,"./protocol-active.coffee":16,"./rssi-view.coffee":17,"backbone":19,"jquery":21,"teacup":23}],16:[function(require,module,exports){
+},{"./adminView.coffee":12,"./count-up-down.coffee":14,"./protocol-active.coffee":16,"./rssi-view.coffee":17,"backbone":18,"jquery":21,"teacup":23}],16:[function(require,module,exports){
 var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3259,7 +3263,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":7,"./button-view.coffee":13,"backbone":19,"jquery":21,"teacup":23}],17:[function(require,module,exports){
+},{"../lib/stopwatch.coffee":7,"./button-view.coffee":13,"backbone":18,"jquery":21,"teacup":23}],17:[function(require,module,exports){
 var $, Backbone, RssiView, T;
 
 Backbone = require('backbone');
@@ -3310,161 +3314,7 @@ module.exports = RssiView = Backbone.View.extend({
 
 
 
-},{"backbone":19,"jquery":21,"teacup":23}],18:[function(require,module,exports){
-/*! Case - v1.4.1 - 2016-02-08
-* Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
-(function() {
-    "use strict";
-    var unicodes = function(s, prefix) {
-        prefix = prefix || '';
-        return s.replace(/(^|-)/g, '$1\\u'+prefix).replace(/,/g, '\\u'+prefix);
-    },
-    basicSymbols = unicodes('20-26,28-2F,3A-40,5B-60,7B-7E,A0-BF,D7,F7', '00'),
-    baseLowerCase = 'a-z'+unicodes('DF-F6,F8-FF', '00'),
-    baseUpperCase = 'A-Z'+unicodes('C0-D6,D8-DE', '00'),
-    improperInTitle = 'A|An|And|As|At|But|By|En|For|If|In|Of|On|Or|The|To|Vs?\\.?|Via',
-    regexps = function(symbols, lowers, uppers, impropers) {
-        symbols = symbols || basicSymbols;
-        lowers = lowers || baseLowerCase;
-        uppers = uppers || baseUpperCase;
-        impropers = impropers || improperInTitle;
-        return {
-            capitalize: new RegExp('(^|['+symbols+'])(['+lowers+'])', 'g'),
-            pascal: new RegExp('(^|['+symbols+'])+(['+lowers+uppers+'])', 'g'),
-            fill: new RegExp('['+symbols+']+(.|$)','g'),
-            sentence: new RegExp('(^\\s*|[\\?\\!\\.]+"?\\s+"?|,\\s+")(['+lowers+'])', 'g'),
-            improper: new RegExp('\\b('+impropers+')\\b', 'g'),
-            relax: new RegExp('([^'+uppers+'])(['+uppers+']*)(['+uppers+'])(?=['+lowers+']|$)', 'g'),
-            upper: new RegExp('^[^'+lowers+']+$'),
-            hole: /[^\s]\s[^\s]/,
-            apostrophe: /'/g,
-            room: new RegExp('['+symbols+']')
-        };
-    },
-    re = regexps(),
-    _ = {
-        re: re,
-        unicodes: unicodes,
-        regexps: regexps,
-        types: [],
-        up: String.prototype.toUpperCase,
-        low: String.prototype.toLowerCase,
-        cap: function(s) {
-            return _.up.call(s.charAt(0))+s.slice(1);
-        },
-        decap: function(s) {
-            return _.low.call(s.charAt(0))+s.slice(1);
-        },
-        deapostrophe: function(s) {
-            return s.replace(re.apostrophe, '');
-        },
-        fill: function(s, fill) {
-            return !s || fill == null ? s : s.replace(re.fill, function(m, next) {
-                return next ? fill + next : '';
-            });
-        },
-        prep: function(s, fill, pascal, upper) {
-            if (!s){ return s || ''; }
-            if (!upper && re.upper.test(s)) {
-                s = _.low.call(s);
-            }
-            if (!fill && !re.hole.test(s)) {
-                var holey = _.fill(s, ' ');
-                if (re.hole.test(holey)) {
-                    s = holey;
-                }
-            }
-            if (!pascal && !re.room.test(s)) {
-                s = s.replace(re.relax, _.relax);
-            }
-            return s;
-        },
-        relax: function(m, before, acronym, caps) {
-            return before + ' ' + (acronym ? acronym+' ' : '') + caps;
-        }
-    },
-    Case = {
-        _: _,
-        of: function(s) {
-            for (var i=0,m=_.types.length; i<m; i++) {
-                if (Case[_.types[i]](s) === s){ return _.types[i]; }
-            }
-        },
-        flip: function(s) {
-            return s.replace(/\w/g, function(l) {
-                return (l == _.up.call(l) ? _.low : _.up).call(l);
-            });
-        },
-        random: function(s) {
-            return s.replace(/\w/g, function(l) {
-                return (Math.round(Math.random()) ? _.up : _.low).call(l);
-            });
-        },
-        type: function(type, fn) {
-            Case[type] = fn;
-            _.types.push(type);
-        }
-    },
-    types = {
-        lower: function(s, fill) {
-            return _.fill(_.low.call(_.prep(s, fill)), fill);
-        },
-        snake: function(s) {
-            return _.deapostrophe(Case.lower(s, '_'));
-        },
-        constant: function(s) {
-            return _.deapostrophe(Case.upper(s, '_'));
-        },
-        camel: function(s ) {
-            return _.decap(Case.pascal(s));
-        },
-        kebab: function(s) {
-            return _.deapostrophe(Case.lower(s, '-'));
-        },
-        upper: function(s, fill) {
-            return _.fill(_.up.call(_.prep(s, fill, false, true)), fill);
-        },
-        capital: function(s, fill) {
-            return _.fill(_.prep(s).replace(re.capitalize, function(m, border, letter) {
-                return border+_.up.call(letter);
-            }), fill);
-        },
-        pascal: function(s) {
-            return _.deapostrophe(_.fill(_.prep(s, false, true).replace(re.pascal, function(m, border, letter) {
-                return _.up.call(letter);
-            }), ''));
-        },
-        title: function(s) {
-            return Case.capital(s).replace(re.improper, function(small, p, i, s) {
-                return i > 0 && i < s.lastIndexOf(' ') ? _.low.call(small) : small;
-            });
-        },
-        sentence: function(s, names) {
-            s = Case.lower(s).replace(re.sentence, function(m, prelude, letter) {
-                return prelude + _.up.call(letter);
-            });
-            if (names) {
-                names.forEach(function(name) {
-                    s = s.replace(new RegExp('\\b'+Case.lower(name)+'\\b', "g"), _.cap);
-                });
-            }
-            return s;
-        }
-    };
-    
-    // TODO: Remove "squish" in a future breaking release.
-    types.squish = types.pascal;
-
-    for (var type in types) {
-        Case.type(type, types[type]);
-    }
-    // export Case (AMD, commonjs, or global)
-    var define = typeof define === "function" ? define : function(){};
-    define(typeof module === "object" && module.exports ? module.exports = Case : this.Case = Case);
-
-}).call(this);
-
-},{}],19:[function(require,module,exports){
+},{"backbone":18,"jquery":21,"teacup":23}],18:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5388,7 +5238,7 @@ module.exports = RssiView = Backbone.View.extend({
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":21,"underscore":20}],20:[function(require,module,exports){
+},{"jquery":21,"underscore":19}],19:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6937,6 +6787,160 @@ module.exports = RssiView = Backbone.View.extend({
     });
   }
 }.call(this));
+
+},{}],20:[function(require,module,exports){
+/*! Case - v1.4.1 - 2016-02-08
+* Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
+(function() {
+    "use strict";
+    var unicodes = function(s, prefix) {
+        prefix = prefix || '';
+        return s.replace(/(^|-)/g, '$1\\u'+prefix).replace(/,/g, '\\u'+prefix);
+    },
+    basicSymbols = unicodes('20-26,28-2F,3A-40,5B-60,7B-7E,A0-BF,D7,F7', '00'),
+    baseLowerCase = 'a-z'+unicodes('DF-F6,F8-FF', '00'),
+    baseUpperCase = 'A-Z'+unicodes('C0-D6,D8-DE', '00'),
+    improperInTitle = 'A|An|And|As|At|But|By|En|For|If|In|Of|On|Or|The|To|Vs?\\.?|Via',
+    regexps = function(symbols, lowers, uppers, impropers) {
+        symbols = symbols || basicSymbols;
+        lowers = lowers || baseLowerCase;
+        uppers = uppers || baseUpperCase;
+        impropers = impropers || improperInTitle;
+        return {
+            capitalize: new RegExp('(^|['+symbols+'])(['+lowers+'])', 'g'),
+            pascal: new RegExp('(^|['+symbols+'])+(['+lowers+uppers+'])', 'g'),
+            fill: new RegExp('['+symbols+']+(.|$)','g'),
+            sentence: new RegExp('(^\\s*|[\\?\\!\\.]+"?\\s+"?|,\\s+")(['+lowers+'])', 'g'),
+            improper: new RegExp('\\b('+impropers+')\\b', 'g'),
+            relax: new RegExp('([^'+uppers+'])(['+uppers+']*)(['+uppers+'])(?=['+lowers+']|$)', 'g'),
+            upper: new RegExp('^[^'+lowers+']+$'),
+            hole: /[^\s]\s[^\s]/,
+            apostrophe: /'/g,
+            room: new RegExp('['+symbols+']')
+        };
+    },
+    re = regexps(),
+    _ = {
+        re: re,
+        unicodes: unicodes,
+        regexps: regexps,
+        types: [],
+        up: String.prototype.toUpperCase,
+        low: String.prototype.toLowerCase,
+        cap: function(s) {
+            return _.up.call(s.charAt(0))+s.slice(1);
+        },
+        decap: function(s) {
+            return _.low.call(s.charAt(0))+s.slice(1);
+        },
+        deapostrophe: function(s) {
+            return s.replace(re.apostrophe, '');
+        },
+        fill: function(s, fill) {
+            return !s || fill == null ? s : s.replace(re.fill, function(m, next) {
+                return next ? fill + next : '';
+            });
+        },
+        prep: function(s, fill, pascal, upper) {
+            if (!s){ return s || ''; }
+            if (!upper && re.upper.test(s)) {
+                s = _.low.call(s);
+            }
+            if (!fill && !re.hole.test(s)) {
+                var holey = _.fill(s, ' ');
+                if (re.hole.test(holey)) {
+                    s = holey;
+                }
+            }
+            if (!pascal && !re.room.test(s)) {
+                s = s.replace(re.relax, _.relax);
+            }
+            return s;
+        },
+        relax: function(m, before, acronym, caps) {
+            return before + ' ' + (acronym ? acronym+' ' : '') + caps;
+        }
+    },
+    Case = {
+        _: _,
+        of: function(s) {
+            for (var i=0,m=_.types.length; i<m; i++) {
+                if (Case[_.types[i]](s) === s){ return _.types[i]; }
+            }
+        },
+        flip: function(s) {
+            return s.replace(/\w/g, function(l) {
+                return (l == _.up.call(l) ? _.low : _.up).call(l);
+            });
+        },
+        random: function(s) {
+            return s.replace(/\w/g, function(l) {
+                return (Math.round(Math.random()) ? _.up : _.low).call(l);
+            });
+        },
+        type: function(type, fn) {
+            Case[type] = fn;
+            _.types.push(type);
+        }
+    },
+    types = {
+        lower: function(s, fill) {
+            return _.fill(_.low.call(_.prep(s, fill)), fill);
+        },
+        snake: function(s) {
+            return _.deapostrophe(Case.lower(s, '_'));
+        },
+        constant: function(s) {
+            return _.deapostrophe(Case.upper(s, '_'));
+        },
+        camel: function(s ) {
+            return _.decap(Case.pascal(s));
+        },
+        kebab: function(s) {
+            return _.deapostrophe(Case.lower(s, '-'));
+        },
+        upper: function(s, fill) {
+            return _.fill(_.up.call(_.prep(s, fill, false, true)), fill);
+        },
+        capital: function(s, fill) {
+            return _.fill(_.prep(s).replace(re.capitalize, function(m, border, letter) {
+                return border+_.up.call(letter);
+            }), fill);
+        },
+        pascal: function(s) {
+            return _.deapostrophe(_.fill(_.prep(s, false, true).replace(re.pascal, function(m, border, letter) {
+                return _.up.call(letter);
+            }), ''));
+        },
+        title: function(s) {
+            return Case.capital(s).replace(re.improper, function(small, p, i, s) {
+                return i > 0 && i < s.lastIndexOf(' ') ? _.low.call(small) : small;
+            });
+        },
+        sentence: function(s, names) {
+            s = Case.lower(s).replace(re.sentence, function(m, prelude, letter) {
+                return prelude + _.up.call(letter);
+            });
+            if (names) {
+                names.forEach(function(name) {
+                    s = s.replace(new RegExp('\\b'+Case.lower(name)+'\\b', "g"), _.cap);
+                });
+            }
+            return s;
+        }
+    };
+    
+    // TODO: Remove "squish" in a future breaking release.
+    types.squish = types.pascal;
+
+    for (var type in types) {
+        Case.type(type, types[type]);
+    }
+    // export Case (AMD, commonjs, or global)
+    var define = typeof define === "function" ? define : function(){};
+    define(typeof module === "object" && module.exports ? module.exports = Case : this.Case = Case);
+
+}).call(this);
 
 },{}],21:[function(require,module,exports){
 /*!
@@ -22193,4 +22197,6 @@ seen.Simplex3D = (function() {
 
 }).call(this);
 
-},{}]},{},[2]);
+},{}],24:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19}]},{},[2]);
