@@ -1,14 +1,14 @@
 {
     "console": {
         "@expanded": true,
-        "@height": "153",
+        "@height": 381,
         "@maximized": "false",
         "json()": {
             "meta": {
                 "accessList": [
                     "searchResults",
-                    "tab1",
-                    "tab0"
+                    "tab0",
+                    "tab1"
                 ]
             },
             "name": "pane1",
@@ -29,7 +29,7 @@
                         "title": "bash - \"BambooCanDo.local\" ",
                         "tooltip": "bash - \"BambooCanDo.local\" ",
                         "terminal": {
-                            "id": "devel_726",
+                            "id": "devel_546",
                             "cwd": "",
                             "width": 0,
                             "height": 0
@@ -42,23 +42,22 @@
                     "type": "tab",
                     "name": "tab1",
                     "path": "",
-                    "className": [],
+                    "className": [
+                        "tab1"
+                    ],
                     "document": {
-                        "filter": true,
-                        "title": "Immediate",
-                        "tooltip": "bash - \"BambooCanDo.local\" ",
-                        "terminal": {
-                            "id": "devel_749",
-                            "cwd": "",
-                            "width": 876,
-                            "height": 127,
-                            "scrollTop": 29
-                        },
-                        "hash": "da39a3ee5e6b4b0d3255bfef95601890afd80709",
+                        "changed": false,
                         "meta": {
                             "timestamp": 1479452594188
                         },
-                        "changed": false
+                        "filter": true,
+                        "title": "Immediate (Javascript (browser))",
+                        "tooltip": "Immediate (Javascript (browser))",
+                        "immediate": {
+                            "type": "jsbrowser",
+                            "history": [],
+                            "pos": 0
+                        }
                     },
                     "editorType": "immediate",
                     "active": false
@@ -106,40 +105,42 @@
     },
     "ext": {
         "counters": {
-            "@ace": 2,
+            "@ace": 3,
             "@acestatus": 2,
             "@divider": 5,
-            "@document": 9,
+            "@document": 15,
             "@form": 5,
+            "@immediate": 1,
             "@menu": 5,
             "@menuitem": 13,
             "@pane": 2,
-            "@session": 8,
-            "@tab": 8,
-            "@undoManager": 9
+            "@session": 15,
+            "@tab": 14,
+            "@undoManager": 15
         }
     },
     "findinfiles": {
         "@console": "true",
         "@matchcase": "false",
         "@regex": "false",
-        "@scope": "selection",
+        "@scope": "project",
         "@wholeword": "false"
     },
     "menus": {
-        "@minimized": "false"
+        "@minimized": false
     },
     "nak": {
         "@installed": true
     },
     "panecycle": {
         "json()": [
-            "tab7",
+            "tab10",
             "searchResults"
         ]
     },
     "panels": {
         "@active-left": "tree",
+        "@active-right": "none",
         "commands.panel": {
             "@enabled": "true",
             "@name": "commands.panel"
@@ -169,7 +170,9 @@
         "@showfs": true,
         "expanded": {
             "json()": [
-                "/"
+                "/",
+                "/node_modules",
+                "/coffee"
             ]
         }
     },
@@ -179,45 +182,34 @@
     "search-history": {
         "searchfiles": {
             "json()": [
+                "role",
+                "fwrev",
+                "2a26",
+                "FIRMWARE_DATA",
+                "firmwareString",
+                "getFirmwareString",
+                "devInfoSoftwareRev",
                 "forceTest"
             ]
         }
     },
     "tabs": {
         "json()": {
-            "focus": "/.dockerignore",
+            "focus": "/coffee/TiHandler.coffee",
             "meta": {
                 "accessList": [
-                    "tab7",
+                    "tab10",
+                    "tab13",
+                    "tab12",
+                    "tab11",
                     "tab5",
-                    "tab6",
-                    "tab4",
                     "tab3",
-                    "tab2"
+                    "tab6",
+                    "tab7"
                 ]
             },
             "name": "pane0",
             "nodes": [
-                {
-                    "type": "tab",
-                    "name": "tab2",
-                    "path": "/coffee/models/event-model.coffee",
-                    "className": [
-                        "tab2"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1479604648000
-                        },
-                        "filter": true,
-                        "title": "event-model.coffee",
-                        "tooltip": "/coffee/models/event-model.coffee",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
                 {
                     "type": "tab",
                     "name": "tab3",
@@ -241,26 +233,6 @@
                 },
                 {
                     "type": "tab",
-                    "name": "tab4",
-                    "path": "/coffee/views/pages.coffee",
-                    "className": [
-                        "tab4"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1480187893909
-                        },
-                        "filter": true,
-                        "title": "pages.coffee",
-                        "tooltip": "/coffee/views/pages.coffee",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
                     "name": "tab5",
                     "path": "/Dockerfile",
                     "className": [
@@ -269,7 +241,7 @@
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1480199965393
+                            "timestamp": 1480216683909
                         },
                         "filter": true,
                         "title": "Dockerfile",
@@ -289,7 +261,7 @@
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1479617432000
+                            "timestamp": 1480204700420
                         },
                         "filter": true,
                         "title": "package.json",
@@ -304,13 +276,12 @@
                     "name": "tab7",
                     "path": "/.dockerignore",
                     "className": [
-                        "tab7",
-                        "focus"
+                        "tab7"
                     ],
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1480199978000
+                            "timestamp": 1480200105548
                         },
                         "filter": true,
                         "title": ".dockerignore",
@@ -318,7 +289,88 @@
                         "ace": {}
                     },
                     "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab10",
+                    "path": "/coffee/TiHandler.coffee",
+                    "className": [
+                        "tab10",
+                        "focus"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479604161000
+                        },
+                        "filter": true,
+                        "title": "TiHandler.coffee",
+                        "tooltip": "/coffee/TiHandler.coffee",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
                     "active": true
+                },
+                {
+                    "type": "tab",
+                    "name": "tab11",
+                    "path": "/platforms/ios/www/libs/evothings/tisensortag/tisensortag.js",
+                    "className": [
+                        "tab11"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479597029000
+                        },
+                        "filter": true,
+                        "title": "tisensortag.js",
+                        "tooltip": "/platforms/ios/www/libs/evothings/tisensortag/tisensortag.js",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab12",
+                    "path": "/public/libs/evothings/tisensortag/tisensortag-ble.js",
+                    "className": [
+                        "tab12"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479593802000
+                        },
+                        "filter": true,
+                        "title": "tisensortag-ble.js",
+                        "tooltip": "/public/libs/evothings/tisensortag/tisensortag-ble.js",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab13",
+                    "path": "/platforms/osx/build/Retrotope Client.app/Contents/Resources/www/libs/evothings/tisensortag/tisensortag-ble.js",
+                    "className": [
+                        "tab13"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1473799883000
+                        },
+                        "filter": true,
+                        "title": "tisensortag-ble.js",
+                        "tooltip": "/platforms/osx/build/Retrotope Client.app/Contents/Resources/www/libs/evothings/tisensortag/tisensortag-ble.js",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
+                    "active": false
                 }
             ],
             "skin": "editor_tab",
@@ -328,7 +380,7 @@
     },
     "tree_selection": {
         "json()": [
-            "/.dockerignore"
+            "/coffee/TiHandler.coffee"
         ]
     }
 }

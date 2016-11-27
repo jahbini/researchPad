@@ -287,6 +287,8 @@ class TiHandler
         if statusList.SENSORTAG_ONLINE == s
           sessionInfo = Pylon.get 'sessionInfo'
           sessionInfo.set role+'sensorUUID', d.id
+          # add FWLevel to session data per Github issue stagapp 99
+          sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
           Pylon.trigger 'connected' unless d.get 'connected'
           d.set 'connected', true
           d.set 'buttonText', 'on-line'

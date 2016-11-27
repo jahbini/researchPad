@@ -220,7 +220,7 @@ definitions:
 
   Trajectory:
     description: old format for sensor readings
-    deprecated: Retrotope iOS app no longer creates this structure: use Session
+    deprecated: Retrotope iOS app no longer creates this structure - use Session
     type: object
     required:
       - clinicID
