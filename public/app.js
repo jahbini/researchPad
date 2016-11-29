@@ -797,9 +797,21 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
-  var gs;
-  if (!sessionInfo.get('testID')) {
+  var gs, numSensors, testID;
+  testID = sessionInfo.get('testID');
+  if (!testID) {
     pageGen.forceTest('red');
+    return false;
+  }
+  numSensors = 0;
+  if (Pylon.get("Left")) {
+    numSensors++;
+  }
+  if (Pylon.get("Right")) {
+    numSensors++;
+  }
+  if (numSensors < testID.get('sensorsNeeded')) {
+    pageGen.forceTest('red', "need sensor");
     return false;
   }
   if (!sessionInfo.get('_id')) {
@@ -2153,7 +2165,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
-module.exports = '1.3.1';
+module.exports = '1.3.2';
 
 
 
