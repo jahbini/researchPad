@@ -568,7 +568,7 @@
 			{
 				// Set firmware string.
 				var fw = evothings.ble.fromUtf8(data)
-				instance.firmwareString = fw.match(/\d+\.\d+\S?\b/g)[0] || ''
+				instance.firmwareString = fw.match(/.+\.\d+\S?\b/g)[0] || ''
 
 				// Notify that device info is available.
 				instance.callStatusCallback(sensortag.status.DEVICE_INFO_AVAILABLE)

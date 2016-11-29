@@ -279,8 +279,15 @@ exitCalibrate = ->
 
 enterRecording = ->
   # reject record request if no protocol is selected
-  if !sessionInfo.get 'testID'
+  testID = sessionInfo.get 'testID'
+  if !testID
     pageGen.forceTest 'red'
+    return false
+  numSensors=0
+  numSensors++ if Pylon.get "Left"
+  numSensors++ if Pylon.get "Right"
+  if numSensors < testID.get 'sensorsNeeded' 
+    pageGen.forceTest 'red',"need sensor"
     return false
 
   # sync the sessionInfo up to the server as an empty

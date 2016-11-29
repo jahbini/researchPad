@@ -134,7 +134,7 @@
     },
     "panecycle": {
         "json()": [
-            "tab10",
+            "tab3",
             "searchResults"
         ]
     },
@@ -182,6 +182,8 @@
     "search-history": {
         "searchfiles": {
             "json()": [
+                "fw.match",
+                "sensortag_revision",
                 "role",
                 "fwrev",
                 "2a26",
@@ -195,17 +197,15 @@
     },
     "tabs": {
         "json()": {
-            "focus": "/coffee/TiHandler.coffee",
+            "focus": "/coffee/app.coffee",
             "meta": {
                 "accessList": [
-                    "tab10",
-                    "tab13",
-                    "tab12",
-                    "tab11",
-                    "tab5",
                     "tab3",
+                    "tab12",
                     "tab6",
-                    "tab7"
+                    "tab13",
+                    "tab11",
+                    "tab5"
                 ]
             },
             "name": "pane0",
@@ -216,7 +216,8 @@
                     "path": "/coffee/app.coffee",
                     "className": [
                         "tab3",
-                        "changed"
+                        "changed",
+                        "focus"
                     ],
                     "document": {
                         "changed": true,
@@ -229,7 +230,7 @@
                         "ace": {}
                     },
                     "editorType": "ace",
-                    "active": false
+                    "active": true
                 },
                 {
                     "type": "tab",
@@ -261,7 +262,7 @@
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1480204700420
+                            "timestamp": 1480460092695
                         },
                         "filter": true,
                         "title": "package.json",
@@ -270,47 +271,6 @@
                     },
                     "editorType": "ace",
                     "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab7",
-                    "path": "/.dockerignore",
-                    "className": [
-                        "tab7"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1480200105548
-                        },
-                        "filter": true,
-                        "title": ".dockerignore",
-                        "tooltip": "/.dockerignore",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab10",
-                    "path": "/coffee/TiHandler.coffee",
-                    "className": [
-                        "tab10",
-                        "focus"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1479604161000
-                        },
-                        "filter": true,
-                        "title": "TiHandler.coffee",
-                        "tooltip": "/coffee/TiHandler.coffee",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": true
                 },
                 {
                     "type": "tab",
@@ -342,7 +302,7 @@
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1479593802000
+                            "timestamp": 1480461251725
                         },
                         "filter": true,
                         "title": "tisensortag-ble.js",
