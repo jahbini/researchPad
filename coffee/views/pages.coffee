@@ -124,11 +124,11 @@ class Pages
                   button '.disabled.u-full-width', "Left"
             tr ->
               td ->
-                canvas '#gyro-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
+                canvas '#gyro-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
               td ->
-                canvas '#accel-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
+                canvas '#accel-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
               td ->
-                canvas '#magnet-view-'+theUUID, width: '200', height: '200', style: 'width=100%'
+                canvas '#magnet-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
 
 
   topButtons: renderable ()->

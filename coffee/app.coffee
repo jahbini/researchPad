@@ -286,7 +286,10 @@ enterRecording = ->
   numSensors=0
   numSensors++ if Pylon.get "Left"
   numSensors++ if Pylon.get "Right"
-  if numSensors < testID.get 'sensorsNeeded' 
+  protocol= Pylon.get 'protocols'
+  theTest = protocol.findWhere
+    name: sessionInfo.get 'testID'
+  if numSensors < theTest.get 'sensorsNeeded'
     pageGen.forceTest 'red',"need sensor"
     return false
 
@@ -433,6 +436,8 @@ Pylon.test = (page='test.html')->
   window.location.assign(page)
 Pylon.a = ()->
   window.location.assign 'alabaster.html'
+Pylon.stress = (percent=50)->
+  Pylon.set stress: percent/100
 
 $(document).on 'deviceready', ->
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"

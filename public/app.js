@@ -797,7 +797,7 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
-  var gs, numSensors, testID;
+  var gs, numSensors, testID, theTest;
   testID = sessionInfo.get('testID');
   if (!testID) {
     pageGen.forceTest('red');
@@ -810,7 +810,11 @@ enterRecording = function() {
   if (Pylon.get("Right")) {
     numSensors++;
   }
-  if (numSensors < testID.get('sensorsNeeded')) {
+  protocol = Pylon.get('protocols');
+  theTest = protocol.findWhere({
+    name: sessionInfo.get('testID')
+  });
+  if (numSensors < theTest.get('sensorsNeeded')) {
     pageGen.forceTest('red', "need sensor");
     return false;
   }
@@ -1018,6 +1022,15 @@ Pylon.test = function(page) {
 
 Pylon.a = function() {
   return window.location.assign('alabaster.html');
+};
+
+Pylon.stress = function(percent) {
+  if (percent == null) {
+    percent = 50;
+  }
+  return Pylon.set({
+    stress: percent / 100
+  });
 };
 
 $(document).on('deviceready', function() {
@@ -1702,7 +1715,7 @@ module.exports = Stopwatch = (function() {
 
 
 },{}],8:[function(require,module,exports){
-var $, Backbone, Pylon, _, dumpLocal, eventModelLoader, localStorage, uploader;
+var $, Backbone, MyId, Pylon, _, eventModelLoader, getNextItem, idSequence, localStorage, needs, records, setNewItem, uploader;
 
 $ = require('jquery');
 
@@ -1716,67 +1729,107 @@ localStorage = window.localStorage;
 
 Pylon = window.Pylon;
 
-dumpLocal = function() {
-  var e, hopper, sessionInfo, uploadData, uploadKey;
-  sessionInfo = Pylon.get("sessionInfo");
-  uploadKey = localStorage.key(0);
-  if (!uploadKey) {
-    return;
-  }
-  try {
-    uploadData = localStorage.getItem(uploadKey);
-    uploadData = JSON.parse(uploadData);
-  } catch (error) {
-    e = error;
-    console.log("Error in upload");
-    console.log(e);
-    console.log("upload item removed");
-    localStorage.removeItem(uploadKey);
-    setTimeout(dumpLocal, 30000);
-    uploadData = false;
-  }
-  if (uploadData.attribute) {
-    uploadData = uploadData.attribute;
-  }
-  if (!(uploadData != null ? uploadData.url : void 0)) {
-    return;
-  }
-  hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + uploadData.url
-  });
-  uploadData = new hopper(uploadData);
-  uploadData.save().done(function(a, b, c) {
-    Pylon.trigger("upload:complete", a);
-    console.log("Save Complete " + a);
-    localStorage.removeItem(uploadKey);
-  }).fail(function(a, b, c) {
-    var currentlyUploading, failCode;
-    failCode = a.status;
-    if (failCode === 500 || failCode === 400) {
-      localStorage.removeItem(uploadKey);
-      return;
+needs = function(array, key) {
+  var i, id, len;
+  for (i = 0, len = array.length; i < len; i++) {
+    id = array[i];
+    if (id === key) {
+      return false;
     }
-    Pylon.trigger("upload:failure", {
-      message: "upload queued"
-    });
-    currentlyUploading = false;
-    console.log("session/event upload failure,code " + a + ", retry in 30 seconds");
-  });
-  setTimeout(dumpLocal, 30000);
-  return false;
+  }
+  return true;
 };
 
-eventModelLoader = function(e) {
-  e.set('url', e.url);
-  localStorage.setItem(e.cid, JSON.stringify(e.toJSON()));
-  return dumpLocal();
+records = function() {
+  var all;
+  all = localStorage.getItem('all_events');
+  return (all && all.split(",")) || [];
+};
+
+setNewItem = function(backboneAttributes) {
+  var events;
+  setTimeout(getNextItem, 5000);
+  events = records();
+  if (!backboneAttributes) {
+    return events;
+  }
+  localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
+  if (needs(events, backboneAttributes.LSid)) {
+    events.push(backboneAttributes.LSid);
+    localStorage.setItem('all_events', events.join(','));
+  }
+  return events;
+};
+
+getNextItem = function() {
+  var e, events, item, key, uploadDataObject;
+  events = records();
+  if (!events.length) {
+    return null;
+  }
+  setTimeout(getNextItem, 5000);
+  key = events.shift();
+  item = localStorage.getItem(key);
+  localStorage.removeItem(key);
+  localStorage.setItem('all_events', events.join(','));
+  try {
+    uploadDataObject = JSON.parse(item);
+  } catch (error) {
+    e = error;
+    console.log("Error in localStorage retrieval- key==" + key);
+    console.log(e);
+    console.log("upload item discarded");
+    return null;
+  }
+  return eventModelLoader(uploadDataObject);
+};
+
+idSequence = 1;
+
+MyId = function() {
+  return "Up-" + (idSequence++);
+};
+
+eventModelLoader = function(uploadDataModel) {
+  var hopper, stress, uDM, uploadDataObject;
+  if ((uDM = uploadDataModel).attributes) {
+    if (uDM.attributes) {
+      uDM.attributes.url = uDM.url;
+    }
+    uDM = uDM.attributes;
+  }
+  hopper = Backbone.Model.extend({
+    url: Pylon.get('hostUrl') + uDM.url
+  });
+  uploadDataObject = new hopper(uDM);
+  if (!uploadDataModel.LSid) {
+    uploadDataObject.set('LSid', MyId());
+  }
+  stress = Pylon.get('stress');
+  if (stress > Math.random()) {
+    setNewItem(uploadDataObject.attributes);
+    console.log("stress test upload failure, item " + uploadDataObject.id + ", retry in 5 seconds");
+    return;
+  }
+  uploadDataObject.save(null, {
+    success: function(a, b, code) {
+      console.log("upload on " + (a.get("LSid")) + " complete");
+    },
+    error: function(a, b, c) {
+      var failCode;
+      failCode = b.status;
+      console.log("Upload fail on " + (a.get('LSid')) + " (got status?)", b, c);
+      if (failCode === 500 || failCode === 400) {
+        return;
+      }
+      setNewItem(a.attributes);
+    }
+  });
 };
 
 uploader = function() {
   alert("Uploader Called!");
 };
-
-dumpLocal();
 
 
 /* this is how seen exports things -- it's clean.  we use it as example
@@ -2885,22 +2938,22 @@ Pages = (function() {
           return tr(function() {
             td(function() {
               return canvas('#gyro-view-' + theUUID, {
-                width: '200',
-                height: '200',
+                width: '100',
+                height: '100',
                 style: 'width=100%'
               });
             });
             td(function() {
               return canvas('#accel-view-' + theUUID, {
-                width: '200',
-                height: '200',
+                width: '100',
+                height: '100',
                 style: 'width=100%'
               });
             });
             return td(function() {
               return canvas('#magnet-view-' + theUUID, {
-                width: '200',
-                height: '200',
+                width: '100',
+                height: '100',
                 style: 'width=100%'
               });
             });

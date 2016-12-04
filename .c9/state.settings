@@ -1,92 +1,14 @@
 {
     "console": {
-        "@expanded": true,
-        "@height": 381,
-        "@maximized": "false",
+        "@expanded": false,
+        "@height": 260,
+        "@maximized": false,
         "json()": {
             "meta": {
-                "accessList": [
-                    "searchResults",
-                    "tab0",
-                    "tab1"
-                ]
+                "accessList": []
             },
             "name": "pane1",
-            "nodes": [
-                {
-                    "type": "tab",
-                    "name": "tab0",
-                    "path": "",
-                    "className": [
-                        "tab0"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1479453295562
-                        },
-                        "filter": true,
-                        "title": "bash - \"BambooCanDo.local\" ",
-                        "tooltip": "bash - \"BambooCanDo.local\" ",
-                        "terminal": {
-                            "id": "devel_546",
-                            "cwd": "",
-                            "width": 0,
-                            "height": 0
-                        }
-                    },
-                    "editorType": "terminal",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab1",
-                    "path": "",
-                    "className": [
-                        "tab1"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1479452594188
-                        },
-                        "filter": true,
-                        "title": "Immediate (Javascript (browser))",
-                        "tooltip": "Immediate (Javascript (browser))",
-                        "immediate": {
-                            "type": "jsbrowser",
-                            "history": [],
-                            "pos": 0
-                        }
-                    },
-                    "editorType": "immediate",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "searchResults",
-                    "path": "/.c9/searchresults",
-                    "className": [
-                        "searchResults",
-                        "changed"
-                    ],
-                    "document": {
-                        "changed": true,
-                        "meta": {
-                            "searchResults": true,
-                            "ignoreSave": true,
-                            "newfile": true,
-                            "timestamp": 1480187822363
-                        },
-                        "filter": true,
-                        "title": "Search Results",
-                        "tooltip": "/.c9/searchresults",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": true
-                }
-            ],
+            "nodes": [],
             "skin": "editor_tab",
             "skinset": "default",
             "type": "pane"
@@ -105,25 +27,25 @@
     },
     "ext": {
         "counters": {
-            "@ace": 3,
-            "@acestatus": 2,
+            "@ace": 5,
+            "@acestatus": 3,
             "@divider": 5,
-            "@document": 15,
+            "@document": 32,
             "@form": 5,
-            "@immediate": 1,
+            "@immediate": 2,
             "@menu": 5,
             "@menuitem": 13,
-            "@pane": 2,
-            "@session": 15,
-            "@tab": 14,
-            "@undoManager": 15
+            "@pane": 6,
+            "@session": 32,
+            "@tab": 28,
+            "@undoManager": 32
         }
     },
     "findinfiles": {
-        "@console": "true",
+        "@console": false,
         "@matchcase": "false",
-        "@regex": "false",
-        "@scope": "project",
+        "@regex": true,
+        "@scope": "selection",
         "@wholeword": "false"
     },
     "menus": {
@@ -134,13 +56,14 @@
     },
     "panecycle": {
         "json()": [
-            "tab3",
+            "tab0",
             "searchResults"
         ]
     },
     "panels": {
         "@active-left": "tree",
         "@active-right": "none",
+        "@width-left": 299,
         "commands.panel": {
             "@enabled": "true",
             "@name": "commands.panel"
@@ -167,12 +90,14 @@
         }
     },
     "projecttree": {
+        "@scrollpos": -10,
         "@showfs": true,
         "expanded": {
             "json()": [
                 "/",
-                "/node_modules",
-                "/coffee"
+                "/coffee/lib",
+                "/node_modules/backbone",
+                "/coffee/views"
             ]
         }
     },
@@ -182,6 +107,23 @@
     "search-history": {
         "searchfiles": {
             "json()": [
+                "trigger",
+                "systemevent:",
+                "protocols",
+                "testID",
+                "theUUID",
+                "assignedname",
+                "circle",
+                "funct\\W",
+                "aButtonModel",
+                "funct\\W",
+                "funct\\w",
+                "funct",
+                "Pylon.trigger",
+                "systemEvent:",
+                "stopCountDown",
+                "UUID",
+                "Protocols",
                 "fw.match",
                 "sensortag_revision",
                 "role",
@@ -197,139 +139,86 @@
     },
     "tabs": {
         "json()": {
-            "focus": "/coffee/app.coffee",
+            "focus": null,
             "meta": {
                 "accessList": [
-                    "tab3",
-                    "tab12",
-                    "tab6",
-                    "tab13",
-                    "tab11",
-                    "tab5"
+                    "tab0",
+                    "tab1",
+                    "searchResults"
                 ]
             },
-            "name": "pane0",
+            "name": "pane5",
             "nodes": [
                 {
                     "type": "tab",
-                    "name": "tab3",
-                    "path": "/coffee/app.coffee",
+                    "name": "searchResults",
+                    "path": "/.c9/searchresults",
                     "className": [
-                        "tab3",
-                        "changed",
-                        "focus"
+                        "searchResults",
+                        "changed"
                     ],
                     "document": {
                         "changed": true,
                         "meta": {
-                            "timestamp": 1479613159000
+                            "searchResults": true,
+                            "ignoreSave": true,
+                            "newfile": true
                         },
                         "filter": true,
-                        "title": "app.coffee",
-                        "tooltip": "/coffee/app.coffee",
+                        "title": "searchresults",
+                        "tooltip": "/.c9/searchresults",
                         "ace": {}
                     },
                     "editorType": "ace",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab0",
+                    "path": "",
+                    "className": [
+                        "tab0"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1479453295562
+                        },
+                        "filter": true,
+                        "title": "bash - \"BambooCanDo.local\" ",
+                        "tooltip": "bash - \"BambooCanDo.local\" ",
+                        "terminal": {
+                            "id": "devel_546",
+                            "cwd": "",
+                            "width": 1250,
+                            "height": 766
+                        }
+                    },
+                    "editorType": "terminal",
                     "active": true
                 },
                 {
                     "type": "tab",
-                    "name": "tab5",
-                    "path": "/Dockerfile",
+                    "name": "tab1",
+                    "path": "",
                     "className": [
-                        "tab5"
+                        "tab1"
                     ],
                     "document": {
                         "changed": false,
                         "meta": {
-                            "timestamp": 1480216683909
+                            "timestamp": 1479452594188
                         },
                         "filter": true,
-                        "title": "Dockerfile",
-                        "tooltip": "/Dockerfile",
-                        "ace": {}
+                        "title": "Immediate",
+                        "tooltip": "Immediate",
+                        "immediate": {
+                            "type": "jsbrowser",
+                            "history": [],
+                            "pos": 0
+                        }
                     },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab6",
-                    "path": "/package.json",
-                    "className": [
-                        "tab6"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1480460092695
-                        },
-                        "filter": true,
-                        "title": "package.json",
-                        "tooltip": "/package.json",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab11",
-                    "path": "/platforms/ios/www/libs/evothings/tisensortag/tisensortag.js",
-                    "className": [
-                        "tab11"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1479597029000
-                        },
-                        "filter": true,
-                        "title": "tisensortag.js",
-                        "tooltip": "/platforms/ios/www/libs/evothings/tisensortag/tisensortag.js",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab12",
-                    "path": "/public/libs/evothings/tisensortag/tisensortag-ble.js",
-                    "className": [
-                        "tab12"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1480461251725
-                        },
-                        "filter": true,
-                        "title": "tisensortag-ble.js",
-                        "tooltip": "/public/libs/evothings/tisensortag/tisensortag-ble.js",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
-                    "active": false
-                },
-                {
-                    "type": "tab",
-                    "name": "tab13",
-                    "path": "/platforms/osx/build/Retrotope Client.app/Contents/Resources/www/libs/evothings/tisensortag/tisensortag-ble.js",
-                    "className": [
-                        "tab13"
-                    ],
-                    "document": {
-                        "changed": false,
-                        "meta": {
-                            "timestamp": 1473799883000
-                        },
-                        "filter": true,
-                        "title": "tisensortag-ble.js",
-                        "tooltip": "/platforms/osx/build/Retrotope Client.app/Contents/Resources/www/libs/evothings/tisensortag/tisensortag-ble.js",
-                        "ace": {}
-                    },
-                    "editorType": "ace",
+                    "editorType": "immediate",
                     "active": false
                 }
             ],
@@ -340,7 +229,7 @@
     },
     "tree_selection": {
         "json()": [
-            "/coffee/TiHandler.coffee"
+            "/config.xml"
         ]
     }
 }
