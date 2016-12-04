@@ -30,15 +30,15 @@
             "@ace": 5,
             "@acestatus": 3,
             "@divider": 5,
-            "@document": 32,
+            "@document": 33,
             "@form": 5,
             "@immediate": 2,
             "@menu": 5,
             "@menuitem": 13,
             "@pane": 6,
-            "@session": 32,
-            "@tab": 28,
-            "@undoManager": 32
+            "@session": 33,
+            "@tab": 29,
+            "@undoManager": 33
         }
     },
     "findinfiles": {
@@ -139,10 +139,11 @@
     },
     "tabs": {
         "json()": {
-            "focus": null,
+            "focus": "tab0",
             "meta": {
                 "accessList": [
                     "tab0",
+                    "tab28",
                     "tab1",
                     "searchResults"
                 ]
@@ -177,7 +178,8 @@
                     "name": "tab0",
                     "path": "",
                     "className": [
-                        "tab0"
+                        "tab0",
+                        "focus"
                     ],
                     "document": {
                         "changed": false,
@@ -190,7 +192,7 @@
                         "terminal": {
                             "id": "devel_546",
                             "cwd": "",
-                            "width": 1250,
+                            "width": 1151,
                             "height": 766
                         }
                     },
@@ -219,6 +221,26 @@
                         }
                     },
                     "editorType": "immediate",
+                    "active": false
+                },
+                {
+                    "type": "tab",
+                    "name": "tab28",
+                    "path": "/config.xml",
+                    "className": [
+                        "tab28"
+                    ],
+                    "document": {
+                        "changed": false,
+                        "meta": {
+                            "timestamp": 1480833659000
+                        },
+                        "filter": true,
+                        "title": "config.xml",
+                        "tooltip": "/config.xml",
+                        "ace": {}
+                    },
+                    "editorType": "ace",
                     "active": false
                 }
             ],
