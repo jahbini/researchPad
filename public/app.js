@@ -1808,7 +1808,7 @@ eventModelLoader = function(uploadDataModel) {
   stress = Pylon.get('stress');
   if (stress > Math.random()) {
     setNewItem(uploadDataObject.attributes);
-    console.log("stress test upload failure, item " + uploadDataObject.id + ", retry in 5 seconds");
+    console.log("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
     return;
   }
   uploadDataObject.save(null, {
@@ -2218,7 +2218,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
-module.exports = '1.3.2';
+module.exports = '1.3.3';
 
 
 
