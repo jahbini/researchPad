@@ -62,6 +62,96 @@ class Pages
       div "#protocol-report"
     return
 
+  scanBody: renderable ()->
+    hr()
+    table ".u-full-width", ->
+      thead ->
+        tr ->
+          th "Available Sensors"
+          th "Gyroscope"
+          th "Accelerometer"
+          th "Magnetometer"
+        tbody "#sensor-1"
+        tbody "#sensor-2"
+
+  sensorView: (device)->
+    domElement = '#'+device.get 'rowName'
+    view = Backbone.View.extend
+      el: domElement
+      initialize: (device)->
+        @model = device
+        @$el.html @createRow device
+        new RssiView device
+        @render()
+        @.listenTo device, 'change:assignedName', ()->
+          @$('.assignedName').html device.get 'assignedName'
+        @.listenTo device, 'change:deviceStatus', ()->
+          @$('.status').html device.get 'deviceStatus'
+        @.listenTo device, 'change:deviceStatus', ()->
+          @$('.version').html device.get 'rowName'
+        @.listenTo device, 'change:role', @render
+        @.listenTo Pylon, 'change:Left', @render
+        @.listenTo Pylon, 'change:Right', @render
+        @.listenTo device, 'change:buttonText', @render
+        @.listenTo device, 'change:buttonClass', @render
+
+      createRow: (device)->
+        rowName = device.get 'rowName'
+        svgElement = '#rssi-'+rowName
+        gyroElement = '#gyro-'+rowName
+        accelElement = '#accel-'+rowName
+        magElement = '#mag-'+rowName
+        render ->
+          tr ->
+            td ->
+              div '.assignedName'
+              text " : "
+              span '.version'
+              br()
+              span '.status'
+            td ->
+              button '.connect-l.needsclick.u-full-width.'+device.get('buttonClass')
+                ,onClick: "Pylon.trigger('enableLeft', '#{device.cid}' )"
+            td ->
+              button '.connect-r.needsclick.u-full-width.'+device.get('buttonClass')
+                ,onClick: "Pylon.trigger('enableRight', '#{device.cid}' )"
+            td ->
+              tea.tag "svg", svgElement, height: "1.5em", width: "1.5em"
+          tr ->
+            td ""
+            td ->
+              canvas gyroElement, width: '100', height: '100', style: 'width=100%'
+            td ->
+              canvas accelElement, width: '100', height: '100', style: 'width=100%'
+            td ->
+              canvas magElement, width: '100', height: '100', style: 'width=100%'
+      render: ()->
+        device = @model
+        buttonClass = device.get 'buttonClass'
+
+        # left connect button '.connect-l'
+        if 'Right' == device.get 'role'  # if we are not already Right
+          @$('.connect-l').addClass('disabled').prop('disabled',true).html "--"
+          @$('.connect-r').addClass('disabled').prop('disabled',true).html "Active Right"
+          return
+        if 'Left' == device.get 'role'  # if we are already Left, we cant change
+          @$('.connect-l').addClass('disabled').prop('disabled',true).html "Active Left"
+          @$('.connect-r').addClass('disabled').prop('disabled',true).html "--"
+          return
+        # this device is not connected.  is Left available?
+        pylonLeft = Pylon.get('Left') || device  # is left taken?
+        if  device == pylonLeft  # device is eligible to connect as left
+            @$('.connect-l').html "#{device.get 'buttonText'} Left"
+            @$('.connect-l').addClass(buttonClass)
+
+        # this device is not connected.  is Right available?
+        pylonRight = Pylon.get('Right') || device  # is left taken?
+        if  device == pylonRight  # device is eligible to connect as left
+            @$('.connect-r').html "#{device.get 'buttonText'} Right"
+            @$('.connect-r').addClass(buttonClass)
+        return
+    return new view device
+
   scanContents: renderable (pylon)->
       sensorTags = pylon.get('devices')?.models || []
       hr()
@@ -129,8 +219,6 @@ class Pages
                 canvas '#accel-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
               td ->
                 canvas '#magnet-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
-
-
   topButtons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'

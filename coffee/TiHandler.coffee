@@ -12,16 +12,44 @@ glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
 RssiView = require './views/rssi-view.coffee'
 
+# ## Sensor Data
+# ### a single sensor reading
+reading = Backbone.Model.extend
+  defaults:
+    sensor: 'gyro'
+  initialize: ->
+    d = new Date
+    @set 'time', d.getTime()
+# ### sensor readings are grouped into ten-second chunks, other events just have text
+
+deviceModel = Backbone.Model.extend
+  urlRoot: ->
+    Pylon.get('hostUrl')+'sensor-tag'
+  idAttribute: "UUID"
+  defaults:
+    UUID: "00000000-0000-0000-0000-000000000000"
+  initialize: ()->
+      @.set 'nickname', glib(@.get 'UUID' )
+
+deviceCollection = Backbone.Collection.extend
+  model: deviceModel
+Pylon.set 'devices', new deviceCollection
+
 # View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
   el: '#scanDevices'
-  model: Pylon
+  model: Pylon.get 'devices'
   initialize: ->
     $('#StatusData').html 'Ready to connect'
     $('#FirmwareData').html '?'
+    $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
     Pylon.set 'scanActive', false
-    @listenTo @model, 'change respondingDevices', ()->
-      @render()
+    @listenTo @model, 'add', (device)->
+      # what we should lookf is not changes to pylon, but pylon's devices (a collection)
+      # on devices add, create row #
+      ordinal = @model.length
+      device.set "rowName", "sensor-#{ordinal}"
+      element = (Pylon.get 'pageGen').sensorView device
       return @
   events:
     "click": "changer"
@@ -47,34 +75,9 @@ pView=Backbone.View.extend
           .removeClass 'button-success'
           .addClass 'button-primary'
           .text 'Scan Devices'
-      if p=Pylon.get('pageGen')
-        $('#scanActiveReport').html p.scanContents(@model)
-
       return
+
 Pylon.set 'tagViewer', new pView
-
-# ## Sensor Data
-# ### a single sensor reading
-reading = Backbone.Model.extend
-  defaults:
-    sensor: 'gyro'
-  initialize: ->
-    d = new Date
-    @set 'time', d.getTime()
-# ### sensor readings are grouped into ten-second chunks, other events just have text
-
-deviceModel = Backbone.Model.extend
-  urlRoot: ->
-    Pylon.get('hostUrl')+'sensor-tag'
-  idAttribute: "UUID"
-  defaults:
-    UUID: "00000000-0000-0000-0000-000000000000"
-  initialize: ()->
-      @.set 'nickname', glib(@.get 'UUID' )
-
-deviceCollection = Backbone.Collection.extend
-  model: deviceModel
-Pylon.set 'devices', new deviceCollection
 
 Pipeline = require('./pipeline.coffee')
 
@@ -123,26 +126,12 @@ class TiHandler
         uuid = device.address
         rssi = device.rssi
         if d=pd.findWhere(origUUID: uuid)
-          d.set 'SignalStrength', rssi
-          # just update the signal strength and do not trigger any changes
-          sig = rssi
-          v=8
-          if sig < -90
-            v=0
-          else if sig < -75
-            v=2
-          else if sig < -60
-            v=4
-          else if sig < -50
-            v=6
-          else if sig < -40
-            v=7
-          Pylon.trigger "rssi-#{uuid}:setRSSI", v
+
+          d.set 'signalStrength', rssi
           return
 
         console.log "got new device"
         d = new deviceModel
-          id: uuid
           signalStrength: rssi
           genericName: device.name
           UUID: uuid
@@ -155,19 +144,18 @@ class TiHandler
         queryHostDevice(d)
 
         Pylon.trigger('change respondingDevices')
-        new RssiView "#rssi-#{uuid}"
         return
     else
       sensorScanner.stopScanningForDevices()
       return
 
-  Pylon.on "enableRight", (uuid)->
+  Pylon.on "enableRight", (cid)->
     Pylon.get 'TiHandler'
-      .attachDevice uuid, 'Right'
+      .attachDevice cid, 'Right'
 
-  Pylon.on "enableLeft", (uuid)->
+  Pylon.on "enableLeft", (cid)->
     Pylon.get 'TiHandler'
-      .attachDevice uuid, 'Left'
+      .attachDevice cid, 'Left'
 
 
   constructor: (@sessionInfo) ->
@@ -185,7 +173,7 @@ class TiHandler
       calibrator: [
         smoother.calibratorSmooth
       ]
-      viewer: smoother.viewSensor 'accel-view-'+device.attributes.origUUID, 0.4
+      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}", 0.4
       finalScale: 1
 
     magnetometerHandler = smoother.readingHandler
@@ -200,7 +188,7 @@ class TiHandler
       source: (data)->
         (device.get 'getMagnetometerValues') data
       units: '&micro;T'
-      viewer: smoother.viewSensor 'magnet-view-'+device.attributes.origUUID, 0.05
+      viewer: smoother.viewSensor "mag-#{device.get 'rowName'}", 0.05
       finalScale: 1
 
     gyroscopeHandler = smoother.readingHandler
@@ -214,7 +202,7 @@ class TiHandler
       ]
       source: (data)->
         (device.get 'getGyroscopeValues') data
-      viewer: smoother.viewSensor 'gyro-view-'+device.attributes.origUUID, 0.005
+      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.005
       finalScale: 1
 
     return gyro: gyroscopeHandler
@@ -224,14 +212,15 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-  attachDevice: (uuid,role="Right") ->
+  attachDevice: (cid,role="Right") ->
     # reject attachDevice request if we are already recording
     gs = Pylon.get('globalState')
     return if gs.get 'recording'
-    console.log "attach "+uuid
-    d = Pylon.get('devices').get uuid
+    console.log "attach "+cid
+    d = Pylon.get('devices').get cid
     # reject attachDevice if it connected Github issue #73
     return if d.get 'connected'
+    debugger
     d.set 'buttonText', 'connecting'
     d.set 'role',role
     d.set 'connected', false
@@ -280,7 +269,6 @@ class TiHandler
           return
         statusList = evothings.tisensortag.ble.status
         if statusList.DEVICE_INFO_AVAILABLE == s
-          $('#version-'+uuid).html 'Ver. '+sensorInstance.getFirmwareString()
           d.set fwRev: sensorInstance.getFirmwareString()
           return
 
@@ -290,12 +278,12 @@ class TiHandler
           # add FWLevel to session data per Github issue stagapp 99
           sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
           Pylon.trigger 'connected' unless d.get 'connected'
-          d.set 'connected', true
-          d.set 'buttonText', 'on-line'
-          d.set 'buttonClass', 'button-success'
-          d.set 'deviceStatus', 'Listening'
-          s= d.get 'buttonText'
-          $('#status-'+uuid).html s
+          d.set {
+            connected: true
+            buttonText: 'on-line'
+            buttonClass: 'button-success'
+            deviceStatus: 'Listening'
+          }
           newID = sensorInstance.softwareVersion
           if newID != "N.A."  # do we have a new tag
             $('#'+role+'Nick').text newID
@@ -330,22 +318,21 @@ class TiHandler
         if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
           return
         if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
+          debugger
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'reconnect'
           d.set 'deviceStatus', 'Disconnected'
           d.unset 'role'
-        widget = $('#status-'+uuid)
-        widget.html s
         Pylon.trigger('change respondingDevices')
         return
 
       console.log "Setting Time-out now",Date.now()
       setTimeout ()->
           return if 'Receiving' == d.get 'deviceStatus'
-          console.log "Device connection Time-out ", Date.now()
+          console.log "Device connection 10 second time-out "
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
-        ,5000
+        ,10000
 
       # bring the evothings data converters up to this device
       d.set 'getMagnetometerValues', sensorInstance.getMagnetometerValues

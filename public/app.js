@@ -17,47 +17,6 @@ Case = require('Case');
 
 RssiView = require('./views/rssi-view.coffee');
 
-pView = Backbone.View.extend({
-  el: '#scanDevices',
-  model: Pylon,
-  initialize: function() {
-    $('#StatusData').html('Ready to connect');
-    $('#FirmwareData').html('?');
-    Pylon.set('scanActive', false);
-    return this.listenTo(this.model, 'change respondingDevices', function() {
-      this.render();
-      return this;
-    });
-  },
-  events: {
-    "click": "changer"
-  },
-  changer: function() {
-    console.log("Start Scan button activated");
-    Pylon.set('scanActive', true);
-    this.render();
-    setTimeout((function(_this) {
-      return function() {
-        Pylon.set('scanActive', false);
-        _this.render();
-      };
-    })(this), 30000);
-  },
-  render: function() {
-    var p;
-    if (Pylon.get('scanActive')) {
-      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
-    } else {
-      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
-    }
-    if (p = Pylon.get('pageGen')) {
-      $('#scanActiveReport').html(p.scanContents(this.model));
-    }
-  }
-});
-
-Pylon.set('tagViewer', new pView);
-
 reading = Backbone.Model.extend({
   defaults: {
     sensor: 'gyro'
@@ -87,6 +46,47 @@ deviceCollection = Backbone.Collection.extend({
 });
 
 Pylon.set('devices', new deviceCollection);
+
+pView = Backbone.View.extend({
+  el: '#scanDevices',
+  model: Pylon.get('devices'),
+  initialize: function() {
+    $('#StatusData').html('Ready to connect');
+    $('#FirmwareData').html('?');
+    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
+    Pylon.set('scanActive', false);
+    return this.listenTo(this.model, 'add', function(device) {
+      var element, ordinal;
+      ordinal = this.model.length;
+      device.set("rowName", "sensor-" + ordinal);
+      element = (Pylon.get('pageGen')).sensorView(device);
+      return this;
+    });
+  },
+  events: {
+    "click": "changer"
+  },
+  changer: function() {
+    console.log("Start Scan button activated");
+    Pylon.set('scanActive', true);
+    this.render();
+    setTimeout((function(_this) {
+      return function() {
+        Pylon.set('scanActive', false);
+        _this.render();
+      };
+    })(this), 30000);
+  },
+  render: function() {
+    if (Pylon.get('scanActive')) {
+      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
+    } else {
+      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
+    }
+  }
+});
+
+Pylon.set('tagViewer', new pView);
 
 Pipeline = require('./pipeline.coffee');
 
@@ -143,7 +143,7 @@ TiHandler = (function() {
   Pylon.on("scanActive change", function() {
     if (Pylon.get('scanActive')) {
       return sensorScanner.startScanningForDevices(function(device) {
-        var d, pd, rssi, sig, uuid, v;
+        var d, pd, rssi, uuid;
         if (!sensorScanner.deviceIsSensorTag(device)) {
           return;
         }
@@ -153,26 +153,11 @@ TiHandler = (function() {
         if (d = pd.findWhere({
           origUUID: uuid
         })) {
-          d.set('SignalStrength', rssi);
-          sig = rssi;
-          v = 8;
-          if (sig < -90) {
-            v = 0;
-          } else if (sig < -75) {
-            v = 2;
-          } else if (sig < -60) {
-            v = 4;
-          } else if (sig < -50) {
-            v = 6;
-          } else if (sig < -40) {
-            v = 7;
-          }
-          Pylon.trigger("rssi-" + uuid + ":setRSSI", v);
+          d.set('signalStrength', rssi);
           return;
         }
         console.log("got new device");
         d = new deviceModel({
-          id: uuid,
           signalStrength: rssi,
           genericName: device.name,
           UUID: uuid,
@@ -185,19 +170,18 @@ TiHandler = (function() {
         pd.push(d);
         queryHostDevice(d);
         Pylon.trigger('change respondingDevices');
-        new RssiView("#rssi-" + uuid);
       });
     } else {
       sensorScanner.stopScanningForDevices();
     }
   });
 
-  Pylon.on("enableRight", function(uuid) {
-    return Pylon.get('TiHandler').attachDevice(uuid, 'Right');
+  Pylon.on("enableRight", function(cid) {
+    return Pylon.get('TiHandler').attachDevice(cid, 'Right');
   });
 
-  Pylon.on("enableLeft", function(uuid) {
-    return Pylon.get('TiHandler').attachDevice(uuid, 'Left');
+  Pylon.on("enableLeft", function(cid) {
+    return Pylon.get('TiHandler').attachDevice(cid, 'Left');
   });
 
   function TiHandler(sessionInfo1) {
@@ -217,7 +201,7 @@ TiHandler = (function() {
       },
       units: 'G',
       calibrator: [smoother.calibratorSmooth],
-      viewer: smoother.viewSensor('accel-view-' + device.attributes.origUUID, 0.4),
+      viewer: smoother.viewSensor("accel-" + (device.get('rowName')), 0.4),
       finalScale: 1
     });
     magnetometerHandler = smoother.readingHandler({
@@ -230,7 +214,7 @@ TiHandler = (function() {
         return (device.get('getMagnetometerValues'))(data);
       },
       units: '&micro;T',
-      viewer: smoother.viewSensor('magnet-view-' + device.attributes.origUUID, 0.05),
+      viewer: smoother.viewSensor("mag-" + (device.get('rowName')), 0.05),
       finalScale: 1
     });
     gyroscopeHandler = smoother.readingHandler({
@@ -242,7 +226,7 @@ TiHandler = (function() {
       source: function(data) {
         return (device.get('getGyroscopeValues'))(data);
       },
-      viewer: smoother.viewSensor('gyro-view-' + device.attributes.origUUID, 0.005),
+      viewer: smoother.viewSensor("gyro-" + (device.get('rowName')), 0.005),
       finalScale: 1
     });
     return {
@@ -252,7 +236,7 @@ TiHandler = (function() {
     };
   };
 
-  TiHandler.prototype.attachDevice = function(uuid, role) {
+  TiHandler.prototype.attachDevice = function(cid, role) {
     var askForData, d, e, gs, rawDevice, sensorInstance;
     if (role == null) {
       role = "Right";
@@ -261,11 +245,12 @@ TiHandler = (function() {
     if (gs.get('recording')) {
       return;
     }
-    console.log("attach " + uuid);
-    d = Pylon.get('devices').get(uuid);
+    console.log("attach " + cid);
+    d = Pylon.get('devices').get(cid);
     if (d.get('connected')) {
       return;
     }
+    debugger;
     d.set('buttonText', 'connecting');
     d.set('role', role);
     d.set('connected', false);
@@ -321,7 +306,6 @@ TiHandler = (function() {
         }
         statusList = evothings.tisensortag.ble.status;
         if (statusList.DEVICE_INFO_AVAILABLE === s) {
-          $('#version-' + uuid).html('Ver. ' + sensorInstance.getFirmwareString());
           d.set({
             fwRev: sensorInstance.getFirmwareString()
           });
@@ -334,12 +318,12 @@ TiHandler = (function() {
           if (!d.get('connected')) {
             Pylon.trigger('connected');
           }
-          d.set('connected', true);
-          d.set('buttonText', 'on-line');
-          d.set('buttonClass', 'button-success');
-          d.set('deviceStatus', 'Listening');
-          s = d.get('buttonText');
-          $('#status-' + uuid).html(s);
+          d.set({
+            connected: true,
+            buttonText: 'on-line',
+            buttonClass: 'button-success',
+            deviceStatus: 'Listening'
+          });
           newID = sensorInstance.softwareVersion;
           if (newID !== "N.A.") {
             $('#' + role + 'Nick').text(newID);
@@ -369,7 +353,7 @@ TiHandler = (function() {
         }
       });
       sensorInstance.errorCallback(function(s) {
-        var err, widget;
+        var err;
         console.log("sensor ERROR report: " + s, ' ' + d.id);
         if (!s) {
           return;
@@ -379,13 +363,12 @@ TiHandler = (function() {
           return;
         }
         if (evothings.easyble.error.DISCONNECTED === s || s === "No Response") {
+          debugger;
           d.set('buttonClass', 'button-warning');
           d.set('buttonText', 'reconnect');
           d.set('deviceStatus', 'Disconnected');
           d.unset('role');
         }
-        widget = $('#status-' + uuid);
-        widget.html(s);
         Pylon.trigger('change respondingDevices');
       });
       console.log("Setting Time-out now", Date.now());
@@ -393,10 +376,10 @@ TiHandler = (function() {
         if ('Receiving' === d.get('deviceStatus')) {
           return;
         }
-        console.log("Device connection Time-out ", Date.now());
+        console.log("Device connection 10 second time-out ");
         sensorInstance.callErrorCallback("No Response");
         return sensorInstance.disconnectDevice();
-      }, 5000);
+      }, 10000);
       d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
       d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
       d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
@@ -2855,6 +2838,135 @@ Pages = (function() {
     });
   });
 
+  Pages.prototype.scanBody = renderable(function() {
+    hr();
+    return table(".u-full-width", function() {
+      return thead(function() {
+        tr(function() {
+          th("Available Sensors");
+          th("Gyroscope");
+          th("Accelerometer");
+          return th("Magnetometer");
+        });
+        tbody("#sensor-1");
+        return tbody("#sensor-2");
+      });
+    });
+  });
+
+  Pages.prototype.sensorView = function(device) {
+    var domElement, view;
+    domElement = '#' + device.get('rowName');
+    view = Backbone.View.extend({
+      el: domElement,
+      initialize: function(device) {
+        this.model = device;
+        this.$el.html(this.createRow(device));
+        new RssiView(device);
+        this.render();
+        this.listenTo(device, 'change:assignedName', function() {
+          return this.$('.assignedName').html(device.get('assignedName'));
+        });
+        this.listenTo(device, 'change:deviceStatus', function() {
+          return this.$('.status').html(device.get('deviceStatus'));
+        });
+        this.listenTo(device, 'change:deviceStatus', function() {
+          return this.$('.version').html(device.get('rowName'));
+        });
+        this.listenTo(device, 'change:role', this.render);
+        this.listenTo(Pylon, 'change:Left', this.render);
+        this.listenTo(Pylon, 'change:Right', this.render);
+        this.listenTo(device, 'change:buttonText', this.render);
+        return this.listenTo(device, 'change:buttonClass', this.render);
+      },
+      createRow: function(device) {
+        var accelElement, gyroElement, magElement, rowName, svgElement;
+        rowName = device.get('rowName');
+        svgElement = '#rssi-' + rowName;
+        gyroElement = '#gyro-' + rowName;
+        accelElement = '#accel-' + rowName;
+        magElement = '#mag-' + rowName;
+        return render(function() {
+          tr(function() {
+            td(function() {
+              div('.assignedName');
+              text(" : ");
+              span('.version');
+              br();
+              return span('.status');
+            });
+            td(function() {
+              return button('.connect-l.needsclick.u-full-width.' + device.get('buttonClass'), {
+                onClick: "Pylon.trigger('enableLeft', '" + device.cid + "' )"
+              });
+            });
+            td(function() {
+              return button('.connect-r.needsclick.u-full-width.' + device.get('buttonClass'), {
+                onClick: "Pylon.trigger('enableRight', '" + device.cid + "' )"
+              });
+            });
+            return td(function() {
+              return tea.tag("svg", svgElement, {
+                height: "1.5em",
+                width: "1.5em"
+              });
+            });
+          });
+          return tr(function() {
+            td("");
+            td(function() {
+              return canvas(gyroElement, {
+                width: '100',
+                height: '100',
+                style: 'width=100%'
+              });
+            });
+            td(function() {
+              return canvas(accelElement, {
+                width: '100',
+                height: '100',
+                style: 'width=100%'
+              });
+            });
+            return td(function() {
+              return canvas(magElement, {
+                width: '100',
+                height: '100',
+                style: 'width=100%'
+              });
+            });
+          });
+        });
+      },
+      render: function() {
+        var buttonClass, pylonLeft, pylonRight;
+        device = this.model;
+        buttonClass = device.get('buttonClass');
+        if ('Right' === device.get('role')) {
+          this.$('.connect-l').addClass('disabled').prop('disabled', true).html("--");
+          this.$('.connect-r').addClass('disabled').prop('disabled', true).html("Active Right");
+          return;
+        }
+        if ('Left' === device.get('role')) {
+          this.$('.connect-l').addClass('disabled').prop('disabled', true).html("Active Left");
+          this.$('.connect-r').addClass('disabled').prop('disabled', true).html("--");
+          return;
+        }
+        pylonLeft = Pylon.get('Left') || device;
+        if (device === pylonLeft) {
+          this.$('.connect-l').html((device.get('buttonText')) + " Left");
+          this.$('.connect-l').addClass(buttonClass);
+        }
+        pylonRight = Pylon.get('Right') || device;
+        if (device === pylonRight) {
+          this.$('.connect-r').html((device.get('buttonText')) + " Right");
+          this.$('.connect-r').addClass(buttonClass);
+        }
+      }
+    });
+    return new view(device);
+  };
+
   Pages.prototype.scanContents = renderable(function(pylon) {
     var ref1, sensorTags;
     sensorTags = ((ref1 = pylon.get('devices')) != null ? ref1.models : void 0) || [];
@@ -3338,32 +3450,64 @@ $ = require('jquery');
 T = require('teacup');
 
 module.exports = RssiView = Backbone.View.extend({
-  initialize: function(elementId) {
-    var clearRssi, eventName, i, ref, rssiTimer, t;
-    this.elementId = elementId;
-    this.setElement(this.elementId);
+  initialize: function(device) {
+    var clearRssi, domElement, i, ref, rowName, rssiTimer, svgElement, t;
+    this.device = device;
+    rowName = this.device.get('rowName');
+    this.element = $("#" + rowName);
+    this.setElement(this.element);
     this.limit = 8;
-    $(this.elementId).svg({
+    svgElement = '#rssi-' + this.device.get('rowName');
+    $(svgElement).svg({
       initPath: '',
       settings: {
-        height: '100px',
-        width: '100px'
+        height: '100',
+        width: '100'
       }
     });
-    this.domElement = $(this.elementId).svg('get');
+    domElement = $(svgElement).svg('get');
     for (t = i = 0, ref = this.limit; 0 <= ref ? i <= ref : i >= ref; t = 0 <= ref ? ++i : --i) {
-      this.domElement.circle(50, 100 - t * 10, t * 5, {
-        id: "cir-" + (t * 5),
+      domElement.circle(50, 100 - t * 10, t * 5, {
+        id: rowName + "-cir-" + (t * 5),
         fill: "none",
         stroke: "gray"
       });
     }
-    eventName = (this.elementId.match('#?(.*)'))[1];
-    Pylon.on(eventName + ":setRSSI", (function(_this) {
+    this.listenTo(this.device, "change:signalStrength", (function(_this) {
+      return function(d) {
+        var c, j, ref1, sig, v;
+        rowName = _this.device.get('rowName');
+        svgElement = '#rssi-' + rowName;
+        domElement = $(svgElement).svg('get');
+        sig = d.get('signalStrength');
+        v = 8;
+        if (sig < -90) {
+          v = 0;
+        } else if (sig < -75) {
+          v = 2;
+        } else if (sig < -60) {
+          v = 4;
+        } else if (sig < -50) {
+          v = 6;
+        } else if (sig < -40) {
+          v = 7;
+        }
+        for (c = j = 0, ref1 = _this.limit; 0 <= ref1 ? j <= ref1 : j >= ref1; c = 0 <= ref1 ? ++j : --j) {
+          domElement.change(domElement.getElementById(rowName + "-cir-" + (c * 5)), {
+            stroke: c <= v ? "black" : "none"
+          });
+        }
+        return null;
+      };
+    })(this));
+    Pylon.on(this.rowName + ":setRSSI", (function(_this) {
       return function(t) {
         var c, j, ref1;
+        rowName = _this.device.get('rowName');
+        svgElement = '#rssi-' + rowName;
+        domElement = $(svgElement).svg('get');
         for (c = j = 0, ref1 = _this.limit; 0 <= ref1 ? j <= ref1 : j >= ref1; c = 0 <= ref1 ? ++j : --j) {
-          _this.domElement.change(_this.domElement.getElementById("cir-" + (c * 5)), {
+          domElement.change(domElement.getElementById(rowName + "-cir-" + (c * 5)), {
             stroke: c <= t ? "black" : "none"
           });
         }
@@ -3371,7 +3515,7 @@ module.exports = RssiView = Backbone.View.extend({
       };
     })(this));
     clearRssi = function() {
-      return Pylon.trigger(eventName + ":setRSSI", 0);
+      return Pylon.trigger(this.rowName + ":setRSSI", 0);
     };
     return rssiTimer = setInterval(clearRssi, 1000);
   }
