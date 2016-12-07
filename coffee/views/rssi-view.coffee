@@ -41,6 +41,11 @@ module.exports = RssiView = Backbone.View.extend
       for c in [0..@limit]
         domElement.change(domElement.getElementById("#{rowName}-cir-#{c*5}") ,{stroke: if c<=t then "black" else "none"})
       return null
-    clearRssi= ()->
-      Pylon.trigger "#{@rowName}:setRSSI",0
+    clearRssi= ()=>
+      # this will decay the signalStrength for lack of updates
+      signalStrength = @device.get 'signalStrength'
+      signalStrength -= 5 unless signalStrength < -90
+      @device.set 'signalStrength', signalStrength
+      return
+
     rssiTimer = setInterval clearRssi, 1000

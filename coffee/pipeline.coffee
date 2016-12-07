@@ -119,9 +119,12 @@ class pipeline
         if lastDisplay + 90 > Date.now()
           return
         lastDisplay = Date.now()
-        o.device.set 'deviceStatus', 'Receiving'
-        theUUID = o.device.id
-        $("#status-"+theUUID).text (o.device.get 'deviceStatus')
+
+        # update the device attributes and fire changes for rssi,status
+        o.device.set
+          deviceStatus: 'Receiving'
+          signalStrength: o.device.rssi
+
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
@@ -143,8 +146,7 @@ class pipeline
 
 
       catch error
-        console.log error
-        console.log "in readinghandler"
+        console.log "in readinghandler: #{error.statusText}"
       return
 
   ###
@@ -193,8 +195,8 @@ class pipeline
 
 
   viewSensor: (viewport, scaleFactor) ->
-    height = 200
-    width = 200
+    height = 100
+    width = 100
     model = Seen.Models['default']()
     scene = new (Seen.Scene)(
       model: model
@@ -257,8 +259,8 @@ class pipeline
       try
         spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
       catch problem
-        console.log "Death from spearPool"
-        console.log problem
+        console.log "Death from spearjjjjjkkjjjjPool"
+        console.log problem.statusText
       spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
       context = Seen.Context(viewport, scene) if !context
       context.render()

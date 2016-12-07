@@ -106,17 +106,12 @@ class TiHandler
   queryHostDevice = (d)->
     d.fetch
       success: (model,response,options) ->
-        console.log "DEVICE FETCH from Host--",response
-        name = d.get 'assignedName'
-        if name
-          $("#assignedName-"+d.id).text name
+        name = (d.get 'assignedName' ) || 'no Name'
+        console.log "DEVICE FETCH from Host: #{name}"
 
       error: (model,response,options)->
         console.log (Pylon.get('hostUrl')+'/sensorTag')
-        console.log "sensorTag fetch error - response"
-        console.log response.statusText
-        console.log "sensorTag fetch error - model"
-        console.log model
+        console.log "sensorTag fetch error: #{response.statusText}"
 
   Pylon.on "scanActive change",  =>
     if Pylon.get('scanActive')
@@ -173,7 +168,7 @@ class TiHandler
       calibrator: [
         smoother.calibratorSmooth
       ]
-      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}", 0.4
+      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}", 0.4/2
       finalScale: 1
 
     magnetometerHandler = smoother.readingHandler
@@ -188,7 +183,7 @@ class TiHandler
       source: (data)->
         (device.get 'getMagnetometerValues') data
       units: '&micro;T'
-      viewer: smoother.viewSensor "mag-#{device.get 'rowName'}", 0.05
+      viewer: smoother.viewSensor "mag-#{device.get 'rowName'}", 0.05/2
       finalScale: 1
 
     gyroscopeHandler = smoother.readingHandler
@@ -202,7 +197,7 @@ class TiHandler
       ]
       source: (data)->
         (device.get 'getGyroscopeValues') data
-      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.005
+      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.005/2
       finalScale: 1
 
     return gyro: gyroscopeHandler
@@ -290,6 +285,7 @@ class TiHandler
             $('#'+role+'uuid').text sensorInstance.coffeeNumber if sensorInstance.coffeeNumber
             newID = Case.kebab "#{newID} #{sensorInstance.coffeeNumber}"
             sessionInfo.set role+'sensorUUID', newID
+            d.set 'firmwareVersion', sensorInstance.coffeeNumber
             if role == "Left"
               sessionInfo.set 'SerialNoL', sensorInstance.coffeeNumber
               sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
@@ -318,7 +314,6 @@ class TiHandler
         if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
           return
         if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
-          debugger
           d.set 'buttonClass', 'button-warning'
           d.set 'buttonText', 'reconnect'
           d.set 'deviceStatus', 'Disconnected'

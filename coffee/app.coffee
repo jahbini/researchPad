@@ -116,7 +116,6 @@ console.log "app Ver:", sessionInfo.get 'applicationVersion'
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
 Pylon.set 'sessionInfo', sessionInfo
-console.log "sessionInfo created as: ", sessionInfo
 
 {EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
@@ -381,8 +380,7 @@ Pylon.on 'adminDone', ->
 
 protocolsShowedErrors=1
 getProtocol = ->
-  protocols.on 'change', ()->
-    console.log "got reply from server for protocol collection"
+  console.log "protocol request initiate"
   protocols.fetch
     success: (collection,response,options)->
       console.log "protocols request success"
@@ -400,8 +398,7 @@ protocols.on 'fetched' , ->
 
 clinicShowedErrors=1
 getClinics = ->
-  clinics.on 'change', ()->
-    console.log "got reply from server for clinics collection"
+  console.log "clinic request initiate"
   clinics.fetch
     success: (collection,response,options)->
       console.log "clinic request success"
@@ -412,10 +409,7 @@ getClinics = ->
         return
       clinicShowedErrors=15
       console.log (Pylon.get('hostUrl')+'clinics')
-      console.log "clinics fetch error - response"
-      console.log response.statusText
-      console.log "clinics fetch error - collection"
-      console.log collection
+      console.log "clinics fetch error - response:#{response.statusText}"
 clinicTimer = setInterval getClinics,600
 clinics.on 'fetched', ->
   clearInterval clinicTimer

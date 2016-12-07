@@ -44,8 +44,7 @@ getNextItem = ()->
     uploadDataObject = JSON.parse item
   catch e
     console.log "Error in localStorage retrieval- key==#{key}"
-    console.log e
-    console.log "upload item discarded"
+    console.log "upload item discarded -- invalid JSON"
     return null
   eventModelLoader uploadDataObject
 
@@ -65,6 +64,7 @@ eventModelLoader = (uploadDataModel)->
   }
   uploadDataObject = new hopper uDM
   uploadDataObject.set 'LSid',MyId() unless uploadDataModel.LSid
+  uploadDataObject.set 'hostFails',0 unless uploadDataModel.hostFails 
   stress = Pylon.get 'stress'
   if stress> Math.random()
     #pretend to fail
@@ -78,10 +78,10 @@ eventModelLoader = (uploadDataModel)->
       return
     error: (a,b,c)->
       failCode = b.status
-      console.log "Upload fail on #{a.get 'LSid'} (got status?)",b,c
-      # if the server cannot process the upload, throw it away
-      return if failCode == 500 || failCode == 400
-
+      # we try 10 times 
+      fails = a.get 'hostFails'
+      fails +=1
+      console.log "Upload #{fails} failures (#{failCode}) on #{a.get 'LSid'}",b
       # Try Again
       # insert the item into localStorage for upload again later
       setNewItem a.attributes

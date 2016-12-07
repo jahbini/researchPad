@@ -124,18 +124,12 @@ TiHandler = (function() {
     return d.fetch({
       success: function(model, response, options) {
         var name;
-        console.log("DEVICE FETCH from Host--", response);
-        name = d.get('assignedName');
-        if (name) {
-          return $("#assignedName-" + d.id).text(name);
-        }
+        name = (d.get('assignedName')) || 'no Name';
+        return console.log("DEVICE FETCH from Host: " + name);
       },
       error: function(model, response, options) {
         console.log(Pylon.get('hostUrl') + '/sensorTag');
-        console.log("sensorTag fetch error - response");
-        console.log(response.statusText);
-        console.log("sensorTag fetch error - model");
-        return console.log(model);
+        return console.log("sensorTag fetch error: " + response.statusText);
       }
     });
   };
@@ -201,7 +195,7 @@ TiHandler = (function() {
       },
       units: 'G',
       calibrator: [smoother.calibratorSmooth],
-      viewer: smoother.viewSensor("accel-" + (device.get('rowName')), 0.4),
+      viewer: smoother.viewSensor("accel-" + (device.get('rowName')), 0.4 / 2),
       finalScale: 1
     });
     magnetometerHandler = smoother.readingHandler({
@@ -214,7 +208,7 @@ TiHandler = (function() {
         return (device.get('getMagnetometerValues'))(data);
       },
       units: '&micro;T',
-      viewer: smoother.viewSensor("mag-" + (device.get('rowName')), 0.05),
+      viewer: smoother.viewSensor("mag-" + (device.get('rowName')), 0.05 / 2),
       finalScale: 1
     });
     gyroscopeHandler = smoother.readingHandler({
@@ -226,7 +220,7 @@ TiHandler = (function() {
       source: function(data) {
         return (device.get('getGyroscopeValues'))(data);
       },
-      viewer: smoother.viewSensor("gyro-" + (device.get('rowName')), 0.005),
+      viewer: smoother.viewSensor("gyro-" + (device.get('rowName')), 0.005 / 2),
       finalScale: 1
     });
     return {
@@ -332,6 +326,7 @@ TiHandler = (function() {
             }
             newID = Case.kebab(newID + " " + sensorInstance.coffeeNumber);
             sessionInfo.set(role + 'sensorUUID', newID);
+            d.set('firmwareVersion', sensorInstance.coffeeNumber);
             if (role === "Left") {
               sessionInfo.set('SerialNoL', sensorInstance.coffeeNumber);
               sessionInfo.set('FWLevelL', sensorInstance.getFirmwareString());
@@ -363,7 +358,6 @@ TiHandler = (function() {
           return;
         }
         if (evothings.easyble.error.DISCONNECTED === s || s === "No Response") {
-          debugger;
           d.set('buttonClass', 'button-warning');
           d.set('buttonText', 'reconnect');
           d.set('deviceStatus', 'Disconnected');
@@ -572,8 +566,6 @@ pageGen = new pages.Pages(sessionInfo);
 Pylon.set('pageGen', pageGen);
 
 Pylon.set('sessionInfo', sessionInfo);
-
-console.log("sessionInfo created as: ", sessionInfo);
 
 EventModel = require("./models/event-model.coffee").EventModel;
 
@@ -922,9 +914,7 @@ Pylon.on('adminDone', function() {
 protocolsShowedErrors = 1;
 
 getProtocol = function() {
-  protocols.on('change', function() {
-    return console.log("got reply from server for protocol collection");
-  });
+  console.log("protocol request initiate");
   return protocols.fetch({
     success: function(collection, response, options) {
       console.log("protocols request success");
@@ -950,9 +940,7 @@ protocols.on('fetched', function() {
 clinicShowedErrors = 1;
 
 getClinics = function() {
-  clinics.on('change', function() {
-    return console.log("got reply from server for clinics collection");
-  });
+  console.log("clinic request initiate");
   return clinics.fetch({
     success: function(collection, response, options) {
       console.log("clinic request success");
@@ -965,10 +953,7 @@ getClinics = function() {
       }
       clinicShowedErrors = 15;
       console.log(Pylon.get('hostUrl') + 'clinics');
-      console.log("clinics fetch error - response");
-      console.log(response.statusText);
-      console.log("clinics fetch error - collection");
-      return console.log(collection);
+      return console.log("clinics fetch error - response:" + response.statusText);
     }
   });
 };
@@ -1760,8 +1745,7 @@ getNextItem = function() {
   } catch (error) {
     e = error;
     console.log("Error in localStorage retrieval- key==" + key);
-    console.log(e);
-    console.log("upload item discarded");
+    console.log("upload item discarded -- invalid JSON");
     return null;
   }
   return eventModelLoader(uploadDataObject);
@@ -1788,6 +1772,9 @@ eventModelLoader = function(uploadDataModel) {
   if (!uploadDataModel.LSid) {
     uploadDataObject.set('LSid', MyId());
   }
+  if (!uploadDataModel.hostFails) {
+    uploadDataObject.set('hostFails', 0);
+  }
   stress = Pylon.get('stress');
   if (stress > Math.random()) {
     setNewItem(uploadDataObject.attributes);
@@ -1799,12 +1786,11 @@ eventModelLoader = function(uploadDataModel) {
       console.log("upload on " + (a.get("LSid")) + " complete");
     },
     error: function(a, b, c) {
-      var failCode;
+      var failCode, fails;
       failCode = b.status;
-      console.log("Upload fail on " + (a.get('LSid')) + " (got status?)", b, c);
-      if (failCode === 500 || failCode === 400) {
-        return;
-      }
+      fails = a.get('hostFails');
+      fails += 1;
+      console.log("Upload " + fails + " failures (" + failCode + ") on " + (a.get('LSid')), b);
       setNewItem(a.attributes);
     }
   });
@@ -2016,7 +2002,7 @@ pipeline = (function() {
     });
     return (function(_this) {
       return function(data) {
-        var error, i, m, p, r, theUUID;
+        var error, i, m, p, r;
         try {
           if (Pylon.get('globalState').get('recording')) {
             try {
@@ -2034,9 +2020,10 @@ pipeline = (function() {
             return;
           }
           lastDisplay = Date.now();
-          o.device.set('deviceStatus', 'Receiving');
-          theUUID = o.device.id;
-          $("#status-" + theUUID).text(o.device.get('deviceStatus'));
+          o.device.set({
+            deviceStatus: 'Receiving',
+            signalStrength: o.device.rssi
+          });
           r = o.source(data);
           p = void 0;
           m = void 0;
@@ -2054,8 +2041,7 @@ pipeline = (function() {
           o.viewer(p.x, p.y, p.z);
         } catch (error1) {
           error = error1;
-          console.log(error);
-          console.log("in readinghandler");
+          console.log("in readinghandler: " + error.statusText);
         }
       };
     })(this);
@@ -2098,8 +2084,8 @@ pipeline = (function() {
 
   pipeline.prototype.viewSensor = function(viewport, scaleFactor) {
     var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
-    height = 200;
-    width = 200;
+    height = 100;
+    width = 100;
     model = Seen.Models['default']();
     scene = new Seen.Scene({
       model: model,
@@ -2171,8 +2157,8 @@ pipeline = (function() {
         spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
       } catch (error1) {
         problem = error1;
-        console.log("Death from spearPool");
-        console.log(problem);
+        console.log("Death from spearjjjjjkkjjjjPool");
+        console.log(problem.statusText);
       }
       spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
       if (!context) {
@@ -2870,8 +2856,8 @@ Pages = (function() {
         this.listenTo(device, 'change:deviceStatus', function() {
           return this.$('.status').html(device.get('deviceStatus'));
         });
-        this.listenTo(device, 'change:deviceStatus', function() {
-          return this.$('.version').html(device.get('rowName'));
+        this.listenTo(device, 'change:firmwareVersion', function() {
+          return this.$('.version').html(device.get('firmwareVersion'));
         });
         this.listenTo(device, 'change:role', this.render);
         this.listenTo(Pylon, 'change:Left', this.render);
@@ -3157,32 +3143,16 @@ Pages = (function() {
     model = Pylon.get('sessionInfo');
     return $('#testID').change((function(_this) {
       return function(node) {
-        var nasty;
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
         model.set('testID', $('#testID option:selected').val());
-        try {
-          model.save({
-            success: function() {
-              console.log("session logged with host");
-              console.log("now =", model);
-              return console.log("attributes =", model.attributes);
-            },
-            failure: function(e) {
-              return console.log("Session save Fail: " + e);
-            },
-            error: function(e) {
-              if (e == null) {
-                e = "unknown";
-              }
-              return console.log("Session save Fail: " + e);
-            }
-          });
-        } catch (error) {
-          nasty = error;
-          alert("sync fail");
-          console.log(model);
-          console.log(model.attributes);
-        }
+        model.save({
+          success: function(model, response, options) {
+            return console.log("session logged with host");
+          },
+          error: function(model, response, options) {
+            return console.log("Session save Fail: " + response.statusText);
+          }
+        });
         return false;
       };
     })(this));
@@ -3514,9 +3484,16 @@ module.exports = RssiView = Backbone.View.extend({
         return null;
       };
     })(this));
-    clearRssi = function() {
-      return Pylon.trigger(this.rowName + ":setRSSI", 0);
-    };
+    clearRssi = (function(_this) {
+      return function() {
+        var signalStrength;
+        signalStrength = _this.device.get('signalStrength');
+        if (!(signalStrength < -90)) {
+          signalStrength -= 5;
+        }
+        _this.device.set('signalStrength', signalStrength);
+      };
+    })(this);
     return rssiTimer = setInterval(clearRssi, 1000);
   }
 });

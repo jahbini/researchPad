@@ -87,8 +87,8 @@ class Pages
           @$('.assignedName').html device.get 'assignedName'
         @.listenTo device, 'change:deviceStatus', ()->
           @$('.status').html device.get 'deviceStatus'
-        @.listenTo device, 'change:deviceStatus', ()->
-          @$('.version').html device.get 'rowName'
+        @.listenTo device, 'change:firmwareVersion', ()->
+          @$('.version').html device.get 'firmwareVersion'
         @.listenTo device, 'change:role', @render
         @.listenTo Pylon, 'change:Left', @render
         @.listenTo Pylon, 'change:Right', @render
@@ -261,24 +261,17 @@ class Pages
         b.fadeTo(500,0.25)
 
   wireButtons: =>
+    # all buttons converted to button-view objects
+    # only remaining widget is protocol ID selector
     model = Pylon.get('sessionInfo')
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
       model.set 'testID',$('#testID option:selected').val()
-      try
-        model.save
-          success: ()->
-            console.log "session logged with host"
-            console.log "now =", model
-            console.log "attributes =", model.attributes
-          failure: (e)->
-            console.log "Session save Fail: #{e}"
-          error: (e="unknown")->
-            console.log "Session save Fail: #{e}"
-      catch nasty
-        alert "sync fail"
-        console.log model
-        console.log model.attributes
+      model.save
+        success: (model,response,options)->
+          console.log "session logged with host"
+        error: (model,response,options)->
+          console.log "Session save Fail: #{response.statusText}"
       return false
 
   renderPage: ()=>
