@@ -1076,7 +1076,7 @@ $(document).on('deviceready', function() {
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
   Pylon.on("UploadCount", function(count) {
-    return $("#UploadCount").html("Upload:" + count);
+    return $("#UploadCount").html("Queued:" + count);
   });
   startBlueTooth();
 });
@@ -2279,7 +2279,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
-module.exports = '1.4.0';
+module.exports = '1.4.1';
 
 
 
@@ -2897,7 +2897,7 @@ Pages = (function() {
         div('#platformIosVersion.two.columns', function() {
           return raw('&nbsp;');
         });
-        return div('#UploadCount.two.columns', "Upload:0");
+        return div('#UploadCount.two.columns', "Queued:0");
       });
       raw(contents1());
       div("#scanActiveReport");
