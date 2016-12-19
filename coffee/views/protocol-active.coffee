@@ -33,6 +33,8 @@ ProtocolReportTemplate = Backbone.View.extend
         @stopwatch.start()
 
       Pylon.on 'recordCountDown:over', ()=>
+        theTest = Pylon.theProtocol()
+        return unless theTest.get 'showMilestones'
         @$el.addClass 'active'
         @render()
         # start with only the goButton enabled
@@ -53,10 +55,8 @@ ProtocolReportTemplate = Backbone.View.extend
         tea.hr
         tag "section", ->
           h3 "#protocol-result", "record these events"
-        protocol= Pylon.get 'protocols'
-        theTest = protocol.findWhere
-          name: sessionInfo.get 'testID'
-        if theTest
+        theTest = Pylon.theProtocol()
+        if theTest.get 'showMilestones'
           mileStones = theTest.get('mileStones')?.split ','
           tea.ul =>
             tea.li "#goList", =>

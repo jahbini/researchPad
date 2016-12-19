@@ -110,10 +110,12 @@ class pipeline
             o.device.attributes.numReadings += 1
           catch
             alert "device numReadings fail"
-          if o.device.get('type') !=  evothings.tisensortag.CC2650_BLUETOOTH_SMART
-            o.readings.addSample  _.toArray(data)
-          else if o.sensor == 'gyro'
-            o.readings.addSample  _.toArray(data)
+          if o.sensor == 'gyro'
+            try
+              o.device.attributes.readings.addSample  _.toArray(data)
+            catch errrrrr
+              debugger
+              o.device.attributes.readings.addSample  _.toArray(data)
 
         #only display 10 or so readings per second
         if lastDisplay + 90 > Date.now()
@@ -146,7 +148,7 @@ class pipeline
 
 
       catch error
-        console.log "in readinghandler: #{error.statusText}"
+        console.log "in readinghandler: #{error.statusText || error}"
       return
 
   ###
@@ -259,8 +261,8 @@ class pipeline
       try
         spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
       catch problem
-        console.log "Death from spearjjjjjkkjjjjPool"
-        console.log problem.statusText
+        console.log "Death from spear Pool"
+        console.log problem.statusText || probem
       spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
       context = Seen.Context(viewport, scene) if !context
       context.render()

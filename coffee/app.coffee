@@ -9,7 +9,14 @@ Backbone = require ('backbone')
 require('./lib/console')
 
 PylonTemplate = Backbone.Model.extend
-    scan: false
+  scan: false
+  theSession: ()->
+    return @.attributes.sessionInfo
+  theProtocol: ()->
+    protocols= @.attributes.protocols
+    return {} if !protocols || !sessionInfo.attributes.testID
+    return protocols.findWhere
+      name: sessionInfo.attributes.testID
 
 window.Pylon = Pylon = new PylonTemplate
 Pylon.on 'all', (event,rest...)->
@@ -148,17 +155,22 @@ activateNewButtons = ->
     return false
   $('#footer').hide()
 
-  ActionButton = new BV 'admin'
-  ActionButton.set
-    legend: "Log In"
-    enabled: true
+  AdminButton = new BV 'admin'
+  AdminButton.set
+    legend: "Wait on Host"
+    enabled: false
+  #canLogIn will be triggered when both the clinics and protocols are fetched from host
+  Pylon.on 'canLogIn', ->
+    AdminButton.set 
+      enabled:true
+      legend: "Log In"
   Pylon.on "systemEvent:admin:log-in", enterAdmin
   Pylon.on "systemEvent:admin:log-out", exitAdmin
 
   Pylon.on "admin:disable", ->
-    ActionButton.set 'enabled',false
+    AdminButton.set 'enabled',false
   Pylon.on "admin:enable", ->
-    ActionButton.set 'enabled',true
+    AdminButton.set 'enabled',true
 
   ClearButton = new BV 'clear',"u-full-width"
   ClearButton.set
@@ -276,12 +288,21 @@ exitCalibrate = ->
   (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
   return false
 
+theProtocol = ->
+  testID = sessionInfo.get 'testID'
+  protocol= Pylon.get 'protocols'
+  return {} if !testID || !protocol
+  return theTest = protocol.findWhere
+    name: sessionInfo.get 'testID'
+  
+
 enterRecording = ->
   # reject record request if no protocol is selected
   testID = sessionInfo.get 'testID'
   if !testID
     pageGen.forceTest 'red'
     return false
+
   numSensors=0
   numSensors++ if Pylon.get "Left"
   numSensors++ if Pylon.get "Right"
@@ -291,7 +312,6 @@ enterRecording = ->
   if numSensors < theTest.get 'sensorsNeeded'
     pageGen.forceTest 'red',"need sensor"
     return false
-
   # sync the sessionInfo up to the server as an empty
   # session structure.  We need the mongo _id that the server
   # sends back
@@ -379,6 +399,17 @@ Pylon.on 'adminDone', ->
   return enableRecordButtonOK()
 
 protocolsShowedErrors=1
+protocols.on 'fetched', ->
+  gs = Pylon.get('globalState')
+  gs.set 'protocols',true
+  if gs.get 'clinics'
+    Pylon.trigger 'canLogIn'
+clinics.on 'fetched', ->
+  gs = Pylon.get('globalState')
+  gs.set 'clinics',true
+  if gs.get 'protocols'
+    Pylon.trigger 'canLogIn'
+  
 getProtocol = ->
   console.log "protocol request initiate"
   protocols.fetch
@@ -391,8 +422,8 @@ getProtocol = ->
         return
       protocolsShowedErrors=15
       console.log (Pylon.get('hostUrl')+'protocols'), "protocols fetch error - response:", response.statusText
-
-protocolTimer = setInterval getProtocol, 500
+getProtocol()
+protocolTimer = setInterval getProtocol, 11000
 protocols.on 'fetched' , ->
   clearInterval protocolTimer
 
@@ -407,12 +438,14 @@ getClinics = ->
       clinicShowedErrors--
       if clinicShowedErrors
         return
-      clinicShowedErrors=15
+      clinicShowedErrors=5
       console.log (Pylon.get('hostUrl')+'clinics')
       console.log "clinics fetch error - response:#{response.statusText}"
-clinicTimer = setInterval getClinics,600
+getClinics()
+clinicTimer = setInterval getClinics,10000
 clinics.on 'fetched', ->
   clearInterval clinicTimer
+  
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web
@@ -437,7 +470,9 @@ $(document).on 'deviceready', ->
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
   $("#platformUUID").text sessionInfo.attributes.platformUUID
-  $("#platformIosVersion").text sessionInfo.attributes.platformIosVersion
+  $("#platformIosVersion").text "iOS Ver:"+sessionInfo.attributes.platformIosVersion
+  Pylon.on "UploadCount", (count)->
+    $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
   return
 

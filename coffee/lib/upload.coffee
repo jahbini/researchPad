@@ -15,14 +15,30 @@ needs = (array, key)->
   return false for id in array when id is key
   return true
 
+hiWater = ()->
+  high = localStorage.getItem('hiWater') || 1
+  try
+    #force high into numeric form
+    high=1*high+1
+  catch
+    high=1
+  localStorage.setItem 'hiWater', high
+  return high
+      
+oldAll = -1  
 records = ()->
   all = localStorage.getItem('all_events')
-  return (all && all.split(",")) || []
+  all =  (all && all.split(",")) || []
+  # update the count of local items on the screen
+  if (l=all.length) != oldAll
+    Pylon.trigger "UploadCount", all.length
+  oldAll = l
+  return all
 
 #store new backbone object.attributes into localStorage, based on upload ticket.
 setNewItem = (backboneAttributes)->
   setTimeout getNextItem, 5000
-  events = records()
+  events =records()
   return events unless backboneAttributes
   localStorage.setItem backboneAttributes.LSid, JSON.stringify backboneAttributes
   if needs events, backboneAttributes.LSid
@@ -51,9 +67,8 @@ getNextItem = ()->
 # eventModelUploader will upload models to the server.
 # if the communication fails, the model is serialized and put into localStorage
 #  the uploadData is in object form (after JSON.parse, before JSON.stringify)
-idSequence = 1
 MyId = ()->
-  return "Up-#{idSequence++}"
+  return "Up-#{hiWater()}"
 
 eventModelLoader = (uploadDataModel)->
   if (uDM=uploadDataModel).attributes
@@ -81,7 +96,7 @@ eventModelLoader = (uploadDataModel)->
       # we try 10 times 
       fails = a.get 'hostFails'
       fails +=1
-      console.log "Upload #{fails} failures (#{failCode}) on #{a.get 'LSid'}",b
+      console.log "Upload #{fails} failures (#{failCode}) on #{a.get 'LSid'}"
       # Try Again
       # insert the item into localStorage for upload again later
       setNewItem a.attributes

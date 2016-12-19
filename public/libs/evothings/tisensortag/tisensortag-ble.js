@@ -123,7 +123,7 @@
 		instance.DEVICEINFO_SERVICE = '0000180a-0000-1000-8000-00805f9b34fb'
 		instance.FIRMWARE_DATA = '00002a26-0000-1000-8000-00805f9b34fb'
 		instance.MODELNUMBER_DATA = '00002a24-0000-1000-8000-00805f9b34fb'
-		instance.coffee_NUMBER = '00002a25-0000-1000-8000-00805f9b34fb'
+		instance.SERIAL_NUMBER = '00002a25-0000-1000-8000-00805f9b34fb'
 		instance.SOFTWARE_REV = '00002a28-0000-1000-8000-00805f9b34fb'
 
 		instance.TEMPERATURE_SERVICE = 'f000aa00-0451-4000-b000-000000000000'
@@ -514,7 +514,7 @@
 				// Reading of model is disabled. See comment below.
 				//readModelNumber()
 				readFirmwareVersion()
-				readcoffeeNumber()
+				readserialNumber()
 				readSoftwareRev()
 			}
 
@@ -578,19 +578,19 @@
 			}
 
 
-			function readcoffeeNumber()
+			function readserialNumber()
 			{
 				instance.device.readCharacteristic(
-					instance.coffee_NUMBER,
-					gotcoffeeNumber,
+					instance.SERIAL_NUMBER,
+					gotserialNumber,
 					instance.errorFun)
 			}
 
-			function gotcoffeeNumber(data)
+			function gotserialNumber(data)
 			{
 				// Set firmware string.
 				var fw = evothings.ble.fromUtf8(data)
-				instance.coffeeNumber = fw
+				instance.serialNumber = fw
 			}
 
 			function readSoftwareRev()

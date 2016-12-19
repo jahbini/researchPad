@@ -151,6 +151,10 @@ class TiHandler
   Pylon.on "enableLeft", (cid)->
     Pylon.get 'TiHandler'
       .attachDevice cid, 'Left'
+  Pylon.on "enableDevice", (cid)->
+    Pylon.get 'TiHandler'
+      .attachDevice cid, 'Guess'
+    
 
 
   constructor: (@sessionInfo) ->
@@ -168,7 +172,7 @@ class TiHandler
       calibrator: [
         smoother.calibratorSmooth
       ]
-      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}", 0.4/2
+      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}",1.5
       finalScale: 1
 
     magnetometerHandler = smoother.readingHandler
@@ -197,7 +201,7 @@ class TiHandler
       ]
       source: (data)->
         (device.get 'getGyroscopeValues') data
-      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.005/2
+      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.05/2
       finalScale: 1
 
     return gyro: gyroscopeHandler
@@ -215,12 +219,10 @@ class TiHandler
     d = Pylon.get('devices').get cid
     # reject attachDevice if it connected Github issue #73
     return if d.get 'connected'
-    debugger
     d.set 'buttonText', 'connecting'
     d.set 'role',role
     d.set 'connected', false
 
-    d.set 'readings', new EventModel role, d
     # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
@@ -272,6 +274,7 @@ class TiHandler
           sessionInfo.set role+'sensorUUID', d.id
           # add FWLevel to session data per Github issue stagapp 99
           sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
+          #why is there no comment on this next line?  Is that what you want to do??
           Pylon.trigger 'connected' unless d.get 'connected'
           d.set {
             connected: true
@@ -280,17 +283,32 @@ class TiHandler
             deviceStatus: 'Listening'
           }
           newID = sensorInstance.softwareVersion
-          if newID != "N.A."  # do we have a new tag
-            $('#'+role+'Nick').text newID
-            $('#'+role+'uuid').text sensorInstance.coffeeNumber if sensorInstance.coffeeNumber
-            newID = Case.kebab "#{newID} #{sensorInstance.coffeeNumber}"
+          if sensorInstance.serialNumber &&  newID != "N.A."  # do we have a new tag
+            switch  newRole = sensorInstance.serialNumber.slice -3
+              when "(R)","B01"
+                role="Right"
+                #hacks!
+                $("#RightSerialNumber").html sensorInstance.serialNumber
+                $("#RightVersion").html sensorInstance.softwareVersion
+              when "(L)","B02"
+                role="Left"
+                #hacks!
+                $("#LeftSerialNumber").html sensorInstance.serialNumber
+                $("#LeftVersion").html sensorInstance.softwareVersion
+            
+            d.set 'role',role
+            Pylon.set role, d
+            newID = Case.kebab "#{newID} #{sensorInstance.serialNumber}"
+            d.set 'readings', new EventModel role, d
+            Pylon.trigger('change respondingDevices')
+            
             sessionInfo.set role+'sensorUUID', newID
-            d.set 'firmwareVersion', sensorInstance.coffeeNumber
+            d.set 'firmwareVersion', sensorInstance.serialNumber
             if role == "Left"
-              sessionInfo.set 'SerialNoL', sensorInstance.coffeeNumber
+              sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
               sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
             else
-              sessionInfo.set 'SerialNoR', sensorInstance.coffeeNumber
+              sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
               sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
 
             d.set UUID: newID

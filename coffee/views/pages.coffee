@@ -36,30 +36,28 @@ class Pages
       buttons()
       div '.row',->
         div '.two.columns',"Right Tag"
-        div '.three.columns', ->
-          span '#RightNick', '?'
-        div '#Rightuuid.seven.columns' , ' '
+        div '#RightVersion.three.columns' , ' '
+        div '#RightSerialNumber.three.columns', ' '
       div '.row',->
         div '.two.columns',"Left Tag"
-        div '.three.columns', ->
-          span '#LeftNick', '?'
-        div '#Leftuuid.seven.columns' , ' '
+        div '#LeftVersion.three.columns' , ' '
+        div '#LeftSerialNumber.three.columns',  ' '
       div '.row', ->
         div '.three.columns',"Platform UUID"
         div '#platformUUID.five.columns', ->
           raw '&nbsp;'
-        div '.two.columns',"OS V"
         div '#platformIosVersion.two.columns', ->
           raw '&nbsp;'
+        div '#UploadCount.two.columns',"Queued:0"
       raw contents1()
       div "#scanActiveReport"
-      div '#footer','style="display:none;"', ->
+      div '#footer', style: "display:none;", ->
         hr()
         div '#console-log.container'
     # the test activity portal -- populated in modalView.coffee
     div "#recorder.modal",->
       div "#count-down"
-      div "#protocol-report"
+      div "#protocol-report", style: "display:none;"
     return
 
   scanBody: renderable ()->
@@ -92,6 +90,7 @@ class Pages
         @.listenTo device, 'change:role', @render
         @.listenTo Pylon, 'change:Left', @render
         @.listenTo Pylon, 'change:Right', @render
+        @.listenTo Pylon, 'change:Guess', @render
         @.listenTo device, 'change:buttonText', @render
         @.listenTo device, 'change:buttonClass', @render
 
@@ -105,16 +104,13 @@ class Pages
           tr ->
             td ->
               div '.assignedName'
-              text " : "
               span '.version'
               br()
-              span '.status'
+              span '.status',"advertising" 
             td ->
-              button '.connect-l.needsclick.u-full-width.'+device.get('buttonClass')
-                ,onClick: "Pylon.trigger('enableLeft', '#{device.cid}' )"
-            td ->
-              button '.connect-r.needsclick.u-full-width.'+device.get('buttonClass')
-                ,onClick: "Pylon.trigger('enableRight', '#{device.cid}' )"
+              button '.connect.needsclick.u-full-width.'+device.get('buttonClass')
+                ,onClick: "Pylon.trigger('enableDevice', '#{device.cid}' )"
+                , "Connect"
             td ->
               tea.tag "svg", svgElement, height: "1.5em", width: "1.5em"
           tr ->
@@ -129,96 +125,20 @@ class Pages
         device = @model
         buttonClass = device.get 'buttonClass'
 
-        # left connect button '.connect-l'
+        # single connect button if connected, then show it as left or right
+        if 'Guess' == device.get 'role'  # if we are not already Right
+          @$('.connect').addClass('disabled').prop('disabled',true).html "Active ?"
         if 'Right' == device.get 'role'  # if we are not already Right
-          @$('.connect-l').addClass('disabled').prop('disabled',true).html "--"
-          @$('.connect-r').addClass('disabled').prop('disabled',true).html "Active Right"
+          @$('.connect').addClass('disabled').prop('disabled',true).html "Active Right"
           return
         if 'Left' == device.get 'role'  # if we are already Left, we cant change
-          @$('.connect-l').addClass('disabled').prop('disabled',true).html "Active Left"
-          @$('.connect-r').addClass('disabled').prop('disabled',true).html "--"
+          @$('.connect').addClass('disabled').prop('disabled',true).html "Active Left"
           return
-        # this device is not connected.  is Left available?
-        pylonLeft = Pylon.get('Left') || device  # is left taken?
-        if  device == pylonLeft  # device is eligible to connect as left
-            @$('.connect-l').html "#{device.get 'buttonText'} Left"
-            @$('.connect-l').addClass(buttonClass)
-
-        # this device is not connected.  is Right available?
-        pylonRight = Pylon.get('Right') || device  # is left taken?
-        if  device == pylonRight  # device is eligible to connect as left
-            @$('.connect-r').html "#{device.get 'buttonText'} Right"
-            @$('.connect-r').addClass(buttonClass)
+        # this device is not connected.
+        # leave the button alone
         return
     return new view device
 
-  scanContents: renderable (pylon)->
-      sensorTags = pylon.get('devices')?.models || []
-      hr()
-      table ".u-full-width", ->
-        thead ->
-          tr ->
-            th "Available Sensors"
-          if sensorTags.length == 0
-            th "no sensors respond"
-            return
-          else
-            th "Gyroscope"
-            th "Accelerometer"
-            th "Magnetometer"
-        for device in sensorTags
-          theUUID = device.get 'origUUID'
-          tbody ->
-            tr ->
-              td ->
-                name = device.get 'assignedName'
-                name  = '' unless name
-                div "#assignedName-"+theUUID, name
-                text (device.get 'UUID')
-                br()
-                span "#status-"+theUUID, (device.get 'deviceStatus')
-                br()
-                sig = device.get 'signalStrength'
-                tea.tag "svg", "#rssi-"+theUUID, height: "3em", width: "3em"
-              td ->
-                if 'Right' != device.get 'role'  # if we are not already Right
-                  pylonLeft = Pylon.get('Left') || device  # is left taken?
-                  if  device == pylonLeft
-                    # when device is connected, disable my buttons - https://github.com/jahbini/stagapp/issues/73
-                    if device.get 'connected'
-                      button '#connect-l-'+theUUID+'.disabled.u-full-width.'+device.get('buttonClass')
-                        ,device.get('buttonText') + "(L)"
-                    else
-                      button '#connect-l-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                        ,onClick: "Pylon.trigger('enableLeft', '" + theUUID + "')"
-                        ,device.get('buttonText') + "(L)"
-                  else
-                    button '.disabled.u-full-width', "unavailable"
-                else   # disable left side button with text to indicate right limb
-                  button '.disabled.u-full-width', "Right"
-              td ->
-                if 'Left' != device.get 'role' # have we been assigned as Left?
-                  pylonRight = Pylon.get('Right') || device  # No, is right taken?
-                  if device == pylonRight
-                    # when device is connected, disable my buttons - https://github.com/jahbini/stagapp/issues/73
-                    if device.get 'connected'
-                      button '#connect-r-'+theUUID+'.disabled.u-full-width.'+device.get('buttonClass')
-                        ,device.get('buttonText') + "(R)"
-                    else
-                      button '#connect-r-'+theUUID+'.needsclick.u-full-width.'+device.get('buttonClass')
-                        ,onClick: "Pylon.trigger('enableRight', '" + theUUID + "')"
-                        ,device.get('buttonText') + "(R)"
-                  else
-                    button '.disabled.u-full-width', "unavailable"
-                else
-                  button '.disabled.u-full-width', "Left"
-            tr ->
-              td ->
-                canvas '#gyro-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
-              td ->
-                canvas '#accel-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
-              td ->
-                canvas '#magnet-view-'+theUUID, width: '100', height: '100', style: 'width=100%'
   topButtons: renderable ()->
       div '.row', ->
         button '#admin.three.columns button-primary', 'Admin'
@@ -267,11 +187,21 @@ class Pages
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
       model.set 'testID',$('#testID option:selected').val()
-      model.save
+      (Pylon.get 'button-admin').set
+        legend: "Session?"
+        enable: false
+      model.save null,{
         success: (model,response,options)->
           console.log "session logged with host"
+          (Pylon.get 'button-admin').set
+            legend: "Log Out"
+            enable: true
         error: (model,response,options)->
           console.log "Session save Fail: #{response.statusText}"
+          (Pylon.get 'button-admin').set
+            legend: "Log Out"
+            enable: true
+        }
       return false
 
   renderPage: ()=>
@@ -294,6 +224,7 @@ class Pages
       events:
         'change': ->
           @attributes.session.set 'testID',@$el.val()
+          @attributes.session.set 'captureDate',Date.now()
           return false
       render: ->
         console.log "Rendering Tests"
