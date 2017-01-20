@@ -7,13 +7,13 @@ _ = require 'underscore'
 
 EventModel = Backbone.Model.extend {
   url: 'event'
-  # flush and prevent firing of time-out after test is complete
+  # flush and zero out session to prevent uploads
   close: ->
-    clearInterval @flusher
+    #  clearInterval @flusher
     @flush()
     #this may be overkill, but we really want no further data for the session
     if @device
-      @.unset 'session',null
+      @.unset 'session'
 
   initialize: (role ,@device=null)->
     @set 'role', role
@@ -32,7 +32,7 @@ EventModel = Backbone.Model.extend {
     flushTime = Date.now()
     if (@.has 'session') && (@.has 'readings')
       eventModelLoader _.clone @
-    @.unset 'readings',''
+    @.unset 'readings'
     @.set 'captureDate',flushTime   #new time for next auto flush
     return
 

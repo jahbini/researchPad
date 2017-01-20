@@ -125,7 +125,7 @@ class pipeline
         # update the device attributes and fire changes for rssi,status
         o.device.set
           deviceStatus: 'Receiving'
-          signalStrength: o.device.rssi
+          #signalStrength: -100 || o.device.rssi # set rssi off during connect per Harry
 
         r = o.source(data)
         #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')

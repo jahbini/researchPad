@@ -10,7 +10,6 @@ $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
-RssiView = require './views/rssi-view.coffee'
 
 # ## Sensor Data
 # ### a single sensor reading
@@ -164,7 +163,6 @@ class TiHandler
     accelerometerHandler = smoother.readingHandler
       device: device
       sensor: 'accel'
-      readings: device.get 'readings'
       debias: 'calibrateAccel'
       source: (data)->
         (device.get 'getAccelerometerValues') data
@@ -178,7 +176,6 @@ class TiHandler
     magnetometerHandler = smoother.readingHandler
       device: device
       sensor: 'mag'
-      readings: device.get 'readings'
       debias: 'calibrateMag'
       calibrator: [
         smoother.calibratorAverage
@@ -193,7 +190,6 @@ class TiHandler
     gyroscopeHandler = smoother.readingHandler
       device: device
       sensor: 'gyro'
-      readings: device.get 'readings'
       debias: 'calibrateGyro'
       calibrator: [
         smoother.calibratorAverage

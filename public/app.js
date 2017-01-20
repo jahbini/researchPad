@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, Pipeline, RssiView, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading;
+var $, Backbone, Case, EventModel, Pipeline, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -14,8 +14,6 @@ EventModel = require('./models/event-model.coffee').EventModel;
 glib = require('./lib/glib.coffee').glib;
 
 Case = require('Case');
-
-RssiView = require('./views/rssi-view.coffee');
 
 reading = Backbone.Model.extend({
   defaults: {
@@ -192,7 +190,6 @@ TiHandler = (function() {
     accelerometerHandler = smoother.readingHandler({
       device: device,
       sensor: 'accel',
-      readings: device.get('readings'),
       debias: 'calibrateAccel',
       source: function(data) {
         return (device.get('getAccelerometerValues'))(data);
@@ -205,7 +202,6 @@ TiHandler = (function() {
     magnetometerHandler = smoother.readingHandler({
       device: device,
       sensor: 'mag',
-      readings: device.get('readings'),
       debias: 'calibrateMag',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
       source: function(data) {
@@ -218,7 +214,6 @@ TiHandler = (function() {
     gyroscopeHandler = smoother.readingHandler({
       device: device,
       sensor: 'gyro',
-      readings: device.get('readings'),
       debias: 'calibrateGyro',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
       source: function(data) {
@@ -423,7 +418,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"./views/rssi-view.coffee":17,"Case":20,"backbone":18,"jquery":21,"underscore":24}],2:[function(require,module,exports){
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"Case":20,"backbone":18,"jquery":21,"underscore":24}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
@@ -1915,10 +1910,9 @@ eventModelLoader = require('../lib/upload.coffee').eventModelLoader;
 EventModel = Backbone.Model.extend({
   url: 'event',
   close: function() {
-    clearInterval(this.flusher);
     this.flush();
     if (this.device) {
-      return this.unset('session', null);
+      return this.unset('session');
     }
   },
   initialize: function(role, device) {
@@ -1941,7 +1935,7 @@ EventModel = Backbone.Model.extend({
     if ((this.has('session')) && (this.has('readings'))) {
       eventModelLoader(_.clone(this));
     }
-    this.unset('readings', '');
+    this.unset('readings');
     this.set('captureDate', flushTime);
   },
   addSample: function(sample) {
@@ -2113,8 +2107,7 @@ pipeline = (function() {
           }
           lastDisplay = Date.now();
           o.device.set({
-            deviceStatus: 'Receiving',
-            signalStrength: o.device.rssi
+            deviceStatus: 'Receiving'
           });
           r = o.source(data);
           p = void 0;
@@ -2497,7 +2490,7 @@ adminView = (function() {
       },
       render: function() {
         var ref1;
-        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2015' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
+        if ((this.model.get('clinic')) && (this.model.get('clinician')) && (this.model.get('client')) && 'retro2017' === ((ref1 = this.model.get('password')) != null ? ref1.slice(0, 9) : void 0)) {
           this.$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled');
           this.$el.text("Done");
           this.$el.show().fadeTo(500, 1);

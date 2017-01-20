@@ -128,7 +128,7 @@ class adminView
           return false
       render: ->
         if (@model.get 'clinic') && (@model.get 'clinician') &&
-            (@model.get 'client') && 'retro2015' == (@model.get 'password')?.slice(0,9)
+            (@model.get 'client') && 'retro2017' == (@model.get 'password')?.slice(0,9)
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
           @$el.text "Done"
           @$el.show().fadeTo(500,1)
