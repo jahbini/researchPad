@@ -2272,7 +2272,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
-module.exports = '1.4.1';
+module.exports = '1.4.2';
 
 
 
