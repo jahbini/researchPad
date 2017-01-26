@@ -309,8 +309,8 @@ class TiHandler
 
             d.set UUID: newID
             queryHostDevice d
-            # raise sample data rate to 10ms per sample
-            askForData sensorInstance, 10
+            # raise sample data rate to 20ms per sample
+            askForData sensorInstance, 20
           else
             #start off with data rate of 100ms per sample
             askForData sensorInstance, 100

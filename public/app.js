@@ -348,7 +348,7 @@ TiHandler = (function() {
               UUID: newID
             });
             queryHostDevice(d);
-            askForData(sensorInstance, 10);
+            askForData(sensorInstance, 20);
           } else {
             askForData(sensorInstance, 100);
             $('#' + role + 'Nick').text(d.get("nickname"));
