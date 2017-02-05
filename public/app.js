@@ -786,7 +786,10 @@ enterClear = function(accept) {
   });
   attr = _.clone(sessionInfo.attributes);
   attr.url = 'session';
-  return eventModelLoader(attr);
+  eventModelLoader(attr);
+  enableRecordButtonOK();
+  (Pylon.get('button-clear')).set('enabled', false);
+  (Pylon.get('button-upload')).set('enabled', false);
 };
 
 enterUpload = function() {

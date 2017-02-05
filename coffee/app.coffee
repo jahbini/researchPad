@@ -270,6 +270,10 @@ enterClear = (accept=false)->
   attr = _.clone sessionInfo.attributes
   attr.url= 'session'
   eventModelLoader attr
+  enableRecordButtonOK()
+  (Pylon.get 'button-clear').set 'enabled',false
+  (Pylon.get 'button-upload').set 'enabled',false
+  return
 
 # upload and clear keys are equivalent and only suggest failure or success
 enterUpload = ->
