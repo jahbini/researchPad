@@ -280,7 +280,7 @@ TiHandler = (function() {
       });
       console.log("Device instance attributes set, attempt connect");
       sensorInstance.statusCallback(function(s) {
-        var newID, newRole, sessionInfo, statusList;
+        var newID, newRole, sensorRate, sessionInfo, statusList;
         console.log("StatusCallback -" + s);
         if (s === "CONNECTING") {
           queryHostDevice(d);
@@ -348,7 +348,8 @@ TiHandler = (function() {
               UUID: newID
             });
             queryHostDevice(d);
-            askForData(sensorInstance, 20);
+            sensorRate = Pylon.get(sensorRate);
+            askForData(sensorInstance, sensorRate);
           } else {
             askForData(sensorInstance, 100);
             $('#' + role + 'Nick').text(d.get("nickname"));
@@ -419,7 +420,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"Case":20,"backbone":18,"jquery":21,"underscore":24}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -594,6 +595,8 @@ EventModel = require("./models/event-model.coffee").EventModel;
 
 adminEvent = new EventModel("Action");
 
+externalEvent = new EventModel("External");
+
 Pylon.on('systemEvent', function(what) {
   if (what == null) {
     what = "unknown";
@@ -601,6 +604,23 @@ Pylon.on('systemEvent', function(what) {
   if (sessionInfo.id) {
     return adminEvent.addSample(what);
   }
+});
+
+Pylon.on('externalEvent', function(what) {
+  var booBoo, error;
+  if (what == null) {
+    what = "unknown";
+  }
+  console.log('externalEvent', what);
+  if (sessionInfo.id) {
+    try {
+      externalEvent.addSample(what);
+    } catch (error) {
+      booBoo = error;
+      console.log(booBoo);
+    }
+  }
+  return true;
 });
 
 aButtonModel = Backbone.Model.extend({
@@ -751,7 +771,10 @@ initAll = function() {
   enterAdmin();
 };
 
+eventModelLoader = require('./lib/upload.coffee').eventModelLoader;
+
 enterClear = function(accept) {
+  var attr;
   if (accept == null) {
     accept = false;
   }
@@ -761,16 +784,9 @@ enterClear = function(accept) {
   sessionInfo.set({
     accepted: accept
   });
-  return sessionInfo.save().done(function() {
-    sessionInfo.set('_id', null, {
-      silent: true
-    });
-    enableRecordButtonOK();
-    (Pylon.get('button-clear')).set('enabled', false);
-    return (Pylon.get('button-upload')).set('enabled', false);
-  }).fail(function(errorResponse) {
-    return alert("Host Reject:" + errorResponse.status);
-  });
+  attr = _.clone(sessionInfo.attributes);
+  attr.url = 'session';
+  return eventModelLoader(attr);
 };
 
 enterUpload = function() {
@@ -1063,6 +1079,17 @@ Pylon.stress = function(percent) {
     stress: percent / 100
   });
 };
+
+Pylon.rate = function(ms) {
+  if (ms == null) {
+    ms = 10;
+  }
+  return Pylon.set({
+    sensorRate: ms
+  });
+};
+
+Pylon.rate(10);
 
 $(document).on('deviceready', function() {
   var ref1, ref2;
@@ -1801,7 +1828,6 @@ records = function() {
 
 setNewItem = function(backboneAttributes) {
   var events;
-  setTimeout(getNextItem, 5000);
   events = records();
   if (!backboneAttributes) {
     return events;
@@ -1820,7 +1846,6 @@ getNextItem = function() {
   if (!events.length) {
     return null;
   }
-  setTimeout(getNextItem, 5000);
   key = events.shift();
   item = localStorage.getItem(key);
   localStorage.removeItem(key);
@@ -1835,6 +1860,8 @@ getNextItem = function() {
   }
   return eventModelLoader(uploadDataObject);
 };
+
+setTimeout(getNextItem, 5000);
 
 MyId = function() {
   return "Up-" + (hiWater());

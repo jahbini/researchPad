@@ -309,8 +309,10 @@ class TiHandler
 
             d.set UUID: newID
             queryHostDevice d
-            # raise sample data rate to 20ms per sample
-            askForData sensorInstance, 20
+            sensorRate = Pylon.get sensorRate
+            # default sensorRate is 10ms and may
+            # be changed from the log with Pylon.rate(ms)
+            askForData sensorInstance, sensorRate
           else
             #start off with data rate of 100ms per sample
             askForData sensorInstance, 100

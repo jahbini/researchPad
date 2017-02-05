@@ -126,10 +126,18 @@ Pylon.set 'sessionInfo', sessionInfo
 
 {EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
+externalEvent = new EventModel "External"
 Pylon.on 'systemEvent', (what="unknown")->
   if sessionInfo.id
     adminEvent.addSample what
-
+Pylon.on 'externalEvent', (what="unknown")->  
+  console.log 'externalEvent', what
+  if sessionInfo.id
+    try
+      externalEvent.addSample what
+    catch booBoo
+      console.log booBoo
+  true
 
 aButtonModel = Backbone.Model.extend
   defaults:
@@ -249,7 +257,8 @@ initAll = ->
   $('#uuid').html("Must connect to sensor").css('color',"violet")
   enterAdmin()
   return
-
+  
+{eventModelLoader}  = require './lib/upload.coffee'
 ## subsection State handlers that depend on the View
 enterClear = (accept=false)->
   # Clear only clears the data -- does NOT disconnedt
@@ -258,14 +267,9 @@ enterClear = (accept=false)->
   $('#testID').prop("disabled",false)
   pageGen.forceTest()
   sessionInfo.set accepted: accept
-  sessionInfo.save()
-    .done ->  # only remove clear, upload buttons on success
-      sessionInfo.set '_id',null,{silent:true}
-      enableRecordButtonOK()
-      (Pylon.get 'button-clear').set 'enabled',false
-      (Pylon.get 'button-upload').set 'enabled',false
-    .fail (errorResponse)->
-      alert "Host Reject:#{errorResponse.status}"
+  attr = _.clone sessionInfo.attributes
+  attr.url= 'session'
+  eventModelLoader attr
 
 # upload and clear keys are equivalent and only suggest failure or success
 enterUpload = ->
@@ -465,6 +469,10 @@ Pylon.a = ()->
   window.location.assign 'alabaster.html'
 Pylon.stress = (percent=50)->
   Pylon.set stress: percent/100
+Pylon.rate = (ms=10)->
+  Pylon.set sensorRate: ms
+Pylon.rate 10
+
 
 $(document).on 'deviceready', ->
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"

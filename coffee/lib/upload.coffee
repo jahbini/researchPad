@@ -37,7 +37,6 @@ records = ()->
 
 #store new backbone object.attributes into localStorage, based on upload ticket.
 setNewItem = (backboneAttributes)->
-  setTimeout getNextItem, 5000
   events =records()
   return events unless backboneAttributes
   localStorage.setItem backboneAttributes.LSid, JSON.stringify backboneAttributes
@@ -51,7 +50,6 @@ setNewItem = (backboneAttributes)->
 getNextItem = ()->
   events = records()
   return null if !events.length
-  setTimeout getNextItem, 5000
   key = events.shift()
   item = localStorage.getItem key
   localStorage.removeItem key
@@ -64,6 +62,7 @@ getNextItem = ()->
     return null
   eventModelLoader uploadDataObject
 
+setTimeout getNextItem, 5000
 # eventModelUploader will upload models to the server.
 # if the communication fails, the model is serialized and put into localStorage
 #  the uploadData is in object form (after JSON.parse, before JSON.stringify)
