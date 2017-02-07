@@ -89,7 +89,7 @@ Pylon.set('tagViewer', new pView);
 Pipeline = require('./pipeline.coffee');
 
 TiHandler = (function() {
-  var evothings, queryHostDevice, sensorScanner;
+  var ble_found, evothings, queryHostDevice, sensorScanner;
 
   evothings = window.evothings;
 
@@ -132,37 +132,43 @@ TiHandler = (function() {
     });
   };
 
+  ble_found = function(device) {
+    var d, pd, rssi, uuid;
+    if (!sensorScanner.deviceIsSensorTag(device)) {
+      return;
+    }
+    pd = Pylon.get('devices');
+    uuid = device.address;
+    rssi = device.rssi;
+    if (d = pd.findWhere({
+      origUUID: uuid
+    })) {
+      d.set('signalStrength', rssi);
+      return;
+    }
+    console.log("got new device");
+    d = new deviceModel({
+      signalStrength: rssi,
+      genericName: device.name,
+      UUID: uuid,
+      origUUID: uuid,
+      rawDevice: device,
+      buttonText: 'connect',
+      buttonClass: 'button-primary',
+      deviceStatus: '--'
+    });
+    pd.push(d);
+    queryHostDevice(d);
+    Pylon.trigger('change respondingDevices');
+  };
+
+  Pylon.on("bleScanResponse", function(device) {
+    return ble_found(device);
+  });
+
   Pylon.on("scanActive change", function() {
     if (Pylon.get('scanActive')) {
-      return sensorScanner.startScanningForDevices(function(device) {
-        var d, pd, rssi, uuid;
-        if (!sensorScanner.deviceIsSensorTag(device)) {
-          return;
-        }
-        pd = Pylon.get('devices');
-        uuid = device.address;
-        rssi = device.rssi;
-        if (d = pd.findWhere({
-          origUUID: uuid
-        })) {
-          d.set('signalStrength', rssi);
-          return;
-        }
-        console.log("got new device");
-        d = new deviceModel({
-          signalStrength: rssi,
-          genericName: device.name,
-          UUID: uuid,
-          origUUID: uuid,
-          rawDevice: device,
-          buttonText: 'connect',
-          buttonClass: 'button-primary',
-          deviceStatus: '--'
-        });
-        pd.push(d);
-        queryHostDevice(d);
-        Pylon.trigger('change respondingDevices');
-      });
+      return sensorScanner.startScanningForDevices(ble_found);
     } else {
       sensorScanner.stopScanningForDevices();
     }

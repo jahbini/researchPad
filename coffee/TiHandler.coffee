@@ -112,33 +112,38 @@ class TiHandler
         console.log (Pylon.get('hostUrl')+'/sensorTag')
         console.log "sensorTag fetch error: #{response.statusText}"
 
+  ble_found = (device)->
+    return unless sensorScanner.deviceIsSensorTag device
+    pd =Pylon.get('devices')
+    uuid = device.address
+    rssi = device.rssi
+    if d=pd.findWhere(origUUID: uuid)
+
+      d.set 'signalStrength', rssi
+      return
+
+    console.log "got new device"
+    d = new deviceModel
+      signalStrength: rssi
+      genericName: device.name
+      UUID: uuid
+      origUUID: uuid
+      rawDevice: device
+      buttonText: 'connect'
+      buttonClass: 'button-primary'
+      deviceStatus: '--'
+    pd.push d
+    queryHostDevice(d)
+
+    Pylon.trigger('change respondingDevices')
+    return
+        
+  Pylon.on "bleScanResponse", (device)->
+    ble_found device
+    
   Pylon.on "scanActive change",  =>
     if Pylon.get('scanActive')
-      sensorScanner.startScanningForDevices (device)->
-        return unless sensorScanner.deviceIsSensorTag device
-        pd =Pylon.get('devices')
-        uuid = device.address
-        rssi = device.rssi
-        if d=pd.findWhere(origUUID: uuid)
-
-          d.set 'signalStrength', rssi
-          return
-
-        console.log "got new device"
-        d = new deviceModel
-          signalStrength: rssi
-          genericName: device.name
-          UUID: uuid
-          origUUID: uuid
-          rawDevice: device
-          buttonText: 'connect'
-          buttonClass: 'button-primary'
-          deviceStatus: '--'
-        pd.push d
-        queryHostDevice(d)
-
-        Pylon.trigger('change respondingDevices')
-        return
+      sensorScanner.startScanningForDevices ble_found
     else
       sensorScanner.stopScanningForDevices()
       return
