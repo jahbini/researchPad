@@ -162,11 +162,7 @@ TiHandler = (function() {
     Pylon.trigger('change respondingDevices');
   };
 
-  Pylon.on("bleScanResponse", function(device) {
-    return ble_found(device);
-  });
-
-  Pylon.on("scanActive change", function() {
+  Pylon.on("change:scanActive", function() {
     if (Pylon.get('scanActive')) {
       return sensorScanner.startScanningForDevices(ble_found);
     } else {
@@ -306,6 +302,7 @@ TiHandler = (function() {
           d.set({
             fwRev: sensorInstance.getFirmwareString()
           });
+          console.log("Device Info -- FirmwareString: ", d.attributes.fwRev);
           return;
         }
         if (statusList.SENSORTAG_ONLINE === s) {
@@ -866,6 +863,9 @@ enterRecording = function() {
     sessionInfo.save();
     return false;
   }
+  Pylon.set({
+    scanActive: false
+  });
   (Pylon.get('button-admin')).set('enabled', false);
   gs = Pylon.get('globalState');
   if (gs.get('recording')) {
@@ -1873,8 +1873,6 @@ getNextItem = function() {
   return eventModelLoader(uploadDataObject);
 };
 
-setTimeout(getNextItem, 5000);
-
 MyId = function() {
   return "Up-" + (hiWater());
 };
@@ -1906,9 +1904,11 @@ eventModelLoader = function(uploadDataModel) {
   uploadDataObject.save(null, {
     success: function(a, b, code) {
       console.log("upload on " + (a.get("LSid")) + " complete");
+      setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
       var failCode, fails;
+      setTimeout(getNextItem, 5000);
       failCode = b.status;
       fails = a.get('hostFails');
       fails += 1;

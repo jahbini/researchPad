@@ -62,7 +62,6 @@ getNextItem = ()->
     return null
   eventModelLoader uploadDataObject
 
-setTimeout getNextItem, 5000
 # eventModelUploader will upload models to the server.
 # if the communication fails, the model is serialized and put into localStorage
 #  the uploadData is in object form (after JSON.parse, before JSON.stringify)
@@ -89,8 +88,10 @@ eventModelLoader = (uploadDataModel)->
   uploadDataObject.save null,{
     success: (a,b,code)->
       console.log "upload on #{a.get "LSid"} complete"
+      setTimeout getNextItem, 0
       return
     error: (a,b,c)->
+      setTimeout getNextItem, 5000
       failCode = b.status
       # we try 10 times 
       fails = a.get 'hostFails'

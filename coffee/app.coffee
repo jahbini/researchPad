@@ -327,6 +327,9 @@ enterRecording = ->
   if !sessionInfo.get '_id'
     sessionInfo.save()
     return false
+  # release the high level evothings system from any scanning that logon.js does
+  Pylon.set scanActive: false
+    
   (Pylon.get 'button-admin').set 'enabled',false
   # reject record request if we are already recording
   gs = Pylon.get('globalState')

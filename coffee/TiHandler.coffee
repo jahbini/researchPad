@@ -138,10 +138,7 @@ class TiHandler
     Pylon.trigger('change respondingDevices')
     return
         
-  Pylon.on "bleScanResponse", (device)->
-    ble_found device
-    
-  Pylon.on "scanActive change",  =>
+  Pylon.on "change:scanActive",  =>
     if Pylon.get('scanActive')
       sensorScanner.startScanningForDevices ble_found
     else
@@ -159,8 +156,6 @@ class TiHandler
     Pylon.get 'TiHandler'
       .attachDevice cid, 'Guess'
     
-
-
   constructor: (@sessionInfo) ->
 
   createVisualChain: (device) ->
@@ -268,6 +263,7 @@ class TiHandler
         statusList = evothings.tisensortag.ble.status
         if statusList.DEVICE_INFO_AVAILABLE == s
           d.set fwRev: sensorInstance.getFirmwareString()
+          console.log "Device Info -- FirmwareString: ", d.attributes.fwRev
           return
 
         if statusList.SENSORTAG_ONLINE == s
