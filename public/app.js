@@ -1901,13 +1901,31 @@ eventModelLoader = function(uploadDataModel) {
     console.log("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
     return;
   }
+  uDM = uploadDataObject.attributes;
+  if (uDM.session) {
+    console.log("upload attempt " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+  } else {
+    console.log("upload attempt " + uDM.LSid + " ", uDM.url, uDM._id);
+  }
   uploadDataObject.save(null, {
     success: function(a, b, code) {
+      uDM = a.attributes;
+      if (uDM.session) {
+        console.log("upload success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+      } else {
+        console.log("upload success " + uDM.LSid + " ", uDM.url, uDM._id);
+      }
       console.log("upload on " + (a.get("LSid")) + " complete");
       setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
       var failCode, fails;
+      uDM = a.attributes;
+      if (uDM.session) {
+        console.log("upload failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+      } else {
+        console.log("upload failure " + uDM.LSid + " ", uDM.url, uDM.id);
+      }
       setTimeout(getNextItem, 5000);
       failCode = b.status;
       fails = a.get('hostFails');
@@ -2822,7 +2840,7 @@ countDownViewTemplate = Backbone.View.extend({
             h3(_this.headline);
           }
           if (sessionID) {
-            return p("Protocol credential recieved: " + sessionID);
+            return p("#recorder-active");
           } else {
             return p("Waiting for host credential for protocol...");
           }

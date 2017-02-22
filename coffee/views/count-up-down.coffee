@@ -58,7 +58,7 @@ countDownViewTemplate = Backbone.View.extend
           else
             h3 @headline
           if sessionID
-            p "Protocol credential recieved: #{sessionID}"
+            p "#recorder-active"
           else
             p "Waiting for host credential for protocol..."
       if t==0 && sessionID
