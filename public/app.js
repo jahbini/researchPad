@@ -793,7 +793,7 @@ enterClear = function(accept) {
   sessionInfo.set('_id', null, {
     silent: true
   });
-  enableRecordButtonOK();
+  Pylon.on('sessionUploaded', enableRecordButtonOK);
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
 };
@@ -1913,6 +1913,7 @@ eventModelLoader = function(uploadDataModel) {
       if (uDM.session) {
         console.log("upload success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
       } else {
+        Pylon.trigger('sessionUploaded');
         console.log("upload success " + uDM.LSid + " ", uDM.url, uDM._id);
       }
       console.log("upload on " + (a.get("LSid")) + " complete");

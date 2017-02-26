@@ -271,7 +271,7 @@ enterClear = (accept=false)->
   attr.url= 'session'
   eventModelLoader attr
   sessionInfo.set '_id',null,{silent:true}
-  enableRecordButtonOK()
+  Pylon.on 'sessionUploaded',enableRecordButtonOK
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
   return

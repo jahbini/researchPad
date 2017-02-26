@@ -93,9 +93,10 @@ eventModelLoader = (uploadDataModel)->
   uploadDataObject.save null,{
     success: (a,b,code)->
       uDM= a.attributes
-      if uDM.session
+      if uDM.session # events have a session attribute, the sessionInfo does not
         console.log "upload success #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
       else
+        Pylon.trigger 'sessionUploaded'
         console.log "upload success #{uDM.LSid} ",uDM.url, uDM._id
       console.log "upload on #{a.get "LSid"} complete"
       setTimeout getNextItem, 0
