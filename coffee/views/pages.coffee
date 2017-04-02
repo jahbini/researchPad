@@ -81,8 +81,6 @@ class Pages
         @$el.html @createRow device
         new RssiView device
         @render()
-        @.listenTo device, 'change:assignedName', ()->
-          @$('.assignedName').html device.get 'assignedName'
         @.listenTo device, 'change:deviceStatus', ()->
           @$('.status').html device.get 'deviceStatus'
         @.listenTo device, 'change:firmwareVersion', ()->
@@ -103,7 +101,7 @@ class Pages
         render ->
           tr ->
             td ->
-              div '.assignedName'
+              div '.assignedName',device.get 'name'
               span '.version'
               br()
               span '.status',"advertising" 

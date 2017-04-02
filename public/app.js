@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, Pipeline, TiHandler, _, deviceCollection, deviceModel, glib, pView, reading;
+var $, Backbone, Case, EventModel, Pipeline, TiHandler, _, accelerometer, deviceCollection, deviceModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -15,6 +15,14 @@ glib = require('./lib/glib.coffee').glib;
 
 Case = require('Case');
 
+accelerometer = {
+  service: "F000AA80-0451-4000-B000-000000000000",
+  data: "F000AA81-0451-4000-B000-000000000000",
+  notification: "F0002902-0451-4000-B000-000000000000",
+  configuration: "F000AA82-0451-4000-B000-000000000000",
+  period: "F000AA83-0451-4000-B000-000000000000"
+};
+
 reading = Backbone.Model.extend({
   defaults: {
     sensor: 'gyro'
@@ -27,15 +35,13 @@ reading = Backbone.Model.extend({
 });
 
 deviceModel = Backbone.Model.extend({
+  defaults: {
+    buttonText: 'connect',
+    buttonClass: 'button-primary',
+    deviceStatus: '--'
+  },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
-  },
-  idAttribute: "UUID",
-  defaults: {
-    UUID: "00000000-0000-0000-0000-000000000000"
-  },
-  initialize: function() {
-    return this.set('nickname', glib(this.get('UUID')));
   }
 });
 
@@ -89,34 +95,7 @@ Pylon.set('tagViewer', new pView);
 Pipeline = require('./pipeline.coffee');
 
 TiHandler = (function() {
-  var ble_found, evothings, queryHostDevice, sensorScanner;
-
-  evothings = window.evothings;
-
-  sensorScanner = evothings.tisensortag.createGenericInstance();
-
-  evothings.tisensortag.ble.addInstanceMethods(sensorScanner);
-
-  sensorScanner.statusCallback(function(s) {
-    if (s === 'SCANNING') {
-      return;
-    }
-    console.log("Scan status = " + s);
-    if (s === "SENSORTAG_NOT_FOUND") {
-      s = "Scan Complete";
-    }
-    $('#StatusData').css("color", "green").html(s);
-    Pylon.trigger('sensorScanStatus', s);
-  });
-
-  sensorScanner.errorCallback(function(e) {
-    if (e === "SCAN_FAILED") {
-      return;
-    }
-    console.log("Scan Error = " + e);
-    $('#StatusData').css("color", "red").html(e);
-    Pylon.trigger('sensorScanStatus', e);
-  });
+  var ble_found, queryHostDevice;
 
   queryHostDevice = function(d) {
     return d.fetch({
@@ -133,57 +112,37 @@ TiHandler = (function() {
   };
 
   ble_found = function(device) {
-    var d, pd, rssi, uuid;
-    if (!sensorScanner.deviceIsSensorTag(device)) {
+    var d, pd;
+    if (!device.name) {
       return;
     }
     pd = Pylon.get('devices');
-    uuid = device.address;
-    rssi = device.rssi;
     if (d = pd.findWhere({
-      origUUID: uuid
+      name: name
     })) {
-      d.set('signalStrength', rssi);
+      d.set(device);
       return;
     }
     console.log("got new device");
-    d = new deviceModel({
-      signalStrength: rssi,
-      genericName: device.name,
-      UUID: uuid,
-      origUUID: uuid,
-      rawDevice: device,
-      buttonText: 'connect',
-      buttonClass: 'button-primary',
-      deviceStatus: '--'
-    });
+    d = new deviceModel(device);
     pd.push(d);
-    queryHostDevice(d);
-    Pylon.trigger('change respondingDevices');
   };
 
   Pylon.on("change:scanActive", function() {
     if (Pylon.get('scanActive')) {
-      return sensorScanner.startScanningForDevices(ble_found);
-    } else {
-      sensorScanner.stopScanningForDevices();
+      ble.scan(['AA80'], 20, ble_found, function(e) {
+        alert("scanner error");
+        debugger;
+      });
     }
   });
 
-  Pylon.on("enableRight", function(cid) {
-    return Pylon.get('TiHandler').attachDevice(cid, 'Right');
-  });
-
-  Pylon.on("enableLeft", function(cid) {
-    return Pylon.get('TiHandler').attachDevice(cid, 'Left');
-  });
-
   Pylon.on("enableDevice", function(cid) {
-    return Pylon.get('TiHandler').attachDevice(cid, 'Guess');
+    return Pylon.get('TiHandler').attachDevice(cid);
   });
 
-  function TiHandler(sessionInfo1) {
-    this.sessionInfo = sessionInfo1;
+  function TiHandler(sessionInfo) {
+    this.sessionInfo = sessionInfo;
   }
 
   TiHandler.prototype.createVisualChain = function(device) {
@@ -231,17 +190,27 @@ TiHandler = (function() {
     };
   };
 
-  TiHandler.prototype.attachDevice = function(cid, role) {
-    var askForData, d, e, error, gs, rawDevice, sensorInstance;
-    if (role == null) {
-      role = "Right";
-    }
+  TiHandler.prototype.attachDevice = function(cid) {
+    var configData, d, deviceId, e, error, gs, name, periodData, role;
     gs = Pylon.get('globalState');
     if (gs.get('recording')) {
       return;
     }
     console.log("attach " + cid);
     d = Pylon.get('devices').get(cid);
+    name = d.get('name');
+    debugger;
+    role = 'Error';
+    if (0 < name.search(/\(([Ll]).*\)/)) {
+      role = 'Left';
+    }
+    if (0 < name.search(/\(([Rr]).*\)/)) {
+      role = 'Right';
+    }
+    if (role === 'Error') {
+      console.log("Bad name for sensor: " + name);
+      return;
+    }
     if (d.get('connected')) {
       return;
     }
@@ -251,154 +220,28 @@ TiHandler = (function() {
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
     console.log("Role of Device set, attempt connect");
-    askForData = function(sensorInstance, delay) {
-      sensorInstance.accelerometerCallback((function(_this) {
-        return function(data) {
-          return sensorInstance.handlers.accel(data);
-        };
-      })(this), delay);
-      sensorInstance.magnetometerCallback((function(_this) {
-        return function(data) {
-          return sensorInstance.handlers.mag(data);
-        };
-      })(this), delay);
-      return sensorInstance.gyroscopeCallback((function(_this) {
-        return function(data) {
-          return sensorInstance.handlers.gyro(data);
-        };
-      })(this), delay, 7);
-    };
     try {
-      if (d.get('genericName').search(/BLE/) > -1) {
-        d.set('type', evothings.tisensortag.CC2541_BLUETOOTH_SMART);
-      } else {
-        d.set('type', evothings.tisensortag.CC2650_BLUETOOTH_SMART);
-      }
-      sensorInstance = evothings.tisensortag.createInstance(d.get('type'));
-      rawDevice = d.get('rawDevice');
-      rawDevice.sensorInstance = sensorInstance;
-      d.set({
-        sensorInstance: sensorInstance
-      });
       console.log("Device instance attributes set, attempt connect");
-      sensorInstance.statusCallback(function(s) {
-        var newID, newRole, sensorRate, sessionInfo, statusList;
-        console.log("StatusCallback -" + s);
-        if (s === "CONNECTING") {
-          queryHostDevice(d);
-          return;
-        }
-        if (s === "CONNECTED") {
-          return;
-        }
-        if (s === "READING_DEVICE_INFO") {
-          return;
-        }
-        if (s === "READING_SERVICES") {
-          return;
-        }
-        statusList = evothings.tisensortag.ble.status;
-        if (statusList.DEVICE_INFO_AVAILABLE === s) {
-          d.set({
-            fwRev: sensorInstance.getFirmwareString()
-          });
-          console.log("Device Info -- FirmwareString: ", d.attributes.fwRev);
-          return;
-        }
-        if (statusList.SENSORTAG_ONLINE === s) {
-          sessionInfo = Pylon.get('sessionInfo');
-          sessionInfo.set(role + 'sensorUUID', d.id);
-          sessionInfo.set("FWLevel" + (role === "Left" ? 'L' : 'R'), d.fwRev);
-          if (!d.get('connected')) {
-            Pylon.trigger('connected');
-          }
-          d.set({
-            connected: true,
-            buttonText: 'on-line',
-            buttonClass: 'button-success',
-            deviceStatus: 'Listening'
-          });
-          newID = sensorInstance.softwareVersion;
-          if (sensorInstance.serialNumber && newID !== "N.A.") {
-            switch (newRole = sensorInstance.serialNumber.slice(-3)) {
-              case "(R)":
-              case "B01":
-                role = "Right";
-                $("#RightSerialNumber").html(sensorInstance.serialNumber);
-                $("#RightVersion").html(sensorInstance.softwareVersion);
-                break;
-              case "(L)":
-              case "B02":
-                role = "Left";
-                $("#LeftSerialNumber").html(sensorInstance.serialNumber);
-                $("#LeftVersion").html(sensorInstance.softwareVersion);
-            }
-            d.set('role', role);
-            Pylon.set(role, d);
-            newID = Case.kebab(newID + " " + sensorInstance.serialNumber);
-            d.set('readings', new EventModel(role, d));
-            Pylon.trigger('change respondingDevices');
-            sessionInfo.set(role + 'sensorUUID', newID);
-            d.set('firmwareVersion', sensorInstance.serialNumber);
-            if (role === "Left") {
-              sessionInfo.set('SerialNoL', sensorInstance.serialNumber);
-              sessionInfo.set('FWLevelL', sensorInstance.getFirmwareString());
-            } else {
-              sessionInfo.set('SerialNoR', sensorInstance.serialNumber);
-              sessionInfo.set('FWLevelR', sensorInstance.getFirmwareString());
-            }
-            d.set({
-              UUID: newID
-            });
-            queryHostDevice(d);
-            sensorRate = Pylon.get(sensorRate);
-            askForData(sensorInstance, sensorRate);
-          } else {
-            askForData(sensorInstance, 100);
-            $('#' + role + 'Nick').text(d.get("nickname"));
-            $('#' + role + 'uuid').text(d.get('assignedName') || d.id);
-          }
-          Pylon.trigger('change respondingDevices');
-        }
+      deviceId = d.get("id");
+      ble.startNotification(deviceId, accelerometer.service, accelerometer.data, function(deviceData) {
+        return console.log(deviceData);
+      }, function() {
+        return console.log("can't start movement service");
       });
-      sensorInstance.errorCallback(function(s) {
-        var err;
-        console.log("sensor ERROR report: " + s, ' ' + d.id);
-        if (!s) {
-          return;
-        }
-        err = s.split(' ');
-        if (evothings.easyble.error.CHARACTERISTIC_NOT_FOUND === err[0]) {
-          return;
-        }
-        if (evothings.easyble.error.DISCONNECTED === s || s === "No Response") {
-          d.set('buttonClass', 'button-warning');
-          d.set('buttonText', 'reconnect');
-          d.set('deviceStatus', 'Disconnected');
-          d.unset('role');
-        }
-        Pylon.trigger('change respondingDevices');
+      configData = new Uint16Array(1);
+      configData[0] = 0x007F;
+      ble.write(deviceId, accelerometer.service, accelerometer.configuration, configData.buffer, function() {
+        return console.log("Started movement monitor.");
+      }, function(e) {
+        return console.log("error starting movement monitor " + e);
       });
-      console.log("Setting Time-out now", Date.now());
-      setTimeout(function() {
-        if ('Receiving' === d.get('deviceStatus')) {
-          return;
-        }
-        console.log("Device connection 10 second time-out ");
-        sensorInstance.callErrorCallback("No Response");
-        return sensorInstance.disconnectDevice();
-      }, 10000);
-      d.set('getMagnetometerValues', sensorInstance.getMagnetometerValues);
-      d.set('getAccelerometerValues', sensorInstance.getAccelerometerValues);
-      d.set('getGyroscopeValues', sensorInstance.getGyroscopeValues);
-      console.log("evothings sensor callbacks registered, attempt connect");
-      sensorInstance.handlers = this.createVisualChain(d);
-      sensorInstance.connectToDevice(d.get('rawDevice'));
-      if (d.get('type' === evothings.tisensortag.CC2650_BLUETOOTH_SMART)) {
-        sensorInstance.handlers.accel.finalScale = 2;
-        sensorInstance.handlers.mag.finalScale = 0.15;
-      }
-      askForData(sensorInstance, 10);
+      periodData = new Uint8Array(1);
+      periodData[0] = 0x0A;
+      ble.write(deviceId, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+        return console.log("Configured movement period.");
+      }, function(e) {
+        return console.log("error starting movement monitor " + e);
+      });
     } catch (error) {
       e = error;
       alert('Error in attachSensor -- check LOG');
@@ -411,6 +254,74 @@ TiHandler = (function() {
   return TiHandler;
 
 })();
+
+
+/*
+        if statusList.SENSORTAG_ONLINE == s
+          sessionInfo = Pylon.get 'sessionInfo'
+          sessionInfo.set role+'sensorUUID', d.id
+           * add FWLevel to session data per Github issue stagapp 99
+          sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
+          #why is there no comment on this next line?  Is that what you want to do??
+          Pylon.trigger 'connected' unless d.get 'connected'
+          d.set {
+            connected: true
+            buttonText: 'on-line'
+            buttonClass: 'button-success'
+            deviceStatus: 'Listening'
+          }
+          newID = sensorInstance.softwareVersion
+          $("#LeftSerialNumber").html sensorInstance.serialNumber
+          $("#LeftVersion").html sensorInstance.softwareVersion
+          d.set 'readings', new EventModel role, d
+            
+          sessionInfo.set role+'sensorUUID', newID
+          d.set 'firmwareVersion', sensorInstance.serialNumber
+          if role == "Left"
+            sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
+            sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
+          else
+            sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
+            sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
+
+          sensorRate = Pylon.get sensorRate
+             * default sensorRate is 10ms and may
+             * be changed from the log with Pylon.rate(ms)
+          askForData sensorInstance, sensorRate
+        return
+       * error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
+      sensorInstance.errorCallback (s)->
+        console.log "sensor ERROR report: " +s, ' '+d.id
+         * evothings status reporting errors often report null, for no reason?
+        return if !s
+        err=s.split(' ')
+        if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
+          return
+        if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
+          d.set 'buttonClass', 'button-warning'
+          d.set 'buttonText', 'reconnect'
+          d.set 'deviceStatus', 'Disconnected'
+          d.unset 'role'
+        Pylon.trigger('change respondingDevices')
+        return
+
+      console.log "Setting Time-out now",Date.now()
+      setTimeout ()->
+          return if 'Receiving' == d.get 'deviceStatus'
+          console.log "Device connection 10 second time-out "
+          sensorInstance.callErrorCallback "No Response"
+          sensorInstance.disconnectDevice()
+        ,10000
+
+       * and plug our data handlers into the evothings scheme
+      sensorInstance.handlers= @createVisualChain d
+      sensorInstance.connectToDevice d.get('rawDevice')
+      
+      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
+        sensorInstance.handlers.accel.finalScale = 2
+        sensorInstance.handlers.mag.finalScale = 0.15
+      askForData sensorInstance, 10
+ */
 
 if (typeof window !== "undefined" && window !== null) {
   window.exports = TiHandler;
@@ -2993,9 +2904,6 @@ Pages = (function() {
         this.$el.html(this.createRow(device));
         new RssiView(device);
         this.render();
-        this.listenTo(device, 'change:assignedName', function() {
-          return this.$('.assignedName').html(device.get('assignedName'));
-        });
         this.listenTo(device, 'change:deviceStatus', function() {
           return this.$('.status').html(device.get('deviceStatus'));
         });
@@ -3019,7 +2927,7 @@ Pages = (function() {
         return render(function() {
           tr(function() {
             td(function() {
-              div('.assignedName');
+              div('.assignedName', device.get('name'));
               span('.version');
               br();
               return span('.status', "advertising");

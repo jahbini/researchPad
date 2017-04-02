@@ -10,7 +10,14 @@ $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
-
+# http://processors.wiki.ti.com/index.php/CC2650_SensorTag_User%27s_Guide
+accelerometer = 
+    service: "F000AA80-0451-4000-B000-000000000000"
+    data: "F000AA81-0451-4000-B000-000000000000" # read/notify 3 bytes X : Y : Z
+    notification:"F0002902-0451-4000-B000-000000000000"
+    configuration: "F000AA82-0451-4000-B000-000000000000" # read/write 1 byte
+    period: "F000AA83-0451-4000-B000-000000000000" # read/write 1 byte Period = [Input*10]ms
+    
 # ## Sensor Data
 # ### a single sensor reading
 reading = Backbone.Model.extend
@@ -22,13 +29,13 @@ reading = Backbone.Model.extend
 # ### sensor readings are grouped into ten-second chunks, other events just have text
 
 deviceModel = Backbone.Model.extend
+  defaults:
+      buttonText: 'connect'
+      buttonClass: 'button-primary'
+      deviceStatus: '--'
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
-  idAttribute: "UUID"
-  defaults:
-    UUID: "00000000-0000-0000-0000-000000000000"
-  initialize: ()->
-      @.set 'nickname', glib(@.get 'UUID' )
+  #idAttribute: "name"
 
 deviceCollection = Backbone.Collection.extend
   model: deviceModel
@@ -81,25 +88,6 @@ Pylon.set 'tagViewer', new pView
 Pipeline = require('./pipeline.coffee')
 
 class TiHandler
-  evothings = window.evothings
-  sensorScanner = evothings.tisensortag.createGenericInstance()
-  evothings.tisensortag.ble.addInstanceMethods(sensorScanner) #Add generic BLE instance methods.
-
-# status callbacks for the BLE scan for devices mode -- should activate "status" view
-  sensorScanner.statusCallback (s)->
-    return if s == 'SCANNING'
-    console.log "Scan status = "+s
-    s = "Scan Complete" if s == "SENSORTAG_NOT_FOUND"
-    $('#StatusData').css("color", "green").html s
-    Pylon.trigger 'sensorScanStatus', s
-    return
-  sensorScanner.errorCallback (e)->
-    # Evothings reports SCAN_FAILED when it detects a tag.  Not cool
-    return if e == "SCAN_FAILED"
-    console.log "Scan Error = "+e
-    $('#StatusData').css("color", "red").html e
-    Pylon.trigger 'sensorScanStatus', e
-    return
 
   # send a GET request to the server to sync up this tag
   queryHostDevice = (d)->
@@ -113,48 +101,33 @@ class TiHandler
         console.log "sensorTag fetch error: #{response.statusText}"
 
   ble_found = (device)->
-    return unless sensorScanner.deviceIsSensorTag device
+    # a device may present itself several times as advertising packets
+    # are recieved by iOS.  We ignore them until the manufacturer
+    # name is present (and matches harry's naming convention)
+    return unless device.name
     pd =Pylon.get('devices')
-    uuid = device.address
-    rssi = device.rssi
-    if d=pd.findWhere(origUUID: uuid)
-
-      d.set 'signalStrength', rssi
+    # have we found this device before?
+    if d=pd.findWhere(name: name)
+      d.set device
       return
-
     console.log "got new device"
-    d = new deviceModel
-      signalStrength: rssi
-      genericName: device.name
-      UUID: uuid
-      origUUID: uuid
-      rawDevice: device
-      buttonText: 'connect'
-      buttonClass: 'button-primary'
-      deviceStatus: '--'
+    d = new deviceModel device
     pd.push d
-    queryHostDevice(d)
-
-    Pylon.trigger('change respondingDevices')
+    #queryHostDevice(d)
     return
         
   Pylon.on "change:scanActive",  =>
     if Pylon.get('scanActive')
-      sensorScanner.startScanningForDevices ble_found
-    else
-      sensorScanner.stopScanningForDevices()
-      return
+      #scan 20 seconds for anybody with a movement UUID and show it to Mr. ble_found
+      ble.scan(['AA80'], 20, ble_found, (e)->
+        alert("scanner error")
+        debugger
+        );
+    return
 
-  Pylon.on "enableRight", (cid)->
-    Pylon.get 'TiHandler'
-      .attachDevice cid, 'Right'
-
-  Pylon.on "enableLeft", (cid)->
-    Pylon.get 'TiHandler'
-      .attachDevice cid, 'Left'
   Pylon.on "enableDevice", (cid)->
     Pylon.get 'TiHandler'
-      .attachDevice cid, 'Guess'
+      .attachDevice cid
     
   constructor: (@sessionInfo) ->
 
@@ -207,12 +180,21 @@ class TiHandler
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
-  attachDevice: (cid,role="Right") ->
+  attachDevice: (cid) ->
     # reject attachDevice request if we are already recording
     gs = Pylon.get('globalState')
     return if gs.get 'recording'
-    console.log "attach "+cid
-    d = Pylon.get('devices').get cid
+    
+    console.log "attach "+ cid
+    d = Pylon.get('devices').get  cid
+    name = d.get 'name'
+    debugger
+    role = 'Error'
+    role= 'Left' if 0< name.search /\(([Ll]).*\)/
+    role= 'Right' if 0< name.search /\(([Rr]).*\)/
+    if role == 'Error'
+      console.log "Bad name for sensor: #{name}"
+      return
     # reject attachDevice if it connected Github issue #73
     return if d.get 'connected'
     d.set 'buttonText', 'connecting'
@@ -224,48 +206,44 @@ class TiHandler
     Pylon.trigger('change respondingDevices')
     console.log "Role of Device set, attempt connect"
 
-    askForData= (sensorInstance,delay)->
-      sensorInstance.accelerometerCallback (data)=>
-          sensorInstance.handlers.accel data
-        ,delay  # allow 10 ms response for 100 samples/second
-      sensorInstance.magnetometerCallback (data)=>
-          sensorInstance.handlers.mag data
-        ,delay
-      sensorInstance.gyroscopeCallback (data)=>
-          sensorInstance.handlers.gyro data
-        ,delay
-        ,7
-
     try
-      if d.get( 'genericName').search(/BLE/) > -1
-        d.set 'type', evothings.tisensortag.CC2541_BLUETOOTH_SMART
-      else
-        d.set 'type', evothings.tisensortag.CC2650_BLUETOOTH_SMART
-      sensorInstance = evothings.tisensortag.createInstance d.get('type')
-      rawDevice = d.get 'rawDevice'
-      rawDevice.sensorInstance= sensorInstance
-      d.set sensorInstance: sensorInstance
-
+      #set some attributes 
       console.log "Device instance attributes set, attempt connect"
+      deviceId= d.get "id"
 
-      # status handler is set -- d.get('sensorInstance').statusCallback (s)-> {something}
-      sensorInstance.statusCallback (s)->
-        console.log "StatusCallback -#{s}"
-        if s == "CONNECTING"
-          queryHostDevice d
-          return
-        if s == "CONNECTED"
-          return
-        if s == "READING_DEVICE_INFO"
-          return
-        if s == "READING_SERVICES"
-          return
-        statusList = evothings.tisensortag.ble.status
-        if statusList.DEVICE_INFO_AVAILABLE == s
-          d.set fwRev: sensorInstance.getFirmwareString()
-          console.log "Device Info -- FirmwareString: ", d.attributes.fwRev
-          return
+      ble.startNotification deviceId,
+        accelerometer.service
+        accelerometer.data
+        (deviceData)->
+          console.log deviceData
+        (xxx)->
+          debugger
+          console.log "can't start movement service"
+      # turn accelerometer on
+      configData = new Uint16Array(1);
+      #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
+      configData[0] = 0x007F;
+      ble.write deviceId,
+        accelerometer.service
+        accelerometer.configuration
+        configData.buffer
+        ()-> console.log "Started movement monitor."
+        (e)-> console.log "error starting movement monitor #{e}"
 
+      periodData = new Uint8Array(1);
+      periodData[0] = 0x0A;
+      ble.write deviceId,
+        accelerometer.service
+        accelerometer.period
+        periodData.buffer
+        ()-> console.log "Configured movement period."
+        (e)-> console.log "error starting movement monitor #{e}"
+    catch e
+      alert('Error in attachSensor -- check LOG')
+      console.log "error in attachSensor"
+      console.log e
+    return d
+###
         if statusList.SENSORTAG_ONLINE == s
           sessionInfo = Pylon.get 'sessionInfo'
           sessionInfo.set role+'sensorUUID', d.id
@@ -280,48 +258,24 @@ class TiHandler
             deviceStatus: 'Listening'
           }
           newID = sensorInstance.softwareVersion
-          if sensorInstance.serialNumber &&  newID != "N.A."  # do we have a new tag
-            switch  newRole = sensorInstance.serialNumber.slice -3
-              when "(R)","B01"
-                role="Right"
-                #hacks!
-                $("#RightSerialNumber").html sensorInstance.serialNumber
-                $("#RightVersion").html sensorInstance.softwareVersion
-              when "(L)","B02"
-                role="Left"
-                #hacks!
-                $("#LeftSerialNumber").html sensorInstance.serialNumber
-                $("#LeftVersion").html sensorInstance.softwareVersion
+          $("#LeftSerialNumber").html sensorInstance.serialNumber
+          $("#LeftVersion").html sensorInstance.softwareVersion
+          d.set 'readings', new EventModel role, d
             
-            d.set 'role',role
-            Pylon.set role, d
-            newID = Case.kebab "#{newID} #{sensorInstance.serialNumber}"
-            d.set 'readings', new EventModel role, d
-            Pylon.trigger('change respondingDevices')
-            
-            sessionInfo.set role+'sensorUUID', newID
-            d.set 'firmwareVersion', sensorInstance.serialNumber
-            if role == "Left"
-              sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
-              sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
-            else
-              sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
-              sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
+          sessionInfo.set role+'sensorUUID', newID
+          d.set 'firmwareVersion', sensorInstance.serialNumber
+          if role == "Left"
+            sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
+            sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
+          else
+            sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
+            sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
 
-            d.set UUID: newID
-            queryHostDevice d
-            sensorRate = Pylon.get sensorRate
+          sensorRate = Pylon.get sensorRate
             # default sensorRate is 10ms and may
             # be changed from the log with Pylon.rate(ms)
-            askForData sensorInstance, sensorRate
-          else
-            #start off with data rate of 100ms per sample
-            askForData sensorInstance, 100
-            $('#'+role+'Nick').text d.get("nickname")
-            $('#'+role+'uuid').text (d.get('assignedName') || d.id)
-          Pylon.trigger('change respondingDevices')
+          askForData sensorInstance, sensorRate
         return
-
       # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
       sensorInstance.errorCallback (s)->
         console.log "sensor ERROR report: " +s, ' '+d.id
@@ -346,25 +300,15 @@ class TiHandler
           sensorInstance.disconnectDevice()
         ,10000
 
-      # bring the evothings data converters up to this device
-      d.set 'getMagnetometerValues', sensorInstance.getMagnetometerValues
-      d.set 'getAccelerometerValues', sensorInstance.getAccelerometerValues
-      d.set 'getGyroscopeValues', sensorInstance.getGyroscopeValues
-
-      console.log "evothings sensor callbacks registered, attempt connect"
       # and plug our data handlers into the evothings scheme
       sensorInstance.handlers= @createVisualChain d
       sensorInstance.connectToDevice d.get('rawDevice')
+      
       if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
         sensorInstance.handlers.accel.finalScale = 2
         sensorInstance.handlers.mag.finalScale = 0.15
       askForData sensorInstance, 10
-
-    catch e
-      alert('Error in attachSensor -- check LOG')
-      console.log "error in attachSensor"
-      console.log e
-    return d
+###
 
 
 if window? then window.exports = TiHandler
