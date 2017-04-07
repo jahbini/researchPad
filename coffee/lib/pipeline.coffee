@@ -18,7 +18,7 @@ _=require 'underscore'
 ###
 
 class pipeline
-  constructor: () ->
+  initialize: () ->
 
   calibratorAverage: (dataCondition, calibrate, calibrating) ->
     try
@@ -101,38 +101,13 @@ class pipeline
       #console.log o
       return
     (data) =>
+      
       # data points from Evothings library are Seen.Point NOT compatible as sources
       try
-        # record the data from all three channels of old sensor
-        # New sensor data is identical for all channels, and only needs one
-        if Pylon.get('globalState').get 'recording'
-          try
-            o.device.attributes.numReadings += 1
-          catch
-            alert "device numReadings fail"
-          if o.sensor == 'gyro'
-            try
-              o.device.attributes.readings.addSample  _.toArray(data)
-            catch errrrrr
-              debugger
-              o.device.attributes.readings.addSample  _.toArray(data)
-
-        #only display 10 or so readings per second
-        if lastDisplay + 90 > Date.now()
-          return
-        lastDisplay = Date.now()
-
-        # update the device attributes and fire changes for rssi,status
-        o.device.set
-          deviceStatus: 'Receiving'
-          #signalStrength: -100 || o.device.rssi # set rssi off during connect per Harry
-
-        r = o.source(data)
-        #  $('#' + o.htmlID).html  templater(r.x, r.y, r.z, 'raw')
         p = undefined
         m = undefined
         # get the sensor data and pass to conditioner
-        r = Seen.P(r.x, r.y, r.z)
+        r = Seen.P(data[0],data[1],data[2])
         r.subtract o.bias
         dataCondition.curValue = r.copy()
         dataCondition.cookedValue = r.copy()

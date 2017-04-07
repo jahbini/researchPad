@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, Pipeline, TiHandler, _, accelerometer, deviceCollection, deviceModel, glib, pView, reading;
+var $, Backbone, Case, EventModel, TiHandler, _, deviceIdToModel, deviceModel, deviceNameToModel, glib, reading;
 
 Backbone = require('backbone');
 
@@ -15,12 +15,20 @@ glib = require('./lib/glib.coffee').glib;
 
 Case = require('Case');
 
-accelerometer = {
-  service: "F000AA80-0451-4000-B000-000000000000",
-  data: "F000AA81-0451-4000-B000-000000000000",
-  notification: "F0002902-0451-4000-B000-000000000000",
-  configuration: "F000AA82-0451-4000-B000-000000000000",
-  period: "F000AA83-0451-4000-B000-000000000000"
+deviceModel = require('./models/device-model.coffee').deviceModel;
+
+deviceNameToModel = function(name) {
+  var pd;
+  pd = Pylon.get('devices');
+  return pd.findWhere({
+    name: name
+  });
+};
+
+deviceIdToModel = function(id) {
+  var pd;
+  pd = Pylon.get('devices');
+  return pd.get(id);
 };
 
 reading = Backbone.Model.extend({
@@ -34,68 +42,10 @@ reading = Backbone.Model.extend({
   }
 });
 
-deviceModel = Backbone.Model.extend({
-  defaults: {
-    buttonText: 'connect',
-    buttonClass: 'button-primary',
-    deviceStatus: '--'
-  },
-  urlRoot: function() {
-    return Pylon.get('hostUrl') + 'sensor-tag';
-  }
-});
-
-deviceCollection = Backbone.Collection.extend({
-  model: deviceModel
-});
-
-Pylon.set('devices', new deviceCollection);
-
-pView = Backbone.View.extend({
-  el: '#scanDevices',
-  model: Pylon.get('devices'),
-  initialize: function() {
-    $('#StatusData').html('Ready to connect');
-    $('#FirmwareData').html('?');
-    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
-    Pylon.set('scanActive', false);
-    return this.listenTo(this.model, 'add', function(device) {
-      var element, ordinal;
-      ordinal = this.model.length;
-      device.set("rowName", "sensor-" + ordinal);
-      element = (Pylon.get('pageGen')).sensorView(device);
-      return this;
-    });
-  },
-  events: {
-    "click": "changer"
-  },
-  changer: function() {
-    console.log("Start Scan button activated");
-    Pylon.set('scanActive', true);
-    this.render();
-    setTimeout((function(_this) {
-      return function() {
-        Pylon.set('scanActive', false);
-        _this.render();
-      };
-    })(this), 30000);
-  },
-  render: function() {
-    if (Pylon.get('scanActive')) {
-      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
-    } else {
-      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
-    }
-  }
-});
-
-Pylon.set('tagViewer', new pView);
-
-Pipeline = require('./pipeline.coffee');
-
 TiHandler = (function() {
   var ble_found, queryHostDevice;
+
+  function TiHandler() {}
 
   queryHostDevice = function(d) {
     return d.fetch({
@@ -141,57 +91,12 @@ TiHandler = (function() {
     return Pylon.get('TiHandler').attachDevice(cid);
   });
 
-  function TiHandler(sessionInfo) {
+  TiHandler.prototype.initialize = function(sessionInfo) {
     this.sessionInfo = sessionInfo;
-  }
-
-  TiHandler.prototype.createVisualChain = function(device) {
-    var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
-    smoother = new Pipeline;
-    accelerometerHandler = smoother.readingHandler({
-      device: device,
-      sensor: 'accel',
-      debias: 'calibrateAccel',
-      source: function(data) {
-        return (device.get('getAccelerometerValues'))(data);
-      },
-      units: 'G',
-      calibrator: [smoother.calibratorSmooth],
-      viewer: smoother.viewSensor("accel-" + (device.get('rowName')), 1.5),
-      finalScale: 1
-    });
-    magnetometerHandler = smoother.readingHandler({
-      device: device,
-      sensor: 'mag',
-      debias: 'calibrateMag',
-      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: function(data) {
-        return (device.get('getMagnetometerValues'))(data);
-      },
-      units: '&micro;T',
-      viewer: smoother.viewSensor("mag-" + (device.get('rowName')), 0.05 / 2),
-      finalScale: 1
-    });
-    gyroscopeHandler = smoother.readingHandler({
-      device: device,
-      sensor: 'gyro',
-      debias: 'calibrateGyro',
-      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: function(data) {
-        return (device.get('getGyroscopeValues'))(data);
-      },
-      viewer: smoother.viewSensor("gyro-" + (device.get('rowName')), 0.05 / 2),
-      finalScale: 1
-    });
-    return {
-      gyro: gyroscopeHandler,
-      accel: accelerometerHandler,
-      mag: magnetometerHandler
-    };
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
-    var configData, d, deviceId, e, error, gs, name, periodData, role;
+    var d, gs, name, role;
     gs = Pylon.get('globalState');
     if (gs.get('recording')) {
       return;
@@ -199,7 +104,6 @@ TiHandler = (function() {
     console.log("attach " + cid);
     d = Pylon.get('devices').get(cid);
     name = d.get('name');
-    debugger;
     role = 'Error';
     if (0 < name.search(/\(([Ll]).*\)/)) {
       role = 'Left';
@@ -220,35 +124,9 @@ TiHandler = (function() {
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
     console.log("Role of Device set, attempt connect");
-    try {
-      console.log("Device instance attributes set, attempt connect");
-      deviceId = d.get("id");
-      ble.startNotification(deviceId, accelerometer.service, accelerometer.data, function(deviceData) {
-        return console.log(deviceData);
-      }, function() {
-        return console.log("can't start movement service");
-      });
-      configData = new Uint16Array(1);
-      configData[0] = 0x007F;
-      ble.write(deviceId, accelerometer.service, accelerometer.configuration, configData.buffer, function() {
-        return console.log("Started movement monitor.");
-      }, function(e) {
-        return console.log("error starting movement monitor " + e);
-      });
-      periodData = new Uint8Array(1);
-      periodData[0] = 0x0A;
-      ble.write(deviceId, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-        return console.log("Configured movement period.");
-      }, function(e) {
-        return console.log("error starting movement monitor " + e);
-      });
-    } catch (error) {
-      e = error;
-      alert('Error in attachSensor -- check LOG');
-      console.log("error in attachSensor");
-      console.log(e);
-    }
-    return d;
+    ble.connect(d.get("id"), d.subscribe(), function(e) {
+      return console.log("Failure to connect", e);
+    });
   };
 
   return TiHandler;
@@ -333,7 +211,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/event-model.coffee":9,"./pipeline.coffee":10,"Case":20,"backbone":18,"jquery":21,"underscore":24}],2:[function(require,module,exports){
+},{"./lib/console":3,"./lib/glib.coffee":4,"./models/device-model.coffee":10,"./models/event-model.coffee":11,"Case":23,"backbone":21,"jquery":24,"underscore":27}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
@@ -1047,7 +925,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":8,"./models/event-model.coffee":9,"./version.coffee":11,"./views/adminView.coffee":12,"./views/button-view.coffee":13,"./views/pages.coffee":15,"backbone":18,"jquery":21,"underscore":24}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":9,"./models/event-model.coffee":11,"./version.coffee":12,"./views/adminView.coffee":13,"./views/button-view.coffee":14,"./views/pages.coffee":16,"backbone":21,"jquery":24,"underscore":27}],3:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1440,7 +1318,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":24}],6:[function(require,module,exports){
+},{"underscore":27}],6:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
   slice = [].slice;
 
@@ -1539,7 +1417,295 @@ exports.netView = new netView;
 
 
 
-},{"backbone":18,"jquery":21,"teacup":23}],7:[function(require,module,exports){
+},{"backbone":21,"jquery":24,"teacup":26}],7:[function(require,module,exports){
+var $, Seen, _, pipeline;
+
+Seen = require('seen-js');
+
+$ = require('jquery');
+
+_ = require('underscore');
+
+
+/*
+#Pylon's globalStatus looks like this:
+#systemCommunicator = Backbone.Model.extend
+ *  defaults:
+ *    calibrating: false
+ *    recording: false
+ *    connected: false
+ *    calibrate: false
+ *
+ *  Pylon.set 'globalState',  new systemCommunicator
+ */
+
+pipeline = (function() {
+  var bufferToHexStr, byteToHexStr, hx, split;
+
+  function pipeline() {}
+
+  pipeline.prototype.initialize = function() {};
+
+  pipeline.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
+    var e, error1, tH;
+    try {
+      tH = void 0;
+      if (dataCondition.dataHistory.grandTotal === void 0) {
+        dataCondition.dataHistory.grandTotal = Seen.P(0, 0, 0);
+        dataCondition.dataHistory.grandAverage = Seen.P(0, 0, 0);
+        dataCondition.dataHistory.totalReadings = 1;
+      }
+      tH = dataCondition.dataHistory;
+      if (tH.totalReadings === 1000) {
+        tH.grandTotal.subtract(tH.grandAverage);
+        tH.totalReadings--;
+      }
+      tH.grandTotal.add(dataCondition.curValue);
+      tH.totalReadings++;
+      tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings);
+      dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
+    } catch (error1) {
+      e = error1;
+    }
+  };
+
+  split = function(raw, lo, hi) {
+    return raw - ((hi + lo) / 2.0);
+  };
+
+  pipeline.prototype.calibratorMid = function(dataCondition, calibrate, calibrating) {
+    var e, error1, tH;
+    try {
+      tH = void 0;
+      if (dataCondition.dataHistory.max === void 0) {
+        dataCondition.dataHistory.max = dataCondition.cookedValue.copy();
+        dataCondition.dataHistory.min = dataCondition.cookedValue.copy();
+      }
+      tH = dataCondition.dataHistory;
+      if (dataCondition.cookedValue.x > tH.max.x) {
+        tH.max.x = dataCondition.cookedValue.x;
+      }
+      if (dataCondition.cookedValue.y > tH.max.y) {
+        tH.max.y = dataCondition.cookedValue.y;
+      }
+      if (dataCondition.cookedValue.z > tH.max.z) {
+        tH.max.z = dataCondition.cookedValue.z;
+      }
+      if (dataCondition.cookedValue.x < tH.min.x) {
+        tH.min.x = dataCondition.cookedValue.x;
+      }
+      if (dataCondition.cookedValue.y < tH.min.y) {
+        tH.min.y = dataCondition.cookedValue.y;
+      }
+      if (dataCondition.cookedValue.z < tH.min.z) {
+        tH.min.z = dataCondition.cookedValue.z;
+      }
+      dataCondition.cookedValue.x = split(dataCondition.cookedValue.x, tH.min.x, tH.max.x);
+      dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y);
+      dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z);
+    } catch (error1) {
+      e = error1;
+    }
+  };
+
+  pipeline.prototype.calibratorSmooth = function(dataCondition, calibrate, calibrating) {
+    var e, error1;
+    try {
+      if (dataCondition.dataHistory.runningSum === void 0) {
+        dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy();
+      }
+      dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
+    } catch (error1) {
+      e = error1;
+    }
+  };
+
+  pipeline.prototype.readingHandler = function(o) {
+    var dataCondition, lastDisplay;
+    lastDisplay = 0;
+    dataCondition = {
+      curValue: Seen.P(0, 0, 0),
+      cookedValue: Seen.P(0, 0, 0),
+      dataHistory: {}
+    };
+    if (!o.calibrator) {
+      o.calibrator = function(d) {
+        d.cookedValue = d.curValue;
+      };
+    }
+    if (!o.units) {
+      o.units = '';
+    }
+    o.bias = Seen.P(0, 0, 0);
+    $('#' + o.debias).click(function() {
+      o.bias = o.cookedValue;
+    });
+    return (function(_this) {
+      return function(data) {
+        var error, error1, i, m, p, r;
+        try {
+          p = void 0;
+          m = void 0;
+          r = Seen.P(data[0], data[1], data[2]);
+          r.subtract(o.bias);
+          dataCondition.curValue = r.copy();
+          dataCondition.cookedValue = r.copy();
+          i = 0;
+          while (i < o.calibrator.length) {
+            o.calibrator[i](dataCondition, 0, 0);
+            i++;
+          }
+          p = dataCondition.cookedValue.multiply(o.finalScale);
+          m = dataCondition.dataHistory;
+          o.viewer(p.x, p.y, p.z);
+        } catch (error1) {
+          error = error1;
+          console.log("in readinghandler: " + (error.statusText || error));
+        }
+      };
+    })(this);
+  };
+
+
+  /*
+   * Convert byte buffer to hex string.
+   * @param buffer - an Uint8Array
+   * @param offset - byte offset
+   * @param numBytes - number of bytes to read
+   * @return string with hex representation of bytes
+   */
+
+  hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
+
+  bufferToHexStr = function(buffer, offset, numBytes) {
+    var hex, i;
+    hex = '';
+    if (!numBytes) {
+      numBytes = buffer.length;
+    }
+    if (!offset) {
+      offset = 0;
+    }
+    i = 0;
+    while (i < numBytes) {
+      hex += byteToHexStr(buffer[offset + i]) + ' ';
+      ++i;
+    }
+    return hex;
+  };
+
+  byteToHexStr = function(d) {
+    var hi, lo;
+    lo = hx[d & 0xf];
+    hi = hx[(d & 0xf0) >> 4];
+    return hi + lo;
+  };
+
+  pipeline.prototype.viewSensor = function(viewport, scaleFactor) {
+    var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
+    height = 100;
+    width = 100;
+    model = Seen.Models['default']();
+    scene = new Seen.Scene({
+      model: model,
+      viewport: Seen.Viewports.center(width, height)
+    });
+    cubie = Seen.Shapes.cube().scale(0.25);
+    spearPool = function(many) {
+      var colors, context, count, i, j, newArrow, shapes;
+      i = void 0;
+      j = void 0;
+      shapes = new Array(many);
+      count = -1;
+      colors = new Array(many);
+      context = null;
+      newArrow = function(model, x, y, z) {
+        var alphaDecay;
+        alphaDecay = 255;
+        count = count + 1;
+        if (count === many) {
+          count = 0;
+        }
+        shapes[count].reset();
+        j = 0;
+        i = count;
+        while (i < many) {
+          if (shapes[i]) {
+            shapes[i].fill(colors[j++]);
+          }
+          i++;
+        }
+        i = 0;
+        while (i < count) {
+          if (shapes[i]) {
+            shapes[i].fill(colors[j++]);
+          }
+          i++;
+        }
+        return shapes[count];
+      };
+      i = 0;
+      while (i < many) {
+        shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
+        model.add(shapes[i].bake());
+        colors[i] = new Seen.Material(new Seen.Color(255, 80, 255, 255 - 250 / many * i));
+        i++;
+      }
+      return newArrow;
+    };
+    newValue = function(x, y, z) {
+      var context, cross, dot, error1, leng, m, p1, pBar, pOriginal, problem, q, spear;
+      p1 = Seen.P(x, y, z);
+      spear = void 0;
+      pOriginal = p1.copy();
+      pBar = Seen.P(1, 0, 0);
+      m = void 0;
+      q = void 0;
+      cross = void 0;
+      dot = void 0;
+      leng = p1.magnitude();
+      p1 = p1.normalize();
+      pBar.add(p1);
+      if (pBar.magnitude() < 0.000001) {
+        pBar = Seen.P(0, 1, 0);
+      }
+      pBar.normalize();
+      q = Seen.Quaternion.pointAngle(pBar, Math.PI);
+      m = q.toMatrix();
+      try {
+        spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
+      } catch (error1) {
+        problem = error1;
+        console.log("Death from spear Pool");
+        console.log(problem.statusText || probem);
+      }
+      spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
+      if (!context) {
+        context = Seen.Context(viewport, scene);
+      }
+      context.render();
+    };
+    spearFromPool = new spearPool(Pylon.get('spearCount'));
+    cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
+    model.add(cubie);
+    return newValue;
+  };
+
+  return pipeline;
+
+})();
+
+if (typeof window !== "undefined" && window !== null) {
+  window.exports = pipeline;
+}
+
+if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
+  module.exports = pipeline;
+}
+
+
+
+},{"jquery":24,"seen-js":25,"underscore":27}],8:[function(require,module,exports){
 
 /*
  * Javascript Stopwatch class
@@ -1698,8 +1864,8 @@ module.exports = Stopwatch = (function() {
 
 
 
-},{}],8:[function(require,module,exports){
-var $, Backbone, MyId, Pylon, _, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, setNewItem, uploader;
+},{}],9:[function(require,module,exports){
+var $, Backbone, MyId, Pylon, _, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, uploader, uploading;
 
 $ = require('jquery');
 
@@ -1712,6 +1878,8 @@ require('./console');
 localStorage = window.localStorage;
 
 Pylon = window.Pylon;
+
+uploading = false;
 
 needs = function(array, key) {
   var i, id, len;
@@ -1752,27 +1920,44 @@ records = function() {
 setNewItem = function(backboneAttributes) {
   var events;
   events = records();
-  if (!backboneAttributes) {
-    return events;
-  }
   localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
   if (needs(events, backboneAttributes.LSid)) {
     events.push(backboneAttributes.LSid);
     localStorage.setItem('all_events', events.join(','));
   }
-  return events;
+};
+
+removeItem = function(lsid) {
+  var events, i, id, item, key, len;
+  events = records();
+
+  /*
+  remove item from event array 
+  coffee> a=[10,11,12,13,14,15,10,11,12,13,14,15]
+    [ 10, 11, 12, 13, 14, 15, 10, 11, 12, 13, 14, 15 ]
+  coffee> a.splice(key,1) for id,key in a when id is 13
+    [ [ 13 ], [ 13 ] ]
+  coffee> a
+    [ 10, 11, 12, 14, 15, 10, 11, 12, 14, 15 ]
+   */
+  for (key = i = 0, len = events.length; i < len; key = ++i) {
+    id = events[key];
+    if (id === lsid) {
+      events.splice(key, 1);
+    }
+  }
+  item = localStorage.getItem(lsid);
+  localStorage.removeItem(lsid);
+  return localStorage.setItem('all_events', events.join(','));
 };
 
 getNextItem = function() {
-  var e, error, events, item, key, uploadDataObject;
+  var e, error, events, key, uploadDataObject;
   events = records();
-  if (!events.length) {
+  if (!events.length || uploading) {
     return null;
   }
   key = events.shift();
-  item = localStorage.getItem(key);
-  localStorage.removeItem(key);
-  localStorage.setItem('all_events', events.join(','));
   try {
     uploadDataObject = JSON.parse(item);
   } catch (error) {
@@ -1781,7 +1966,7 @@ getNextItem = function() {
     console.log("upload item discarded -- invalid JSON");
     return null;
   }
-  return eventModelLoader(uploadDataObject);
+  return sendToHost(uploadDataObject);
 };
 
 MyId = function() {
@@ -1789,26 +1974,31 @@ MyId = function() {
 };
 
 eventModelLoader = function(uploadDataModel) {
-  var hopper, stress, uDM, uploadDataObject;
+  var uDM;
   if ((uDM = uploadDataModel).attributes) {
     if (uDM.attributes) {
       uDM.attributes.url = uDM.url;
     }
+    if (!uDM.attributes.LSid) {
+      uDM.attributes.LSid = MyId();
+    }
+    if (!uDM.attributes.hostFails) {
+      uDM.attributes.hostFails = 0;
+    }
     uDM = uDM.attributes;
   }
+  setNewItem(uDM.attributes);
+};
+
+sendToHost = function(uDM) {
+  var hopper, stress, uploadDataObject;
+  uploading = uDM.LSid;
   hopper = Backbone.Model.extend({
     url: Pylon.get('hostUrl') + uDM.url
   });
   uploadDataObject = new hopper(uDM);
-  if (!uploadDataModel.LSid) {
-    uploadDataObject.set('LSid', MyId());
-  }
-  if (!uploadDataModel.hostFails) {
-    uploadDataObject.set('hostFails', 0);
-  }
   stress = Pylon.get('stress');
   if (stress > Math.random()) {
-    setNewItem(uploadDataObject.attributes);
     console.log("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
     return;
   }
@@ -1821,6 +2011,8 @@ eventModelLoader = function(uploadDataModel) {
   uploadDataObject.save(null, {
     success: function(a, b, code) {
       uDM = a.attributes;
+      removeItem(uDM.LSid);
+      uploading = false;
       if (uDM.session) {
         console.log("upload success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
       } else {
@@ -1838,18 +2030,20 @@ eventModelLoader = function(uploadDataModel) {
       } else {
         console.log("upload failure " + uDM.LSid + " ", uDM.url, uDM.id);
       }
+      uploading = false;
       setTimeout(getNextItem, 5000);
       failCode = b.status;
       fails = a.get('hostFails');
       fails += 1;
       console.log("Upload " + fails + " failures (" + failCode + ") on " + (a.get('LSid')));
-      setNewItem(a.attributes);
     }
   });
 };
 
 uploader = function() {
   alert("Uploader Called!");
+  return;
+  return setTimeout(getNextItem, 5000);
 };
 
 
@@ -1867,7 +2061,236 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":18,"jquery":21,"underscore":24}],9:[function(require,module,exports){
+},{"./console":3,"backbone":21,"jquery":24,"underscore":27}],10:[function(require,module,exports){
+var Backbone, Pipeline, accelerometer, deviceCollection, pView;
+
+Backbone = require('Backbone');
+
+Pipeline = require('../lib/pipeline.coffee');
+
+accelerometer = {
+  service: "F000AA80-0451-4000-B000-000000000000",
+  data: "F000AA81-0451-4000-B000-000000000000",
+  notification: "F0002902-0451-4000-B000-000000000000",
+  configuration: "F000AA82-0451-4000-B000-000000000000",
+  period: "F000AA83-0451-4000-B000-000000000000"
+};
+
+exports.deviceModel = Backbone.Model.extend({
+  defaults: {
+    buttonText: 'connect',
+    buttonClass: 'button-primary',
+    deviceStatus: '--'
+  },
+  urlRoot: function() {
+    return Pylon.get('hostUrl') + 'sensor-tag';
+  },
+  initialize: function() {
+    this.chain = this.createVisualChain(this);
+    this.on("change:rawData", this.processMovement);
+    return this;
+  },
+  subscribe: function() {
+    return (function(_this) {
+      return function(device) {
+        var configData, e, error, periodData;
+        console.log("Device info at Subscribe time");
+        debugger;
+        try {
+          console.log("Device subscribe attempt " + device.name);
+          ble.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
+            return _this.set({
+              rawData: new Int16Array(data)
+            });
+          }, function(xxx) {
+            debugger;
+            console.log("can't start movement service for device " + _this.cid);
+          });
+          configData = new Uint16Array(1);
+          configData[0] = 0x007F;
+          ble.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, function() {
+            return console.log("Started movement monitor. device " + _this.cid);
+          }, function(e) {
+            return console.log("error starting movement device " + _this.cid + " monitor " + e);
+          });
+          periodData = new Uint8Array(1);
+          periodData[0] = 0x0A;
+          ble.write(device.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+            return console.log("Configured movement period device " + _this.cid + ".");
+          }, function(e) {
+            return console.log("error starting movement monitor " + e);
+          });
+        } catch (error) {
+          e = error;
+          alert('Error in attachSensor -- check LOG');
+          console.log("error in attachSensor");
+          console.log(e);
+        }
+        return device;
+      };
+    })(this);
+  },
+  createVisualChain: function() {
+    var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
+    smoother = new Pipeline;
+    accelerometerHandler = smoother.readingHandler({
+      device: this,
+      sensor: 'accel',
+      debias: 'calibrateAccel',
+      source: (function(_this) {
+        return function(data) {
+          return (_this.get('getAccelerometerValues'))(data);
+        };
+      })(this),
+      units: 'G',
+      calibrator: [smoother.calibratorSmooth],
+      viewer: (function(_this) {
+        return function(x, y, z) {
+          var v;
+          if (!v) {
+            v = smoother.viewSensor("accel-" + (_this.get('rowName')), 1.5);
+          }
+          v(x, y, z);
+        };
+      })(this),
+      finalScale: 1
+    });
+    magnetometerHandler = smoother.readingHandler({
+      device: this,
+      sensor: 'mag',
+      debias: 'calibrateMag',
+      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      source: (function(_this) {
+        return function(data) {
+          return (_this.get('getMagnetometerValues'))(data);
+        };
+      })(this),
+      units: '&micro;T',
+      viewer: (function(_this) {
+        return function(x, y, z) {
+          var v;
+          if (!v) {
+            v = smoother.viewSensor("mag-" + (_this.get('rowName')), 1.5);
+          }
+          v(x, y, z);
+        };
+      })(this),
+      finalScale: 1
+    });
+    gyroscopeHandler = smoother.readingHandler({
+      device: this,
+      sensor: 'gyro',
+      debias: 'calibrateGyro',
+      calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
+      source: (function(_this) {
+        return function(data) {
+          return (_this.get('getGyroscopeValues'))(data);
+        };
+      })(this),
+      viewer: (function(_this) {
+        return function(x, y, z) {
+          var v;
+          if (!v) {
+            v = smoother.viewSensor("gyro-" + (_this.get('rowName')), 1.5);
+          }
+          v(x, y, z);
+        };
+      })(this),
+      finalScale: 1
+    });
+    return {
+      gyro: gyroscopeHandler,
+      accel: accelerometerHandler,
+      mag: magnetometerHandler
+    };
+  },
+  sensorMpu9250GyroConvert: function(data) {
+    return data / (65536 / 500);
+  },
+  sensorMpu9250AccConvert: function(data) {
+    return data / (32768 / 2);
+  },
+  processMovement: function() {
+    var data, lastDisplay;
+    data = this.attributes.rawData;
+    this.set({
+      gyro: data.slice(0, 3).map(this.sensorMpu9250GyroConvert)
+    });
+    this.set({
+      accel: data.slice(3, 6).map(this.sensorMpu9250AccConvert)
+    });
+    this.set({
+      mag: data.slice(7, 10).map(function(a) {
+        return a;
+      })
+    });
+    if (Pylon.get('globalState').get('recording')) {
+      this.attributes.numReadings += 1;
+      this.attributes.readings.addSample(data);
+    }
+    if (lastDisplay + 90 > Date.now()) {
+      return;
+    }
+    lastDisplay = Date.now();
+    this.set({
+      deviceStatus: 'Receiving'
+    });
+    this.chain.gyro(this.attributes.gyro);
+    this.chain.accel(this.attributes.accel);
+    this.chain.mag(this.attributes.mag);
+  }
+});
+
+deviceCollection = Backbone.Collection.extend({
+  model: exports.deviceModel
+});
+
+Pylon.set('devices', new deviceCollection);
+
+pView = Backbone.View.extend({
+  el: '#scanDevices',
+  model: Pylon.get('devices'),
+  initialize: function() {
+    $('#StatusData').html('Ready to connect');
+    $('#FirmwareData').html('?');
+    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
+    Pylon.set('scanActive', false);
+    return this.listenTo(this.model, 'add', function(device) {
+      var element, ordinal;
+      ordinal = this.model.length;
+      device.set("rowName", "sensor-" + ordinal);
+      element = (Pylon.get('pageGen')).sensorView(device);
+      return this;
+    });
+  },
+  events: {
+    "click": "changer"
+  },
+  changer: function() {
+    console.log("Start Scan button activated");
+    Pylon.set('scanActive', true);
+    this.render();
+    setTimeout((function(_this) {
+      return function() {
+        Pylon.set('scanActive', false);
+        _this.render();
+      };
+    })(this), 30000);
+  },
+  render: function() {
+    if (Pylon.get('scanActive')) {
+      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
+    } else {
+      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
+    }
+  }
+});
+
+Pylon.set('tagViewer', new pView);
+
+
+
+},{"../lib/pipeline.coffee":7,"Backbone":19}],11:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -1930,322 +2353,12 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":8,"backbone":18,"underscore":24}],10:[function(require,module,exports){
-var $, Seen, _, pipeline;
-
-Seen = require('seen-js');
-
-$ = require('jquery');
-
-_ = require('underscore');
-
-
-/*
-#Pylon's globalStatus looks like this:
-#systemCommunicator = Backbone.Model.extend
- *  defaults:
- *    calibrating: false
- *    recording: false
- *    connected: false
- *    calibrate: false
- *
- *  Pylon.set 'globalState',  new systemCommunicator
- */
-
-pipeline = (function() {
-  var bufferToHexStr, byteToHexStr, hx, split;
-
-  function pipeline() {}
-
-  pipeline.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
-    var e, error1, tH;
-    try {
-      tH = void 0;
-      if (dataCondition.dataHistory.grandTotal === void 0) {
-        dataCondition.dataHistory.grandTotal = Seen.P(0, 0, 0);
-        dataCondition.dataHistory.grandAverage = Seen.P(0, 0, 0);
-        dataCondition.dataHistory.totalReadings = 1;
-      }
-      tH = dataCondition.dataHistory;
-      if (tH.totalReadings === 1000) {
-        tH.grandTotal.subtract(tH.grandAverage);
-        tH.totalReadings--;
-      }
-      tH.grandTotal.add(dataCondition.curValue);
-      tH.totalReadings++;
-      tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings);
-      dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage);
-    } catch (error1) {
-      e = error1;
-    }
-  };
-
-  split = function(raw, lo, hi) {
-    return raw - ((hi + lo) / 2.0);
-  };
-
-  pipeline.prototype.calibratorMid = function(dataCondition, calibrate, calibrating) {
-    var e, error1, tH;
-    try {
-      tH = void 0;
-      if (dataCondition.dataHistory.max === void 0) {
-        dataCondition.dataHistory.max = dataCondition.cookedValue.copy();
-        dataCondition.dataHistory.min = dataCondition.cookedValue.copy();
-      }
-      tH = dataCondition.dataHistory;
-      if (dataCondition.cookedValue.x > tH.max.x) {
-        tH.max.x = dataCondition.cookedValue.x;
-      }
-      if (dataCondition.cookedValue.y > tH.max.y) {
-        tH.max.y = dataCondition.cookedValue.y;
-      }
-      if (dataCondition.cookedValue.z > tH.max.z) {
-        tH.max.z = dataCondition.cookedValue.z;
-      }
-      if (dataCondition.cookedValue.x < tH.min.x) {
-        tH.min.x = dataCondition.cookedValue.x;
-      }
-      if (dataCondition.cookedValue.y < tH.min.y) {
-        tH.min.y = dataCondition.cookedValue.y;
-      }
-      if (dataCondition.cookedValue.z < tH.min.z) {
-        tH.min.z = dataCondition.cookedValue.z;
-      }
-      dataCondition.cookedValue.x = split(dataCondition.cookedValue.x, tH.min.x, tH.max.x);
-      dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y);
-      dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z);
-    } catch (error1) {
-      e = error1;
-    }
-  };
-
-  pipeline.prototype.calibratorSmooth = function(dataCondition, calibrate, calibrating) {
-    var e, error1;
-    try {
-      if (dataCondition.dataHistory.runningSum === void 0) {
-        dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy();
-      }
-      dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy();
-    } catch (error1) {
-      e = error1;
-    }
-  };
-
-  pipeline.prototype.readingHandler = function(o) {
-    var dataCondition, lastDisplay;
-    lastDisplay = 0;
-    dataCondition = {
-      curValue: Seen.P(0, 0, 0),
-      cookedValue: Seen.P(0, 0, 0),
-      dataHistory: {}
-    };
-    if (!o.calibrator) {
-      o.calibrator = function(d) {
-        d.cookedValue = d.curValue;
-      };
-    }
-    if (!o.units) {
-      o.units = '';
-    }
-    o.bias = Seen.P(0, 0, 0);
-    $('#' + o.debias).click(function() {
-      o.bias = o.cookedValue;
-    });
-    return (function(_this) {
-      return function(data) {
-        var error, error1, error2, error3, errrrrr, i, m, p, r;
-        try {
-          if (Pylon.get('globalState').get('recording')) {
-            try {
-              o.device.attributes.numReadings += 1;
-            } catch (error1) {
-              alert("device numReadings fail");
-            }
-            if (o.sensor === 'gyro') {
-              try {
-                o.device.attributes.readings.addSample(_.toArray(data));
-              } catch (error2) {
-                errrrrr = error2;
-                debugger;
-                o.device.attributes.readings.addSample(_.toArray(data));
-              }
-            }
-          }
-          if (lastDisplay + 90 > Date.now()) {
-            return;
-          }
-          lastDisplay = Date.now();
-          o.device.set({
-            deviceStatus: 'Receiving'
-          });
-          r = o.source(data);
-          p = void 0;
-          m = void 0;
-          r = Seen.P(r.x, r.y, r.z);
-          r.subtract(o.bias);
-          dataCondition.curValue = r.copy();
-          dataCondition.cookedValue = r.copy();
-          i = 0;
-          while (i < o.calibrator.length) {
-            o.calibrator[i](dataCondition, 0, 0);
-            i++;
-          }
-          p = dataCondition.cookedValue.multiply(o.finalScale);
-          m = dataCondition.dataHistory;
-          o.viewer(p.x, p.y, p.z);
-        } catch (error3) {
-          error = error3;
-          console.log("in readinghandler: " + (error.statusText || error));
-        }
-      };
-    })(this);
-  };
-
-
-  /*
-   * Convert byte buffer to hex string.
-   * @param buffer - an Uint8Array
-   * @param offset - byte offset
-   * @param numBytes - number of bytes to read
-   * @return string with hex representation of bytes
-   */
-
-  hx = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', 'A', 'B', 'C', 'D', 'E', 'F'];
-
-  bufferToHexStr = function(buffer, offset, numBytes) {
-    var hex, i;
-    hex = '';
-    if (!numBytes) {
-      numBytes = buffer.length;
-    }
-    if (!offset) {
-      offset = 0;
-    }
-    i = 0;
-    while (i < numBytes) {
-      hex += byteToHexStr(buffer[offset + i]) + ' ';
-      ++i;
-    }
-    return hex;
-  };
-
-  byteToHexStr = function(d) {
-    var hi, lo;
-    lo = hx[d & 0xf];
-    hi = hx[(d & 0xf0) >> 4];
-    return hi + lo;
-  };
-
-  pipeline.prototype.viewSensor = function(viewport, scaleFactor) {
-    var cubie, height, model, newValue, scene, spearFromPool, spearPool, width;
-    height = 100;
-    width = 100;
-    model = Seen.Models['default']();
-    scene = new Seen.Scene({
-      model: model,
-      viewport: Seen.Viewports.center(width, height)
-    });
-    cubie = Seen.Shapes.cube().scale(0.25);
-    spearPool = function(many) {
-      var colors, context, count, i, j, newArrow, shapes;
-      i = void 0;
-      j = void 0;
-      shapes = new Array(many);
-      count = -1;
-      colors = new Array(many);
-      context = null;
-      newArrow = function(model, x, y, z) {
-        var alphaDecay;
-        alphaDecay = 255;
-        count = count + 1;
-        if (count === many) {
-          count = 0;
-        }
-        shapes[count].reset();
-        j = 0;
-        i = count;
-        while (i < many) {
-          if (shapes[i]) {
-            shapes[i].fill(colors[j++]);
-          }
-          i++;
-        }
-        i = 0;
-        while (i < count) {
-          if (shapes[i]) {
-            shapes[i].fill(colors[j++]);
-          }
-          i++;
-        }
-        return shapes[count];
-      };
-      i = 0;
-      while (i < many) {
-        shapes[i] = Seen.Shapes.arrow(1, 18, 0.5, 2, 1).scale(-1, 1, 1).translate(20, 0, 0).scale(height * 0.025);
-        model.add(shapes[i].bake());
-        colors[i] = new Seen.Material(new Seen.Color(255, 80, 255, 255 - 250 / many * i));
-        i++;
-      }
-      return newArrow;
-    };
-    newValue = function(x, y, z) {
-      var context, cross, dot, error1, leng, m, p1, pBar, pOriginal, problem, q, spear;
-      p1 = Seen.P(x, y, z);
-      spear = void 0;
-      pOriginal = p1.copy();
-      pBar = Seen.P(1, 0, 0);
-      m = void 0;
-      q = void 0;
-      cross = void 0;
-      dot = void 0;
-      leng = p1.magnitude();
-      p1 = p1.normalize();
-      pBar.add(p1);
-      if (pBar.magnitude() < 0.000001) {
-        pBar = Seen.P(0, 1, 0);
-      }
-      pBar.normalize();
-      q = Seen.Quaternion.pointAngle(pBar, Math.PI);
-      m = q.toMatrix();
-      try {
-        spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
-      } catch (error1) {
-        problem = error1;
-        console.log("Death from spear Pool");
-        console.log(problem.statusText || probem);
-      }
-      spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
-      if (!context) {
-        context = Seen.Context(viewport, scene);
-      }
-      context.render();
-    };
-    spearFromPool = new spearPool(Pylon.get('spearCount'));
-    cubie.fill(new Seen.Material(new Seen.Color(25, 200, 200, 100)));
-    model.add(cubie);
-    return newValue;
-  };
-
-  return pipeline;
-
-})();
-
-if (typeof window !== "undefined" && window !== null) {
-  window.exports = pipeline;
-}
-
-if ((typeof module !== "undefined" && module !== null ? module.exports : void 0) != null) {
-  module.exports = pipeline;
-}
-
-
-
-},{"jquery":21,"seen-js":22,"underscore":24}],11:[function(require,module,exports){
+},{"../lib/upload.coffee":9,"backbone":21,"underscore":27}],12:[function(require,module,exports){
 module.exports = '1.5.1';
 
 
 
-},{}],12:[function(require,module,exports){
+},{}],13:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2556,7 +2669,7 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":18,"jquery":21,"teacup":23}],13:[function(require,module,exports){
+},{"backbone":21,"jquery":24,"teacup":26}],14:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -2661,7 +2774,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":18,"jquery":21,"teacup":23}],14:[function(require,module,exports){
+},{"backbone":21,"jquery":24,"teacup":26}],15:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -2779,7 +2892,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":18,"jquery":21,"teacup":23}],15:[function(require,module,exports){
+},{"backbone":21,"jquery":24,"teacup":26}],16:[function(require,module,exports){
 var $, Backbone, Pages, RssiView, Teacup, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3222,7 +3335,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":12,"./count-up-down.coffee":14,"./protocol-active.coffee":16,"./rssi-view.coffee":17,"backbone":18,"jquery":21,"teacup":23}],16:[function(require,module,exports){
+},{"./adminView.coffee":13,"./count-up-down.coffee":15,"./protocol-active.coffee":17,"./rssi-view.coffee":18,"backbone":21,"jquery":24,"teacup":26}],17:[function(require,module,exports){
 var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3353,7 +3466,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":7,"./button-view.coffee":13,"backbone":18,"jquery":21,"teacup":23}],17:[function(require,module,exports){
+},{"../lib/stopwatch.coffee":8,"./button-view.coffee":14,"backbone":21,"jquery":24,"teacup":26}],18:[function(require,module,exports){
 var $, Backbone, RssiView, T;
 
 Backbone = require('backbone');
@@ -3443,7 +3556,7 @@ module.exports = RssiView = Backbone.View.extend({
 
 
 
-},{"backbone":18,"jquery":21,"teacup":23}],18:[function(require,module,exports){
+},{"backbone":21,"jquery":24,"teacup":26}],19:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5367,7 +5480,7 @@ module.exports = RssiView = Backbone.View.extend({
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":21,"underscore":19}],19:[function(require,module,exports){
+},{"jquery":24,"underscore":20}],20:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -6917,7 +7030,11 @@ module.exports = RssiView = Backbone.View.extend({
   }
 }.call(this));
 
-},{}],20:[function(require,module,exports){
+},{}],21:[function(require,module,exports){
+arguments[4][19][0].apply(exports,arguments)
+},{"dup":19,"jquery":24,"underscore":22}],22:[function(require,module,exports){
+arguments[4][20][0].apply(exports,arguments)
+},{"dup":20}],23:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -7071,7 +7188,7 @@ module.exports = RssiView = Backbone.View.extend({
 
 }).call(this);
 
-},{}],21:[function(require,module,exports){
+},{}],24:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -17147,7 +17264,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],22:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 /** seen.js v0.2.7 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 
 (function(){
@@ -21745,7 +21862,7 @@ seen.Simplex3D = (function() {
 })();
 
 })(this);
-},{}],23:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -22180,6 +22297,6 @@ seen.Simplex3D = (function() {
 
 }).call(this);
 
-},{}],24:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"dup":19}]},{},[2]);
+},{}],27:[function(require,module,exports){
+arguments[4][20][0].apply(exports,arguments)
+},{"dup":20}]},{},[2]);

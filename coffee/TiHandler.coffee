@@ -10,14 +10,18 @@ $ = require('jquery')
 {EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
-# http://processors.wiki.ti.com/index.php/CC2650_SensorTag_User%27s_Guide
-accelerometer = 
-    service: "F000AA80-0451-4000-B000-000000000000"
-    data: "F000AA81-0451-4000-B000-000000000000" # read/notify 3 bytes X : Y : Z
-    notification:"F0002902-0451-4000-B000-000000000000"
-    configuration: "F000AA82-0451-4000-B000-000000000000" # read/write 1 byte
-    period: "F000AA83-0451-4000-B000-000000000000" # read/write 1 byte Period = [Input*10]ms
+{deviceModel} = require './models/device-model.coffee'
+
+deviceNameToModel= (name)->
+    pd =Pylon.get('devices')
+    # have we found this device before?
+    return pd.findWhere(name: name)
     
+deviceIdToModel= (id)->
+    pd =Pylon.get('devices')
+    # have we found this device before?
+    return pd.get(id)
+
 # ## Sensor Data
 # ### a single sensor reading
 reading = Backbone.Model.extend
@@ -28,64 +32,7 @@ reading = Backbone.Model.extend
     @set 'time', d.getTime()
 # ### sensor readings are grouped into ten-second chunks, other events just have text
 
-deviceModel = Backbone.Model.extend
-  defaults:
-      buttonText: 'connect'
-      buttonClass: 'button-primary'
-      deviceStatus: '--'
-  urlRoot: ->
-    Pylon.get('hostUrl')+'sensor-tag'
-  #idAttribute: "name"
 
-deviceCollection = Backbone.Collection.extend
-  model: deviceModel
-Pylon.set 'devices', new deviceCollection
-
-# View logic to watch and update the "start scanning" button and enable BLE device scan
-pView=Backbone.View.extend
-  el: '#scanDevices'
-  model: Pylon.get 'devices'
-  initialize: ->
-    $('#StatusData').html 'Ready to connect'
-    $('#FirmwareData').html '?'
-    $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
-    Pylon.set 'scanActive', false
-    @listenTo @model, 'add', (device)->
-      # what we should lookf is not changes to pylon, but pylon's devices (a collection)
-      # on devices add, create row #
-      ordinal = @model.length
-      device.set "rowName", "sensor-#{ordinal}"
-      element = (Pylon.get 'pageGen').sensorView device
-      return @
-  events:
-    "click": "changer"
-  changer: ->
-      console.log "Start Scan button activated"
-      Pylon.set 'scanActive', true
-      @render()
-      setTimeout(
-        ()=>
-          Pylon.set 'scanActive', false
-          @render()
-          return
-        ,30000)
-      return
-  render: ->
-      if Pylon.get 'scanActive'
-        @$el.prop "disabled",true
-          .removeClass 'button-primary'
-          .addClass 'button-success'
-          .text 'Scanning'
-      else
-        @$el.prop("disabled",false)
-          .removeClass 'button-success'
-          .addClass 'button-primary'
-          .text 'Scan Devices'
-      return
-
-Pylon.set 'tagViewer', new pView
-
-Pipeline = require('./pipeline.coffee')
 
 class TiHandler
 
@@ -129,53 +76,7 @@ class TiHandler
     Pylon.get 'TiHandler'
       .attachDevice cid
     
-  constructor: (@sessionInfo) ->
-
-  createVisualChain: (device) ->
-    smoother = new Pipeline
-    accelerometerHandler = smoother.readingHandler
-      device: device
-      sensor: 'accel'
-      debias: 'calibrateAccel'
-      source: (data)->
-        (device.get 'getAccelerometerValues') data
-      units: 'G'
-      calibrator: [
-        smoother.calibratorSmooth
-      ]
-      viewer: smoother.viewSensor "accel-#{device.get 'rowName'}",1.5
-      finalScale: 1
-
-    magnetometerHandler = smoother.readingHandler
-      device: device
-      sensor: 'mag'
-      debias: 'calibrateMag'
-      calibrator: [
-        smoother.calibratorAverage
-        smoother.calibratorSmooth
-      ]
-      source: (data)->
-        (device.get 'getMagnetometerValues') data
-      units: '&micro;T'
-      viewer: smoother.viewSensor "mag-#{device.get 'rowName'}", 0.05/2
-      finalScale: 1
-
-    gyroscopeHandler = smoother.readingHandler
-      device: device
-      sensor: 'gyro'
-      debias: 'calibrateGyro'
-      calibrator: [
-        smoother.calibratorAverage
-        smoother.calibratorSmooth
-      ]
-      source: (data)->
-        (device.get 'getGyroscopeValues') data
-      viewer: smoother.viewSensor "gyro-#{device.get 'rowName'}", 0.05/2
-      finalScale: 1
-
-    return gyro: gyroscopeHandler
-      , accel: accelerometerHandler
-      , mag: magnetometerHandler
+  initialize: (@sessionInfo) ->
 
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
@@ -188,7 +89,6 @@ class TiHandler
     console.log "attach "+ cid
     d = Pylon.get('devices').get  cid
     name = d.get 'name'
-    debugger
     role = 'Error'
     role= 'Left' if 0< name.search /\(([Ll]).*\)/
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
@@ -205,44 +105,12 @@ class TiHandler
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
     console.log "Role of Device set, attempt connect"
-
-    try
-      #set some attributes 
-      console.log "Device instance attributes set, attempt connect"
-      deviceId= d.get "id"
-
-      ble.startNotification deviceId,
-        accelerometer.service
-        accelerometer.data
-        (deviceData)->
-          console.log deviceData
-        (xxx)->
-          debugger
-          console.log "can't start movement service"
-      # turn accelerometer on
-      configData = new Uint16Array(1);
-      #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
-      configData[0] = 0x007F;
-      ble.write deviceId,
-        accelerometer.service
-        accelerometer.configuration
-        configData.buffer
-        ()-> console.log "Started movement monitor."
-        (e)-> console.log "error starting movement monitor #{e}"
-
-      periodData = new Uint8Array(1);
-      periodData[0] = 0x0A;
-      ble.write deviceId,
-        accelerometer.service
-        accelerometer.period
-        periodData.buffer
-        ()-> console.log "Configured movement period."
-        (e)-> console.log "error starting movement monitor #{e}"
-    catch e
-      alert('Error in attachSensor -- check LOG')
-      console.log "error in attachSensor"
-      console.log e
-    return d
+    ble.connect (d.get "id"),
+      d.subscribe()
+      (e)-> console.log "Failure to connect",e
+    return
+    
+  
 ###
         if statusList.SENSORTAG_ONLINE == s
           sessionInfo = Pylon.get 'sessionInfo'
