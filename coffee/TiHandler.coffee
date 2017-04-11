@@ -33,6 +33,49 @@ reading = Backbone.Model.extend
 # ### sensor readings are grouped into ten-second chunks, other events just have text
 
 
+# View logic to watch and update the "start scanning" button and enable BLE device scan
+pView=Backbone.View.extend
+  el: '#scanDevices'
+  model: Pylon.get 'devices'
+  initialize: ->
+    $('#StatusData').html 'Ready to connect'
+    $('#FirmwareData').html '?'
+    $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
+    Pylon.set 'scanActive', false
+    @listenTo @model, 'add', (device)->
+      # what we should lookf is not changes to pylon, but pylon's devices (a collection)
+      # on devices add, create row #
+      ordinal = @model.length
+      device.set "rowName", "sensor-#{ordinal}"
+      element = (Pylon.get 'pageGen').sensorView device
+      return @
+  events:
+    "click": "changer"
+  changer: ->
+      console.log "Start Scan button activated"
+      Pylon.set 'scanActive', true
+      @render()
+      setTimeout(
+        ()=>
+          Pylon.set 'scanActive', false
+          @render()
+          return
+        ,30000)
+      return
+  render: ->
+      if Pylon.get 'scanActive'
+        @$el.prop "disabled",true
+          .removeClass 'button-primary'
+          .addClass 'button-success'
+          .text 'Scanning'
+      else
+        @$el.prop("disabled",false)
+          .removeClass 'button-success'
+          .addClass 'button-primary'
+          .text 'Scan Devices'
+      return
+
+Pylon.set 'tagViewer', new pView
 
 class TiHandler
 
@@ -76,8 +119,37 @@ class TiHandler
     Pylon.get 'TiHandler'
       .attachDevice cid
     
-  initialize: (@sessionInfo) ->
+  Pylon.on "disableDevice", (cid)->
+    Pylon.get 'TiHandler'
+      .detachDevice cid
 
+  initialize: (@sessionInfo) ->
+    
+# detachDevice
+# if we know anything about it, we erase it from our system
+  detachDevice: (cid) ->
+    d = Pylon.get('devices').get  cid
+    return unless d
+    name = d.get 'name'
+    console.log "detach #{cid} -- #{name}"
+    role = 'Error'
+    role= 'Left' if 0< name.search /\(([Ll]).*\)/
+    role= 'Right' if 0< name.search /\(([Rr]).*\)/
+    if role == 'Error'
+      console.log "Bad name for sensor: #{name}"
+      return
+    d.set 'role','---'
+    Pylon.unset role 
+    d.set 'buttonText', 'connect'
+    d.set 'connected', false
+    Pylon.trigger('change respondingDevices')
+    console.log "Device removed from state, attempt dicconnect"
+    ble.disconnect (d.get "id"),
+      ()=> console.log "disconnection of #{name}"
+      (e)-> console.log "Failure to connect",e
+    return
+
+    
 # #attachDevice
 # when scan is active or completed, the devices can be enabled with only its UUID
 # Enables the responding device UUID to send motion information
@@ -109,8 +181,8 @@ class TiHandler
       d.subscribe()
       (e)-> console.log "Failure to connect",e
     return
-    
-  
+
+   
 ###
         if statusList.SENSORTAG_ONLINE == s
           sessionInfo = Pylon.get 'sessionInfo'

@@ -28,6 +28,4 @@
 #define LOG_LEVEL_DEF ddLogLevel
 #import "DDLog.h"
 static const int ddLogLevel = LOG_LEVEL_VERBOSE;
-/*
-#define NSLog(...)                      DDLogInfo(__VA_ARGS__)
-*/
+

@@ -2,77 +2,138 @@ Backbone = require 'Backbone'
 
 Pipeline = require('../lib/pipeline.coffee')
 
-      
+infoService =       "0000180a-0000-1000-8000-00805f9b34fb"
+infoService =       "180a"
+
+
+boilerplate =
+		firmwareVersion:    "2a26"
+		modelNumber:        "2a24"
+		serialNumber:       "2a25"
+		softwareVersion:    "2a28"
 accelerometer = 
-    service: "F000AA80-0451-4000-B000-000000000000"
-    data: "F000AA81-0451-4000-B000-000000000000" # read/notify 3 bytes X : Y : Z
-    notification:"F0002902-0451-4000-B000-000000000000"
-    configuration: "F000AA82-0451-4000-B000-000000000000" # read/write 1 byte
-    period: "F000AA83-0451-4000-B000-000000000000" # read/write 1 byte Period = [Input*10]ms
-    
+    service:        "F000AA80-0451-4000-B000-000000000000"
+    data:           "F000AA81-0451-4000-B000-000000000000" # read/notify 3 bytes X : Y : Z
+    notification:   "F0002902-0451-4000-B000-000000000000"
+    configuration:  "F000AA82-0451-4000-B000-000000000000" # read/write 1 byte
+    period:         "F000AA83-0451-4000-B000-000000000000" # read/write 1 byte Period = [Input*10]ms
+
+accelerometer.notification =  '00002902-0000-1000-8000-00805f9b34fb'  
+accelerometer.notification =  '2902'  
+accelerometer.period =   'F000AA83-0451-4000-B000-000000000000'
+
+ab2str = (buf)->
+   return String.fromCharCode.apply null, new Uint8Array buf
+
+
+str2ab = (str)->
+  buf = new ArrayBuffer(str.length*2); # 2 bytes for each char
+  bufView = new Uint16Array(buf)
+  bufView[i] = str.charCodeAt(i) for i in str
+      
+  return buf
+  
 exports.deviceModel = Backbone.Model.extend
   defaults:
-      buttonText: 'connect'
-      buttonClass: 'button-primary'
-      deviceStatus: '--'
+    buttonText: 'connect'
+    buttonClass: 'button-primary'
+    deviceStatus: '--'
+    rate: 10
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
   initialize: ->
     @chain = @.createVisualChain @
     @on "change:rawData",@processMovement
+    @on "change:rate",@subscribe
+    @on "change:serialNumber", ()->
+      data = @.get 'serialNumber'
+      role = @.get 'role'
+      $("##{role}SerialNumber").html @.get 'serialNumber' 
+      return
+    @on "change:softwareVersion", ()->
+      data = @.get 'softwareVersion'
+      role = @.get 'role'
+      $("##{role}Version").html data
+      return
+
+
+    Pylon.on "speed",(val)->@.set 'rate',val
     return @
     
-  subscribe: ()-> return (device)=>
-    console.log "Device info at Subscribe time"
-    debugger
-    try
-    #set some attributes
+  getBoilerplate: (attribute, uuid)->
+    console.log "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
+    ble.read @.id,
+      infoService
+      uuid
+      (data)=>
+        val = ab2str data
+         
+        console.log "Setting attribute for #{attribute} to #{val}"
+        @.set attribute, val
+      (err)=>console.log "unable to obtain #{attribute} from #{@.attributes.name}"
+    return
     
+  subscribe: ()-> return (device)=>
+    try
+      for key, uuid of boilerplate
+        @getBoilerplate key, uuid
+    #set some attributes
       console.log "Device subscribe attempt #{device.name}"
-
+  # turn accelerometer off
+      configData = new Uint16Array(1);
+      #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
+      configData[0] = 0x0000;
+      ###
+      ble.stopNotification device.id,
+        accelerometer.service
+        accelerometer.data
+        (whatnot)=> 
+          console.log "Terminated movement monitor. device #{device.name}"
+        (e)=> console.log "error terminating movement device #{device.name} monitor #{e}"
+      ###
       ble.startNotification device.id,
         accelerometer.service
         accelerometer.data
         # convert raw iOS data into js and update the device model
-        (data)=> @.set rawData: new Int16Array(data);
-        (xxx)=>
+        (data)=>
           debugger
-          console.log "can't start movement service for device #{@.cid}"
+          @.set rawData: new Int16Array(data);
+        (xxx)=>
+          console.log "can't start movement service for device #{device.name}: #{xxx}"
           return
+    
+      periodData = new Uint8Array(1);
+      periodData[0] = @.attributes.rate;
+      console.log "Timing parameter for sensor rate = #{@.attributes.rate}"
+      ble.write @.attributes.id,
+        accelerometer.service
+        accelerometer.period
+        periodData.buffer
+        ()=> console.log "Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
+        (e)=> console.log "error starting movement monitor #{e}"
+    
+      
       # turn accelerometer on
-      configData = new Uint16Array(1);
       #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
-      configData[0] = 0x007F;
+      configData[0] = 0x017F;
       ble.write device.id,
         accelerometer.service
         accelerometer.configuration
         configData.buffer
-        ()=> console.log "Started movement monitor. device #{@.cid}"
-        (e)=> console.log "error starting movement device #{@.cid} monitor #{e}"
-
-      periodData = new Uint8Array(1);
-      periodData[0] = 0x0A;
-      ble.write device.id,
-        accelerometer.service
-        accelerometer.period
-        periodData.buffer
-        ()=> console.log "Configured movement period device #{@.cid}."
-        (e)=> console.log "error starting movement monitor #{e}"
+        (whatnot)=> 
+          console.log "Started movement monitor. device #{device.name}"
+        (e)=> console.log "error starting movement device #{device.name} monitor #{e}"
     catch e
       alert('Error in attachSensor -- check LOG')
       console.log "error in attachSensor"
       console.log e
-    return device  
+    return 
     
   createVisualChain: () ->
     smoother = new Pipeline
     accelerometerHandler = smoother.readingHandler
-      device: @
-      sensor: 'accel'
       debias: 'calibrateAccel'
-      source: (data)=>
-        (@.get 'getAccelerometerValues') data
       units: 'G'
       calibrator: [
         smoother.calibratorSmooth
@@ -81,35 +142,27 @@ exports.deviceModel = Backbone.Model.extend
         v= (smoother.viewSensor "accel-#{@.get 'rowName'}",1.5) unless v
         v x,y,z
         return
-      finalScale: 1
+      finalScale: 2
 
     magnetometerHandler = smoother.readingHandler
-      device: @
-      sensor: 'mag'
       debias: 'calibrateMag'
       calibrator: [
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      source: (data)=>
-        (@.get 'getMagnetometerValues') data
       units: '&micro;T'
       viewer: (x,y,z)=>
         v= (smoother.viewSensor "mag-#{@.get 'rowName'}",1.5) unless v
         v x,y,z
         return
-      finalScale: 1
+      finalScale: 0.15
 
     gyroscopeHandler = smoother.readingHandler
-      device: @
-      sensor: 'gyro'
       debias: 'calibrateGyro'
       calibrator: [
         smoother.calibratorAverage
         smoother.calibratorSmooth
       ]
-      source: (data)=>
-        (@.get 'getGyroscopeValues') data
       viewer: (x,y,z)=>
         v= (smoother.viewSensor "gyro-#{@.get 'rowName'}",1.5) unless v
         v x,y,z
@@ -155,47 +208,3 @@ exports.deviceModel = Backbone.Model.extend
 deviceCollection = Backbone.Collection.extend
   model: exports.deviceModel
 Pylon.set 'devices', new deviceCollection
-
-# View logic to watch and update the "start scanning" button and enable BLE device scan
-pView=Backbone.View.extend
-  el: '#scanDevices'
-  model: Pylon.get 'devices'
-  initialize: ->
-    $('#StatusData').html 'Ready to connect'
-    $('#FirmwareData').html '?'
-    $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
-    Pylon.set 'scanActive', false
-    @listenTo @model, 'add', (device)->
-      # what we should lookf is not changes to pylon, but pylon's devices (a collection)
-      # on devices add, create row #
-      ordinal = @model.length
-      device.set "rowName", "sensor-#{ordinal}"
-      element = (Pylon.get 'pageGen').sensorView device
-      return @
-  events:
-    "click": "changer"
-  changer: ->
-      console.log "Start Scan button activated"
-      Pylon.set 'scanActive', true
-      @render()
-      setTimeout(
-        ()=>
-          Pylon.set 'scanActive', false
-          @render()
-          return
-        ,30000)
-      return
-  render: ->
-      if Pylon.get 'scanActive'
-        @$el.prop "disabled",true
-          .removeClass 'button-primary'
-          .addClass 'button-success'
-          .text 'Scanning'
-      else
-        @$el.prop("disabled",false)
-          .removeClass 'button-success'
-          .addClass 'button-primary'
-          .text 'Scan Devices'
-      return
-
-Pylon.set 'tagViewer', new pView

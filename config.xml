@@ -28,5 +28,5 @@
     <plugin name="org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin" spec="../lumberjack" />
     <plugin name="cordova-plugin-file" spec="~4.3.2" />
     <plugin name="cordova-plugin-redirect" spec="../cordova-plugin-redirect" />
-    <plugin name="cordova-plugin-ble-central" spec="../cordova-plugin-ble-central-master" />
+    <plugin name="cordova-plugin-ble-central" spec="../cordova-plugin-ble-central" />
 </widget>

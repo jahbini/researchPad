@@ -18,7 +18,7 @@ _=require 'underscore'
 ###
 
 class pipeline
-  initialize: () ->
+  constructor: () ->
 
   calibratorAverage: (dataCondition, calibrate, calibrating) ->
     try
@@ -101,8 +101,7 @@ class pipeline
       #console.log o
       return
     (data) =>
-      
-      # data points from Evothings library are Seen.Point NOT compatible as sources
+           # data points from Evothings library are Seen.Point NOT compatible as sources
       try
         p = undefined
         m = undefined

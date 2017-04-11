@@ -110,6 +110,10 @@ class Pages
                 ,onClick: "Pylon.trigger('enableDevice', '#{device.cid}' )"
                 , "Connect"
             td ->
+              button '.disconnect.needsclick.u-full-width.'+device.get('buttonClass')
+                ,onClick: "Pylon.trigger('disableDevice', '#{device.cid}' )"
+                , "Disconnect"
+            td ->
               tea.tag "svg", svgElement, height: "1.5em", width: "1.5em"
           tr ->
             td ""
@@ -122,6 +126,7 @@ class Pages
       render: ()->
         device = @model
         buttonClass = device.get 'buttonClass'
+        buttonText = device.get 'buttonText'
 
         # single connect button if connected, then show it as left or right
         if 'Guess' == device.get 'role'  # if we are not already Right
@@ -133,7 +138,7 @@ class Pages
           @$('.connect').addClass('disabled').prop('disabled',true).html "Active Left"
           return
         # this device is not connected.
-        # leave the button alone
+        @$('.connect').addClass(buttonClass).removeClass('disabled').prop('disabled',false).html buttonText
         return
     return new view device
 
@@ -161,22 +166,6 @@ class Pages
     $('#ProtocolSelect').text(txt).css('color',color)
     Pylon.trigger 'renderTest'
     Pylon.get('sessionInfo').unset 'testID', silent: true
-
-  activateButtons: (buttonStruct) ->
-    for key, btn of buttonStruct
-      btn=btn.toJSON()
-      selector = '#' + btn.selector
-      if btn.active
-        b=$(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click')
-        if btn.text? then b.text(btn.text)
-        if btn.funct? then b.on 'click',
-          Pylon.trigger 'systemEvent',  b.text()
-          btn.funct
-        b.show().fadeTo(500,1)
-      else
-        b=$(selector).removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
-        if btn.text? then b.text(btn.text)
-        b.fadeTo(500,0.25)
 
   wireButtons: =>
     # all buttons converted to button-view objects
@@ -235,6 +224,7 @@ class Pages
 
     Pylon.on 'change:Right', ()=>
       dev = Pylon.get 'Right'
+      return unless dev
       console.log "activating Right"
       if old = Pylon.get 'RightView'
         old.clearTimer()
@@ -254,6 +244,7 @@ class Pages
 
     Pylon.on 'change:Left', ()=>
       dev = Pylon.get 'Left'
+      return unless dev
       console.log "activating Left"
       statusLeftViewTemplate = Backbone.View.extend
         model: dev

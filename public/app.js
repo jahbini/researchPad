@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, TiHandler, _, deviceIdToModel, deviceModel, deviceNameToModel, glib, reading;
+var $, Backbone, Case, EventModel, TiHandler, _, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -41,6 +41,47 @@ reading = Backbone.Model.extend({
     return this.set('time', d.getTime());
   }
 });
+
+pView = Backbone.View.extend({
+  el: '#scanDevices',
+  model: Pylon.get('devices'),
+  initialize: function() {
+    $('#StatusData').html('Ready to connect');
+    $('#FirmwareData').html('?');
+    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
+    Pylon.set('scanActive', false);
+    return this.listenTo(this.model, 'add', function(device) {
+      var element, ordinal;
+      ordinal = this.model.length;
+      device.set("rowName", "sensor-" + ordinal);
+      element = (Pylon.get('pageGen')).sensorView(device);
+      return this;
+    });
+  },
+  events: {
+    "click": "changer"
+  },
+  changer: function() {
+    console.log("Start Scan button activated");
+    Pylon.set('scanActive', true);
+    this.render();
+    setTimeout((function(_this) {
+      return function() {
+        Pylon.set('scanActive', false);
+        _this.render();
+      };
+    })(this), 30000);
+  },
+  render: function() {
+    if (Pylon.get('scanActive')) {
+      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
+    } else {
+      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
+    }
+  }
+});
+
+Pylon.set('tagViewer', new pView);
 
 TiHandler = (function() {
   var ble_found, queryHostDevice;
@@ -91,8 +132,46 @@ TiHandler = (function() {
     return Pylon.get('TiHandler').attachDevice(cid);
   });
 
+  Pylon.on("disableDevice", function(cid) {
+    return Pylon.get('TiHandler').detachDevice(cid);
+  });
+
   TiHandler.prototype.initialize = function(sessionInfo) {
     this.sessionInfo = sessionInfo;
+  };
+
+  TiHandler.prototype.detachDevice = function(cid) {
+    var d, name, role;
+    d = Pylon.get('devices').get(cid);
+    if (!d) {
+      return;
+    }
+    name = d.get('name');
+    console.log("detach " + cid + " -- " + name);
+    role = 'Error';
+    if (0 < name.search(/\(([Ll]).*\)/)) {
+      role = 'Left';
+    }
+    if (0 < name.search(/\(([Rr]).*\)/)) {
+      role = 'Right';
+    }
+    if (role === 'Error') {
+      console.log("Bad name for sensor: " + name);
+      return;
+    }
+    d.set('role', '---');
+    Pylon.unset(role);
+    d.set('buttonText', 'connect');
+    d.set('connected', false);
+    Pylon.trigger('change respondingDevices');
+    console.log("Device removed from state, attempt dicconnect");
+    ble.disconnect(d.get("id"), (function(_this) {
+      return function() {
+        return console.log("disconnection of " + name);
+      };
+    })(this), function(e) {
+      return console.log("Failure to connect", e);
+    });
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
@@ -1444,8 +1523,6 @@ pipeline = (function() {
 
   function pipeline() {}
 
-  pipeline.prototype.initialize = function() {};
-
   pipeline.prototype.calibratorAverage = function(dataCondition, calibrate, calibrating) {
     var e, error1, tH;
     try {
@@ -2062,11 +2139,22 @@ module.exports = {
 
 
 },{"./console":3,"backbone":21,"jquery":24,"underscore":27}],10:[function(require,module,exports){
-var Backbone, Pipeline, accelerometer, deviceCollection, pView;
+var Backbone, Pipeline, ab2str, accelerometer, boilerplate, deviceCollection, infoService, str2ab;
 
 Backbone = require('Backbone');
 
 Pipeline = require('../lib/pipeline.coffee');
+
+infoService = "0000180a-0000-1000-8000-00805f9b34fb";
+
+infoService = "180a";
+
+boilerplate = {
+  firmwareVersion: "2a26",
+  modelNumber: "2a24",
+  serialNumber: "2a25",
+  softwareVersion: "2a28"
+};
 
 accelerometer = {
   service: "F000AA80-0451-4000-B000-000000000000",
@@ -2076,11 +2164,33 @@ accelerometer = {
   period: "F000AA83-0451-4000-B000-000000000000"
 };
 
+accelerometer.notification = '00002902-0000-1000-8000-00805f9b34fb';
+
+accelerometer.notification = '2902';
+
+accelerometer.period = 'F000AA83-0451-4000-B000-000000000000';
+
+ab2str = function(buf) {
+  return String.fromCharCode.apply(null, new Uint8Array(buf));
+};
+
+str2ab = function(str) {
+  var buf, bufView, i, j, len;
+  buf = new ArrayBuffer(str.length * 2);
+  bufView = new Uint16Array(buf);
+  for (j = 0, len = str.length; j < len; j++) {
+    i = str[j];
+    bufView[i] = str.charCodeAt(i);
+  }
+  return buf;
+};
+
 exports.deviceModel = Backbone.Model.extend({
   defaults: {
     buttonText: 'connect',
     buttonClass: 'button-primary',
-    deviceStatus: '--'
+    deviceStatus: '--',
+    rate: 10
   },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
@@ -2088,37 +2198,81 @@ exports.deviceModel = Backbone.Model.extend({
   initialize: function() {
     this.chain = this.createVisualChain(this);
     this.on("change:rawData", this.processMovement);
+    this.on("change:rate", this.subscribe);
+    this.on("change:serialNumber", function() {
+      var data, role;
+      data = this.get('serialNumber');
+      role = this.get('role');
+      $("#" + role + "SerialNumber").html(this.get('serialNumber'));
+    });
+    this.on("change:softwareVersion", function() {
+      var data, role;
+      data = this.get('softwareVersion');
+      role = this.get('role');
+      $("#" + role + "Version").html(data);
+    });
+    Pylon.on("speed", function(val) {
+      return this.set('rate', val);
+    });
     return this;
+  },
+  getBoilerplate: function(attribute, uuid) {
+    console.log("Device " + this.attributes.name + ": getting " + attribute + " at " + uuid);
+    ble.read(this.id, infoService, uuid, (function(_this) {
+      return function(data) {
+        var val;
+        val = ab2str(data);
+        console.log("Setting attribute for " + attribute + " to " + val);
+        return _this.set(attribute, val);
+      };
+    })(this), (function(_this) {
+      return function(err) {
+        return console.log("unable to obtain " + attribute + " from " + _this.attributes.name);
+      };
+    })(this));
   },
   subscribe: function() {
     return (function(_this) {
       return function(device) {
-        var configData, e, error, periodData;
-        console.log("Device info at Subscribe time");
-        debugger;
+        var configData, e, error, key, periodData, uuid;
         try {
+          for (key in boilerplate) {
+            uuid = boilerplate[key];
+            _this.getBoilerplate(key, uuid);
+          }
           console.log("Device subscribe attempt " + device.name);
+          configData = new Uint16Array(1);
+          configData[0] = 0x0000;
+
+          /*
+          ble.stopNotification device.id,
+            accelerometer.service
+            accelerometer.data
+            (whatnot)=> 
+              console.log "Terminated movement monitor. device #{device.name}"
+            (e)=> console.log "error terminating movement device #{device.name} monitor #{e}"
+           */
           ble.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
+            debugger;
             return _this.set({
               rawData: new Int16Array(data)
             });
           }, function(xxx) {
-            debugger;
-            console.log("can't start movement service for device " + _this.cid);
-          });
-          configData = new Uint16Array(1);
-          configData[0] = 0x007F;
-          ble.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, function() {
-            return console.log("Started movement monitor. device " + _this.cid);
-          }, function(e) {
-            return console.log("error starting movement device " + _this.cid + " monitor " + e);
+            console.log("can't start movement service for device " + device.name + ": " + xxx);
           });
           periodData = new Uint8Array(1);
-          periodData[0] = 0x0A;
-          ble.write(device.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-            return console.log("Configured movement period device " + _this.cid + ".");
+          periodData[0] = _this.attributes.rate;
+          console.log("Timing parameter for sensor rate = " + _this.attributes.rate);
+          ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+            return console.log("Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
           }, function(e) {
             return console.log("error starting movement monitor " + e);
+          });
+          configData[0] = 0x017F;
+          ble.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, function(whatnot) {
+            return console.log("Started movement monitor. device " + device.name);
+          }, function(e) {
+            return console.log("error starting movement device " + device.name + " monitor " + e);
           });
         } catch (error) {
           e = error;
@@ -2126,7 +2280,6 @@ exports.deviceModel = Backbone.Model.extend({
           console.log("error in attachSensor");
           console.log(e);
         }
-        return device;
       };
     })(this);
   },
@@ -2134,14 +2287,7 @@ exports.deviceModel = Backbone.Model.extend({
     var accelerometerHandler, gyroscopeHandler, magnetometerHandler, smoother;
     smoother = new Pipeline;
     accelerometerHandler = smoother.readingHandler({
-      device: this,
-      sensor: 'accel',
       debias: 'calibrateAccel',
-      source: (function(_this) {
-        return function(data) {
-          return (_this.get('getAccelerometerValues'))(data);
-        };
-      })(this),
       units: 'G',
       calibrator: [smoother.calibratorSmooth],
       viewer: (function(_this) {
@@ -2153,18 +2299,11 @@ exports.deviceModel = Backbone.Model.extend({
           v(x, y, z);
         };
       })(this),
-      finalScale: 1
+      finalScale: 2
     });
     magnetometerHandler = smoother.readingHandler({
-      device: this,
-      sensor: 'mag',
       debias: 'calibrateMag',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: (function(_this) {
-        return function(data) {
-          return (_this.get('getMagnetometerValues'))(data);
-        };
-      })(this),
       units: '&micro;T',
       viewer: (function(_this) {
         return function(x, y, z) {
@@ -2175,18 +2314,11 @@ exports.deviceModel = Backbone.Model.extend({
           v(x, y, z);
         };
       })(this),
-      finalScale: 1
+      finalScale: 0.15
     });
     gyroscopeHandler = smoother.readingHandler({
-      device: this,
-      sensor: 'gyro',
       debias: 'calibrateGyro',
       calibrator: [smoother.calibratorAverage, smoother.calibratorSmooth],
-      source: (function(_this) {
-        return function(data) {
-          return (_this.get('getGyroscopeValues'))(data);
-        };
-      })(this),
       viewer: (function(_this) {
         return function(x, y, z) {
           var v;
@@ -2246,47 +2378,6 @@ deviceCollection = Backbone.Collection.extend({
 });
 
 Pylon.set('devices', new deviceCollection);
-
-pView = Backbone.View.extend({
-  el: '#scanDevices',
-  model: Pylon.get('devices'),
-  initialize: function() {
-    $('#StatusData').html('Ready to connect');
-    $('#FirmwareData').html('?');
-    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
-    Pylon.set('scanActive', false);
-    return this.listenTo(this.model, 'add', function(device) {
-      var element, ordinal;
-      ordinal = this.model.length;
-      device.set("rowName", "sensor-" + ordinal);
-      element = (Pylon.get('pageGen')).sensorView(device);
-      return this;
-    });
-  },
-  events: {
-    "click": "changer"
-  },
-  changer: function() {
-    console.log("Start Scan button activated");
-    Pylon.set('scanActive', true);
-    this.render();
-    setTimeout((function(_this) {
-      return function() {
-        Pylon.set('scanActive', false);
-        _this.render();
-      };
-    })(this), 30000);
-  },
-  render: function() {
-    if (Pylon.get('scanActive')) {
-      this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
-    } else {
-      this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
-    }
-  }
-});
-
-Pylon.set('tagViewer', new pView);
 
 
 
@@ -3050,6 +3141,11 @@ Pages = (function() {
                 onClick: "Pylon.trigger('enableDevice', '" + device.cid + "' )"
               }, "Connect");
             });
+            td(function() {
+              return button('.disconnect.needsclick.u-full-width.' + device.get('buttonClass'), {
+                onClick: "Pylon.trigger('disableDevice', '" + device.cid + "' )"
+              }, "Disconnect");
+            });
             return td(function() {
               return tea.tag("svg", svgElement, {
                 height: "1.5em",
@@ -3084,9 +3180,10 @@ Pages = (function() {
         });
       },
       render: function() {
-        var buttonClass;
+        var buttonClass, buttonText;
         device = this.model;
         buttonClass = device.get('buttonClass');
+        buttonText = device.get('buttonText');
         if ('Guess' === device.get('role')) {
           this.$('.connect').addClass('disabled').prop('disabled', true).html("Active ?");
         }
@@ -3098,6 +3195,7 @@ Pages = (function() {
           this.$('.connect').addClass('disabled').prop('disabled', true).html("Active Left");
           return;
         }
+        this.$('.connect').addClass(buttonClass).removeClass('disabled').prop('disabled', false).html(buttonText);
       }
     });
     return new view(device);
@@ -3150,33 +3248,6 @@ Pages = (function() {
     return Pylon.get('sessionInfo').unset('testID', {
       silent: true
     });
-  };
-
-  Pages.prototype.activateButtons = function(buttonStruct) {
-    var b, btn, key, results, selector;
-    results = [];
-    for (key in buttonStruct) {
-      btn = buttonStruct[key];
-      btn = btn.toJSON();
-      selector = '#' + btn.selector;
-      if (btn.active) {
-        b = $(selector).addClass('button-primary').removeClass('disabled').removeAttr('disabled').off('click');
-        if (btn.text != null) {
-          b.text(btn.text);
-        }
-        if (btn.funct != null) {
-          b.on('click', Pylon.trigger('systemEvent', b.text()), btn.funct);
-        }
-        results.push(b.show().fadeTo(500, 1));
-      } else {
-        b = $(selector).removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-        if (btn.text != null) {
-          b.text(btn.text);
-        }
-        results.push(b.fadeTo(500, 0.25));
-      }
-    }
-    return results;
   };
 
   Pages.prototype.wireButtons = function() {
@@ -3268,6 +3339,9 @@ Pages = (function() {
       return function() {
         var dev, old, statusRightViewTemplate;
         dev = Pylon.get('Right');
+        if (!dev) {
+          return;
+        }
         console.log("activating Right");
         if (old = Pylon.get('RightView')) {
           old.clearTimer();
@@ -3294,6 +3368,9 @@ Pages = (function() {
       return function() {
         var dev, statusLeftViewTemplate;
         dev = Pylon.get('Left');
+        if (!dev) {
+          return;
+        }
         console.log("activating Left");
         statusLeftViewTemplate = Backbone.View.extend({
           model: dev,
