@@ -4,6 +4,9 @@ $=require('jquery')
 Backbone = require('backbone')
 Teacup = require('teacup')
 
+buglog = require './buglog.coffee'
+networklogger = (networklog= new buglog "network").log
+
 CommoState = Backbone.Model.extend
   netState: ()->
     navigator.connection.type
@@ -11,7 +14,6 @@ CommoState = Backbone.Model.extend
     "Bluetooth OK"
   bleAbility: true
   initialize: ()->
-    return
     try
       Connection= navigator.connection
       @states[Connection.UNKNOWN]  = 'Unknown connection';
@@ -31,8 +33,9 @@ CommoState = Backbone.Model.extend
       @ability[Connection.CELL_4G]  = true
       @ability[Connection.CELL]     = true
       @ability[Connection.NONE]     = false
-    catch
-      console.log "ERROR IN ONLINE"
+    catch e
+      networklogger "ERROR IN ONLINE"
+      networklogger e
 commoState = new CommoState
 
 implementing = (mixins..., classReference) ->
@@ -61,7 +64,7 @@ class netView
         'change': ->
           render()
       render: ()->
-        debugger
+        networklogger "Rendering --"
         return false
 
 exports.netView = new netView

@@ -4,6 +4,9 @@ $=require('jquery')
 Backbone = require('backbone')
 Teacup = require('teacup')
 
+buglog = require '../lib/buglog.coffee'
+adminlogger = (adminlog= new buglog "admin").log
+
 implementing = (mixins..., classReference) ->
   for mixin in mixins
     for key, value of mixin::
@@ -38,7 +41,7 @@ class adminView
             try
               @attributes.session.set 'clinic',theClinic
             catch error
-              console.log "Error from setting clinic",error
+              adminlogger "Error from setting clinic",error
           else
             theClinic = null;
             @attributes.session.unset 'clinic'

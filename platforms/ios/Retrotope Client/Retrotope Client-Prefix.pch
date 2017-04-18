@@ -27,5 +27,5 @@
 
 #define LOG_LEVEL_DEF ddLogLevel
 #import "DDLog.h"
-static const int ddLogLevel = LOG_LEVEL_VERBOSE;
+static const int ddLogLevel = LOG_LEVEL_INFO;
 

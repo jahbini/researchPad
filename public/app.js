@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, TiHandler, _, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
+var $, Backbone, Case, EventModel, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -16,6 +16,10 @@ glib = require('./lib/glib.coffee').glib;
 Case = require('Case');
 
 deviceModel = require('./models/device-model.coffee').deviceModel;
+
+buglog = require('./lib/buglog.coffee');
+
+TIlogger = (TIlog = new buglog("TIhandler")).log;
 
 deviceNameToModel = function(name) {
   var pd;
@@ -62,7 +66,7 @@ pView = Backbone.View.extend({
     "click": "changer"
   },
   changer: function() {
-    console.log("Start Scan button activated");
+    TIlogger("Start Scan button activated");
     Pylon.set('scanActive', true);
     this.render();
     setTimeout((function(_this) {
@@ -93,11 +97,11 @@ TiHandler = (function() {
       success: function(model, response, options) {
         var name;
         name = (d.get('assignedName')) || 'no Name';
-        return console.log("DEVICE FETCH from Host: " + name);
+        return TIlogger("DEVICE FETCH from Host: " + name);
       },
       error: function(model, response, options) {
-        console.log(Pylon.get('hostUrl') + '/sensorTag');
-        return console.log("sensorTag fetch error: " + response.statusText);
+        TIlogger(Pylon.get('hostUrl') + '/sensorTag');
+        return TIlogger("sensorTag fetch error: " + response.statusText);
       }
     });
   };
@@ -114,7 +118,7 @@ TiHandler = (function() {
       d.set(device);
       return;
     }
-    console.log("got new device");
+    TIlogger("got new device");
     d = new deviceModel(device);
     pd.push(d);
   };
@@ -147,7 +151,7 @@ TiHandler = (function() {
       return;
     }
     name = d.get('name');
-    console.log("detach " + cid + " -- " + name);
+    TIlogger("detach " + cid + " -- " + name);
     role = 'Error';
     if (0 < name.search(/\(([Ll]).*\)/)) {
       role = 'Left';
@@ -156,7 +160,7 @@ TiHandler = (function() {
       role = 'Right';
     }
     if (role === 'Error') {
-      console.log("Bad name for sensor: " + name);
+      TIlogger("Bad name for sensor: " + name);
       return;
     }
     d.set('role', '---');
@@ -164,13 +168,13 @@ TiHandler = (function() {
     d.set('buttonText', 'connect');
     d.set('connected', false);
     Pylon.trigger('change respondingDevices');
-    console.log("Device removed from state, attempt dicconnect");
+    TIlogger("Device removed from state, attempt dicconnect");
     ble.disconnect(d.get("id"), (function(_this) {
       return function() {
-        return console.log("disconnection of " + name);
+        return TIlogger("disconnection of " + name);
       };
     })(this), function(e) {
-      return console.log("Failure to connect", e);
+      return TIlogger("Failure to connect", e);
     });
   };
 
@@ -180,7 +184,7 @@ TiHandler = (function() {
     if (gs.get('recording')) {
       return;
     }
-    console.log("attach " + cid);
+    TIlogger("attach " + cid);
     d = Pylon.get('devices').get(cid);
     name = d.get('name');
     role = 'Error';
@@ -191,7 +195,7 @@ TiHandler = (function() {
       role = 'Right';
     }
     if (role === 'Error') {
-      console.log("Bad name for sensor: " + name);
+      TIlogger("Bad name for sensor: " + name);
       return;
     }
     if (d.get('connected')) {
@@ -202,9 +206,9 @@ TiHandler = (function() {
     d.set('connected', false);
     Pylon.set(role, d);
     Pylon.trigger('change respondingDevices');
-    console.log("Role of Device set, attempt connect");
+    TIlogger("Role of Device set, attempt connect");
     ble.connect(d.get("id"), d.subscribe(), function(e) {
-      return console.log("Failure to connect", e);
+      return TIlogger("Failure to connect", e);
     });
   };
 
@@ -248,7 +252,7 @@ TiHandler = (function() {
         return
        * error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
       sensorInstance.errorCallback (s)->
-        console.log "sensor ERROR report: " +s, ' '+d.id
+        TIlogger "sensor ERROR report: " +s, ' '+d.id
          * evothings status reporting errors often report null, for no reason?
         return if !s
         err=s.split(' ')
@@ -262,10 +266,10 @@ TiHandler = (function() {
         Pylon.trigger('change respondingDevices')
         return
 
-      console.log "Setting Time-out now",Date.now()
+      TIlogger "Setting Time-out now",Date.now()
       setTimeout ()->
           return if 'Receiving' == d.get 'deviceStatus'
-          console.log "Device connection 10 second time-out "
+          TIlogger "Device connection 10 second time-out "
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
         ,10000
@@ -290,8 +294,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/console":3,"./lib/glib.coffee":4,"./models/device-model.coffee":10,"./models/event-model.coffee":11,"Case":23,"backbone":21,"jquery":24,"underscore":27}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
+},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"./models/event-model.coffee":12,"Case":25,"backbone":22,"jquery":29,"underscore":33}],2:[function(require,module,exports){
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -300,7 +304,11 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-require('./lib/console');
+localStorage.setItem('debug', "*");
+
+buglog = require('./lib/buglog.coffee');
+
+applogger = (applog = new buglog("app")).log;
 
 PylonTemplate = Backbone.Model.extend({
   scan: false,
@@ -346,7 +354,7 @@ Pylon.set('adminView', require('./views/adminView.coffee').adminView);
 loadScript = require("./lib/loadScript.coffee").loadScript;
 
 loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
-  return console.log("logon.js returns status of " + status);
+  return applogger("logon.js returns status of " + status);
 });
 
 ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader = ref.eventModelLoader;
@@ -454,7 +462,7 @@ sessionInfo = new rawSession({
   applicationVersion: applicationVersion
 });
 
-console.log("app Ver:", sessionInfo.get('applicationVersion'));
+applogger("Version:" + (sessionInfo.get('applicationVersion')));
 
 pageGen = new pages.Pages(sessionInfo);
 
@@ -482,13 +490,13 @@ Pylon.on('externalEvent', function(what) {
   if (what == null) {
     what = "unknown";
   }
-  console.log('externalEvent', what);
+  applogger('externalEvent', what);
   if (sessionInfo.id) {
     try {
       externalEvent.addSample(what);
     } catch (error) {
       booBoo = error;
-      console.log(booBoo);
+      applogger(booBoo);
     }
   }
   return true;
@@ -566,7 +574,7 @@ activateNewButtons = function() {
       pageGen.forceTest('red');
     }
     Pylon.trigger('recordCountDown:start', 5);
-    return console.log('enter Recording --- actively recording sensor info');
+    return applogger('Recording --- actively recording sensor info');
   });
   Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
   ActionButton = new BV('action');
@@ -584,7 +592,7 @@ enterAdmin = function() {
     pageGen.activateAdminPage();
   } catch (error) {
     e = error;
-    console.log("failure in activatAdminPage", e);
+    applogger("failure in activatAdminPage", e);
   }
   return false;
 };
@@ -673,7 +681,7 @@ enterUpload = function() {
 enterCalibrate = function() {
   var calibrating;
   return;
-  console.log('enterCalibrate -- not used currently');
+  applogger('enterCalibrate -- not used currently');
   calibrating = true;
   (Pylon.get('button-action')).set({
     enabled: true,
@@ -742,7 +750,7 @@ enterRecording = function() {
   gs.set('recording', true);
   $('#testID').prop("disabled", true);
   Pylon.trigger('recordCountDown:start', 5);
-  return console.log('enter Recording --- actively recording sensor info');
+  return applogger('Recording --- actively recording sensor info');
 };
 
 Pylon.on('recordCountDown:fail', function() {
@@ -775,7 +783,7 @@ exitRecording = function() {
 };
 
 Pylon.on('stopCountDown:over', function() {
-  console.log('enter Stop -- stop recording');
+  applogger('Stop -- stop recording');
   Pylon.trigger('systemEvent:endRecording');
   Pylon.get('globalState').set('recording', false);
   (Pylon.get('button-upload')).set('enabled', true);
@@ -834,7 +842,7 @@ enableRecordButtonOK = function() {
 };
 
 Pylon.on('connected', function() {
-  console.log('enterConnected -- enable recording button');
+  applogger('enable recording button');
   Pylon.get('globalState').set({
     connected: true
   });
@@ -869,10 +877,10 @@ clinics.on('fetched', function() {
 });
 
 getProtocol = function() {
-  console.log("protocol request initiate");
+  applogger("protocol request initiate");
   return protocols.fetch({
     success: function(collection, response, options) {
-      console.log("protocols request success");
+      applogger("protocols request success");
       return collection.trigger('fetched');
     },
     error: function(collection, response, options) {
@@ -881,7 +889,7 @@ getProtocol = function() {
         return;
       }
       protocolsShowedErrors = 15;
-      return console.log(Pylon.get('hostUrl') + 'protocols', "protocols fetch error - response:", response.statusText);
+      return applogger(Pylon.get('hostUrl') + 'protocols', "protocols fetch error - response:", response.statusText);
     }
   });
 };
@@ -897,10 +905,10 @@ protocols.on('fetched', function() {
 clinicShowedErrors = 1;
 
 getClinics = function() {
-  console.log("clinic request initiate");
+  applogger("clinic request initiate");
   return clinics.fetch({
     success: function(collection, response, options) {
-      console.log("clinic request success");
+      applogger("clinic request success");
       return collection.trigger('fetched');
     },
     error: function(collection, response, options) {
@@ -909,8 +917,8 @@ getClinics = function() {
         return;
       }
       clinicShowedErrors = 5;
-      console.log(Pylon.get('hostUrl') + 'clinics');
-      return console.log("clinics fetch error - response:" + response.statusText);
+      applogger(Pylon.get('hostUrl') + 'clinics');
+      return applogger("clinics fetch error - response:" + response.statusText);
     }
   });
 };
@@ -984,7 +992,6 @@ $(document).on('deviceready', function() {
 });
 
 $(function() {
-  var console;
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
@@ -994,7 +1001,7 @@ $(function() {
   pageGen.renderPage();
   activateNewButtons();
   if ($('#console-log') != null) {
-    window.console = console = new Console('console-log', this);
+    applog.useDiv('console-log');
     Pylon.trigger("systemEvent:debug:Hide Log");
   }
   initAll();
@@ -1004,7 +1011,63 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/console":3,"./lib/loadScript.coffee":5,"./lib/net-view.coffee":6,"./lib/upload.coffee":9,"./models/event-model.coffee":11,"./version.coffee":12,"./views/adminView.coffee":13,"./views/button-view.coffee":14,"./views/pages.coffee":16,"backbone":21,"jquery":24,"underscore":27}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":10,"./models/event-model.coffee":12,"./version.coffee":13,"./views/adminView.coffee":14,"./views/button-view.coffee":15,"./views/pages.coffee":17,"backbone":22,"jquery":29,"underscore":33}],3:[function(require,module,exports){
+var buglog, c, localConsole, logger,
+  bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
+  slice = [].slice;
+
+logger = require('debug');
+
+c = window.Console;
+
+require('./console');
+
+localConsole = window.Console;
+
+window.Console = c;
+
+module.exports = buglog = (function() {
+  function buglog(nameSpace) {
+    this.log = bind(this.log, this);
+    var queue;
+    queue = [];
+    this.yourLogger = new logger(nameSpace);
+    this.yourLogger.enabled = true;
+    logger.formatters.j = require('json-stringify-safe');
+    this.yourLogger.useColors = false;
+    this.yourLogger.log = function() {
+      var stuff;
+      stuff = 1 <= arguments.length ? slice.call(arguments, 0) : [];
+      queue.push(stuff);
+      if ((typeof DDJSLogger !== "undefined" && DDJSLogger !== null) && Pylon.console) {
+        queue.map(function(stuff) {
+          DDJSLogger.logio(stuff);
+          return Pylon.console.log.apply(Pylon.console, stuff);
+        });
+        queue = [];
+      } else {
+
+      }
+      return localConsole.log(stuff);
+    };
+    return;
+  }
+
+  buglog.prototype.log = function() {
+    return this.yourLogger.apply(this["this"], arguments);
+  };
+
+  buglog.prototype.useDiv = function(divID) {
+    return Pylon.console = new localConsole(divID, Pylon);
+  };
+
+  return buglog;
+
+})();
+
+
+
+},{"./console":4,"debug":27,"json-stringify-safe":30}],4:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1226,10 +1289,35 @@ THE SOFTWARE.
     listen(input, 'blur', function() {
       history.reset();
     });
+    function jsonize(msg){
+        function stringify(obj, replacer, spaces, cycleReplacer) {
+          return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces)
+        }
 
+      function serializer(replacer, cycleReplacer) {
+        var stack = [], keys = []
+
+        if (cycleReplacer == null) cycleReplacer = function(key, value) {
+          if (stack[0] === value) return "[Circular ~]"
+          return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
+        }
+
+        return function(key, value) {
+          if (stack.length > 0) {
+            var thisPos = stack.indexOf(this)
+            ~thisPos ? stack.splice(thisPos + 1) : stack.push(this)
+            ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key)
+            if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value)
+          }
+          else stack.push(value)
+
+        return replacer == null ? value : replacer.call(this, key, value)
+        }
+      }
+    }
     function log(level) {
       var msg = arguments.length === 2 ? arguments[1] : toArray(arguments).slice(1);
-
+  
       var result = create('div', {'class': 'result'}, output(msg)),
           el = addClass(create('p', null, result), typeOf(msg), level);
       container.insertBefore(el, inputContainer);
@@ -1276,10 +1364,10 @@ THE SOFTWARE.
         for (var k in original) el[k] = original[k];
         while (node = el.childNodes[0]) el.removeChild(node);
         while (node = limbo.childNodes[0]) el.appendChild(node);
-        delete limbo;
-        delete output;
-        delete input;
-        delete original;
+        // delete limbo;
+        // delete output;
+        // delete input;
+        // delete original;
       }
     });
   }
@@ -1289,7 +1377,7 @@ THE SOFTWARE.
   window.Console = Console;
 })();
 
-},{}],4:[function(require,module,exports){
+},{}],5:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -1336,7 +1424,7 @@ exports.glib = new glib;
 
 
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var _, loadScript, loadedScripts;
 
 loadedScripts = {};
@@ -1397,8 +1485,8 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":27}],6:[function(require,module,exports){
-var $, Backbone, CommoState, Teacup, commoState, implementing, netView,
+},{"underscore":33}],7:[function(require,module,exports){
+var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
 $ = require('jquery');
@@ -1406,6 +1494,10 @@ $ = require('jquery');
 Backbone = require('backbone');
 
 Teacup = require('teacup');
+
+buglog = require('./buglog.coffee');
+
+networklogger = (networklog = new buglog("network")).log;
 
 CommoState = Backbone.Model.extend({
   netState: function() {
@@ -1416,8 +1508,7 @@ CommoState = Backbone.Model.extend({
   },
   bleAbility: true,
   initialize: function() {
-    var Connection, error;
-    return;
+    var Connection, e, error;
     try {
       Connection = navigator.connection;
       this.states[Connection.UNKNOWN] = 'Unknown connection';
@@ -1437,7 +1528,9 @@ CommoState = Backbone.Model.extend({
       this.ability[Connection.CELL] = true;
       return this.ability[Connection.NONE] = false;
     } catch (error) {
-      return console.log("ERROR IN ONLINE");
+      e = error;
+      networklogger("ERROR IN ONLINE");
+      return networklogger(e);
     }
   }
 });
@@ -1482,7 +1575,7 @@ netView = (function() {
         }
       },
       render: function() {
-        debugger;
+        networklogger("Rendering --");
         return false;
       }
     });
@@ -1496,14 +1589,18 @@ exports.netView = new netView;
 
 
 
-},{"backbone":21,"jquery":24,"teacup":26}],7:[function(require,module,exports){
-var $, Seen, _, pipeline;
+},{"./buglog.coffee":3,"backbone":22,"jquery":29,"teacup":32}],8:[function(require,module,exports){
+var $, Seen, _, buglog, pipeline, pipelinelog, pipelinelogger;
 
 Seen = require('seen-js');
 
 $ = require('jquery');
 
 _ = require('underscore');
+
+buglog = require('./buglog.coffee');
+
+pipelinelogger = (pipelinelog = new buglog("pipeline")).log;
 
 
 /*
@@ -1637,7 +1734,7 @@ pipeline = (function() {
           o.viewer(p.x, p.y, p.z);
         } catch (error1) {
           error = error1;
-          console.log("in readinghandler: " + (error.statusText || error));
+          pipelinelogger("in readinghandler: " + (error.statusText || error));
         }
       };
     })(this);
@@ -1753,8 +1850,8 @@ pipeline = (function() {
         spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng);
       } catch (error1) {
         problem = error1;
-        console.log("Death from spear Pool");
-        console.log(problem.statusText || probem);
+        pipelinelogger("Death from spear Pool");
+        pipelinelogger(problem.statusText || probem);
       }
       spear.fill(new Seen.Material(new Seen.Color(255, 80, 255)));
       if (!context) {
@@ -1782,7 +1879,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"jquery":24,"seen-js":25,"underscore":27}],8:[function(require,module,exports){
+},{"./buglog.coffee":3,"jquery":29,"seen-js":31,"underscore":33}],9:[function(require,module,exports){
 
 /*
  * Javascript Stopwatch class
@@ -1941,8 +2038,8 @@ module.exports = Stopwatch = (function() {
 
 
 
-},{}],9:[function(require,module,exports){
-var $, Backbone, MyId, Pylon, _, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, uploader, uploading;
+},{}],10:[function(require,module,exports){
+var $, Backbone, MyId, Pylon, _, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
 
@@ -1950,7 +2047,11 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-require('./console');
+buglog = require('./buglog.coffee');
+
+uplogger = (uplog = new buglog("uploader")).log;
+
+uplogger("initializing");
 
 localStorage = window.localStorage;
 
@@ -2025,22 +2126,30 @@ removeItem = function(lsid) {
   }
   item = localStorage.getItem(lsid);
   localStorage.removeItem(lsid);
-  return localStorage.setItem('all_events', events.join(','));
+  localStorage.setItem('all_events', events.join(','));
+  return item;
 };
 
 getNextItem = function() {
-  var e, error, events, key, uploadDataObject;
+  var e, error, events, item, key, uploadDataObject;
+  uplogger("Uploader Activated");
   events = records();
+  if (!events.length) {
+    uplogger("Nothing  to Upload");
+    return null;
+  }
   if (!events.length || uploading) {
+    uplogger("Busy -- ");
     return null;
   }
   key = events.shift();
+  item = removeItem(key);
   try {
     uploadDataObject = JSON.parse(item);
   } catch (error) {
     e = error;
-    console.log("Error in localStorage retrieval- key==" + key);
-    console.log("upload item discarded -- invalid JSON");
+    uplogger("Error in localStorage retrieval- key==" + key);
+    uplogger("item discarded -- invalid JSON");
     return null;
   }
   return sendToHost(uploadDataObject);
@@ -2076,14 +2185,14 @@ sendToHost = function(uDM) {
   uploadDataObject = new hopper(uDM);
   stress = Pylon.get('stress');
   if (stress > Math.random()) {
-    console.log("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
+    uplogger("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
     return;
   }
   uDM = uploadDataObject.attributes;
   if (uDM.session) {
-    console.log("upload attempt " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
   } else {
-    console.log("upload attempt " + uDM.LSid + " ", uDM.url, uDM._id);
+    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM._id);
   }
   uploadDataObject.save(null, {
     success: function(a, b, code) {
@@ -2091,37 +2200,37 @@ sendToHost = function(uDM) {
       removeItem(uDM.LSid);
       uploading = false;
       if (uDM.session) {
-        console.log("upload success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+        uplogger("success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
       } else {
         Pylon.trigger('sessionUploaded');
-        console.log("upload success " + uDM.LSid + " ", uDM.url, uDM._id);
+        uplogger("success " + uDM.LSid + " ", uDM.url, uDM._id);
       }
-      console.log("upload on " + (a.get("LSid")) + " complete");
+      uplogger("on " + (a.get("LSid")) + " complete");
       setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
       var failCode, fails;
       uDM = a.attributes;
       if (uDM.session) {
-        console.log("upload failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
       } else {
-        console.log("upload failure " + uDM.LSid + " ", uDM.url, uDM.id);
+        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.id);
       }
       uploading = false;
       setTimeout(getNextItem, 5000);
       failCode = b.status;
       fails = a.get('hostFails');
       fails += 1;
-      console.log("Upload " + fails + " failures (" + failCode + ") on " + (a.get('LSid')));
+      uplogger("simulated " + fails + " failures (" + failCode + ") on " + (a.get('LSid')));
     }
   });
 };
 
 uploader = function() {
   alert("Uploader Called!");
-  return;
-  return setTimeout(getNextItem, 5000);
 };
+
+setTimeout(getNextItem, 5000);
 
 
 /* this is how seen exports things -- it's clean.  we use it as example
@@ -2138,10 +2247,14 @@ module.exports = {
 
 
 
-},{"./console":3,"backbone":21,"jquery":24,"underscore":27}],10:[function(require,module,exports){
-var Backbone, Pipeline, ab2str, accelerometer, boilerplate, deviceCollection, infoService, str2ab;
+},{"./buglog.coffee":3,"backbone":22,"jquery":29,"underscore":33}],11:[function(require,module,exports){
+var Backbone, Pipeline, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, str2ab;
 
 Backbone = require('Backbone');
+
+buglog = require('../lib/buglog.coffee');
+
+devicelogger = (devicelog = new buglog("sensor")).log;
 
 Pipeline = require('../lib/pipeline.coffee');
 
@@ -2216,69 +2329,163 @@ exports.deviceModel = Backbone.Model.extend({
     });
     return this;
   },
-  getBoilerplate: function(attribute, uuid) {
-    console.log("Device " + this.attributes.name + ": getting " + attribute + " at " + uuid);
-    ble.read(this.id, infoService, uuid, (function(_this) {
-      return function(data) {
-        var val;
-        val = ab2str(data);
-        console.log("Setting attribute for " + attribute + " to " + val);
-        return _this.set(attribute, val);
+  getBoilerplate: function() {
+    var attribute, plates, promises, uuid;
+    plates = [];
+    promises = (function() {
+      var results;
+      results = [];
+      for (attribute in boilerplate) {
+        uuid = boilerplate[attribute];
+        devicelogger("Device " + this.attributes.name + ": getting " + attribute + " at " + uuid);
+        results.push(plates.push(new Promise((function(_this) {
+          return function(resolve, reject) {
+            ble.read(_this.id, infoService, uuid, function(data) {
+              var val;
+              val = ab2str(data);
+              devicelogger("Setting attribute for " + attribute + " to " + val);
+              _this.set(attribute, val);
+              devicelogger("Set attribute for " + attribute + " to " + val);
+              return resolve();
+            }, function(err) {
+              devicelogger("unable to obtain " + attribute + " from " + _this.attributes.name);
+              return reject();
+            });
+            return devicelogger("Promised attribute for " + attribute);
+          };
+        })(this))));
+      }
+      return results;
+    }).call(this);
+    return plates;
+  },
+  stopNotification: function(resolve, reject) {
+    var configData;
+    devicelogger("stopNotification entry");
+    configData = new Uint16Array(1);
+    configData[0] = 0x0000;
+    return ble.withPromises.stopNotification(device.id, accelerometer.service, accelerometer.data, (function(_this) {
+      return function(whatnot) {
+        devicelogger("stopNotification Terminated movement monitor. device " + device.name);
+        return resolve();
       };
     })(this), (function(_this) {
-      return function(err) {
-        return console.log("unable to obtain " + attribute + " from " + _this.attributes.name);
+      return function(e) {
+        devicelogger("stopNotification error terminating movement device " + device.name + " monitor " + e);
+        return reject();
       };
     })(this));
   },
   subscribe: function() {
     return (function(_this) {
       return function(device) {
-        var configData, e, error, key, periodData, uuid;
-        try {
-          for (key in boilerplate) {
-            uuid = boilerplate[key];
-            _this.getBoilerplate(key, uuid);
-          }
-          console.log("Device subscribe attempt " + device.name);
+        var activateMovement, e, error, idlePromise, resulting, setPeriod, startNotification, thePromise;
+        idlePromise = function(resolve, reject) {
+          devicelogger("idlePromise entry");
+          return setTimeout(resolve, 100);
+        };
+        startNotification = function(resolve, reject) {
+          devicelogger("startNotification entry");
+          return new Promise(function(resolve, reject) {
+            ble.withPromises.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
+              return _this.set({
+                rawData: new Int16Array(data)
+              });
+            }, function(xxx) {
+              devicelogger("startNotification failure for device " + device.name + ": " + xxx);
+              return reject();
+            });
+            devicelogger("startNotification entry");
+            return resolve();
+          });
+        };
+        setPeriod = function(resolve, reject) {
+          var periodData;
+          devicelogger("setPeriod entry");
+          periodData = new Uint8Array(1);
+          periodData[0] = _this.attributes.rate;
+          devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
+          return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+            devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
+            return resolve();
+          }, function(e) {
+            devicelogger("setPeriod error starting movement monitor " + e);
+            return reject();
+          });
+        };
+        activateMovement = function(resolve, reject) {
+          var configData;
+          devicelogger("activateMovement entry. device " + device.name);
           configData = new Uint16Array(1);
-          configData[0] = 0x0000;
+          configData[0] = 0x017F;
+          return ble.withPromises.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, (function(_this) {
+            return function(whatnot) {
+              devicelogger("activateMovement Started movement monitor. device " + device.name);
+              return resolve();
+            };
+          })(this), (function(_this) {
+            return function(e) {
+              devicelogger("activateMovement error starting movement device " + device.name + " monitor " + e);
+              return reject();
+            };
+          })(this));
+        };
+        try {
+          devicelogger("Device subscribe attempt " + device.name);
+          thePromise = Promise.all(_this.getBoilerplate());
+          resulting = thePromise.then(idlePromise).then(activateMovement).then(idlePromise).then(setPeriod).then(idlePromise).then(startNotification);
+          devicelogger("the promise has been built");
+          devicelogger(resulting);
 
           /*
+          configData = new Uint16Array(1);
+          #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
+          configData[0] = 0x0000;
           ble.stopNotification device.id,
             accelerometer.service
             accelerometer.data
             (whatnot)=> 
-              console.log "Terminated movement monitor. device #{device.name}"
-            (e)=> console.log "error terminating movement device #{device.name} monitor #{e}"
-           */
-          ble.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
-            debugger;
-            return _this.set({
-              rawData: new Int16Array(data)
-            });
-          }, function(xxx) {
-            console.log("can't start movement service for device " + device.name + ": " + xxx);
-          });
+              devicelogger "Terminated movement monitor. device #{device.name}"
+            (e)=> devicelogger "error terminating movement device #{device.name} monitor #{e}"
+          ble.startNotification device.id,
+            accelerometer.service
+            accelerometer.data
+             * convert raw iOS data into js and update the device model
+            (data)=>
+              debugger
+              @.set rawData: new Int16Array(data);
+            (xxx)=>
+              devicelogger "can't start movement service for device #{device.name}: #{xxx}"
+              return
+              
+          
           periodData = new Uint8Array(1);
-          periodData[0] = _this.attributes.rate;
-          console.log("Timing parameter for sensor rate = " + _this.attributes.rate);
-          ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-            return console.log("Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
-          }, function(e) {
-            return console.log("error starting movement monitor " + e);
-          });
+          periodData[0] = @.attributes.rate;
+          devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
+          ble.write @.attributes.id,
+            accelerometer.service
+            accelerometer.period
+            periodData.buffer
+            ()=> devicelogger "Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
+            (e)=> devicelogger "error starting movement monitor #{e}"
+              
+          
+           * turn accelerometer on
+          #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
           configData[0] = 0x017F;
-          ble.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, function(whatnot) {
-            return console.log("Started movement monitor. device " + device.name);
-          }, function(e) {
-            return console.log("error starting movement device " + device.name + " monitor " + e);
-          });
+          ble.write device.id,
+            accelerometer.service
+            accelerometer.configuration
+            configData.buffer
+            (whatnot)=> 
+              devicelogger "Started movement monitor. device #{device.name}"
+            (e)=> devicelogger "error starting movement device #{device.name} monitor #{e}"
+           */
         } catch (error) {
           e = error;
           alert('Error in attachSensor -- check LOG');
-          console.log("error in attachSensor");
-          console.log(e);
+          devicelogger("error in attachSensor");
+          devicelogger(e);
         }
       };
     })(this);
@@ -2381,7 +2588,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/pipeline.coffee":7,"Backbone":19}],11:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/pipeline.coffee":8,"Backbone":20}],12:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2444,13 +2651,13 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":9,"backbone":21,"underscore":27}],12:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":22,"underscore":33}],13:[function(require,module,exports){
 module.exports = '1.5.1';
 
 
 
-},{}],13:[function(require,module,exports){
-var $, Backbone, Teacup, adminView, implementing,
+},{}],14:[function(require,module,exports){
+var $, Backbone, Teacup, adminView, adminlog, adminlogger, buglog, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2459,6 +2666,10 @@ $ = require('jquery');
 Backbone = require('backbone');
 
 Teacup = require('teacup');
+
+buglog = require('../lib/buglog.coffee');
+
+adminlogger = (adminlog = new buglog("admin")).log;
 
 implementing = function() {
   var classReference, i, j, key, len, mixin, mixins, ref, value;
@@ -2507,7 +2718,7 @@ adminView = (function() {
               this.attributes.session.set('clinic', theClinic);
             } catch (error1) {
               error = error1;
-              console.log("Error from setting clinic", error);
+              adminlogger("Error from setting clinic", error);
             }
           } else {
             theClinic = null;
@@ -2760,7 +2971,7 @@ exports.adminView = new adminView;
 
 
 
-},{"backbone":21,"jquery":24,"teacup":26}],14:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":22,"jquery":29,"teacup":32}],15:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -2865,7 +3076,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":21,"jquery":24,"teacup":26}],15:[function(require,module,exports){
+},{"backbone":22,"jquery":29,"teacup":32}],16:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -2983,8 +3194,8 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":21,"jquery":24,"teacup":26}],16:[function(require,module,exports){
-var $, Backbone, Pages, RssiView, Teacup, implementing,
+},{"backbone":22,"jquery":29,"teacup":32}],17:[function(require,module,exports){
+var $, Backbone, Pages, RssiView, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2993,6 +3204,10 @@ Backbone = require('backbone');
 $ = require('jquery');
 
 Teacup = require('teacup');
+
+buglog = require('../lib/buglog.coffee');
+
+viewlogger = (viewlog = new buglog("view")).log;
 
 RssiView = require('./rssi-view.coffee');
 
@@ -3263,14 +3478,14 @@ Pages = (function() {
         });
         model.save(null, {
           success: function(model, response, options) {
-            console.log("session logged with host");
+            viewlogger("session logged with host");
             return (Pylon.get('button-admin')).set({
               legend: "Log Out",
               enable: true
             });
           },
           error: function(model, response, options) {
-            console.log("Session save Fail: " + response.statusText);
+            viewlogger("Session save Fail: " + response.statusText);
             return (Pylon.get('button-admin')).set({
               legend: "Log Out",
               enable: true
@@ -3312,7 +3527,7 @@ Pages = (function() {
         }
       },
       render: function() {
-        console.log("Rendering Tests");
+        viewlogger("Rendering Tests");
         this.$el.html(render((function(_this) {
           return function() {
             var i, len, protocol, ref1, results;
@@ -3342,7 +3557,7 @@ Pages = (function() {
         if (!dev) {
           return;
         }
-        console.log("activating Right");
+        viewlogger("activating Right");
         if (old = Pylon.get('RightView')) {
           old.clearTimer();
         }
@@ -3371,7 +3586,7 @@ Pages = (function() {
         if (!dev) {
           return;
         }
-        console.log("activating Left");
+        viewlogger("activating Left");
         statusLeftViewTemplate = Backbone.View.extend({
           model: dev,
           el: "#LeftStat",
@@ -3412,7 +3627,7 @@ exports.Pages = Pages;
 
 
 
-},{"./adminView.coffee":13,"./count-up-down.coffee":15,"./protocol-active.coffee":17,"./rssi-view.coffee":18,"backbone":21,"jquery":24,"teacup":26}],17:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":14,"./count-up-down.coffee":16,"./protocol-active.coffee":18,"./rssi-view.coffee":19,"backbone":22,"jquery":29,"teacup":32}],18:[function(require,module,exports){
 var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3543,7 +3758,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":8,"./button-view.coffee":14,"backbone":21,"jquery":24,"teacup":26}],18:[function(require,module,exports){
+},{"../lib/stopwatch.coffee":9,"./button-view.coffee":15,"backbone":22,"jquery":29,"teacup":32}],19:[function(require,module,exports){
 var $, Backbone, RssiView, T;
 
 Backbone = require('backbone');
@@ -3633,7 +3848,7 @@ module.exports = RssiView = Backbone.View.extend({
 
 
 
-},{"backbone":21,"jquery":24,"teacup":26}],19:[function(require,module,exports){
+},{"backbone":22,"jquery":29,"teacup":32}],20:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5557,7 +5772,7 @@ module.exports = RssiView = Backbone.View.extend({
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":24,"underscore":20}],20:[function(require,module,exports){
+},{"jquery":29,"underscore":21}],21:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -7107,11 +7322,71 @@ module.exports = RssiView = Backbone.View.extend({
   }
 }.call(this));
 
-},{}],21:[function(require,module,exports){
-arguments[4][19][0].apply(exports,arguments)
-},{"dup":19,"jquery":24,"underscore":22}],22:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 arguments[4][20][0].apply(exports,arguments)
-},{"dup":20}],23:[function(require,module,exports){
+},{"dup":20,"jquery":29,"underscore":23}],23:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}],24:[function(require,module,exports){
+// shim for using process in browser
+
+var process = module.exports = {};
+var queue = [];
+var draining = false;
+
+function drainQueue() {
+    if (draining) {
+        return;
+    }
+    draining = true;
+    var currentQueue;
+    var len = queue.length;
+    while(len) {
+        currentQueue = queue;
+        queue = [];
+        var i = -1;
+        while (++i < len) {
+            currentQueue[i]();
+        }
+        len = queue.length;
+    }
+    draining = false;
+}
+process.nextTick = function (fun) {
+    queue.push(fun);
+    if (!draining) {
+        setTimeout(drainQueue, 0);
+    }
+};
+
+process.title = 'browser';
+process.browser = true;
+process.env = {};
+process.argv = [];
+process.version = ''; // empty string to avoid regexp issues
+process.versions = {};
+
+function noop() {}
+
+process.on = noop;
+process.addListener = noop;
+process.once = noop;
+process.off = noop;
+process.removeListener = noop;
+process.removeAllListeners = noop;
+process.emit = noop;
+
+process.binding = function (name) {
+    throw new Error('process.binding is not supported');
+};
+
+// TODO(shtylman)
+process.cwd = function () { return '/' };
+process.chdir = function (dir) {
+    throw new Error('process.chdir is not supported');
+};
+process.umask = function() { return 0; };
+
+},{}],25:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -7265,7 +7540,551 @@ arguments[4][20][0].apply(exports,arguments)
 
 }).call(this);
 
-},{}],24:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
+/**
+ * Helpers.
+ */
+
+var s = 1000
+var m = s * 60
+var h = m * 60
+var d = h * 24
+var y = d * 365.25
+
+/**
+ * Parse or format the given `val`.
+ *
+ * Options:
+ *
+ *  - `long` verbose formatting [false]
+ *
+ * @param {String|Number} val
+ * @param {Object} options
+ * @throws {Error} throw an error if val is not a non-empty string or a number
+ * @return {String|Number}
+ * @api public
+ */
+
+module.exports = function (val, options) {
+  options = options || {}
+  var type = typeof val
+  if (type === 'string' && val.length > 0) {
+    return parse(val)
+  } else if (type === 'number' && isNaN(val) === false) {
+    return options.long ?
+			fmtLong(val) :
+			fmtShort(val)
+  }
+  throw new Error('val is not a non-empty string or a valid number. val=' + JSON.stringify(val))
+}
+
+/**
+ * Parse the given `str` and return milliseconds.
+ *
+ * @param {String} str
+ * @return {Number}
+ * @api private
+ */
+
+function parse(str) {
+  str = String(str)
+  if (str.length > 10000) {
+    return
+  }
+  var match = /^((?:\d+)?\.?\d+) *(milliseconds?|msecs?|ms|seconds?|secs?|s|minutes?|mins?|m|hours?|hrs?|h|days?|d|years?|yrs?|y)?$/i.exec(str)
+  if (!match) {
+    return
+  }
+  var n = parseFloat(match[1])
+  var type = (match[2] || 'ms').toLowerCase()
+  switch (type) {
+    case 'years':
+    case 'year':
+    case 'yrs':
+    case 'yr':
+    case 'y':
+      return n * y
+    case 'days':
+    case 'day':
+    case 'd':
+      return n * d
+    case 'hours':
+    case 'hour':
+    case 'hrs':
+    case 'hr':
+    case 'h':
+      return n * h
+    case 'minutes':
+    case 'minute':
+    case 'mins':
+    case 'min':
+    case 'm':
+      return n * m
+    case 'seconds':
+    case 'second':
+    case 'secs':
+    case 'sec':
+    case 's':
+      return n * s
+    case 'milliseconds':
+    case 'millisecond':
+    case 'msecs':
+    case 'msec':
+    case 'ms':
+      return n
+    default:
+      return undefined
+  }
+}
+
+/**
+ * Short format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function fmtShort(ms) {
+  if (ms >= d) {
+    return Math.round(ms / d) + 'd'
+  }
+  if (ms >= h) {
+    return Math.round(ms / h) + 'h'
+  }
+  if (ms >= m) {
+    return Math.round(ms / m) + 'm'
+  }
+  if (ms >= s) {
+    return Math.round(ms / s) + 's'
+  }
+  return ms + 'ms'
+}
+
+/**
+ * Long format for `ms`.
+ *
+ * @param {Number} ms
+ * @return {String}
+ * @api private
+ */
+
+function fmtLong(ms) {
+  return plural(ms, d, 'day') ||
+    plural(ms, h, 'hour') ||
+    plural(ms, m, 'minute') ||
+    plural(ms, s, 'second') ||
+    ms + ' ms'
+}
+
+/**
+ * Pluralization helper.
+ */
+
+function plural(ms, n, name) {
+  if (ms < n) {
+    return
+  }
+  if (ms < n * 1.5) {
+    return Math.floor(ms / n) + ' ' + name
+  }
+  return Math.ceil(ms / n) + ' ' + name + 's'
+}
+
+},{}],27:[function(require,module,exports){
+(function (process){
+/**
+ * This is the web browser implementation of `debug()`.
+ *
+ * Expose `debug()` as the module.
+ */
+
+exports = module.exports = require('./debug');
+exports.log = log;
+exports.formatArgs = formatArgs;
+exports.save = save;
+exports.load = load;
+exports.useColors = useColors;
+exports.storage = 'undefined' != typeof chrome
+               && 'undefined' != typeof chrome.storage
+                  ? chrome.storage.local
+                  : localstorage();
+
+/**
+ * Colors.
+ */
+
+exports.colors = [
+  'lightseagreen',
+  'forestgreen',
+  'goldenrod',
+  'dodgerblue',
+  'darkorchid',
+  'crimson'
+];
+
+/**
+ * Currently only WebKit-based Web Inspectors, Firefox >= v31,
+ * and the Firebug extension (any Firefox version) are known
+ * to support "%c" CSS customizations.
+ *
+ * TODO: add a `localStorage` variable to explicitly enable/disable colors
+ */
+
+function useColors() {
+  // NB: In an Electron preload script, document will be defined but not fully
+  // initialized. Since we know we're in Chrome, we'll just detect this case
+  // explicitly
+  if (typeof window !== 'undefined' && window && typeof window.process !== 'undefined' && window.process.type === 'renderer') {
+    return true;
+  }
+
+  // is webkit? http://stackoverflow.com/a/16459606/376773
+  // document is undefined in react-native: https://github.com/facebook/react-native/pull/1632
+  return (typeof document !== 'undefined' && document && 'WebkitAppearance' in document.documentElement.style) ||
+    // is firebug? http://stackoverflow.com/a/398120/376773
+    (typeof window !== 'undefined' && window && window.console && (console.firebug || (console.exception && console.table))) ||
+    // is firefox >= v31?
+    // https://developer.mozilla.org/en-US/docs/Tools/Web_Console#Styling_messages
+    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/firefox\/(\d+)/) && parseInt(RegExp.$1, 10) >= 31) ||
+    // double check webkit in userAgent just in case we are in a worker
+    (typeof navigator !== 'undefined' && navigator && navigator.userAgent && navigator.userAgent.toLowerCase().match(/applewebkit\/(\d+)/));
+}
+
+/**
+ * Map %j to `JSON.stringify()`, since no Web Inspectors do that by default.
+ */
+
+exports.formatters.j = function(v) {
+  try {
+    return JSON.stringify(v);
+  } catch (err) {
+    return '[UnexpectedJSONParseError]: ' + err.message;
+  }
+};
+
+
+/**
+ * Colorize log arguments if enabled.
+ *
+ * @api public
+ */
+
+function formatArgs(args) {
+  var useColors = this.useColors;
+
+  args[0] = (useColors ? '%c' : '')
+    + this.namespace
+    + (useColors ? ' %c' : ' ')
+    + args[0]
+    + (useColors ? '%c ' : ' ')
+    + '+' + exports.humanize(this.diff);
+
+  if (!useColors) return;
+
+  var c = 'color: ' + this.color;
+  args.splice(1, 0, c, 'color: inherit')
+
+  // the final "%c" is somewhat tricky, because there could be other
+  // arguments passed either before or after the %c, so we need to
+  // figure out the correct index to insert the CSS into
+  var index = 0;
+  var lastC = 0;
+  args[0].replace(/%[a-zA-Z%]/g, function(match) {
+    if ('%%' === match) return;
+    index++;
+    if ('%c' === match) {
+      // we only are interested in the *last* %c
+      // (the user may have provided their own)
+      lastC = index;
+    }
+  });
+
+  args.splice(lastC, 0, c);
+}
+
+/**
+ * Invokes `console.log()` when available.
+ * No-op when `console.log` is not a "function".
+ *
+ * @api public
+ */
+
+function log() {
+  // this hackery is required for IE8/9, where
+  // the `console.log` function doesn't have 'apply'
+  return 'object' === typeof console
+    && console.log
+    && Function.prototype.apply.call(console.log, console, arguments);
+}
+
+/**
+ * Save `namespaces`.
+ *
+ * @param {String} namespaces
+ * @api private
+ */
+
+function save(namespaces) {
+  try {
+    if (null == namespaces) {
+      exports.storage.removeItem('debug');
+    } else {
+      exports.storage.debug = namespaces;
+    }
+  } catch(e) {}
+}
+
+/**
+ * Load `namespaces`.
+ *
+ * @return {String} returns the previously persisted debug modes
+ * @api private
+ */
+
+function load() {
+  var r;
+  try {
+    r = exports.storage.debug;
+  } catch(e) {}
+
+  // If debug isn't set in LS, and we're in Electron, try to load $DEBUG
+  if (!r && typeof process !== 'undefined' && 'env' in process) {
+    r = process.env.DEBUG;
+  }
+
+  return r;
+}
+
+/**
+ * Enable namespaces listed in `localStorage.debug` initially.
+ */
+
+exports.enable(load());
+
+/**
+ * Localstorage attempts to return the localstorage.
+ *
+ * This is necessary because safari throws
+ * when a user disables cookies/localstorage
+ * and you attempt to access it.
+ *
+ * @return {LocalStorage}
+ * @api private
+ */
+
+function localstorage() {
+  try {
+    return window.localStorage;
+  } catch (e) {}
+}
+
+}).call(this,require('_process'))
+},{"./debug":28,"_process":24}],28:[function(require,module,exports){
+
+/**
+ * This is the common logic for both the Node.js and web browser
+ * implementations of `debug()`.
+ *
+ * Expose `debug()` as the module.
+ */
+
+exports = module.exports = createDebug.debug = createDebug['default'] = createDebug;
+exports.coerce = coerce;
+exports.disable = disable;
+exports.enable = enable;
+exports.enabled = enabled;
+exports.humanize = require('ms');
+
+/**
+ * The currently active debug mode names, and names to skip.
+ */
+
+exports.names = [];
+exports.skips = [];
+
+/**
+ * Map of special "%n" handling functions, for the debug "format" argument.
+ *
+ * Valid key names are a single, lower or upper-case letter, i.e. "n" and "N".
+ */
+
+exports.formatters = {};
+
+/**
+ * Previous log timestamp.
+ */
+
+var prevTime;
+
+/**
+ * Select a color.
+ * @param {String} namespace
+ * @return {Number}
+ * @api private
+ */
+
+function selectColor(namespace) {
+  var hash = 0, i;
+
+  for (i in namespace) {
+    hash  = ((hash << 5) - hash) + namespace.charCodeAt(i);
+    hash |= 0; // Convert to 32bit integer
+  }
+
+  return exports.colors[Math.abs(hash) % exports.colors.length];
+}
+
+/**
+ * Create a debugger with the given `namespace`.
+ *
+ * @param {String} namespace
+ * @return {Function}
+ * @api public
+ */
+
+function createDebug(namespace) {
+
+  function debug() {
+    // disabled?
+    if (!debug.enabled) return;
+
+    var self = debug;
+
+    // set `diff` timestamp
+    var curr = +new Date();
+    var ms = curr - (prevTime || curr);
+    self.diff = ms;
+    self.prev = prevTime;
+    self.curr = curr;
+    prevTime = curr;
+
+    // turn the `arguments` into a proper Array
+    var args = new Array(arguments.length);
+    for (var i = 0; i < args.length; i++) {
+      args[i] = arguments[i];
+    }
+
+    args[0] = exports.coerce(args[0]);
+
+    if ('string' !== typeof args[0]) {
+      // anything else let's inspect with %O
+      args.unshift('%O');
+    }
+
+    // apply any `formatters` transformations
+    var index = 0;
+    args[0] = args[0].replace(/%([a-zA-Z%])/g, function(match, format) {
+      // if we encounter an escaped % then don't increase the array index
+      if (match === '%%') return match;
+      index++;
+      var formatter = exports.formatters[format];
+      if ('function' === typeof formatter) {
+        var val = args[index];
+        match = formatter.call(self, val);
+
+        // now we need to remove `args[index]` since it's inlined in the `format`
+        args.splice(index, 1);
+        index--;
+      }
+      return match;
+    });
+
+    // apply env-specific formatting (colors, etc.)
+    exports.formatArgs.call(self, args);
+
+    var logFn = debug.log || exports.log || console.log.bind(console);
+    logFn.apply(self, args);
+  }
+
+  debug.namespace = namespace;
+  debug.enabled = exports.enabled(namespace);
+  debug.useColors = exports.useColors();
+  debug.color = selectColor(namespace);
+
+  // env-specific initialization logic for debug instances
+  if ('function' === typeof exports.init) {
+    exports.init(debug);
+  }
+
+  return debug;
+}
+
+/**
+ * Enables a debug mode by namespaces. This can include modes
+ * separated by a colon and wildcards.
+ *
+ * @param {String} namespaces
+ * @api public
+ */
+
+function enable(namespaces) {
+  exports.save(namespaces);
+
+  exports.names = [];
+  exports.skips = [];
+
+  var split = (namespaces || '').split(/[\s,]+/);
+  var len = split.length;
+
+  for (var i = 0; i < len; i++) {
+    if (!split[i]) continue; // ignore empty strings
+    namespaces = split[i].replace(/\*/g, '.*?');
+    if (namespaces[0] === '-') {
+      exports.skips.push(new RegExp('^' + namespaces.substr(1) + '$'));
+    } else {
+      exports.names.push(new RegExp('^' + namespaces + '$'));
+    }
+  }
+}
+
+/**
+ * Disable debug output.
+ *
+ * @api public
+ */
+
+function disable() {
+  exports.enable('');
+}
+
+/**
+ * Returns true if the given mode name is enabled, false otherwise.
+ *
+ * @param {String} name
+ * @return {Boolean}
+ * @api public
+ */
+
+function enabled(name) {
+  var i, len;
+  for (i = 0, len = exports.skips.length; i < len; i++) {
+    if (exports.skips[i].test(name)) {
+      return false;
+    }
+  }
+  for (i = 0, len = exports.names.length; i < len; i++) {
+    if (exports.names[i].test(name)) {
+      return true;
+    }
+  }
+  return false;
+}
+
+/**
+ * Coerce `val`.
+ *
+ * @param {Mixed} val
+ * @return {Mixed}
+ * @api private
+ */
+
+function coerce(val) {
+  if (val instanceof Error) return val.stack || val.message;
+  return val;
+}
+
+},{"ms":26}],29:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -17341,7 +18160,36 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],25:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
+exports = module.exports = stringify
+exports.getSerialize = serializer
+
+function stringify(obj, replacer, spaces, cycleReplacer) {
+  return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces)
+}
+
+function serializer(replacer, cycleReplacer) {
+  var stack = [], keys = []
+
+  if (cycleReplacer == null) cycleReplacer = function(key, value) {
+    if (stack[0] === value) return "[Circular ~]"
+    return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
+  }
+
+  return function(key, value) {
+    if (stack.length > 0) {
+      var thisPos = stack.indexOf(this)
+      ~thisPos ? stack.splice(thisPos + 1) : stack.push(this)
+      ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key)
+      if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value)
+    }
+    else stack.push(value)
+
+    return replacer == null ? value : replacer.call(this, key, value)
+  }
+}
+
+},{}],31:[function(require,module,exports){
 /** seen.js v0.2.7 | themadcreator.github.io/seen | (c) Bill Dwyer | @license: Apache 2.0 */
 
 (function(){
@@ -21939,7 +22787,7 @@ seen.Simplex3D = (function() {
 })();
 
 })(this);
-},{}],26:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -22374,6 +23222,6 @@ seen.Simplex3D = (function() {
 
 }).call(this);
 
-},{}],27:[function(require,module,exports){
-arguments[4][20][0].apply(exports,arguments)
-},{"dup":20}]},{},[2]);
+},{}],33:[function(require,module,exports){
+arguments[4][21][0].apply(exports,arguments)
+},{"dup":21}]},{},[2]);

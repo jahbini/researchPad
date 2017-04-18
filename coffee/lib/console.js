@@ -219,10 +219,35 @@ THE SOFTWARE.
     listen(input, 'blur', function() {
       history.reset();
     });
+    function jsonize(msg){
+        function stringify(obj, replacer, spaces, cycleReplacer) {
+          return JSON.stringify(obj, serializer(replacer, cycleReplacer), spaces)
+        }
 
+      function serializer(replacer, cycleReplacer) {
+        var stack = [], keys = []
+
+        if (cycleReplacer == null) cycleReplacer = function(key, value) {
+          if (stack[0] === value) return "[Circular ~]"
+          return "[Circular ~." + keys.slice(0, stack.indexOf(value)).join(".") + "]"
+        }
+
+        return function(key, value) {
+          if (stack.length > 0) {
+            var thisPos = stack.indexOf(this)
+            ~thisPos ? stack.splice(thisPos + 1) : stack.push(this)
+            ~thisPos ? keys.splice(thisPos, Infinity, key) : keys.push(key)
+            if (~stack.indexOf(value)) value = cycleReplacer.call(this, key, value)
+          }
+          else stack.push(value)
+
+        return replacer == null ? value : replacer.call(this, key, value)
+        }
+      }
+    }
     function log(level) {
       var msg = arguments.length === 2 ? arguments[1] : toArray(arguments).slice(1);
-
+  
       var result = create('div', {'class': 'result'}, output(msg)),
           el = addClass(create('p', null, result), typeOf(msg), level);
       container.insertBefore(el, inputContainer);
@@ -269,10 +294,10 @@ THE SOFTWARE.
         for (var k in original) el[k] = original[k];
         while (node = el.childNodes[0]) el.removeChild(node);
         while (node = limbo.childNodes[0]) el.appendChild(node);
-        delete limbo;
-        delete output;
-        delete input;
-        delete original;
+        // delete limbo;
+        // delete output;
+        // delete input;
+        // delete original;
       }
     });
   }

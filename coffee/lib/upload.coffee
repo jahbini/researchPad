@@ -6,8 +6,10 @@
 $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-require('./console')
+buglog = require './buglog.coffee'
+uplogger = (uplog= new buglog "uploader").log
 
+uplogger "initializing"
 localStorage = window.localStorage
 Pylon = window.Pylon
 
@@ -62,18 +64,27 @@ removeItem = (lsid)->
   item = localStorage.getItem lsid
   localStorage.removeItem lsid
   localStorage.setItem 'all_events', events.join ','
+  return item
   
 # get next item gets and removes a model from local storage,
 # converts it to object form (attributes)
 getNextItem = ()->
+  uplogger "Uploader Activated"
   events = records()
-  return null if !events.length || uploading
+  if !events.length
+    uplogger "Nothing  to Upload"
+    return null
+  if !events.length || uploading
+    uplogger "Busy -- "
+    return null
+  
   key = events.shift()
+  item = removeItem key 
   try
     uploadDataObject = JSON.parse item
   catch e
-    console.log "Error in localStorage retrieval- key==#{key}"
-    console.log "upload item discarded -- invalid JSON"
+    uplogger "Error in localStorage retrieval- key==#{key}"
+    uplogger "item discarded -- invalid JSON"
     return null
   sendToHost uploadDataObject
 
@@ -102,39 +113,39 @@ sendToHost = (uDM)->
   stress = Pylon.get 'stress'
   if stress> Math.random()
     #pretend to fail
-    console.log "stress test upload failure, item #{uploadDataObject.get 'LSid'}, retry in 5 seconds"
+    uplogger "stress test upload failure, item #{uploadDataObject.get 'LSid'}, retry in 5 seconds"
     return
   uDM=uploadDataObject.attributes
   if uDM.session
-    console.log "upload attempt #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
+    uplogger "attempt #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
   else
-    console.log "upload attempt #{uDM.LSid} ",uDM.url, uDM._id
+    uplogger "attempt #{uDM.LSid} ",uDM.url, uDM._id
   uploadDataObject.save null,{
     success: (a,b,code)->
       uDM= a.attributes
       removeItem uDM.LSid
       uploading = false
       if uDM.session # events have a session attribute, the sessionInfo does not
-        console.log "upload success #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
+        uplogger "success #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
       else
         Pylon.trigger 'sessionUploaded'
-        console.log "upload success #{uDM.LSid} ",uDM.url, uDM._id
-      console.log "upload on #{a.get "LSid"} complete"
+        uplogger "success #{uDM.LSid} ",uDM.url, uDM._id
+      uplogger "on #{a.get "LSid"} complete"
       setTimeout getNextItem, 0
       return
     error: (a,b,c)->
       uDM= a.attributes
       if uDM.session
-        console.log "upload failure #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
+        uplogger "failure #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
       else
-        console.log "upload failure #{uDM.LSid} ",uDM.url, uDM.id
+        uplogger "failure #{uDM.LSid} ",uDM.url, uDM.id
       uploading = false
       setTimeout getNextItem, 5000
       failCode = b.status
       # we try 10 times 
       fails = a.get 'hostFails'
       fails +=1
-      console.log "Upload #{fails} failures (#{failCode}) on #{a.get 'LSid'}"
+      uplogger "simulated #{fails} failures (#{failCode}) on #{a.get 'LSid'}"
       return
     }
   return
@@ -143,7 +154,7 @@ uploader = ->
   alert "Uploader Called!"
   return
 
-  setTimeout getNextItem, 5000
+setTimeout getNextItem, 5000
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web

@@ -27,6 +27,8 @@
     <plugin name="cordova-plugin-network-information" spec="~1.3.0" />
     <plugin name="org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin" spec="../lumberjack" />
     <plugin name="cordova-plugin-file" spec="~4.3.2" />
-    <plugin name="cordova-plugin-ble-central" spec="../cordova-plugin-ble-central" />
-    <plugin name="cordova-plugin-ddjslog" spec="../cordova-plugin-ddjslog" />
+    <plugin name="cordova-plugin-ble-central" spec="https://github.com/jahbini/cordova-plugin-ble-central">
+        <variable name="BLUETOOTH_USAGE_DESCRIPTION" value=" " />
+    </plugin>
+    <plugin name="cordova-plugin-ddjslog" spec="https://github.com/jahbini/cordova-plugin-ddjslog" />
 </widget>

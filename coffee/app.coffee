@@ -6,7 +6,10 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-require('./lib/console')
+localStorage.setItem 'debug',"*"
+buglog = require './lib/buglog.coffee'
+applogger = (applog= new buglog "app").log
+
 
 PylonTemplate = Backbone.Model.extend
   scan: false
@@ -36,7 +39,7 @@ pages = require './views/pages.coffee'
 Pylon.set 'adminView', require('./views/adminView.coffee').adminView
 loadScript = require("./lib/loadScript.coffee").loadScript
 loadScript Pylon.get('hostUrl')+"logon.js", (status)->
-  console.log "logon.js returns status of "+status
+  applogger "logon.js returns status of "+status
 
 {uploader,eventModelLoader} = require "./lib/upload.coffee"
 
@@ -118,7 +121,7 @@ sessionInfo = new rawSession
   rightSensorUUID: ''
   platformIosVersion: ''
   applicationVersion: applicationVersion
-console.log "app Ver:", sessionInfo.get 'applicationVersion'
+applogger "Version:#{sessionInfo.get 'applicationVersion'}"
 
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
@@ -131,12 +134,12 @@ Pylon.on 'systemEvent', (what="unknown")->
   if sessionInfo.id
     adminEvent.addSample what
 Pylon.on 'externalEvent', (what="unknown")->  
-  console.log 'externalEvent', what
+  applogger 'externalEvent', what
   if sessionInfo.id
     try
       externalEvent.addSample what
     catch booBoo
-      console.log booBoo
+      applogger booBoo
   true
 
 aButtonModel = Backbone.Model.extend
@@ -201,7 +204,7 @@ activateNewButtons = ->
     if !sessionInfo.get 'testID'
       pageGen.forceTest 'red'
     Pylon.trigger 'recordCountDown:start', 5
-    console.log('enter Recording --- actively recording sensor info')
+    applogger 'Recording --- actively recording sensor info'
 
   Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
 
@@ -216,7 +219,7 @@ enterAdmin = ->
   try
     pageGen.activateAdminPage()
   catch e
-    console.log "failure in activatAdminPage",e
+    applogger "failure in activatAdminPage",e
   return false
 
 exitAdmin = () ->
@@ -282,7 +285,7 @@ enterUpload = ->
 
 enterCalibrate = ->
   return
-  console.log('enterCalibrate -- not used currently')
+  applogger 'enterCalibrate -- not used currently'
   calibrating = true
   (Pylon.get 'button-action').set
     enabled: true
@@ -327,7 +330,7 @@ enterRecording = ->
   if !sessionInfo.get '_id'
     sessionInfo.save()
     return false
-  # release the high level evothings system from any scanning that logon.js does
+  # signal for logon.js that we are not scanning
   Pylon.set scanActive: false
     
   (Pylon.get 'button-admin').set 'enabled',false
@@ -338,7 +341,7 @@ enterRecording = ->
   gs.set 'recording',  true
   $('#testID').prop("disabled",true)
   Pylon.trigger 'recordCountDown:start', 5
-  console.log('enter Recording --- actively recording sensor info')
+  applogger 'Recording --- actively recording sensor info'
 
 Pylon.on ('recordCountDown:fail'), ->
     pageGen.forceTest 'orange'
@@ -362,7 +365,7 @@ exitRecording = -> # Stop Recording
   return false
 
 Pylon.on 'stopCountDown:over', ->
-  console.log('enter Stop -- stop recording')
+  applogger 'Stop -- stop recording'
   Pylon.trigger 'systemEvent:endRecording'
   Pylon.get('globalState').set 'recording',  false
   (Pylon.get 'button-upload').set 'enabled',true
@@ -400,7 +403,7 @@ enableRecordButtonOK= ()->
   return false
 
 Pylon.on 'connected', ->
-  console.log('enterConnected -- enable recording button')
+  applogger 'enable recording button'
   Pylon.get('globalState').set connected: true
   return enableRecordButtonOK()
 
@@ -423,17 +426,17 @@ clinics.on 'fetched', ->
     Pylon.trigger 'canLogIn'
   
 getProtocol = ->
-  console.log "protocol request initiate"
+  applogger "protocol request initiate"
   protocols.fetch
     success: (collection,response,options)->
-      console.log "protocols request success"
+      applogger "protocols request success"
       collection.trigger 'fetched'
     error: (collection,response,options)->
       protocolsShowedErrors--
       if protocolsShowedErrors
         return
       protocolsShowedErrors=15
-      console.log (Pylon.get('hostUrl')+'protocols'), "protocols fetch error - response:", response.statusText
+      applogger (Pylon.get('hostUrl')+'protocols'), "protocols fetch error - response:", response.statusText
 getProtocol()
 protocolTimer = setInterval getProtocol, 11000
 protocols.on 'fetched' , ->
@@ -441,18 +444,18 @@ protocols.on 'fetched' , ->
 
 clinicShowedErrors=1
 getClinics = ->
-  console.log "clinic request initiate"
+  applogger "clinic request initiate"
   clinics.fetch
     success: (collection,response,options)->
-      console.log "clinic request success"
+      applogger "clinic request success"
       collection.trigger 'fetched'
     error: (collection,response,options)->
       clinicShowedErrors--
       if clinicShowedErrors
         return
       clinicShowedErrors=5
-      console.log (Pylon.get('hostUrl')+'clinics')
-      console.log "clinics fetch error - response:#{response.statusText}"
+      applogger (Pylon.get('hostUrl')+'clinics')
+      applogger "clinics fetch error - response:#{response.statusText}"
 getClinics()
 clinicTimer = setInterval getClinics,10000
 clinics.on 'fetched', ->
@@ -502,7 +505,8 @@ $ ->
   pageGen.renderPage()
   activateNewButtons()
   if $('#console-log')?
-    window.console=console = new Console('console-log',this)
+    # allow the applog to use #console-log from now on
+    applog.useDiv 'console-log'
     Pylon.trigger "systemEvent:debug:Hide Log"
   initAll()
   setSensor()

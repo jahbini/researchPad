@@ -1,5 +1,8 @@
 Backbone = require 'Backbone'
 
+buglog = require '../lib/buglog.coffee'
+devicelogger = (devicelog= new buglog "sensor").log
+
 Pipeline = require('../lib/pipeline.coffee')
 
 infoService =       "0000180a-0000-1000-8000-00805f9b34fb"
@@ -61,37 +64,118 @@ exports.deviceModel = Backbone.Model.extend
     Pylon.on "speed",(val)->@.set 'rate',val
     return @
     
-  getBoilerplate: (attribute, uuid)->
-    console.log "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
-    ble.read @.id,
-      infoService
-      uuid
-      (data)=>
-        val = ab2str data
-         
-        console.log "Setting attribute for #{attribute} to #{val}"
-        @.set attribute, val
-      (err)=>console.log "unable to obtain #{attribute} from #{@.attributes.name}"
-    return
+  getBoilerplate: ()->
+    plates = []
+    promises = for attribute, uuid of boilerplate
+      devicelogger "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
+      plates.push new Promise (resolve,reject)=>
+        ble.read @.id,
+          infoService
+          uuid
+          (data)=>
+            val = ab2str data
+            devicelogger "Setting attribute for #{attribute} to #{val}"
+            @.set attribute, val
+            devicelogger "Set attribute for #{attribute} to #{val}"
+            resolve()
+          (err)=>
+            devicelogger "unable to obtain #{attribute} from #{@.attributes.name}"
+            reject()
+        devicelogger "Promised attribute for #{attribute}"
+    return plates
     
+  stopNotification: (resolve,reject)->
+    devicelogger "stopNotification entry"
+    configData = new Uint16Array 1
+      #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
+    configData[0] = 0x0000;
+    ble.withPromises.stopNotification device.id,
+        accelerometer.service
+        accelerometer.data
+        (whatnot)=> 
+          devicelogger "stopNotification Terminated movement monitor. device #{device.name}"
+          resolve()
+        (e)=>
+          devicelogger "stopNotification error terminating movement device #{device.name} monitor #{e}"
+          reject()
+          
   subscribe: ()-> return (device)=>
+    idlePromise= (resolve,reject)->
+      devicelogger "idlePromise entry"
+      setTimeout resolve,100
+    
+    startNotification= (resolve,reject)=>
+      devicelogger "startNotification entry"
+      new Promise (resolve,reject)=>
+        ble.withPromises.startNotification device.id,
+          accelerometer.service
+          accelerometer.data
+          # convert raw iOS data into js and update the device model
+          (data)=>
+            
+            @.set rawData: new Int16Array(data);
+          (xxx)=>
+            devicelogger "startNotification failure for device #{device.name}: #{xxx}"
+            reject()
+        devicelogger "startNotification entry"
+        resolve()
+      
+    setPeriod= (resolve,reject)=>
+      devicelogger "setPeriod entry"
+      periodData = new Uint8Array(1);
+      periodData[0] = @.attributes.rate;
+      devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
+      ble.write @.attributes.id,
+        accelerometer.service
+        accelerometer.period
+        periodData.buffer
+        ()=>
+          devicelogger "setPeriod Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
+          resolve()
+        (e)=>
+          devicelogger "setPeriod error starting movement monitor #{e}"
+          reject()
+      
+    activateMovement= (resolve,reject)->    
+      devicelogger "activateMovement entry. device #{device.name}"
+      configData = new Uint16Array(1);
+      # turn accelerometer on
+      #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
+      configData[0] = 0x017F;
+      ble.withPromises.write device.id,
+        accelerometer.service
+        accelerometer.configuration
+        configData.buffer
+        (whatnot)=> 
+          devicelogger "activateMovement Started movement monitor. device #{device.name}"
+          resolve()
+        (e)=>
+          devicelogger "activateMovement error starting movement device #{device.name} monitor #{e}"
+          reject()
     try
-      for key, uuid of boilerplate
-        @getBoilerplate key, uuid
     #set some attributes
-      console.log "Device subscribe attempt #{device.name}"
-  # turn accelerometer off
+      devicelogger "Device subscribe attempt #{device.name}"
+  # turn accelerometer off, then set movement  parameters
+      thePromise = Promise.all @getBoilerplate()
+      resulting = thePromise.then(idlePromise).
+        then(activateMovement).
+        then(idlePromise).
+        then(setPeriod).
+        then(idlePromise).
+        then(startNotification)
+      devicelogger "the promise has been built"
+      devicelogger resulting
+      
+      ###
       configData = new Uint16Array(1);
       #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
       configData[0] = 0x0000;
-      ###
       ble.stopNotification device.id,
         accelerometer.service
         accelerometer.data
         (whatnot)=> 
-          console.log "Terminated movement monitor. device #{device.name}"
-        (e)=> console.log "error terminating movement device #{device.name} monitor #{e}"
-      ###
+          devicelogger "Terminated movement monitor. device #{device.name}"
+        (e)=> devicelogger "error terminating movement device #{device.name} monitor #{e}"
       ble.startNotification device.id,
         accelerometer.service
         accelerometer.data
@@ -100,18 +184,19 @@ exports.deviceModel = Backbone.Model.extend
           debugger
           @.set rawData: new Int16Array(data);
         (xxx)=>
-          console.log "can't start movement service for device #{device.name}: #{xxx}"
+          devicelogger "can't start movement service for device #{device.name}: #{xxx}"
           return
     
+      
       periodData = new Uint8Array(1);
       periodData[0] = @.attributes.rate;
-      console.log "Timing parameter for sensor rate = #{@.attributes.rate}"
+      devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
       ble.write @.attributes.id,
         accelerometer.service
         accelerometer.period
         periodData.buffer
-        ()=> console.log "Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
-        (e)=> console.log "error starting movement monitor #{e}"
+        ()=> devicelogger "Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
+        (e)=> devicelogger "error starting movement monitor #{e}"
     
       
       # turn accelerometer on
@@ -122,12 +207,14 @@ exports.deviceModel = Backbone.Model.extend
         accelerometer.configuration
         configData.buffer
         (whatnot)=> 
-          console.log "Started movement monitor. device #{device.name}"
-        (e)=> console.log "error starting movement device #{device.name} monitor #{e}"
+          devicelogger "Started movement monitor. device #{device.name}"
+        (e)=> devicelogger "error starting movement device #{device.name} monitor #{e}"
+      ###
+        
     catch e
       alert('Error in attachSensor -- check LOG')
-      console.log "error in attachSensor"
-      console.log e
+      devicelogger "error in attachSensor"
+      devicelogger e
     return 
     
   createVisualChain: () ->

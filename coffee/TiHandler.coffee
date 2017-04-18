@@ -11,6 +11,8 @@ $ = require('jquery')
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
 {deviceModel} = require './models/device-model.coffee'
+buglog = require './lib/buglog.coffee'
+TIlogger = (TIlog= new buglog "TIhandler").log
 
 deviceNameToModel= (name)->
     pd =Pylon.get('devices')
@@ -52,7 +54,7 @@ pView=Backbone.View.extend
   events:
     "click": "changer"
   changer: ->
-      console.log "Start Scan button activated"
+      TIlogger "Start Scan button activated"
       Pylon.set 'scanActive', true
       @render()
       setTimeout(
@@ -84,11 +86,11 @@ class TiHandler
     d.fetch
       success: (model,response,options) ->
         name = (d.get 'assignedName' ) || 'no Name'
-        console.log "DEVICE FETCH from Host: #{name}"
+        TIlogger "DEVICE FETCH from Host: #{name}"
 
       error: (model,response,options)->
-        console.log (Pylon.get('hostUrl')+'/sensorTag')
-        console.log "sensorTag fetch error: #{response.statusText}"
+        TIlogger (Pylon.get('hostUrl')+'/sensorTag')
+        TIlogger "sensorTag fetch error: #{response.statusText}"
 
   ble_found = (device)->
     # a device may present itself several times as advertising packets
@@ -100,7 +102,7 @@ class TiHandler
     if d=pd.findWhere(name: name)
       d.set device
       return
-    console.log "got new device"
+    TIlogger "got new device"
     d = new deviceModel device
     pd.push d
     #queryHostDevice(d)
@@ -131,22 +133,22 @@ class TiHandler
     d = Pylon.get('devices').get  cid
     return unless d
     name = d.get 'name'
-    console.log "detach #{cid} -- #{name}"
+    TIlogger "detach #{cid} -- #{name}"
     role = 'Error'
     role= 'Left' if 0< name.search /\(([Ll]).*\)/
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
     if role == 'Error'
-      console.log "Bad name for sensor: #{name}"
+      TIlogger "Bad name for sensor: #{name}"
       return
     d.set 'role','---'
     Pylon.unset role 
     d.set 'buttonText', 'connect'
     d.set 'connected', false
     Pylon.trigger('change respondingDevices')
-    console.log "Device removed from state, attempt dicconnect"
+    TIlogger "Device removed from state, attempt dicconnect"
     ble.disconnect (d.get "id"),
-      ()=> console.log "disconnection of #{name}"
-      (e)-> console.log "Failure to connect",e
+      ()=> TIlogger "disconnection of #{name}"
+      (e)-> TIlogger "Failure to connect",e
     return
 
     
@@ -158,14 +160,14 @@ class TiHandler
     gs = Pylon.get('globalState')
     return if gs.get 'recording'
     
-    console.log "attach "+ cid
+    TIlogger "attach "+ cid
     d = Pylon.get('devices').get  cid
     name = d.get 'name'
     role = 'Error'
     role= 'Left' if 0< name.search /\(([Ll]).*\)/
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
     if role == 'Error'
-      console.log "Bad name for sensor: #{name}"
+      TIlogger "Bad name for sensor: #{name}"
       return
     # reject attachDevice if it connected Github issue #73
     return if d.get 'connected'
@@ -176,10 +178,10 @@ class TiHandler
     # triggers change:Right or change:Left
     Pylon.set role, d
     Pylon.trigger('change respondingDevices')
-    console.log "Role of Device set, attempt connect"
+    TIlogger "Role of Device set, attempt connect"
     ble.connect (d.get "id"),
       d.subscribe()
-      (e)-> console.log "Failure to connect",e
+      (e)-> TIlogger "Failure to connect",e
     return
 
    
@@ -218,7 +220,7 @@ class TiHandler
         return
       # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
       sensorInstance.errorCallback (s)->
-        console.log "sensor ERROR report: " +s, ' '+d.id
+        TIlogger "sensor ERROR report: " +s, ' '+d.id
         # evothings status reporting errors often report null, for no reason?
         return if !s
         err=s.split(' ')
@@ -232,10 +234,10 @@ class TiHandler
         Pylon.trigger('change respondingDevices')
         return
 
-      console.log "Setting Time-out now",Date.now()
+      TIlogger "Setting Time-out now",Date.now()
       setTimeout ()->
           return if 'Receiving' == d.get 'deviceStatus'
-          console.log "Device connection 10 second time-out "
+          TIlogger "Device connection 10 second time-out "
           sensorInstance.callErrorCallback "No Response"
           sensorInstance.disconnectDevice()
         ,10000

@@ -4,6 +4,9 @@ Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
 
+buglog = require '../lib/buglog.coffee'
+viewlogger = (viewlog= new buglog "view").log
+
 RssiView = require './rssi-view.coffee'
 
 implementing = (mixins..., classReference) ->
@@ -179,12 +182,12 @@ class Pages
         enable: false
       model.save null,{
         success: (model,response,options)->
-          console.log "session logged with host"
+          viewlogger "session logged with host"
           (Pylon.get 'button-admin').set
             legend: "Log Out"
             enable: true
         error: (model,response,options)->
-          console.log "Session save Fail: #{response.statusText}"
+          viewlogger "Session save Fail: #{response.statusText}"
           (Pylon.get 'button-admin').set
             legend: "Log Out"
             enable: true
@@ -214,7 +217,7 @@ class Pages
           @attributes.session.set 'captureDate',Date.now()
           return false
       render: ->
-        console.log "Rendering Tests"
+        viewlogger "Rendering Tests"
         @$el.html render =>
           option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models
@@ -225,7 +228,7 @@ class Pages
     Pylon.on 'change:Right', ()=>
       dev = Pylon.get 'Right'
       return unless dev
-      console.log "activating Right"
+      viewlogger "activating Right"
       if old = Pylon.get 'RightView'
         old.clearTimer()
       statusRightViewTemplate = Backbone.View.extend
@@ -245,7 +248,7 @@ class Pages
     Pylon.on 'change:Left', ()=>
       dev = Pylon.get 'Left'
       return unless dev
-      console.log "activating Left"
+      viewlogger "activating Left"
       statusLeftViewTemplate = Backbone.View.extend
         model: dev
         el: "#LeftStat"

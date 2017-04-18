@@ -4,6 +4,8 @@
 Seen = require 'seen-js'
 $=require 'jquery'
 _=require 'underscore'
+buglog = require './buglog.coffee'
+pipelinelogger = (pipelinelog= new buglog "pipeline").log
 
 ###
 #Pylon's globalStatus looks like this:
@@ -36,7 +38,7 @@ class pipeline
       tH.grandAverage = tH.grandTotal.copy().divide(tH.totalReadings)
       dataCondition.cookedValue = dataCondition.curValue.copy().subtract(tH.grandAverage)
     catch e
-      #console.log e.message
+      #pipelinelogger e.message
     return
 
   split = (raw, lo, hi) ->
@@ -65,7 +67,7 @@ class pipeline
       dataCondition.cookedValue.y = split(dataCondition.cookedValue.y, tH.min.y, tH.max.y)
       dataCondition.cookedValue.z = split(dataCondition.cookedValue.z, tH.min.z, tH.max.z)
     catch e
-      #console.log e.message
+      #pipelinelogger e.message
     return
 
   calibratorSmooth: (dataCondition, calibrate, calibrating) ->
@@ -74,7 +76,7 @@ class pipeline
         dataCondition.dataHistory.runningSum = dataCondition.cookedValue.copy()
       dataCondition.cookedValue = dataCondition.dataHistory.runningSum.multiply(0.75).add(dataCondition.cookedValue.copy().multiply(0.25)).copy()
     catch e
-      #console.log e.message
+      #pipelinelogger e.message
     return
 
   #
@@ -98,7 +100,7 @@ class pipeline
     o.bias = Seen.P(0, 0, 0)
     $('#' + o.debias).click ->
       o.bias = o.cookedValue
-      #console.log o
+      #pipelinelogger o
       return
     (data) =>
            # data points from Evothings library are Seen.Point NOT compatible as sources
@@ -122,7 +124,7 @@ class pipeline
 
 
       catch error
-        console.log "in readinghandler: #{error.statusText || error}"
+        pipelinelogger "in readinghandler: #{error.statusText || error}"
       return
 
   ###
@@ -235,8 +237,8 @@ class pipeline
       try
         spear = spearFromPool(model, x, y, z).transform(m).scale(scaleFactor * leng)
       catch problem
-        console.log "Death from spear Pool"
-        console.log problem.statusText || probem
+        pipelinelogger "Death from spear Pool"
+        pipelinelogger problem.statusText || probem
       spear.fill new (Seen.Material)(new (Seen.Color)(255, 80, 255))
       context = Seen.Context(viewport, scene) if !context
       context.render()

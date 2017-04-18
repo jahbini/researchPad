@@ -6,14 +6,16 @@
   "dependencies": {
     "backbone": "^1.3.3",
     "backbone-forms": "latest",
+    "case": "~1.4.1",
     "coffee-script": "latest",
+    "debug": "^2.6.3",
     "hbsfy": "~2.2.1",
     "jquery": "latest",
+    "json-stringify-safe": "^5.0.1",
     "seen-js": "^0.2.7",
     "teacup": "latest",
     "underscore": "^1.8.3",
-    "winston": "latest",
-    "case": "~1.4.1"
+    "winston": "latest"
   },
   "browser": {
     "Case": "./node_modules/case",
