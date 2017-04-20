@@ -45,7 +45,7 @@ pView=Backbone.View.extend
     $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
     Pylon.set 'scanActive', false
     @listenTo @model, 'add', (device)->
-      # what we should lookf is not changes to pylon, but pylon's devices (a collection)
+      # what we should lookf is not changes to Pylon, but Pylon's devices (a collection)
       # on devices add, create row #
       ordinal = @model.length
       device.set "rowName", "sensor-#{ordinal}"

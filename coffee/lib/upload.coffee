@@ -14,6 +14,8 @@ localStorage = window.localStorage
 Pylon = window.Pylon
 
 uploading = false
+
+timeOutScheduled = false
 needs = (array, key)->
   return false for id in array when id is key
   return true
@@ -43,13 +45,23 @@ records = ()->
 setNewItem = (backboneAttributes)->
   #must have an LSid
   events =records()
+  uplogger "keys = #{events.join ','}"
+  
   localStorage.setItem backboneAttributes.LSid, JSON.stringify backboneAttributes
   if needs events, backboneAttributes.LSid
     events.push backboneAttributes.LSid
     localStorage.setItem 'all_events', events.join ','
+  timeOutScheduled = true
+  setTimeout getNextItem, 50
   return
+  
+accessItem = (lsid)->
+  uplogger "accessing item #{lsid}"
+  return localStorage.getItem lsid
+  
 
 removeItem = (lsid)->
+  uplogger "removing item #{lsid}"
   events = records()
   ###
   remove item from event array 
@@ -61,10 +73,10 @@ removeItem = (lsid)->
     [ 10, 11, 12, 14, 15, 10, 11, 12, 14, 15 ]
   ###
   events.splice(key,1) for id,key in events when id is lsid
-  item = localStorage.getItem lsid
   localStorage.removeItem lsid
   localStorage.setItem 'all_events', events.join ','
-  return item
+  uplogger "removeItem set all_events #{events.join ',' }"
+  return
   
 # get next item gets and removes a model from local storage,
 # converts it to object form (attributes)
@@ -73,13 +85,14 @@ getNextItem = ()->
   events = records()
   if !events.length
     uplogger "Nothing  to Upload"
+    timeOutScheduled = false
     return null
   if !events.length || uploading
     uplogger "Busy -- "
     return null
   
   key = events.shift()
-  item = removeItem key 
+  item = accessItem key 
   try
     uploadDataObject = JSON.parse item
   catch e
@@ -95,19 +108,25 @@ MyId = ()->
   return "Up-#{hiWater()}"
 
 eventModelLoader = (uploadDataModel)->
-  if (uDM=uploadDataModel).attributes
-    #this is a new Backbone model, so set our local storage info
-    uDM.attributes.url = uDM.url if uDM.attributes
-    uDM.attributes.LSid = MyId() unless uDM.attributes.LSid
-    uDM.attributes.hostFails = 0 unless uDM.attributes.hostFails 
-    uDM=uDM.attributes
-  setNewItem uDM.attributes
+  if !uploadDataModel.attributes
+    uplogger "Refusing to upload model with no attributes"
+  item = {}
+  for key,value of uploadDataModel.attributes
+    item[key] = value
+  item.LSid = MyId()
+  item.url = uploadDataModel.url
+  item.hostFails = 0
+  
+  uplogger "adding #{item.LSid} to localStorage"
+  setNewItem item
   return
 
 sendToHost = (uDM)->    
   uploading = uDM.LSid  
+  url = uDM.url
+  url = (Pylon.get 'hostUrl')+url unless url.match 'http[s]?://'
   hopper = Backbone.Model.extend {
-    url: Pylon.get('hostUrl')+uDM.url
+    url: url
   }
   uploadDataObject = new hopper uDM
   stress = Pylon.get 'stress'
@@ -123,24 +142,25 @@ sendToHost = (uDM)->
   uploadDataObject.save null,{
     success: (a,b,code)->
       uDM= a.attributes
-      removeItem uDM.LSid
+      id = uDM.LSid
+      removeItem id
       uploading = false
       if uDM.session # events have a session attribute, the sessionInfo does not
-        uplogger "success #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
+        uplogger "success #{id} #{uDM.url}, #{uDM._id}"
       else
+        uplogger "success #{id} (session) "
         Pylon.trigger 'sessionUploaded'
-        uplogger "success #{uDM.LSid} ",uDM.url, uDM._id
-      uplogger "on #{a.get "LSid"} complete"
+      uplogger "upload of #{id} complete"
       setTimeout getNextItem, 0
       return
     error: (a,b,c)->
+      setTimeout getNextItem, 5000
       uDM= a.attributes
       if uDM.session
         uplogger "failure #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
       else
         uplogger "failure #{uDM.LSid} ",uDM.url, uDM.id
       uploading = false
-      setTimeout getNextItem, 5000
       failCode = b.status
       # we try 10 times 
       fails = a.get 'hostFails'
@@ -153,7 +173,8 @@ sendToHost = (uDM)->
 uploader = ->
   alert "Uploader Called!"
   return
-
+  
+timeOutScheduled = true
 setTimeout getNextItem, 5000
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}

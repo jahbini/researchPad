@@ -336,6 +336,7 @@ Pylon.on('all', function() {
   if (!mim || mim[2] !== 'systemEvent') {
     return null;
   }
+  applogger("event " + event);
   Pylon.trigger(mim[1], event, rest);
   Pylon.trigger(mim[2], event, rest);
   return null;
@@ -637,8 +638,8 @@ enterLogout = function() {
     legend: "Log In",
     enabled: true
   });
-  (pylon.get('button-upload')).set('enabled', false);
-  (pylon.get('button-clear')).set('enabled', false);
+  (Pylon.get('button-upload')).set('enabled', false);
+  (Pylon.get('button-clear')).set('enabled', false);
   return false;
 };
 
@@ -653,7 +654,6 @@ initAll = function() {
 eventModelLoader = require('./lib/upload.coffee').eventModelLoader;
 
 enterClear = function(accept) {
-  var attr;
   if (accept == null) {
     accept = false;
   }
@@ -663,13 +663,10 @@ enterClear = function(accept) {
   sessionInfo.set({
     accepted: accept
   });
-  attr = _.clone(sessionInfo.attributes);
-  attr.url = 'session';
-  eventModelLoader(attr);
+  eventModelLoader(sessionInfo);
   sessionInfo.set('_id', null, {
     silent: true
   });
-  Pylon.on('sessionUploaded', enableRecordButtonOK);
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
 };
@@ -834,12 +831,14 @@ enableRecordButtonOK = function() {
   }
   if (canRecord) {
     (Pylon.get('button-action')).set({
-      legend: "record",
-      enabled: true
+      enabled: true,
+      legend: "Record"
     });
   }
   return false;
 };
+
+Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('connected', function() {
   applogger('enable recording button');
@@ -2039,7 +2038,7 @@ module.exports = Stopwatch = (function() {
 
 
 },{}],10:[function(require,module,exports){
-var $, Backbone, MyId, Pylon, _, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, uploader, uploading, uplog, uplogger;
+var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
 
@@ -2058,6 +2057,8 @@ localStorage = window.localStorage;
 Pylon = window.Pylon;
 
 uploading = false;
+
+timeOutScheduled = false;
 
 needs = function(array, key) {
   var i, id, len;
@@ -2098,15 +2099,24 @@ records = function() {
 setNewItem = function(backboneAttributes) {
   var events;
   events = records();
+  uplogger("keys = " + (events.join(',')));
   localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
   if (needs(events, backboneAttributes.LSid)) {
     events.push(backboneAttributes.LSid);
     localStorage.setItem('all_events', events.join(','));
   }
+  timeOutScheduled = true;
+  setTimeout(getNextItem, 50);
+};
+
+accessItem = function(lsid) {
+  uplogger("accessing item " + lsid);
+  return localStorage.getItem(lsid);
 };
 
 removeItem = function(lsid) {
-  var events, i, id, item, key, len;
+  var events, i, id, key, len;
+  uplogger("removing item " + lsid);
   events = records();
 
   /*
@@ -2124,10 +2134,9 @@ removeItem = function(lsid) {
       events.splice(key, 1);
     }
   }
-  item = localStorage.getItem(lsid);
   localStorage.removeItem(lsid);
   localStorage.setItem('all_events', events.join(','));
-  return item;
+  uplogger("removeItem set all_events " + (events.join(',')));
 };
 
 getNextItem = function() {
@@ -2136,6 +2145,7 @@ getNextItem = function() {
   events = records();
   if (!events.length) {
     uplogger("Nothing  to Upload");
+    timeOutScheduled = false;
     return null;
   }
   if (!events.length || uploading) {
@@ -2143,7 +2153,7 @@ getNextItem = function() {
     return null;
   }
   key = events.shift();
-  item = removeItem(key);
+  item = accessItem(key);
   try {
     uploadDataObject = JSON.parse(item);
   } catch (error) {
@@ -2160,27 +2170,32 @@ MyId = function() {
 };
 
 eventModelLoader = function(uploadDataModel) {
-  var uDM;
-  if ((uDM = uploadDataModel).attributes) {
-    if (uDM.attributes) {
-      uDM.attributes.url = uDM.url;
-    }
-    if (!uDM.attributes.LSid) {
-      uDM.attributes.LSid = MyId();
-    }
-    if (!uDM.attributes.hostFails) {
-      uDM.attributes.hostFails = 0;
-    }
-    uDM = uDM.attributes;
+  var item, key, ref, value;
+  if (!uploadDataModel.attributes) {
+    uplogger("Refusing to upload model with no attributes");
   }
-  setNewItem(uDM.attributes);
+  item = {};
+  ref = uploadDataModel.attributes;
+  for (key in ref) {
+    value = ref[key];
+    item[key] = value;
+  }
+  item.LSid = MyId();
+  item.url = uploadDataModel.url;
+  item.hostFails = 0;
+  uplogger("adding " + item.LSid + " to localStorage");
+  setNewItem(item);
 };
 
 sendToHost = function(uDM) {
-  var hopper, stress, uploadDataObject;
+  var hopper, stress, uploadDataObject, url;
   uploading = uDM.LSid;
+  url = uDM.url;
+  if (!url.match('http[s]?://')) {
+    url = (Pylon.get('hostUrl')) + url;
+  }
   hopper = Backbone.Model.extend({
-    url: Pylon.get('hostUrl') + uDM.url
+    url: url
   });
   uploadDataObject = new hopper(uDM);
   stress = Pylon.get('stress');
@@ -2196,20 +2211,23 @@ sendToHost = function(uDM) {
   }
   uploadDataObject.save(null, {
     success: function(a, b, code) {
+      var id;
       uDM = a.attributes;
-      removeItem(uDM.LSid);
+      id = uDM.LSid;
+      removeItem(id);
       uploading = false;
       if (uDM.session) {
-        uplogger("success " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+        uplogger("success " + id + " " + uDM.url + ", " + uDM._id);
       } else {
+        uplogger("success " + id + " (session) ");
         Pylon.trigger('sessionUploaded');
-        uplogger("success " + uDM.LSid + " ", uDM.url, uDM._id);
       }
-      uplogger("on " + (a.get("LSid")) + " complete");
+      uplogger("upload of " + id + " complete");
       setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
       var failCode, fails;
+      setTimeout(getNextItem, 5000);
       uDM = a.attributes;
       if (uDM.session) {
         uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
@@ -2217,7 +2235,6 @@ sendToHost = function(uDM) {
         uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.id);
       }
       uploading = false;
-      setTimeout(getNextItem, 5000);
       failCode = b.status;
       fails = a.get('hostFails');
       fails += 1;
@@ -2229,6 +2246,8 @@ sendToHost = function(uDM) {
 uploader = function() {
   alert("Uploader Called!");
 };
+
+timeOutScheduled = true;
 
 setTimeout(getNextItem, 5000);
 
@@ -2623,7 +2642,7 @@ EventModel = Backbone.Model.extend({
     }
     flushTime = Date.now();
     if ((this.has('session')) && (this.has('readings'))) {
-      eventModelLoader(_.clone(this));
+      eventModelLoader(this);
     }
     this.unset('readings');
     this.set('captureDate', flushTime);

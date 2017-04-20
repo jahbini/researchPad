@@ -25,6 +25,7 @@ window.Pylon = Pylon = new PylonTemplate
 Pylon.on 'all', (event,rest...)->
   mim = event.match /((.*):.*):/
   return null if !mim || mim[2] != 'systemEvent'
+  applogger "event #{event}"
   Pylon.trigger mim[1],event,rest
   Pylon.trigger mim[2],event,rest
   return null
@@ -247,8 +248,8 @@ enterLogout = () ->
   Pylon.trigger 'admin:enable'
   (Pylon.get 'button-admin').set legend:"Log In" , enabled: true
 
-  (pylon.get 'button-upload').set 'enabled',false
-  (pylon.get 'button-clear').set 'enabled',false
+  (Pylon.get 'button-upload').set 'enabled',false
+  (Pylon.get 'button-clear').set 'enabled',false
   return false
 
 # ## Section State Handlers
@@ -270,11 +271,8 @@ enterClear = (accept=false)->
   $('#testID').prop("disabled",false)
   pageGen.forceTest()
   sessionInfo.set accepted: accept
-  attr = _.clone sessionInfo.attributes
-  attr.url= 'session'
-  eventModelLoader attr
+  eventModelLoader sessionInfo
   sessionInfo.set '_id',null,{silent:true}
-  Pylon.on 'sessionUploaded',enableRecordButtonOK
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
   return
@@ -287,9 +285,7 @@ enterCalibrate = ->
   return
   applogger 'enterCalibrate -- not used currently'
   calibrating = true
-  (Pylon.get 'button-action').set
-    enabled: true
-    legend: "Record"
+  (Pylon.get 'button-action').set enabled: true, legend: "Record"
   (Pylon.get 'button-calibrate').set
     legend: "Exit Calibration"
     enabled: false
@@ -350,9 +346,7 @@ Pylon.on ('recordCountDown:fail'), ->
 
 Pylon.on 'recordCountDown:over', ->
   # change the record button into the stop button
-  (Pylon.get 'button-action').set
-    enabled: true
-    legend: "Stop"
+  (Pylon.get 'button-action').set enabled: true, legend: "Stop"
   return false
 
 exitRecording = -> # Stop Recording
@@ -399,8 +393,10 @@ enableRecordButtonOK= ()->
     canRecord = false
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
   if canRecord
-    (Pylon.get 'button-action').set legend: "record", enabled: true
+    (Pylon.get 'button-action').set enabled: true, legend: "Record"
   return false
+  
+Pylon.on 'sessionUploaded',enableRecordButtonOK
 
 Pylon.on 'connected', ->
   applogger 'enable recording button'

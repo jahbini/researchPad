@@ -31,7 +31,7 @@ EventModel = Backbone.Model.extend {
       @set 'UUID', @device.id
     flushTime = Date.now()
     if (@.has 'session') && (@.has 'readings')
-      eventModelLoader _.clone @
+      eventModelLoader @
     @.unset 'readings'
     @.set 'captureDate',flushTime   #new time for next auto flush
     return
