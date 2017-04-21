@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, EventModel, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
+var $, Backbone, Case, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
 
 Backbone = require('backbone');
 
@@ -8,8 +8,6 @@ _ = require('underscore');
 require('./lib/console');
 
 $ = require('jquery');
-
-EventModel = require('./models/event-model.coffee').EventModel;
 
 glib = require('./lib/glib.coffee').glib;
 
@@ -294,7 +292,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"./models/event-model.coffee":12,"Case":25,"backbone":22,"jquery":29,"underscore":33}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":25,"backbone":22,"jquery":29,"underscore":33}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
@@ -2267,9 +2265,11 @@ module.exports = {
 
 
 },{"./buglog.coffee":3,"backbone":22,"jquery":29,"underscore":33}],11:[function(require,module,exports){
-var Backbone, Pipeline, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, str2ab;
+var Backbone, EventModel, Pipeline, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, str2ab;
 
 Backbone = require('Backbone');
+
+EventModel = require('./event-model.coffee').EventModel;
 
 buglog = require('../lib/buglog.coffee');
 
@@ -2329,6 +2329,9 @@ exports.deviceModel = Backbone.Model.extend({
   },
   initialize: function() {
     this.chain = this.createVisualChain(this);
+    this.on("change:role", function() {
+      return this.set('readings', new EventModel(this.get('role'), this));
+    });
     this.on("change:rawData", this.processMovement);
     this.on("change:rate", this.subscribe);
     this.on("change:serialNumber", function() {
@@ -2607,7 +2610,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/pipeline.coffee":8,"Backbone":20}],12:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/pipeline.coffee":8,"./event-model.coffee":12,"Backbone":20}],12:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2638,6 +2641,7 @@ EventModel = Backbone.Model.extend({
   flush: function() {
     var flushTime;
     if (this.device) {
+      debugger;
       this.set('UUID', this.device.id);
     }
     flushTime = Date.now();

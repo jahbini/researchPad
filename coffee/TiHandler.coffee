@@ -7,7 +7,6 @@ Backbone = require('backbone')
 _ = require('underscore')
 require('./lib/console')
 $ = require('jquery')
-{EventModel} = require './models/event-model.coffee'
 glib = require('./lib/glib.coffee').glib
 Case = require 'Case'
 {deviceModel} = require './models/device-model.coffee'

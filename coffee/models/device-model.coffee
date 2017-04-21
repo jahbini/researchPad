@@ -1,4 +1,5 @@
 Backbone = require 'Backbone'
+{EventModel} = require './event-model.coffee'
 
 buglog = require '../lib/buglog.coffee'
 devicelogger = (devicelog= new buglog "sensor").log
@@ -47,6 +48,8 @@ exports.deviceModel = Backbone.Model.extend
   #idAttribute: "name"
   initialize: ->
     @chain = @.createVisualChain @
+    @on "change:role", ()->
+      @.set 'readings', new EventModel (@.get 'role'),@ 
     @on "change:rawData",@processMovement
     @on "change:rate",@subscribe
     @on "change:serialNumber", ()->

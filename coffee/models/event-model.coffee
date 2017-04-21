@@ -28,6 +28,7 @@ EventModel = Backbone.Model.extend {
 
   flush: ()->
     if @device
+      debugger
       @set 'UUID', @device.id
     flushTime = Date.now()
     if (@.has 'session') && (@.has 'readings')
