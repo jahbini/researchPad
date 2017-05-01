@@ -162,10 +162,9 @@ sendToHost = (uDM)->
         uplogger "failure #{uDM.LSid} ",uDM.url, uDM.id
       uploading = false
       failCode = b.status
-      # we try 10 times 
       fails = a.get 'hostFails'
       fails +=1
-      uplogger "simulated #{fails} failures (#{failCode}) on #{a.get 'LSid'}"
+      uplogger "#{fails} failures (#{failCode}) on #{a.get 'LSid'}"
       return
     }
   return

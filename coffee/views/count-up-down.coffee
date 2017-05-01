@@ -3,6 +3,8 @@
 Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
+buglog = require '../lib/buglog.coffee'
+intrologger = (introlog= new buglog "intro").log
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -27,7 +29,7 @@ recorderViewTemplate = Backbone.View.extend
   render: ->
 
   initialize: ()->
-    Pylon.on 'recordCountDown:start', (time)=>
+    Pylon.on 'systemEvent:recordCountDown:start', (time)=>
       @$el.addClass 'active'
     Pylon.on 'removeRecorderWindow', ()=>
       @$el.removeClass('active')
@@ -36,21 +38,22 @@ exports.recorderViewTemplate = new recorderViewTemplate
 countDownViewTemplate = Backbone.View.extend
     el: "#count-down"
     initialize: ()->
-      @render -1
-      Pylon.on 'recordCountDown:start', (time)=>
+      Pylon.on 'systemEvent:recordCountDown:start', (time)=>
         @headline = "Test in Progress"
         # this trigger will stamp an event, and enable protocol-report widget
-        @response = 'recordCountDown:over'
+        @response = 'systemEvent:recordCountDown:over'
         @render time
-      Pylon.on 'stopCountDown:start', (time)=>
+      Pylon.on 'systemEvent:stopCountDown:start', (time)=>
         @headline = "Test Over"
         @$el.addClass 'active'
-        @response = 'stopCountDown:over'
+        @response = 'systemEvent:stopCountDown:over'
         @render time
       Pylon.on 'countDown:continue', (time)=>
         @render time
     render: (t)->
+      debugger
       sessionID=Pylon.get('sessionInfo').get('_id')
+      intrologger "show time #{t} with id of #{sessionID}"
       @$el.html render =>
         tag "section", =>
           if t>0
@@ -61,17 +64,18 @@ countDownViewTemplate = Backbone.View.extend
             p "#recorder-active"
           else
             p "Waiting for host credential for protocol..."
-      if t==0 && sessionID
-        Pylon.trigger "systemEvent:#{@response}"
-        Pylon.trigger(@response)
-      else
+      if t==0 
         if sessionID
-          setTimeout ()->
-              Pylon.trigger('countDown:continue',t-1)
-            ,1000
+          Pylon.trigger "systemEvent:#{@response}"
+          Pylon.trigger(@response)
         else
-          Pylon.trigger('recordCountdown:fail')
-      @
+          Pylon.trigger('systemEvent:recordCountdown:fail')
+        return
+      if t>0
+        setTimeout ()->
+            Pylon.trigger('countDown:continue',t-1)
+          ,1000
+      return @ 
 
 exports.countDownView = new countDownViewTemplate
 #if window? then window.exports = Pages

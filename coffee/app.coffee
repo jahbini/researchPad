@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"*"
+localStorage.setItem 'debug',"app,view,intro"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 
@@ -204,7 +204,7 @@ activateNewButtons = ->
   # reject backdoor request if no protocol is selected
     if !sessionInfo.get 'testID'
       pageGen.forceTest 'red'
-    Pylon.trigger 'recordCountDown:start', 5
+    Pylon.trigger 'systemEvent:recordCountDown:start', 5
     applogger 'Recording --- actively recording sensor info'
 
   Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
@@ -325,7 +325,6 @@ enterRecording = ->
   # sends back
   if !sessionInfo.get '_id'
     sessionInfo.save()
-    return false
   # signal for logon.js that we are not scanning
   Pylon.set scanActive: false
     
@@ -336,15 +335,18 @@ enterRecording = ->
   # start recording and show a lead in timer of 5 seconds
   gs.set 'recording',  true
   $('#testID').prop("disabled",true)
-  Pylon.trigger 'recordCountDown:start', 5
+  Pylon.trigger 'systemEvent:recordCountDown:start', 5
   applogger 'Recording --- actively recording sensor info'
 
-Pylon.on ('recordCountDown:fail'), ->
+Pylon.on ('systemEvent:recordCountDown:fail'), ->
+    applog "Failure to obtain host session credentials"
+    gs = Pylon.get('globalState')
     pageGen.forceTest 'orange'
     gs.set 'recording',  false
     $('#testID').prop("disabled",true)
+    return
 
-Pylon.on 'recordCountDown:over', ->
+Pylon.on 'systemEvent:recordCountDown:over', ->
   # change the record button into the stop button
   (Pylon.get 'button-action').set enabled: true, legend: "Stop"
   return false
@@ -353,12 +355,12 @@ exitRecording = -> # Stop Recording
   gs = Pylon.get('globalState')
   return if 'stopping' == gs.get 'recording'
   gs.set 'recording', 'stopping'
-  Pylon.trigger 'stopCountDown:start', 5
+  Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.get('button-action').set enabled: false
   (Pylon.get 'button-admin').set 'enabled',true
   return false
 
-Pylon.on 'stopCountDown:over', ->
+Pylon.on 'systemEvent:stopCountDown:over', ->
   applogger 'Stop -- stop recording'
   Pylon.trigger 'systemEvent:endRecording'
   Pylon.get('globalState').set 'recording',  false
@@ -496,6 +498,7 @@ $ ->
   document.addEventListener 'resume',()->
     window.location.reload()
   document.addEventListener 'online', ()->
+    return
     require './lib/net-view.coffee'
 
   pageGen.renderPage()

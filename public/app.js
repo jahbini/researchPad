@@ -124,8 +124,7 @@ TiHandler = (function() {
   Pylon.on("change:scanActive", function() {
     if (Pylon.get('scanActive')) {
       ble.scan(['AA80'], 20, ble_found, function(e) {
-        alert("scanner error");
-        debugger;
+        return alert("scanner error");
       });
     }
   });
@@ -302,7 +301,7 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-localStorage.setItem('debug', "*");
+localStorage.setItem('debug', "app,view,intro");
 
 buglog = require('./lib/buglog.coffee');
 
@@ -572,7 +571,7 @@ activateNewButtons = function() {
     if (!sessionInfo.get('testID')) {
       pageGen.forceTest('red');
     }
-    Pylon.trigger('recordCountDown:start', 5);
+    Pylon.trigger('systemEvent:recordCountDown:start', 5);
     return applogger('Recording --- actively recording sensor info');
   });
   Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
@@ -732,7 +731,6 @@ enterRecording = function() {
   }
   if (!sessionInfo.get('_id')) {
     sessionInfo.save();
-    return false;
   }
   Pylon.set({
     scanActive: false
@@ -744,17 +742,20 @@ enterRecording = function() {
   }
   gs.set('recording', true);
   $('#testID').prop("disabled", true);
-  Pylon.trigger('recordCountDown:start', 5);
+  Pylon.trigger('systemEvent:recordCountDown:start', 5);
   return applogger('Recording --- actively recording sensor info');
 };
 
-Pylon.on('recordCountDown:fail', function() {
+Pylon.on('systemEvent:recordCountDown:fail', function() {
+  var gs;
+  applog("Failure to obtain host session credentials");
+  gs = Pylon.get('globalState');
   pageGen.forceTest('orange');
   gs.set('recording', false);
-  return $('#testID').prop("disabled", true);
+  $('#testID').prop("disabled", true);
 });
 
-Pylon.on('recordCountDown:over', function() {
+Pylon.on('systemEvent:recordCountDown:over', function() {
   (Pylon.get('button-action')).set({
     enabled: true,
     legend: "Stop"
@@ -769,7 +770,7 @@ exitRecording = function() {
     return;
   }
   gs.set('recording', 'stopping');
-  Pylon.trigger('stopCountDown:start', 5);
+  Pylon.trigger('systemEvent:stopCountDown:start', 5);
   Pylon.get('button-action').set({
     enabled: false
   });
@@ -777,7 +778,7 @@ exitRecording = function() {
   return false;
 };
 
-Pylon.on('stopCountDown:over', function() {
+Pylon.on('systemEvent:stopCountDown:over', function() {
   applogger('Stop -- stop recording');
   Pylon.trigger('systemEvent:endRecording');
   Pylon.get('globalState').set('recording', false);
@@ -993,6 +994,7 @@ $(function() {
     return window.location.reload();
   });
   document.addEventListener('online', function() {
+    return;
     return require('./lib/net-view.coffee');
   });
   pageGen.renderPage();
@@ -1029,7 +1031,6 @@ module.exports = buglog = (function() {
     var queue;
     queue = [];
     this.yourLogger = new logger(nameSpace);
-    this.yourLogger.enabled = true;
     logger.formatters.j = require('json-stringify-safe');
     this.yourLogger.useColors = false;
     this.yourLogger.log = function() {
@@ -2236,7 +2237,7 @@ sendToHost = function(uDM) {
       failCode = b.status;
       fails = a.get('hostFails');
       fails += 1;
-      uplogger("simulated " + fails + " failures (" + failCode + ") on " + (a.get('LSid')));
+      uplogger(fails + " failures (" + failCode + ") on " + (a.get('LSid')));
     }
   });
 };
@@ -2641,7 +2642,6 @@ EventModel = Backbone.Model.extend({
   flush: function() {
     var flushTime;
     if (this.device) {
-      debugger;
       this.set('UUID', this.device.id);
     }
     flushTime = Date.now();
@@ -3100,7 +3100,7 @@ module.exports = Backbone.Model.extend({
 
 
 },{"backbone":22,"jquery":29,"teacup":32}],16:[function(require,module,exports){
-var $, Backbone, Teacup, a, body, br, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
+var $, Backbone, Teacup, a, body, br, buglog, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, introlog, intrologger, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -3108,6 +3108,10 @@ Backbone = require('backbone');
 $ = require('jquery');
 
 Teacup = require('teacup');
+
+buglog = require('../lib/buglog.coffee');
+
+intrologger = (introlog = new buglog("intro")).log;
 
 implementing = function() {
   var classReference, i, j, key, len, mixin, mixins, ref, value;
@@ -3138,7 +3142,7 @@ recorderViewTemplate = Backbone.View.extend({
   el: "#recorder",
   render: function() {},
   initialize: function() {
-    Pylon.on('recordCountDown:start', (function(_this) {
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function(time) {
         return _this.$el.addClass('active');
       };
@@ -3156,19 +3160,18 @@ exports.recorderViewTemplate = new recorderViewTemplate;
 countDownViewTemplate = Backbone.View.extend({
   el: "#count-down",
   initialize: function() {
-    this.render(-1);
-    Pylon.on('recordCountDown:start', (function(_this) {
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function(time) {
         _this.headline = "Test in Progress";
-        _this.response = 'recordCountDown:over';
+        _this.response = 'systemEvent:recordCountDown:over';
         return _this.render(time);
       };
     })(this));
-    Pylon.on('stopCountDown:start', (function(_this) {
+    Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
       return function(time) {
         _this.headline = "Test Over";
         _this.$el.addClass('active');
-        _this.response = 'stopCountDown:over';
+        _this.response = 'systemEvent:stopCountDown:over';
         return _this.render(time);
       };
     })(this));
@@ -3179,8 +3182,10 @@ countDownViewTemplate = Backbone.View.extend({
     })(this));
   },
   render: function(t) {
+    debugger;
     var sessionID;
     sessionID = Pylon.get('sessionInfo').get('_id');
+    intrologger("show time " + t + " with id of " + sessionID);
     this.$el.html(render((function(_this) {
       return function() {
         return tag("section", function() {
@@ -3197,17 +3202,19 @@ countDownViewTemplate = Backbone.View.extend({
         });
       };
     })(this)));
-    if (t === 0 && sessionID) {
-      Pylon.trigger("systemEvent:" + this.response);
-      Pylon.trigger(this.response);
-    } else {
+    if (t === 0) {
       if (sessionID) {
-        setTimeout(function() {
-          return Pylon.trigger('countDown:continue', t - 1);
-        }, 1000);
+        Pylon.trigger("systemEvent:" + this.response);
+        Pylon.trigger(this.response);
       } else {
-        Pylon.trigger('recordCountdown:fail');
+        Pylon.trigger('systemEvent:recordCountdown:fail');
       }
+      return;
+    }
+    if (t > 0) {
+      setTimeout(function() {
+        return Pylon.trigger('countDown:continue', t - 1);
+      }, 1000);
     }
     return this;
   }
@@ -3217,7 +3224,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"backbone":22,"jquery":29,"teacup":32}],17:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":22,"jquery":29,"teacup":32}],17:[function(require,module,exports){
 var $, Backbone, Pages, RssiView, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3696,7 +3703,7 @@ ProtocolReportTemplate = Backbone.View.extend({
         return _this.stopwatch.start();
       };
     })(this));
-    Pylon.on('recordCountDown:over', (function(_this) {
+    Pylon.on('systemEvent:recordCountDown:over', (function(_this) {
       return function() {
         var theTest;
         theTest = Pylon.theProtocol();
@@ -3720,7 +3727,7 @@ ProtocolReportTemplate = Backbone.View.extend({
         });
       };
     })(this));
-    return Pylon.on('stopCountDown:start', (function(_this) {
+    return Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
       return function(time) {
         _this.stopwatch.stop();
         _this.$el.removeClass('active');

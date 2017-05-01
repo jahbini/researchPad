@@ -32,7 +32,7 @@ ProtocolReportTemplate = Backbone.View.extend
       Pylon.on 'systemEvent:goButton:go', =>
         @stopwatch.start()
 
-      Pylon.on 'recordCountDown:over', ()=>
+      Pylon.on 'systemEvent:recordCountDown:over', ()=>
         theTest = Pylon.theProtocol()
         return unless theTest.get 'showMilestones'
         @$el.addClass 'active'
@@ -44,7 +44,7 @@ ProtocolReportTemplate = Backbone.View.extend
       Pylon.on 'systemEvent:goButton:go', (time)=>
         @$('button').prop disabled: false
 
-      Pylon.on 'stopCountDown:start', (time)=>
+      Pylon.on 'systemEvent:stopCountDown:start', (time)=>
         @stopwatch.stop()
         @$el.removeClass 'active'
         @$('button').prop disabled: true

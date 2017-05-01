@@ -10,7 +10,7 @@ module.exports = class buglog
   constructor: (nameSpace) ->
     queue = []
     @yourLogger = new logger(nameSpace)
-    @yourLogger.enabled = true
+    #   @yourLogger.enabled = true
     logger.formatters.j = require  'json-stringify-safe'
     @yourLogger.useColors = false
     @yourLogger.log = (stuff...)->

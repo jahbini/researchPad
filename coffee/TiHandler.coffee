@@ -112,7 +112,6 @@ class TiHandler
       #scan 20 seconds for anybody with a movement UUID and show it to Mr. ble_found
       ble.scan(['AA80'], 20, ble_found, (e)->
         alert("scanner error")
-        debugger
         );
     return
 
