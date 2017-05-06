@@ -12,6 +12,7 @@ Case = require 'Case'
 {deviceModel} = require './models/device-model.coffee'
 buglog = require './lib/buglog.coffee'
 TIlogger = (TIlog= new buglog "TIhandler").log
+lastDisplay = 0
 
 deviceNameToModel= (name)->
     pd =Pylon.get('devices')
@@ -137,7 +138,7 @@ class TiHandler
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
     if role == 'Error'
       TIlogger "Bad name for sensor: #{name}"
-      return
+      #return
     d.set 'role','---'
     Pylon.unset role 
     d.set 'buttonText', 'connect'
@@ -166,7 +167,7 @@ class TiHandler
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
     if role == 'Error'
       TIlogger "Bad name for sensor: #{name}"
-      return
+      #return
     # reject attachDevice if it connected Github issue #73
     return if d.get 'connected'
     d.set 'buttonText', 'connecting'

@@ -6,10 +6,10 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"app,view,intro"
+localStorage.setItem 'debug',"app,TIhandler,sensor,logon"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
-
+window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
   scan: false

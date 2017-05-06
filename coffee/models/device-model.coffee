@@ -29,6 +29,7 @@ accelerometer.period =   'F000AA83-0451-4000-B000-000000000000'
 ab2str = (buf)->
    return String.fromCharCode.apply null, new Uint8Array buf
 
+lastDisplay = 0
 
 str2ab = (str)->
   buf = new ArrayBuffer(str.length*2); # 2 bytes for each char
@@ -42,7 +43,8 @@ exports.deviceModel = Backbone.Model.extend
     buttonText: 'connect'
     buttonClass: 'button-primary'
     deviceStatus: '--'
-    rate: 10
+    rate: 20
+    lastDisplay: Date.now()
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
@@ -50,17 +52,28 @@ exports.deviceModel = Backbone.Model.extend
     @chain = @.createVisualChain @
     @on "change:role", ()->
       @.set 'readings', new EventModel (@.get 'role'),@ 
-    @on "change:rawData",@processMovement
     @on "change:rate",@subscribe
     @on "change:serialNumber", ()->
       data = @.get 'serialNumber'
       role = @.get 'role'
-      $("##{role}SerialNumber").html @.get 'serialNumber' 
+      $("##{role}SerialNumber").html @.get 'serialNumber'
+      #place serial number in sessionInfo
+      session = Pylon.get 'sessionInfo'
+      if role == 'Right'
+        session.set 'SerialNoR', data
+      if role == 'Left'
+        session.set 'SerialNoL', data
       return
     @on "change:softwareVersion", ()->
       data = @.get 'softwareVersion'
       role = @.get 'role'
       $("##{role}Version").html data
+      #place firmware app level in sessionInfo
+      session = Pylon.get 'sessionInfo'
+      if role == 'Right'
+        session.set 'FWLevelR', data
+      if role == 'Left'
+        session.set 'FWLevelL', data
       return
 
 
@@ -87,7 +100,7 @@ exports.deviceModel = Backbone.Model.extend
         devicelogger "Promised attribute for #{attribute}"
     return plates
     
-  stopNotification: (resolve,reject)->
+  stopNotification: ()->
     devicelogger "stopNotification entry"
     configData = new Uint16Array 1
       #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
@@ -103,11 +116,12 @@ exports.deviceModel = Backbone.Model.extend
           reject()
           
   subscribe: ()-> return (device)=>
-    idlePromise= (resolve,reject)->
-      devicelogger "idlePromise entry"
-      setTimeout resolve,100
+    idlePromise= ()->
+      return new Promise (resolve,reject)->
+        devicelogger "idlePromise entry"
+        setTimeout resolve,100
     
-    startNotification= (resolve,reject)=>
+    startNotification= ()=>
       devicelogger "startNotification entry"
       new Promise (resolve,reject)=>
         ble.withPromises.startNotification device.id,
@@ -115,57 +129,55 @@ exports.deviceModel = Backbone.Model.extend
           accelerometer.data
           # convert raw iOS data into js and update the device model
           (data)=>
-            
-            @.set rawData: new Int16Array(data);
+            @processMovement new Int16Array(data)
           (xxx)=>
             devicelogger "startNotification failure for device #{device.name}: #{xxx}"
             reject()
-        devicelogger "startNotification entry"
-        resolve()
       
-    setPeriod= (resolve,reject)=>
+    setPeriod= ()=>
       devicelogger "setPeriod entry"
-      periodData = new Uint8Array(1);
-      periodData[0] = @.attributes.rate;
-      devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
-      ble.write @.attributes.id,
-        accelerometer.service
-        accelerometer.period
-        periodData.buffer
-        ()=>
-          devicelogger "setPeriod Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
-          resolve()
-        (e)=>
-          devicelogger "setPeriod error starting movement monitor #{e}"
-          reject()
+      return new Promise (resolve,reject)=>
+        periodData = new Uint8Array(1);
+        periodData[0] = @.attributes.rate;
+        devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
+        ble.write @.attributes.id,
+          accelerometer.service
+          accelerometer.period
+          periodData.buffer
+          ()=>
+            devicelogger "setPeriod Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
+            resolve()
+          (e)=>
+            devicelogger "setPeriod error starting movement monitor #{e}"
+            reject()
       
-    activateMovement= (resolve,reject)->    
+    activateMovement= ()->    
       devicelogger "activateMovement entry. device #{device.name}"
       configData = new Uint16Array(1);
+      configData[0] = 0x017F;
       # turn accelerometer on
       #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
-      configData[0] = 0x017F;
-      ble.withPromises.write device.id,
-        accelerometer.service
-        accelerometer.configuration
-        configData.buffer
-        (whatnot)=> 
-          devicelogger "activateMovement Started movement monitor. device #{device.name}"
-          resolve()
-        (e)=>
-          devicelogger "activateMovement error starting movement device #{device.name} monitor #{e}"
-          reject()
+      return ble.withPromises.write device.id,
+          accelerometer.service
+          accelerometer.configuration
+          configData.buffer
+          (whatnot)=> 
+            devicelogger "activateMovement Started movement monitor. device #{device.name}"
+            resolve()
+          (e)=>
+            devicelogger "activateMovement error starting movement device #{device.name} monitor #{e}"
+            reject()
     try
     #set some attributes
       devicelogger "Device subscribe attempt #{device.name}"
   # turn accelerometer off, then set movement  parameters
       thePromise = Promise.all @getBoilerplate()
-      resulting = thePromise.then(idlePromise).
-        then(activateMovement).
-        then(idlePromise).
-        then(setPeriod).
-        then(idlePromise).
-        then(startNotification)
+      resulting = thePromise.then(idlePromise)
+      resulting = resulting.then(activateMovement)
+      resulting = resulting.then(idlePromise)
+      resulting = resulting.then(setPeriod)
+      resulting = resulting.then(idlePromise)
+      resulting = resulting.then(startNotification)
       devicelogger "the promise has been built"
       devicelogger resulting
       
@@ -275,18 +287,19 @@ exports.deviceModel = Backbone.Model.extend
   #//0 gyro x //1 gyro y //2 gyro z
   #//3 accel x //4 accel y //5 accel z
   #//6 mag x //7 mag y //8 mag z
-  processMovement: ()->
-    data = @.attributes.rawData
-    @set gyro: data[0..2].map @sensorMpu9250GyroConvert 
-    @set accel: data[3..5].map @sensorMpu9250AccConvert
-    @set mag: data[7..9].map (a)-> return a
+  processMovement: (data)->
     if Pylon.get('globalState').get 'recording'
       @attributes.numReadings += 1
       @attributes.readings.addSample data
     #only display 10 or so readings per second
-    if lastDisplay + 90 > Date.now()
+    if @lastDisplay + 120 > Date.now()
           return
-    lastDisplay = Date.now()
+    @lastDisplay = Date.now()
+    devicelogger "update display"
+    
+    @set gyro: data[0..2].map @sensorMpu9250GyroConvert 
+    @set accel: data[3..5].map @sensorMpu9250AccConvert
+    @set mag: data[7..9].map (a)-> return a
 
     # update the device attributes and fire changes for rssi,status
     @set deviceStatus: 'Receiving'

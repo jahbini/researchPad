@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, pView, reading;
+var $, Backbone, Case, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, lastDisplay, pView, reading;
 
 Backbone = require('backbone');
 
@@ -18,6 +18,8 @@ deviceModel = require('./models/device-model.coffee').deviceModel;
 buglog = require('./lib/buglog.coffee');
 
 TIlogger = (TIlog = new buglog("TIhandler")).log;
+
+lastDisplay = 0;
 
 deviceNameToModel = function(name) {
   var pd;
@@ -158,7 +160,6 @@ TiHandler = (function() {
     }
     if (role === 'Error') {
       TIlogger("Bad name for sensor: " + name);
-      return;
     }
     d.set('role', '---');
     Pylon.unset(role);
@@ -193,7 +194,6 @@ TiHandler = (function() {
     }
     if (role === 'Error') {
       TIlogger("Bad name for sensor: " + name);
-      return;
     }
     if (d.get('connected')) {
       return;
@@ -301,11 +301,13 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-localStorage.setItem('debug', "app,view,intro");
+localStorage.setItem('debug', "app,TIhandler,sensor,logon");
 
 buglog = require('./lib/buglog.coffee');
 
 applogger = (applog = new buglog("app")).log;
+
+window.console = new buglog("logon");
 
 PylonTemplate = Backbone.Model.extend({
   scan: false,
@@ -2266,7 +2268,7 @@ module.exports = {
 
 
 },{"./buglog.coffee":3,"backbone":22,"jquery":29,"underscore":33}],11:[function(require,module,exports){
-var Backbone, EventModel, Pipeline, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, str2ab;
+var Backbone, EventModel, Pipeline, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('Backbone');
 
@@ -2307,6 +2309,8 @@ ab2str = function(buf) {
   return String.fromCharCode.apply(null, new Uint8Array(buf));
 };
 
+lastDisplay = 0;
+
 str2ab = function(str) {
   var buf, bufView, i, j, len;
   buf = new ArrayBuffer(str.length * 2);
@@ -2323,7 +2327,8 @@ exports.deviceModel = Backbone.Model.extend({
     buttonText: 'connect',
     buttonClass: 'button-primary',
     deviceStatus: '--',
-    rate: 10
+    rate: 20,
+    lastDisplay: Date.now()
   },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
@@ -2333,19 +2338,32 @@ exports.deviceModel = Backbone.Model.extend({
     this.on("change:role", function() {
       return this.set('readings', new EventModel(this.get('role'), this));
     });
-    this.on("change:rawData", this.processMovement);
     this.on("change:rate", this.subscribe);
     this.on("change:serialNumber", function() {
-      var data, role;
+      var data, role, session;
       data = this.get('serialNumber');
       role = this.get('role');
       $("#" + role + "SerialNumber").html(this.get('serialNumber'));
+      session = Pylon.get('sessionInfo');
+      if (role === 'Right') {
+        session.set('SerialNoR', data);
+      }
+      if (role === 'Left') {
+        session.set('SerialNoL', data);
+      }
     });
     this.on("change:softwareVersion", function() {
-      var data, role;
+      var data, role, session;
       data = this.get('softwareVersion');
       role = this.get('role');
       $("#" + role + "Version").html(data);
+      session = Pylon.get('sessionInfo');
+      if (role === 'Right') {
+        session.set('FWLevelR', data);
+      }
+      if (role === 'Left') {
+        session.set('FWLevelL', data);
+      }
     });
     Pylon.on("speed", function(val) {
       return this.set('rate', val);
@@ -2382,7 +2400,7 @@ exports.deviceModel = Backbone.Model.extend({
     }).call(this);
     return plates;
   },
-  stopNotification: function(resolve, reject) {
+  stopNotification: function() {
     var configData;
     devicelogger("stopNotification entry");
     configData = new Uint16Array(1);
@@ -2403,40 +2421,40 @@ exports.deviceModel = Backbone.Model.extend({
     return (function(_this) {
       return function(device) {
         var activateMovement, e, error, idlePromise, resulting, setPeriod, startNotification, thePromise;
-        idlePromise = function(resolve, reject) {
-          devicelogger("idlePromise entry");
-          return setTimeout(resolve, 100);
+        idlePromise = function() {
+          return new Promise(function(resolve, reject) {
+            devicelogger("idlePromise entry");
+            return setTimeout(resolve, 100);
+          });
         };
-        startNotification = function(resolve, reject) {
+        startNotification = function() {
           devicelogger("startNotification entry");
           return new Promise(function(resolve, reject) {
-            ble.withPromises.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
-              return _this.set({
-                rawData: new Int16Array(data)
-              });
+            return ble.withPromises.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
+              return _this.processMovement(new Int16Array(data));
             }, function(xxx) {
               devicelogger("startNotification failure for device " + device.name + ": " + xxx);
               return reject();
             });
-            devicelogger("startNotification entry");
-            return resolve();
           });
         };
-        setPeriod = function(resolve, reject) {
-          var periodData;
+        setPeriod = function() {
           devicelogger("setPeriod entry");
-          periodData = new Uint8Array(1);
-          periodData[0] = _this.attributes.rate;
-          devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
-          return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-            devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
-            return resolve();
-          }, function(e) {
-            devicelogger("setPeriod error starting movement monitor " + e);
-            return reject();
+          return new Promise(function(resolve, reject) {
+            var periodData;
+            periodData = new Uint8Array(1);
+            periodData[0] = _this.attributes.rate;
+            devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
+            return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+              devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
+              return resolve();
+            }, function(e) {
+              devicelogger("setPeriod error starting movement monitor " + e);
+              return reject();
+            });
           });
         };
-        activateMovement = function(resolve, reject) {
+        activateMovement = function() {
           var configData;
           devicelogger("activateMovement entry. device " + device.name);
           configData = new Uint16Array(1);
@@ -2456,7 +2474,12 @@ exports.deviceModel = Backbone.Model.extend({
         try {
           devicelogger("Device subscribe attempt " + device.name);
           thePromise = Promise.all(_this.getBoilerplate());
-          resulting = thePromise.then(idlePromise).then(activateMovement).then(idlePromise).then(setPeriod).then(idlePromise).then(startNotification);
+          resulting = thePromise.then(idlePromise);
+          resulting = resulting.then(activateMovement);
+          resulting = resulting.then(idlePromise);
+          resulting = resulting.then(setPeriod);
+          resulting = resulting.then(idlePromise);
+          resulting = resulting.then(startNotification);
           devicelogger("the promise has been built");
           devicelogger(resulting);
 
@@ -2572,9 +2595,16 @@ exports.deviceModel = Backbone.Model.extend({
   sensorMpu9250AccConvert: function(data) {
     return data / (32768 / 2);
   },
-  processMovement: function() {
-    var data, lastDisplay;
-    data = this.attributes.rawData;
+  processMovement: function(data) {
+    if (Pylon.get('globalState').get('recording')) {
+      this.attributes.numReadings += 1;
+      this.attributes.readings.addSample(data);
+    }
+    if (this.lastDisplay + 120 > Date.now()) {
+      return;
+    }
+    this.lastDisplay = Date.now();
+    devicelogger("update display");
     this.set({
       gyro: data.slice(0, 3).map(this.sensorMpu9250GyroConvert)
     });
@@ -2586,14 +2616,6 @@ exports.deviceModel = Backbone.Model.extend({
         return a;
       })
     });
-    if (Pylon.get('globalState').get('recording')) {
-      this.attributes.numReadings += 1;
-      this.attributes.readings.addSample(data);
-    }
-    if (lastDisplay + 90 > Date.now()) {
-      return;
-    }
-    lastDisplay = Date.now();
     this.set({
       deviceStatus: 'Receiving'
     });
@@ -2675,7 +2697,7 @@ exports.EventModel = EventModel;
 
 
 },{"../lib/upload.coffee":10,"backbone":22,"underscore":33}],13:[function(require,module,exports){
-module.exports = '1.5.1';
+module.exports = '1.5.5';
 
 
 
