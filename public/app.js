@@ -2352,9 +2352,9 @@ exports.deviceModel = Backbone.Model.extend({
         session.set('SerialNoL', data);
       }
     });
-    this.on("change:softwareVersion", function() {
+    this.on("change:firmwareVersion", function() {
       var data, role, session;
-      data = this.get('softwareVersion');
+      data = this.get('firmwareVersion');
       role = this.get('role');
       $("#" + role + "Version").html(data);
       session = Pylon.get('sessionInfo');

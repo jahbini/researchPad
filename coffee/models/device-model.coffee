@@ -64,8 +64,8 @@ exports.deviceModel = Backbone.Model.extend
       if role == 'Left'
         session.set 'SerialNoL', data
       return
-    @on "change:softwareVersion", ()->
-      data = @.get 'softwareVersion'
+    @on "change:firmwareVersion",()->
+      data = @.get 'firmwareVersion'
       role = @.get 'role'
       $("##{role}Version").html data
       #place firmware app level in sessionInfo
