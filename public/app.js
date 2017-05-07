@@ -2697,7 +2697,7 @@ exports.EventModel = EventModel;
 
 
 },{"../lib/upload.coffee":10,"backbone":22,"underscore":33}],13:[function(require,module,exports){
-module.exports = '1.5.7-pre';
+module.exports = '1.5.8-pre';
 
 
 
