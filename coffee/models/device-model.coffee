@@ -85,19 +85,20 @@ exports.deviceModel = Backbone.Model.extend
     promises = for attribute, uuid of boilerplate
       devicelogger "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
       plates.push new Promise (resolve,reject)=>
+        # capture current value of attribute
+        attr = attribute
         ble.read @.id,
           infoService
           uuid
           (data)=>
             val = ab2str data
-            devicelogger "Setting attribute for #{attribute} to #{val}"
-            @.set attribute, val
-            devicelogger "Set attribute for #{attribute} to #{val}"
+            devicelogger "Setting attribute for #{attr} to #{val}"
+            @.set attr, val
             resolve()
           (err)=>
-            devicelogger "unable to obtain #{attribute} from #{@.attributes.name}"
+            devicelogger "unable to obtain #{attr} from #{@.attributes.name}"
             reject()
-        devicelogger "Promised attribute for #{attribute}"
+        devicelogger "Promised attribute for #{attr}"
     return plates
     
   stopNotification: ()->
@@ -295,7 +296,6 @@ exports.deviceModel = Backbone.Model.extend
     if @lastDisplay + 120 > Date.now()
           return
     @lastDisplay = Date.now()
-    devicelogger "update display"
     
     @set gyro: data[0..2].map @sensorMpu9250GyroConvert 
     @set accel: data[3..5].map @sensorMpu9250AccConvert

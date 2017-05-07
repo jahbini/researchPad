@@ -2381,18 +2381,19 @@ exports.deviceModel = Backbone.Model.extend({
         devicelogger("Device " + this.attributes.name + ": getting " + attribute + " at " + uuid);
         results.push(plates.push(new Promise((function(_this) {
           return function(resolve, reject) {
+            var attr;
+            attr = attribute;
             ble.read(_this.id, infoService, uuid, function(data) {
               var val;
               val = ab2str(data);
-              devicelogger("Setting attribute for " + attribute + " to " + val);
-              _this.set(attribute, val);
-              devicelogger("Set attribute for " + attribute + " to " + val);
+              devicelogger("Setting attribute for " + attr + " to " + val);
+              _this.set(attr, val);
               return resolve();
             }, function(err) {
-              devicelogger("unable to obtain " + attribute + " from " + _this.attributes.name);
+              devicelogger("unable to obtain " + attr + " from " + _this.attributes.name);
               return reject();
             });
-            return devicelogger("Promised attribute for " + attribute);
+            return devicelogger("Promised attribute for " + attr);
           };
         })(this))));
       }
