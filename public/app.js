@@ -2605,7 +2605,6 @@ exports.deviceModel = Backbone.Model.extend({
       return;
     }
     this.lastDisplay = Date.now();
-    devicelogger("update display");
     this.set({
       gyro: data.slice(0, 3).map(this.sensorMpu9250GyroConvert)
     });
@@ -2698,7 +2697,7 @@ exports.EventModel = EventModel;
 
 
 },{"../lib/upload.coffee":10,"backbone":22,"underscore":33}],13:[function(require,module,exports){
-module.exports = '1.5.6-pre';
+module.exports = '1.5.7-pre';
 
 
 
