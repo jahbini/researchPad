@@ -292,7 +292,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":25,"backbone":22,"jquery":29,"underscore":33}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, loadScript, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -350,12 +350,6 @@ Pylon.set('BV', BV = require('./views/button-view.coffee'));
 pages = require('./views/pages.coffee');
 
 Pylon.set('adminView', require('./views/adminView.coffee').adminView);
-
-loadScript = require("./lib/loadScript.coffee").loadScript;
-
-loadScript(Pylon.get('hostUrl') + "logon.js", function(status) {
-  return applogger("logon.js returns status of " + status);
-});
 
 ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader = ref.eventModelLoader;
 
@@ -980,7 +974,7 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var ref1, ref2;
+  var loadScript, ref1, ref2;
   sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
   sessionInfo.set('platformIosVersion', ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
@@ -989,6 +983,11 @@ $(document).on('deviceready', function() {
     return $("#UploadCount").html("Queued:" + count);
   });
   startBlueTooth();
+  loadScript = require("./lib/loadScript.coffee").loadScript;
+  loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
+    return applogger("logon.js returns status of " + status);
+  });
+  applogger("device ready");
 });
 
 $(function() {
@@ -1007,6 +1006,7 @@ $(function() {
   }
   initAll();
   setSensor();
+  applogger("DOM ready");
   return false;
 });
 

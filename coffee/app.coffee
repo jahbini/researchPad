@@ -38,9 +38,6 @@ Pylon.set 'BV', BV = require './views/button-view.coffee'
 
 pages = require './views/pages.coffee'
 Pylon.set 'adminView', require('./views/adminView.coffee').adminView
-loadScript = require("./lib/loadScript.coffee").loadScript
-loadScript Pylon.get('hostUrl')+"logon.js", (status)->
-  applogger "logon.js returns status of "+status
 
 {uploader,eventModelLoader} = require "./lib/upload.coffee"
 
@@ -491,6 +488,11 @@ $(document).on 'deviceready', ->
   Pylon.on "UploadCount", (count)->
     $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
+  #delay loading harry's code until all is quiet on the UIO front
+  loadScript = require("./lib/loadScript.coffee").loadScript
+  loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
+    applogger "logon.js returns status of "+status
+  applogger "device ready"
   return
 
 $ ->
@@ -509,4 +511,5 @@ $ ->
     Pylon.trigger "systemEvent:debug:Hide Log"
   initAll()
   setSensor()
+  applogger "DOM ready"
   return false
