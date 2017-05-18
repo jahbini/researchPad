@@ -20,3 +20,4 @@ console.log('logon.js loaded - live system with events');
 /*Retrotope App Version  "1.5.7-pre" */
 /*Retrotope App Version  "1.5.8-pre" */
 /*Retrotope App Version  "1.5.9-pre" */
+/*Retrotope App Version  "1.6.0" */
