@@ -107,7 +107,7 @@ TiHandler = (function() {
   };
 
   ble_found = function(device) {
-    var d, pd;
+    var d, eeee, error, pd;
     if (!device.name) {
       return;
     }
@@ -121,11 +121,19 @@ TiHandler = (function() {
     TIlogger("got new device");
     d = new deviceModel(device);
     pd.push(d);
+    if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
+      try {
+        Pylon.trigger('enableDevice', d.cid);
+      } catch (error) {
+        eeee = error;
+        TIlogger("bad juju", eeee);
+      }
+    }
   };
 
   Pylon.on("change:scanActive", function() {
     if (Pylon.get('scanActive')) {
-      ble.scan(['AA80'], 20, ble_found, function(e) {
+      ble.scan(['AA80'], 30, ble_found, function(e) {
         return alert("scanner error");
       });
     }
@@ -165,6 +173,9 @@ TiHandler = (function() {
     Pylon.unset(role);
     d.set('buttonText', 'connect');
     d.set('connected', false);
+    d.set({
+      deviceStatus: 'Disconnected'
+    });
     Pylon.trigger('change respondingDevices');
     TIlogger("Device removed from state, attempt dicconnect");
     ble.disconnect(d.get("id"), (function(_this) {
@@ -2401,7 +2412,7 @@ exports.deviceModel = Backbone.Model.extend({
     }).call(this);
     return plates;
   },
-  stopNotification: function() {
+  stopNotification: function(device) {
     var configData;
     devicelogger("stopNotification entry");
     configData = new Uint16Array(1);
@@ -2533,6 +2544,9 @@ exports.deviceModel = Backbone.Model.extend({
           alert('Error in attachSensor -- check LOG');
           devicelogger("error in attachSensor");
           devicelogger(e);
+          device.set({
+            deviceStatus: 'Failed connection'
+          });
         }
       };
     })(this);

@@ -106,12 +106,18 @@ class TiHandler
     d = new deviceModel device
     pd.push d
     #queryHostDevice(d)
+    # attempt autoconnect
+    if (d.get 'name').match /SensorTag \([LlRr]\)/
+      try
+        Pylon.trigger 'enableDevice', d.cid
+      catch eeee
+        TIlogger "bad juju",eeee
     return
         
   Pylon.on "change:scanActive",  =>
     if Pylon.get('scanActive')
       #scan 20 seconds for anybody with a movement UUID and show it to Mr. ble_found
-      ble.scan(['AA80'], 20, ble_found, (e)->
+      ble.scan(['AA80'], 30, ble_found, (e)->
         alert("scanner error")
         );
     return
@@ -143,6 +149,7 @@ class TiHandler
     Pylon.unset role 
     d.set 'buttonText', 'connect'
     d.set 'connected', false
+    d.set deviceStatus: 'Disconnected'
     Pylon.trigger('change respondingDevices')
     TIlogger "Device removed from state, attempt dicconnect"
     ble.disconnect (d.get "id"),

@@ -101,7 +101,7 @@ exports.deviceModel = Backbone.Model.extend
         devicelogger "Promised attribute for #{attr}"
     return plates
     
-  stopNotification: ()->
+  stopNotification: (device)->
     devicelogger "stopNotification entry"
     configData = new Uint16Array 1
       #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
@@ -231,6 +231,7 @@ exports.deviceModel = Backbone.Model.extend
       alert('Error in attachSensor -- check LOG')
       devicelogger "error in attachSensor"
       devicelogger e
+      device.set deviceStatus: 'Failed connection'
     return 
     
   createVisualChain: () ->
