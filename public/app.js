@@ -119,7 +119,7 @@ TiHandler = (function() {
     }
     pd = Pylon.get('devices');
     if (d = pd.findWhere({
-      name: name
+      name: device.name
     })) {
       d.set(device);
       return;
@@ -133,6 +133,7 @@ TiHandler = (function() {
       } catch (error) {
         eeee = error;
         TIlogger("bad juju", eeee);
+        TIlogger("bad juju on device", d);
       }
     }
   };
@@ -3264,7 +3265,6 @@ countDownViewTemplate = Backbone.View.extend({
     })(this));
   },
   render: function(t) {
-    debugger;
     var sessionID;
     sessionID = Pylon.get('sessionInfo').get('_id');
     intrologger("show time " + t + " with id of " + sessionID);

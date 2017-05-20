@@ -99,7 +99,7 @@ class TiHandler
     return unless device.name
     pd =Pylon.get('devices')
     # have we found this device before?
-    if d=pd.findWhere(name: name)
+    if d=pd.findWhere(name: device.name)
       d.set device
       return
     TIlogger "got new device"
@@ -112,6 +112,7 @@ class TiHandler
         Pylon.trigger 'enableDevice', d.cid
       catch eeee
         TIlogger "bad juju",eeee
+        TIlogger "bad juju on device",d
     return
         
   Pylon.on "change:scanActive",  =>

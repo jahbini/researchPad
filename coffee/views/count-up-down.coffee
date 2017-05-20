@@ -51,7 +51,6 @@ countDownViewTemplate = Backbone.View.extend
       Pylon.on 'countDown:continue', (time)=>
         @render time
     render: (t)->
-      debugger
       sessionID=Pylon.get('sessionInfo').get('_id')
       intrologger "show time #{t} with id of #{sessionID}"
       @$el.html render =>
