@@ -44,6 +44,7 @@ exports.deviceModel = Backbone.Model.extend
     buttonClass: 'button-primary'
     deviceStatus: '--'
     rate: 20
+    notify: true
     lastDisplay: Date.now()
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
@@ -52,7 +53,16 @@ exports.deviceModel = Backbone.Model.extend
     @chain = @.createVisualChain @
     @on "change:role", ()->
       @.set 'readings', new EventModel (@.get 'role'),@ 
-    @on "change:rate",@subscribe
+      return
+    Pylon.on "systemEvent:calibrate:notify", ()=>
+      @set notify: ! @get("notify")
+      return
+    Pylon.on "change:sensorsOn", ()=>
+      if Pylon.get 'sensorsOn'
+        @startNotification()
+      else
+        @stopNotification()
+      return
     @on "change:serialNumber", ()->
       data = @.get 'serialNumber'
       role = @.get 'role'
@@ -77,7 +87,6 @@ exports.deviceModel = Backbone.Model.extend
       return
 
 
-    Pylon.on "speed",(val)->@.set 'rate',val
     return @
     
   getBoilerplate: ()->
@@ -101,19 +110,32 @@ exports.deviceModel = Backbone.Model.extend
         devicelogger "Promised attribute for #{attr}"
     return plates
     
-  stopNotification: (device)->
+  startNotification: ()->
+      devicelogger "startNotification entry"
+      new Promise (resolve,reject)=>
+        ble.withPromises.startNotification @.id,
+          accelerometer.service
+          accelerometer.data
+          # convert raw iOS data into js and update the device model
+          (data)=>
+            @processMovement new Int16Array(data)
+          (xxx)=>
+            devicelogger "startNotification failure for device #{@.name}: #{xxx}"
+            reject()
+    
+  stopNotification: ()->
     devicelogger "stopNotification entry"
     configData = new Uint16Array 1
       #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
     configData[0] = 0x0000;
-    ble.withPromises.stopNotification device.id,
+    ble.withPromises.stopNotification @.id,
         accelerometer.service
         accelerometer.data
         (whatnot)=> 
-          devicelogger "stopNotification Terminated movement monitor. device #{device.name}"
+          devicelogger "stopNotification Terminated movement monitor. device #{@.name}"
           resolve()
         (e)=>
-          devicelogger "stopNotification error terminating movement device #{device.name} monitor #{e}"
+          devicelogger "stopNotification error terminating movement device #{@.name} monitor #{e}"
           reject()
           
   subscribe: ()-> return (device)=>
@@ -122,18 +144,6 @@ exports.deviceModel = Backbone.Model.extend
         devicelogger "idlePromise entry"
         setTimeout resolve,100
     
-    startNotification= ()=>
-      devicelogger "startNotification entry"
-      new Promise (resolve,reject)=>
-        ble.withPromises.startNotification device.id,
-          accelerometer.service
-          accelerometer.data
-          # convert raw iOS data into js and update the device model
-          (data)=>
-            @processMovement new Int16Array(data)
-          (xxx)=>
-            devicelogger "startNotification failure for device #{device.name}: #{xxx}"
-            reject()
       
     setPeriod= ()=>
       devicelogger "setPeriod entry"
@@ -178,7 +188,7 @@ exports.deviceModel = Backbone.Model.extend
       resulting = resulting.then(idlePromise)
       resulting = resulting.then(setPeriod)
       resulting = resulting.then(idlePromise)
-      resulting = resulting.then(startNotification)
+      resulting = resulting.then(@startNotification.bind @)
       devicelogger "the promise has been built"
       devicelogger resulting
       

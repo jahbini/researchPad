@@ -67,14 +67,20 @@ pView = Backbone.View.extend({
   },
   changer: function() {
     TIlogger("Start Scan button activated");
-    Pylon.set('scanActive', true);
+    Pylon.set({
+      scanActive: true,
+      sensorsOn: true
+    });
     this.render();
     setTimeout((function(_this) {
       return function() {
-        Pylon.set('scanActive', false);
+        Pylon.set({
+          scanActive: false,
+          sensorsOn: false
+        });
         _this.render();
       };
-    })(this), 30000);
+    })(this), 20000);
   },
   render: function() {
     if (Pylon.get('scanActive')) {
@@ -517,7 +523,7 @@ aButtonModel = Backbone.Model.extend({
 });
 
 activateNewButtons = function() {
-  var ActionButton, AdminButton, CalibrateButton, ClearButton, DebugButton, UploadButton;
+  var ActionButton, AdminButton, CalibrateButton, ClearButton, DebugButton, UploadButton, stopNotify;
   DebugButton = new BV('debug');
   DebugButton.set({
     legend: "Show Log",
@@ -571,17 +577,30 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:upload:accept", enterUpload);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
-    legend: "--",
-    enabled: false
+    legend: "notify",
+    enabled: true
   });
-  Pylon.on("systemEvent:calibrate:backdoor", function() {
-    if (!sessionInfo.get('testID')) {
-      pageGen.forceTest('red');
-    }
-    Pylon.trigger('systemEvent:recordCountDown:start', 5);
-    return applogger('Recording --- actively recording sensor info');
+  stopNotify = function() {
+    CalibrateButton.set({
+      legend: "notify",
+      enabled: true
+    });
+    Pylon.set({
+      sensorsOn: false
+    });
+    return false;
+  };
+  Pylon.on("systemEvent:calibrate:notify", function() {
+    Pylon.set({
+      sensorsOn: true
+    });
+    CalibrateButton.set({
+      legend: "burst mode",
+      enabled: false
+    });
+    setTimeout(stopNotify, 5000);
+    return false;
   });
-  Pylon.on("systemEvent:calibrate:exit-calibration", exitCalibrate);
   ActionButton = new BV('action');
   ActionButton.set({
     legend: "Record",
@@ -748,6 +767,10 @@ enterRecording = function() {
     return;
   }
   gs.set('recording', true);
+  Pylon.set({
+    sensorsOn: true
+  });
+  (Pylon.get('button-calibrate')).set('enabled', false);
   $('#testID').prop("disabled", true);
   Pylon.trigger('systemEvent:recordCountDown:start', 5);
   return applogger('Recording --- actively recording sensor info');
@@ -757,8 +780,12 @@ Pylon.on('systemEvent:recordCountDown:fail', function() {
   var gs;
   applog("Failure to obtain host session credentials");
   gs = Pylon.get('globalState');
+  (Pylon.get('button-calibrate')).set('enabled', true);
   pageGen.forceTest('orange');
   gs.set('recording', false);
+  Pylon.set({
+    sensorsOn: false
+  });
   $('#testID').prop("disabled", true);
 });
 
@@ -787,9 +814,13 @@ exitRecording = function() {
 
 Pylon.on('systemEvent:stopCountDown:over', function() {
   applogger('Stop -- stop recording');
+  Pylon.set({
+    sensorsOn: false
+  });
   Pylon.trigger('systemEvent:endRecording');
   Pylon.get('globalState').set('recording', false);
   (Pylon.get('button-upload')).set('enabled', true);
+  (Pylon.get('button-calibrate')).set('enabled', true);
   (Pylon.get('button-clear')).set('enabled', true);
   (Pylon.get('button-admin')).set('enabled', true);
   return false;
@@ -2339,6 +2370,7 @@ exports.deviceModel = Backbone.Model.extend({
     buttonClass: 'button-primary',
     deviceStatus: '--',
     rate: 20,
+    notify: true,
     lastDisplay: Date.now()
   },
   urlRoot: function() {
@@ -2347,9 +2379,24 @@ exports.deviceModel = Backbone.Model.extend({
   initialize: function() {
     this.chain = this.createVisualChain(this);
     this.on("change:role", function() {
-      return this.set('readings', new EventModel(this.get('role'), this));
+      this.set('readings', new EventModel(this.get('role'), this));
     });
-    this.on("change:rate", this.subscribe);
+    Pylon.on("systemEvent:calibrate:notify", (function(_this) {
+      return function() {
+        _this.set({
+          notify: !_this.get("notify")
+        });
+      };
+    })(this));
+    Pylon.on("change:sensorsOn", (function(_this) {
+      return function() {
+        if (Pylon.get('sensorsOn')) {
+          _this.startNotification();
+        } else {
+          _this.stopNotification();
+        }
+      };
+    })(this));
     this.on("change:serialNumber", function() {
       var data, role, session;
       data = this.get('serialNumber');
@@ -2375,9 +2422,6 @@ exports.deviceModel = Backbone.Model.extend({
       if (role === 'Left') {
         session.set('FWLevelL', data);
       }
-    });
-    Pylon.on("speed", function(val) {
-      return this.set('rate', val);
     });
     return this;
   },
@@ -2412,19 +2456,32 @@ exports.deviceModel = Backbone.Model.extend({
     }).call(this);
     return plates;
   },
-  stopNotification: function(device) {
+  startNotification: function() {
+    devicelogger("startNotification entry");
+    return new Promise((function(_this) {
+      return function(resolve, reject) {
+        return ble.withPromises.startNotification(_this.id, accelerometer.service, accelerometer.data, function(data) {
+          return _this.processMovement(new Int16Array(data));
+        }, function(xxx) {
+          devicelogger("startNotification failure for device " + _this.name + ": " + xxx);
+          return reject();
+        });
+      };
+    })(this));
+  },
+  stopNotification: function() {
     var configData;
     devicelogger("stopNotification entry");
     configData = new Uint16Array(1);
     configData[0] = 0x0000;
-    return ble.withPromises.stopNotification(device.id, accelerometer.service, accelerometer.data, (function(_this) {
+    return ble.withPromises.stopNotification(this.id, accelerometer.service, accelerometer.data, (function(_this) {
       return function(whatnot) {
-        devicelogger("stopNotification Terminated movement monitor. device " + device.name);
+        devicelogger("stopNotification Terminated movement monitor. device " + _this.name);
         return resolve();
       };
     })(this), (function(_this) {
       return function(e) {
-        devicelogger("stopNotification error terminating movement device " + device.name + " monitor " + e);
+        devicelogger("stopNotification error terminating movement device " + _this.name + " monitor " + e);
         return reject();
       };
     })(this));
@@ -2432,22 +2489,11 @@ exports.deviceModel = Backbone.Model.extend({
   subscribe: function() {
     return (function(_this) {
       return function(device) {
-        var activateMovement, e, error, idlePromise, resulting, setPeriod, startNotification, thePromise;
+        var activateMovement, e, error, idlePromise, resulting, setPeriod, thePromise;
         idlePromise = function() {
           return new Promise(function(resolve, reject) {
             devicelogger("idlePromise entry");
             return setTimeout(resolve, 100);
-          });
-        };
-        startNotification = function() {
-          devicelogger("startNotification entry");
-          return new Promise(function(resolve, reject) {
-            return ble.withPromises.startNotification(device.id, accelerometer.service, accelerometer.data, function(data) {
-              return _this.processMovement(new Int16Array(data));
-            }, function(xxx) {
-              devicelogger("startNotification failure for device " + device.name + ": " + xxx);
-              return reject();
-            });
           });
         };
         setPeriod = function() {
@@ -2491,7 +2537,7 @@ exports.deviceModel = Backbone.Model.extend({
           resulting = resulting.then(idlePromise);
           resulting = resulting.then(setPeriod);
           resulting = resulting.then(idlePromise);
-          resulting = resulting.then(startNotification);
+          resulting = resulting.then(_this.startNotification.bind(_this));
           devicelogger("the promise has been built");
           devicelogger(resulting);
 

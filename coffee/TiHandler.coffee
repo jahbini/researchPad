@@ -55,14 +55,14 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       TIlogger "Start Scan button activated"
-      Pylon.set 'scanActive', true
+      Pylon.set scanActive: true, sensorsOn: true 
       @render()
       setTimeout(
         ()=>
-          Pylon.set 'scanActive', false
+          Pylon.set scanActive: false, sensorsOn: false
           @render()
           return
-        ,30000)
+        ,20000)
       return
   render: ->
       if Pylon.get 'scanActive'

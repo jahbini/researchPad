@@ -195,17 +195,20 @@ activateNewButtons = ->
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
-    legend: "--" # was Calibrate to generate the SystemEvent triggers below
-    enabled: false
-  Pylon.on "systemEvent:calibrate:backdoor", ()->
-  # reject backdoor request if no protocol is selected
-    if !sessionInfo.get 'testID'
-      pageGen.forceTest 'red'
-    Pylon.trigger 'systemEvent:recordCountDown:start', 5
-    applogger 'Recording --- actively recording sensor info'
+    legend: "notify" # the legend generates the SystemEvent triggers below
+    enabled: true
 
-  Pylon.on "systemEvent:calibrate:exit-calibration", exitCalibrate
-
+  stopNotify = ()->
+    CalibrateButton.set legend: "notify",enabled: true
+    Pylon.set sensorsOn: false
+    return false
+  
+  Pylon.on "systemEvent:calibrate:notify",() ->
+    Pylon.set sensorsOn: true
+    CalibrateButton.set legend: "burst mode", enabled: false
+    setTimeout stopNotify,5000
+    return false
+    
   ActionButton = new BV 'action'
   ActionButton.set
     legend: "Record"
@@ -331,6 +334,8 @@ enterRecording = ->
   return if gs.get 'recording'
   # start recording and show a lead in timer of 5 seconds
   gs.set 'recording',  true
+  Pylon.set sensorsOn: true
+  (Pylon.get 'button-calibrate').set 'enabled',false
   $('#testID').prop("disabled",true)
   Pylon.trigger 'systemEvent:recordCountDown:start', 5
   applogger 'Recording --- actively recording sensor info'
@@ -338,8 +343,10 @@ enterRecording = ->
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
     applog "Failure to obtain host session credentials"
     gs = Pylon.get('globalState')
+    (Pylon.get 'button-calibrate').set 'enabled',true
     pageGen.forceTest 'orange'
     gs.set 'recording',  false
+    Pylon.set sensorsOn: false
     $('#testID').prop("disabled",true)
     return
 
@@ -359,9 +366,12 @@ exitRecording = -> # Stop Recording
 
 Pylon.on 'systemEvent:stopCountDown:over', ->
   applogger 'Stop -- stop recording'
+  # shut down the notifications
+  Pylon.set sensorsOn: false
   Pylon.trigger 'systemEvent:endRecording'
   Pylon.get('globalState').set 'recording',  false
   (Pylon.get 'button-upload').set 'enabled',true
+  (Pylon.get 'button-calibrate').set 'enabled',true
   (Pylon.get 'button-clear').set 'enabled',true
   (Pylon.get 'button-admin').set 'enabled',true
   return false
