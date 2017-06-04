@@ -18,11 +18,13 @@
         "hbsfy": "~2.2.1",
         "jquery": "latest",
         "json-stringify-safe": "^5.0.1",
-        "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": "../lumberjack",
+        "lumberjack": "git+https://github.com/jahbini/lumberjack.git",
         "seen-js": "^0.2.7",
         "teacup": "latest",
         "underscore": "^1.8.3",
-        "winston": "latest"
+        "winston": "latest",
+        "com.bamboocando.cordova.nslogger-cocoalumberjack-connector-plugin": "https://github.com/jahbini/lumberjack.git",
+        "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": "../lumberjack"
     },
     "browser": {
         "Case": "./node_modules/case",
@@ -79,10 +81,11 @@
             "cordova-plugin-device": {},
             "cordova-plugin-file": {},
             "cordova-plugin-network-information": {},
-            "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": {},
             "cordova-plugin-ble-central": {
                 "BLUETOOTH_USAGE_DESCRIPTION": " "
-            }
+            },
+            "com.bamboocando.cordova.nslogger-cocoalumberjack-connector-plugin": {},
+            "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": {}
         }
     }
 }

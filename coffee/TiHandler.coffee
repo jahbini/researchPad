@@ -103,6 +103,9 @@ class TiHandler
       d.set device
       return
     TIlogger "got new device"
+    device.role= 'Guess'
+    device.role= 'Left' if 0< name.search /\(([Ll]).*\)/
+    device.role= 'Right' if 0< name.search /\(([Rr]).*\)/
     d = new deviceModel device
     pd.push d
     #queryHostDevice(d)

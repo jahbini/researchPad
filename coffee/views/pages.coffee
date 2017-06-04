@@ -38,13 +38,14 @@ class Pages
         div '#net-ble.six.columns'
       buttons()
       div '.row',->
-        div '.two.columns',"Right Tag"
-        div '#RightVersion.three.columns' , ' '
-        div '#RightSerialNumber.three.columns', ' '
-      div '.row',->
-        div '.two.columns',"Left Tag"
-        div '#LeftVersion.three.columns' , ' '
-        div '#LeftSerialNumber.three.columns',  ' '
+        div '.sensorElement.six.columns', ->
+          div '.bold',"Right Tag"
+          div '#RightVersion' , 'R - version'
+          div '#RightSerialNumber', 'R - serial number'
+        div '.sensorElement.six.columns', ->
+          div '.bold',"Left Tag"
+          div '#LeftVersion' , 'L - version'
+          div '#LeftSerialNumber',  'L - serial number'
       div '.row', ->
         div '.three.columns',"Platform UUID"
         div '#platformUUID.five.columns', ->

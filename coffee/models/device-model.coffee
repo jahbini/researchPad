@@ -51,6 +51,7 @@ exports.deviceModel = Backbone.Model.extend
   #idAttribute: "name"
   initialize: ->
     @chain = @.createVisualChain @
+    @set 'readings', new EventModel (@get 'role'),@ 
     @on "change:role", ()->
       @.set 'readings', new EventModel (@.get 'role'),@ 
       return

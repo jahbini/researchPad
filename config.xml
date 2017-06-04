@@ -23,6 +23,7 @@
     <preference name="iosPersistentFileLocation" value="Compatibility" />
     <preference name="iosExtraFilesystems" value="library,library-nosync,documents,documents-nosync,cache,bundle,root" />
     <engine name="ios" spec="~4.2.1" />
+    <plugin name="com.bamboocando.cordova.nslogger-cocoalumberjack-connector-plugin" spec="https://github.com/jahbini/lumberjack.git" />
     <plugin name="cordova-plugin-ble-central" spec="git+https://github.com/jahbini/cordova-plugin-ble-central.git">
         <variable name="BLUETOOTH_USAGE_DESCRIPTION" value=" " />
     </plugin>

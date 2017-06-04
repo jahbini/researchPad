@@ -125,6 +125,13 @@ TiHandler = (function() {
       return;
     }
     TIlogger("got new device");
+    device.role = 'Guess';
+    if (0 < name.search(/\(([Ll]).*\)/)) {
+      device.role = 'Left';
+    }
+    if (0 < name.search(/\(([Rr]).*\)/)) {
+      device.role = 'Right';
+    }
     d = new deviceModel(device);
     pd.push(d);
     if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
@@ -2379,6 +2386,7 @@ exports.deviceModel = Backbone.Model.extend({
   },
   initialize: function() {
     this.chain = this.createVisualChain(this);
+    this.set('readings', new EventModel(this.get('role'), this));
     this.on("change:role", function() {
       this.set('readings', new EventModel(this.get('role'), this));
     });
@@ -3373,14 +3381,16 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.two.columns', "Right Tag");
-        div('#RightVersion.three.columns', ' ');
-        return div('#RightSerialNumber.three.columns', ' ');
-      });
-      div('.row', function() {
-        div('.two.columns', "Left Tag");
-        div('#LeftVersion.three.columns', ' ');
-        return div('#LeftSerialNumber.three.columns', ' ');
+        div('.sensorElement.six.columns', function() {
+          div('.bold', "Right Tag");
+          div('#RightVersion', 'R - version');
+          return div('#RightSerialNumber', 'R - serial number');
+        });
+        return div('.sensorElement.six.columns', function() {
+          div('.bold', "Left Tag");
+          div('#LeftVersion', 'L - version');
+          return div('#LeftSerialNumber', 'L - serial number');
+        });
       });
       div('.row', function() {
         div('.three.columns', "Platform UUID");
