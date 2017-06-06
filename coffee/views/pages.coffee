@@ -7,7 +7,6 @@ Teacup = require('teacup')
 buglog = require '../lib/buglog.coffee'
 viewlogger = (viewlog= new buglog "view").log
 
-RssiView = require './rssi-view.coffee'
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -39,13 +38,33 @@ class Pages
       buttons()
       div '.row',->
         div '.sensorElement.six.columns', ->
-          div '.bold',"Right Tag"
-          div '#RightVersion' , 'R - version'
-          div '#RightSerialNumber', 'R - serial number'
-        div '.sensorElement.six.columns', ->
-          div '.bold',"Left Tag"
-          div '#LeftVersion' , 'L - version'
+          p '.va-mid',->
+            span '#LeftStatus.led-box.led-green'
+            span '.mr-rt-10',"Left Tag"
+            span '#LeftVersion.mr-rt-10', 'L - version'
+          div '#sensor-Left.u-pull-right',->
+            button '.connect.needsclick'
+              ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
+              , "Connect"
+            button '.disconnect.needsclick'
+              ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
+              , "Disconnect"
           div '#LeftSerialNumber',  'L - serial number'
+          div '#LeftAssignedName', 'name'
+        div '.sensorElement.six.columns', ->
+          p '.va-mid',->
+            span '#RightStatus.led-box.led-dark'
+            span '.mr-rt-10',"Right Tag"
+            span '#RightVersion.mr-rt-10' , 'R - version'
+          div '#sensor-Right.u-pull-right',->
+            button '.connect.needsclick'
+              ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
+              , "Connect"
+            button '.disconnect.needsclick'
+              ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
+              , "Disconnect"
+          div '#RightSerialNumber', 'R - serial number'
+          div '#RightAssignedName', 'name'
       div '.row', ->
         div '.three.columns',"Platform UUID"
         div '#platformUUID.five.columns', ->
@@ -67,14 +86,11 @@ class Pages
   scanBody: renderable ()->
     hr()
     table ".u-full-width", ->
-      thead ->
-        tr ->
-          th "Available Sensors"
-          th "Gyroscope"
-          th "Accelerometer"
-          th "Magnetometer"
+      tr ->
+        tbody "#sensor-Guess"
         tbody "#sensor-1"
         tbody "#sensor-2"
+        tbody "#sensor-3"
 
   sensorView: (device)->
     domElement = '#'+device.get 'rowName'
@@ -82,8 +98,6 @@ class Pages
       el: domElement
       initialize: (device)->
         @model = device
-        @$el.html @createRow device
-        new RssiView device
         @render()
         @.listenTo device, 'change:deviceStatus', ()->
           @$('.status').html device.get 'deviceStatus'
@@ -96,37 +110,6 @@ class Pages
         @.listenTo device, 'change:buttonText', @render
         @.listenTo device, 'change:buttonClass', @render
 
-      createRow: (device)->
-        rowName = device.get 'rowName'
-        svgElement = '#rssi-'+rowName
-        gyroElement = '#gyro-'+rowName
-        accelElement = '#accel-'+rowName
-        magElement = '#mag-'+rowName
-        render ->
-          tr ->
-            td ->
-              div '.assignedName',device.get 'name'
-              span '.version'
-              br()
-              span '.status',"advertising" 
-            td ->
-              button '.connect.needsclick.u-full-width.'+device.get('buttonClass')
-                ,onClick: "Pylon.trigger('enableDevice', '#{device.cid}' )"
-                , "Connect"
-            td ->
-              button '.disconnect.needsclick.u-full-width.'+device.get('buttonClass')
-                ,onClick: "Pylon.trigger('disableDevice', '#{device.cid}' )"
-                , "Disconnect"
-            td ->
-              tea.tag "svg", svgElement, height: "1.5em", width: "1.5em"
-          tr ->
-            td ""
-            td ->
-              canvas gyroElement, width: '100', height: '100', style: 'width=100%'
-            td ->
-              canvas accelElement, width: '100', height: '100', style: 'width=100%'
-            td ->
-              canvas magElement, width: '100', height: '100', style: 'width=100%'
       render: ()->
         device = @model
         buttonClass = device.get 'buttonClass'

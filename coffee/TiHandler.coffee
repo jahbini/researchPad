@@ -48,7 +48,7 @@ pView=Backbone.View.extend
       # what we should lookf is not changes to Pylon, but Pylon's devices (a collection)
       # on devices add, create row #
       ordinal = @model.length
-      device.set "rowName", "sensor-#{ordinal}"
+      device.set "rowName", "sensor-#{ordinal}" unless device.get "rowName"
       element = (Pylon.get 'pageGen').sensorView device
       return @
   events:
@@ -104,6 +104,7 @@ class TiHandler
       return
     TIlogger "got new device"
     device.role= 'Guess'
+    name = device.name
     device.role= 'Left' if 0< name.search /\(([Ll]).*\)/
     device.role= 'Right' if 0< name.search /\(([Rr]).*\)/
     d = new deviceModel device
@@ -150,7 +151,7 @@ class TiHandler
       TIlogger "Bad name for sensor: #{name}"
       #return
     d.set 'role','---'
-    Pylon.unset role 
+    Pylon.set role,d
     d.set 'buttonText', 'connect'
     d.set 'connected', false
     d.set deviceStatus: 'Disconnected'
@@ -191,7 +192,9 @@ class TiHandler
     TIlogger "Role of Device set, attempt connect"
     ble.connect (d.get "id"),
       d.subscribe()
-      (e)-> TIlogger "Failure to connect",e
+      (e)-> 
+        Pylon.trigger "systemEvent:sanity:fail", d.get 'role'
+        TIlogger "Failure to connect",e
     return
 
    

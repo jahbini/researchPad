@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"app,TIhandler,sensor,logon"
+localStorage.setItem 'debug',"app,TIhandler,sensor,logon,sanity"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 window.console = new buglog "logon"
@@ -200,11 +200,15 @@ activateNewButtons = ->
 
   stopNotify = ()->
     CalibrateButton.set legend: "notify",enabled: true
-    Pylon.set sensorsOn: false
+    Pylon.set
+      sensorsOn: false
+      calibrating: false
     return false
   
   Pylon.on "systemEvent:calibrate:notify",() ->
-    Pylon.set sensorsOn: true
+    Pylon.set 
+      sensorsOn: true
+      calibrating: true
     CalibrateButton.set legend: "burst mode", enabled: false
     setTimeout stopNotify,5000
     return false

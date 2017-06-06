@@ -3,8 +3,8 @@ Backbone = require 'Backbone'
 
 buglog = require '../lib/buglog.coffee'
 devicelogger = (devicelog= new buglog "sensor").log
+Sanity = require '../lib/sanity.coffee'
 
-Pipeline = require('../lib/pipeline.coffee')
 
 infoService =       "0000180a-0000-1000-8000-00805f9b34fb"
 infoService =       "180a"
@@ -50,13 +50,25 @@ exports.deviceModel = Backbone.Model.extend
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
   initialize: ->
-    @chain = @.createVisualChain @
-    @set 'readings', new EventModel (@get 'role'),@ 
+    role=@get 'role'
+    @set 'readings', new EventModel role,@ 
+    @set 'rowName', "sensor-#{role}"
+    @sanity = new Sanity role
+    try
+      $("##{role}AssignedName").text @get 'name'
+    catch error
+      devicelogger "fail to find DOM element for #{role}AssignedName"   
     @on "change:role", ()->
-      @.set 'readings', new EventModel (@.get 'role'),@ 
+      role=@get 'role'
+      @set 'readings', new EventModel role,@ 
+      @set 'rowName', "sensor-#{role}"
+      $("##{role}AssignedName").text @get 'name'
       return
-    Pylon.on "systemEvent:calibrate:notify", ()=>
-      @set notify: ! @get("notify")
+    Pylon.on "systemEvent:action:record", ()=>
+      @set 'numReadings',0
+      return
+    Pylon.on "change:calibrating", ()=>
+      @set notify: Pylon.get 'calibrating'
       return
     Pylon.on "change:sensorsOn", ()=>
       if Pylon.get 'sensorsOn'
@@ -239,85 +251,47 @@ exports.deviceModel = Backbone.Model.extend
       ###
         
     catch e
-      alert('Error in attachSensor -- check LOG')
+      Pylon.trigger "systemEvent:sanity:fail", device.get 'role'
       devicelogger "error in attachSensor"
       devicelogger e
       device.set deviceStatus: 'Failed connection'
     return 
-    
-  createVisualChain: () ->
-    smoother = new Pipeline
-    accelerometerHandler = smoother.readingHandler
-      debias: 'calibrateAccel'
-      units: 'G'
-      calibrator: [
-        smoother.calibratorSmooth
-      ]
-      viewer: (x,y,z)=>
-        v= (smoother.viewSensor "accel-#{@.get 'rowName'}",1.5) unless v
-        v x,y,z
-        return
-      finalScale: 2
-
-    magnetometerHandler = smoother.readingHandler
-      debias: 'calibrateMag'
-      calibrator: [
-        smoother.calibratorAverage
-        smoother.calibratorSmooth
-      ]
-      units: '&micro;T'
-      viewer: (x,y,z)=>
-        v= (smoother.viewSensor "mag-#{@.get 'rowName'}",1.5) unless v
-        v x,y,z
-        return
-      finalScale: 0.15
-
-    gyroscopeHandler = smoother.readingHandler
-      debias: 'calibrateGyro'
-      calibrator: [
-        smoother.calibratorAverage
-        smoother.calibratorSmooth
-      ]
-      viewer: (x,y,z)=>
-        v= (smoother.viewSensor "gyro-#{@.get 'rowName'}",1.5) unless v
-        v x,y,z
-        return
-      finalScale: 1
-
-    return gyro: gyroscopeHandler
-      , accel: accelerometerHandler
-      , mag: magnetometerHandler
-    return
- 
    
   sensorMpu9250GyroConvert: (data)->
-      return data / (65536/500)
+      return data/(65536/500)
 
   sensorMpu9250AccConvert: (data)->
       #// Change  /2 to match accel range...i.e. 16 g would be /16
-      return data / (32768 / 2)
+      return data/(32768/2)
 
   #//0 gyro x //1 gyro y //2 gyro z
   #//3 accel x //4 accel y //5 accel z
   #//6 mag x //7 mag y //8 mag z
   processMovement: (data)->
-    if Pylon.get('globalState').get 'recording'
+    timeval = Date.now()
+    recording = Pylon.get('globalState').get 'recording'
+    if recording || @get 'notify'
       @attributes.numReadings += 1
+    if recording
       @attributes.readings.addSample data
-    #only display 10 or so readings per second
-    if @lastDisplay + 120 > Date.now()
+    
+    gyro= data[0..2].map @sensorMpu9250GyroConvert 
+    accel= data[3..5].map @sensorMpu9250AccConvert
+    mag= data[6..8].map (a)-> return a
+    sequence = data[9]
+    
+    @sanity.observe gyro, accel, mag, sequence, timeval
+    #only do sanity checks once per second
+    if @lastDisplay + 1000 > Date.now()
           return
     @lastDisplay = Date.now()
-    
-    @set gyro: data[0..2].map @sensorMpu9250GyroConvert 
-    @set accel: data[3..5].map @sensorMpu9250AccConvert
-    @set mag: data[7..9].map (a)-> return a
-
-    # update the device attributes and fire changes for rssi,status
     @set deviceStatus: 'Receiving'
-    @chain.gyro @attributes.gyro
-    @chain.accel @attributes.accel
-    @chain.mag @attributes.mag
+    setTimeout @sanity.judge,0
+    return
+    # update the device attributes and fire changes for deviceStatus
+    @chain.gyro gyro
+    @chain.accel accel
+    @chain.mag mag
     return
 
 deviceCollection = Backbone.Collection.extend
