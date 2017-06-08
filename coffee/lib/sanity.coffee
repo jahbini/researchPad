@@ -5,7 +5,17 @@ stats = require './statistics.coffee'
 
 
 module.exports = class sanity
-
+  clear:()->
+    @gyro[0].clear()
+    @gyro[1].clear()
+    @gyro[2].clear()
+    @accel[0].clear()
+    @accel[1].clear()
+    @accel[2].clear()
+    @mag[0].clear()
+    @mag[1].clear()
+    @mag[2].clear()
+    return
   observe: (gyro,accel,mag,sequence,startTime)=>
     if @oldEndTime
       @timer.push @oldEndTime-@oldStartTime
@@ -23,6 +33,7 @@ module.exports = class sanity
     @mag[0].push mag[0]
     @mag[1].push mag[1]
     @mag[2].push mag[2]
+    Pylon.trigger "#{@role}Vertmeter",@accel[2].decay()
     @oldStartTime = startTime
     @oldEndTime = Date.now()
     return
@@ -32,20 +43,20 @@ module.exports = class sanity
     sanitylogger "sequence number of #{@role} is #{@sequence}"
     
     sanitylogger @timer.allValues()
-    sanitylogger @sequencer.allValues()
+    #sanitylogger @sequencer.allValues()
 
 
-    sanitylogger @accel[0].allValues()
-    sanitylogger @accel[1].allValues()
+    #sanitylogger @accel[0].allValues()
+    #sanitylogger @accel[1].allValues()
     sanitylogger @accel[2].allValues()
-
-    sanitylogger @mag[0].allValues()
-    sanitylogger @mag[1].allValues()
-    sanitylogger @mag[2].allValues()
+    sanitylogger "#{@role}Vertmeter",@accel[2].decay()
+    #sanitylogger @mag[0].allValues()
+    #sanitylogger @mag[1].allValues()
+    #sanitylogger @mag[2].allValues()
     
-    sanitylogger @gyro[0].allValues()
-    sanitylogger @gyro[1].allValues()
-    sanitylogger @gyro[2].allValues()
+    #sanitylogger @gyro[0].allValues()
+    #sanitylogger @gyro[1].allValues()
+    #sanitylogger @gyro[2].allValues()
     return
 
   constructor: (@role) ->

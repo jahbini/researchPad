@@ -42,8 +42,8 @@ pView=Backbone.View.extend
   initialize: ->
     $('#StatusData').html 'Ready to connect'
     $('#FirmwareData').html '?'
-    $('#scanActiveReport').html Pylon.get('pageGen').scanBody()
-    Pylon.set 'scanActive', false
+    $('#scanningReport').html Pylon.get('pageGen').scanBody()
+    Pylon.state.set 'scanning', false
     @listenTo @model, 'add', (device)->
       # what we should lookf is not changes to Pylon, but Pylon's devices (a collection)
       # on devices add, create row #
@@ -55,17 +55,17 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       TIlogger "Start Scan button activated"
-      Pylon.set scanActive: true, sensorsOn: true 
+      Pylon.state.set scanning: true,sensorsOn: true
       @render()
       setTimeout(
         ()=>
-          Pylon.set scanActive: false, sensorsOn: false
+          Pylon.state.set scanning: false, sensorsOn: false
           @render()
           return
         ,20000)
       return
   render: ->
-      if Pylon.get 'scanActive'
+      if Pylon.state.get 'scanning'
         @$el.prop "disabled",true
           .removeClass 'button-primary'
           .addClass 'button-success'
@@ -119,8 +119,8 @@ class TiHandler
         TIlogger "bad juju on device",d
     return
         
-  Pylon.on "change:scanActive",  =>
-    if Pylon.get('scanActive')
+  Pylon.state.on "change:scanning",  =>
+    if Pylon.state.get('scanning')
       #scan 20 seconds for anybody with a movement UUID and show it to Mr. ble_found
       ble.scan(['AA80'], 30, ble_found, (e)->
         alert("scanner error")
@@ -168,8 +168,7 @@ class TiHandler
 # Enables the responding device UUID to send motion information
   attachDevice: (cid) ->
     # reject attachDevice request if we are already recording
-    gs = Pylon.get('globalState')
-    return if gs.get 'recording'
+    return if Pylon.state.get 'recording'
     
     TIlogger "attach "+ cid
     d = Pylon.get('devices').get  cid

@@ -12,7 +12,7 @@ applogger = (applog= new buglog "app").log
 window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
-  scan: false
+  state: (require './models/state.coffee').state
   theSession: ()->
     return @.attributes.sessionInfo
   theProtocol: ()->
@@ -46,15 +46,6 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
 ###
 
-systemCommunicator = Backbone.Model.extend
-  defaults:
-    calibrating: false
-    recording: false
-    connected: []
-    calibrate: false
-    loggedIn:  false
-
-Pylon.set 'globalState', new systemCommunicator
 
 clinicModel = Backbone.Model.extend()
 
@@ -200,13 +191,13 @@ activateNewButtons = ->
 
   stopNotify = ()->
     CalibrateButton.set legend: "notify",enabled: true
-    Pylon.set
+    Pylon.state.set
       sensorsOn: false
       calibrating: false
     return false
   
   Pylon.on "systemEvent:calibrate:notify",() ->
-    Pylon.set 
+    Pylon.state.set 
       sensorsOn: true
       calibrating: true
     CalibrateButton.set legend: "burst mode", enabled: false
@@ -232,9 +223,7 @@ exitAdmin = () ->
   return false
 
 enterLogout = () ->
-  g=Pylon.get 'globalState'
-  g.set loggedIn: false, recording: false
-  # devices no longer contain collections of readings, now is an EventModel
+  Pylon.state.set loggedIn: false, recording: false
 
   model = Pylon.get('sessionInfo')
   model.unset 'clinic', silent: true
@@ -330,15 +319,13 @@ enterRecording = ->
   if !sessionInfo.get '_id'
     sessionInfo.save()
   # signal for logon.js that we are not scanning
-  Pylon.set scanActive: false
+  Pylon.state.set scanning: false
     
   (Pylon.get 'button-admin').set 'enabled',false
   # reject record request if we are already recording
-  gs = Pylon.get('globalState')
-  return if gs.get 'recording'
+  return if Pylon.state.get 'recording'
   # start recording and show a lead in timer of 5 seconds
-  gs.set 'recording',  true
-  Pylon.set sensorsOn: true
+  Pylon.state.set recording:  true, sensorsOn: true
   (Pylon.get 'button-calibrate').set 'enabled',false
   $('#testID').prop("disabled",true)
   Pylon.trigger 'systemEvent:recordCountDown:start', 5
@@ -346,11 +333,9 @@ enterRecording = ->
 
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
     applog "Failure to obtain host session credentials"
-    gs = Pylon.get('globalState')
+    Pylon.state.set recording:  false, sensorsOn: false
     (Pylon.get 'button-calibrate').set 'enabled',true
     pageGen.forceTest 'orange'
-    gs.set 'recording',  false
-    Pylon.set sensorsOn: false
     $('#testID').prop("disabled",true)
     return
 
@@ -360,9 +345,8 @@ Pylon.on 'systemEvent:recordCountDown:over', ->
   return false
 
 exitRecording = -> # Stop Recording
-  gs = Pylon.get('globalState')
-  return if 'stopping' == gs.get 'recording'
-  gs.set 'recording', 'stopping'
+  return if 'stopping' == Pylon.state.get 'recording'
+  Pylon.state.set 'recording', 'stopping'
   Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.get('button-action').set enabled: false
   (Pylon.get 'button-admin').set 'enabled',true
@@ -371,9 +355,8 @@ exitRecording = -> # Stop Recording
 Pylon.on 'systemEvent:stopCountDown:over', ->
   applogger 'Stop -- stop recording'
   # shut down the notifications
-  Pylon.set sensorsOn: false
+  Pylon.state.set sensorsOn: false,recording: false
   Pylon.trigger 'systemEvent:endRecording'
-  Pylon.get('globalState').set 'recording',  false
   (Pylon.get 'button-upload').set 'enabled',true
   (Pylon.get 'button-calibrate').set 'enabled',true
   (Pylon.get 'button-clear').set 'enabled',true
@@ -398,11 +381,10 @@ enableRecordButtonOK= ()->
   (Pylon.get 'Left')?.set numReadings: 0
   (Pylon.get 'Right')?.set numReadings: 0
   canRecord = true
-  gs=Pylon.get('globalState')
-  if ! gs.get 'connected'
+  if ! Pylon.state.get 'connected'
     canRecord = false
     (Pylon.get "button-scan").set enabled: true
-  if ! gs.get 'loggedIn'
+  if ! Pylon.state.get 'loggedIn'
     canRecord = false
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
   if canRecord
@@ -424,14 +406,12 @@ Pylon.on 'adminDone', ->
 
 protocolsShowedErrors=1
 protocols.on 'fetched', ->
-  gs = Pylon.get('globalState')
-  gs.set 'protocols',true
-  if gs.get 'clinics'
+  Pylon.state.set 'protocols',true
+  if Pylon.state.get 'clinics'
     Pylon.trigger 'canLogIn'
 clinics.on 'fetched', ->
-  gs = Pylon.get('globalState')
-  gs.set 'clinics',true
-  if gs.get 'protocols'
+  Pylon.state.set 'clinics',true
+  if Pylon.state.get 'protocols'
     Pylon.trigger 'canLogIn'
   
 getProtocol = ->

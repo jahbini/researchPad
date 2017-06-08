@@ -52,8 +52,8 @@ pView = Backbone.View.extend({
   initialize: function() {
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
-    $('#scanActiveReport').html(Pylon.get('pageGen').scanBody());
-    Pylon.set('scanActive', false);
+    $('#scanningReport').html(Pylon.get('pageGen').scanBody());
+    Pylon.state.set('scanning', false);
     return this.listenTo(this.model, 'add', function(device) {
       var element, ordinal;
       ordinal = this.model.length;
@@ -69,15 +69,15 @@ pView = Backbone.View.extend({
   },
   changer: function() {
     TIlogger("Start Scan button activated");
-    Pylon.set({
-      scanActive: true,
+    Pylon.state.set({
+      scanning: true,
       sensorsOn: true
     });
     this.render();
     setTimeout((function(_this) {
       return function() {
-        Pylon.set({
-          scanActive: false,
+        Pylon.state.set({
+          scanning: false,
           sensorsOn: false
         });
         _this.render();
@@ -85,7 +85,7 @@ pView = Backbone.View.extend({
     })(this), 20000);
   },
   render: function() {
-    if (Pylon.get('scanActive')) {
+    if (Pylon.state.get('scanning')) {
       this.$el.prop("disabled", true).removeClass('button-primary').addClass('button-success').text('Scanning');
     } else {
       this.$el.prop("disabled", false).removeClass('button-success').addClass('button-primary').text('Scan Devices');
@@ -148,8 +148,8 @@ TiHandler = (function() {
     }
   };
 
-  Pylon.on("change:scanActive", function() {
-    if (Pylon.get('scanActive')) {
+  Pylon.state.on("change:scanning", function() {
+    if (Pylon.state.get('scanning')) {
       ble.scan(['AA80'], 30, ble_found, function(e) {
         return alert("scanner error");
       });
@@ -205,9 +205,8 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
-    var d, gs, name, role;
-    gs = Pylon.get('globalState');
-    if (gs.get('recording')) {
+    var d, name, role;
+    if (Pylon.state.get('recording')) {
       return;
     }
     TIlogger("attach " + cid);
@@ -320,8 +319,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":12,"Case":25,"backbone":22,"jquery":29,"underscore":32}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, systemCommunicator, theProtocol, uploader,
+},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":12,"Case":26,"backbone":23,"jquery":30,"underscore":33}],2:[function(require,module,exports){
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -339,7 +338,7 @@ applogger = (applog = new buglog("app")).log;
 window.console = new buglog("logon");
 
 PylonTemplate = Backbone.Model.extend({
-  scan: false,
+  state: (require('./models/state.coffee')).state,
   theSession: function() {
     return this.attributes.sessionInfo;
   },
@@ -387,18 +386,6 @@ ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader 
 Section: Data Structures
  Routines to create and handle data structures and interfaces to them
  */
-
-systemCommunicator = Backbone.Model.extend({
-  defaults: {
-    calibrating: false,
-    recording: false,
-    connected: [],
-    calibrate: false,
-    loggedIn: false
-  }
-});
-
-Pylon.set('globalState', new systemCommunicator);
 
 clinicModel = Backbone.Model.extend();
 
@@ -597,14 +584,14 @@ activateNewButtons = function() {
       legend: "notify",
       enabled: true
     });
-    Pylon.set({
+    Pylon.state.set({
       sensorsOn: false,
       calibrating: false
     });
     return false;
   };
   Pylon.on("systemEvent:calibrate:notify", function() {
-    Pylon.set({
+    Pylon.state.set({
       sensorsOn: true,
       calibrating: true
     });
@@ -641,9 +628,8 @@ exitAdmin = function() {
 };
 
 enterLogout = function() {
-  var g, model;
-  g = Pylon.get('globalState');
-  g.set({
+  var model;
+  Pylon.state.set({
     loggedIn: false,
     recording: false
   });
@@ -748,7 +734,7 @@ theProtocol = function() {
 };
 
 enterRecording = function() {
-  var gs, numSensors, testID, theTest;
+  var numSensors, testID, theTest;
   testID = sessionInfo.get('testID');
   if (!testID) {
     pageGen.forceTest('red');
@@ -772,16 +758,15 @@ enterRecording = function() {
   if (!sessionInfo.get('_id')) {
     sessionInfo.save();
   }
-  Pylon.set({
-    scanActive: false
+  Pylon.state.set({
+    scanning: false
   });
   (Pylon.get('button-admin')).set('enabled', false);
-  gs = Pylon.get('globalState');
-  if (gs.get('recording')) {
+  if (Pylon.state.get('recording')) {
     return;
   }
-  gs.set('recording', true);
-  Pylon.set({
+  Pylon.state.set({
+    recording: true,
     sensorsOn: true
   });
   (Pylon.get('button-calibrate')).set('enabled', false);
@@ -791,15 +776,13 @@ enterRecording = function() {
 };
 
 Pylon.on('systemEvent:recordCountDown:fail', function() {
-  var gs;
   applog("Failure to obtain host session credentials");
-  gs = Pylon.get('globalState');
-  (Pylon.get('button-calibrate')).set('enabled', true);
-  pageGen.forceTest('orange');
-  gs.set('recording', false);
-  Pylon.set({
+  Pylon.state.set({
+    recording: false,
     sensorsOn: false
   });
+  (Pylon.get('button-calibrate')).set('enabled', true);
+  pageGen.forceTest('orange');
   $('#testID').prop("disabled", true);
 });
 
@@ -812,12 +795,10 @@ Pylon.on('systemEvent:recordCountDown:over', function() {
 });
 
 exitRecording = function() {
-  var gs;
-  gs = Pylon.get('globalState');
-  if ('stopping' === gs.get('recording')) {
+  if ('stopping' === Pylon.state.get('recording')) {
     return;
   }
-  gs.set('recording', 'stopping');
+  Pylon.state.set('recording', 'stopping');
   Pylon.trigger('systemEvent:stopCountDown:start', 5);
   Pylon.get('button-action').set({
     enabled: false
@@ -828,11 +809,11 @@ exitRecording = function() {
 
 Pylon.on('systemEvent:stopCountDown:over', function() {
   applogger('Stop -- stop recording');
-  Pylon.set({
-    sensorsOn: false
+  Pylon.state.set({
+    sensorsOn: false,
+    recording: false
   });
   Pylon.trigger('systemEvent:endRecording');
-  Pylon.get('globalState').set('recording', false);
   (Pylon.get('button-upload')).set('enabled', true);
   (Pylon.get('button-calibrate')).set('enabled', true);
   (Pylon.get('button-clear')).set('enabled', true);
@@ -854,7 +835,7 @@ setSensor = function() {
 };
 
 enableRecordButtonOK = function() {
-  var canRecord, gs, ref1, ref2;
+  var canRecord, ref1, ref2;
   if ((ref1 = Pylon.get('Left')) != null) {
     ref1.set({
       numReadings: 0
@@ -866,14 +847,13 @@ enableRecordButtonOK = function() {
     });
   }
   canRecord = true;
-  gs = Pylon.get('globalState');
-  if (!gs.get('connected')) {
+  if (!Pylon.state.get('connected')) {
     canRecord = false;
     (Pylon.get("button-scan")).set({
       enabled: true
     });
   }
-  if (!gs.get('loggedIn')) {
+  if (!Pylon.state.get('loggedIn')) {
     canRecord = false;
     (Pylon.get("button-admin")).set({
       enabled: true,
@@ -909,19 +889,15 @@ Pylon.on('adminDone', function() {
 protocolsShowedErrors = 1;
 
 protocols.on('fetched', function() {
-  var gs;
-  gs = Pylon.get('globalState');
-  gs.set('protocols', true);
-  if (gs.get('clinics')) {
+  Pylon.state.set('protocols', true);
+  if (Pylon.state.get('clinics')) {
     return Pylon.trigger('canLogIn');
   }
 });
 
 clinics.on('fetched', function() {
-  var gs;
-  gs = Pylon.get('globalState');
-  gs.set('clinics', true);
-  if (gs.get('protocols')) {
+  Pylon.state.set('clinics', true);
+  if (Pylon.state.get('protocols')) {
     return Pylon.trigger('canLogIn');
   }
 });
@@ -1068,7 +1044,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":11,"./models/event-model.coffee":13,"./version.coffee":14,"./views/adminView.coffee":15,"./views/button-view.coffee":16,"./views/pages.coffee":18,"backbone":22,"jquery":29,"underscore":32}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":11,"./models/event-model.coffee":13,"./models/state.coffee":14,"./version.coffee":15,"./views/adminView.coffee":16,"./views/button-view.coffee":17,"./views/pages.coffee":19,"backbone":23,"jquery":30,"underscore":33}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1123,7 +1099,7 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":4,"debug":27,"json-stringify-safe":30}],4:[function(require,module,exports){
+},{"./console":4,"debug":28,"json-stringify-safe":31}],4:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1541,7 +1517,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":32}],7:[function(require,module,exports){
+},{"underscore":33}],7:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
@@ -1645,7 +1621,7 @@ exports.netView = new netView;
 
 
 
-},{"./buglog.coffee":3,"backbone":22,"jquery":29,"teacup":31}],8:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":23,"jquery":30,"teacup":32}],8:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -1657,6 +1633,18 @@ stats = require('./statistics.coffee');
 
 module.exports = sanity = (function() {
   var format;
+
+  sanity.prototype.clear = function() {
+    this.gyro[0].clear();
+    this.gyro[1].clear();
+    this.gyro[2].clear();
+    this.accel[0].clear();
+    this.accel[1].clear();
+    this.accel[2].clear();
+    this.mag[0].clear();
+    this.mag[1].clear();
+    this.mag[2].clear();
+  };
 
   sanity.prototype.observe = function(gyro, accel, mag, sequence, startTime) {
     if (this.oldEndTime) {
@@ -1675,6 +1663,7 @@ module.exports = sanity = (function() {
     this.mag[0].push(mag[0]);
     this.mag[1].push(mag[1]);
     this.mag[2].push(mag[2]);
+    Pylon.trigger(this.role + "Vertmeter", this.accel[2].decay());
     this.oldStartTime = startTime;
     this.oldEndTime = Date.now();
   };
@@ -1686,16 +1675,8 @@ module.exports = sanity = (function() {
   sanity.prototype.judge = function() {
     sanitylogger("sequence number of " + this.role + " is " + this.sequence);
     sanitylogger(this.timer.allValues());
-    sanitylogger(this.sequencer.allValues());
-    sanitylogger(this.accel[0].allValues());
-    sanitylogger(this.accel[1].allValues());
     sanitylogger(this.accel[2].allValues());
-    sanitylogger(this.mag[0].allValues());
-    sanitylogger(this.mag[1].allValues());
-    sanitylogger(this.mag[2].allValues());
-    sanitylogger(this.gyro[0].allValues());
-    sanitylogger(this.gyro[1].allValues());
-    sanitylogger(this.gyro[2].allValues());
+    sanitylogger(this.role + "Vertmeter", this.accel[2].decay());
   };
 
   function sanity(role) {
@@ -1727,9 +1708,10 @@ pipelinelogger = (pipelinelog = new buglog("statistics")).log;
 module.exports = statistics = (function() {
   statistics.prototype.clear = function() {
     this.N = 0;
+    this.crowd = 0;
     this.M1 = this.M2 = this.M3 = this.M4 = 0;
-    this.max = -66000;
-    this.min = 66000;
+    this.max = 0;
+    this.min = 0;
   };
 
   statistics.prototype.name = function() {
@@ -1749,6 +1731,7 @@ module.exports = statistics = (function() {
     if (this.min > x) {
       this.min = x;
     }
+    this.crowd = (this.crowd * 4 + x) / 5;
     oldn = this.N++;
     n = this.N;
     delta = x - this.M1;
@@ -1805,6 +1788,20 @@ module.exports = statistics = (function() {
 
   statistics.prototype.minimum = function() {
     return this.min;
+  };
+
+  statistics.prototype.percent = function() {
+    if (!(this.max > this.min)) {
+      return 0;
+    }
+    return 100 * (this.mean() - this.min) / (this.max - this.min);
+  };
+
+  statistics.prototype.decay = function() {
+    if (!(this.max > this.min)) {
+      return 0;
+    }
+    return 100 * (this.crowd - this.min) / (this.max - this.min);
   };
 
   return statistics;
@@ -2201,7 +2198,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":22,"jquery":29,"underscore":32}],12:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":23,"jquery":30,"underscore":33}],12:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('Backbone');
@@ -2288,20 +2285,23 @@ exports.deviceModel = Backbone.Model.extend({
     });
     Pylon.on("systemEvent:action:record", (function(_this) {
       return function() {
+        _this.sanity.clear();
         _this.set('numReadings', 0);
       };
     })(this));
-    Pylon.on("change:calibrating", (function(_this) {
+    Pylon.state.on("change:calibrating", (function(_this) {
       return function() {
+        _this.sanity.clear();
         _this.set({
-          notify: Pylon.get('calibrating')
+          notify: Pylon.state.get('calibrating')
         });
       };
     })(this));
-    Pylon.on("change:sensorsOn", (function(_this) {
+    Pylon.state.on("change:sensorsOn", (function(_this) {
       return function() {
         if (Pylon.get('sensorsOn')) {
-          _this.startNotification();
+          _this.sanity.clear();
+          _this.resubscribe();
         } else {
           _this.stopNotification();
         }
@@ -2396,109 +2396,92 @@ exports.deviceModel = Backbone.Model.extend({
       };
     })(this));
   },
+  idlePromise: function() {
+    return new Promise(function(resolve, reject) {
+      devicelogger("idlePromise entry");
+      return setTimeout(resolve, 100);
+    });
+  },
+  setPeriod: function() {
+    devicelogger("setPeriod entry");
+    return new Promise((function(_this) {
+      return function(resolve, reject) {
+        var periodData;
+        periodData = new Uint8Array(1);
+        periodData[0] = _this.attributes.rate;
+        devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
+        return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+          devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
+          return resolve();
+        }, function(e) {
+          devicelogger("setPeriod error starting movement monitor " + e);
+          return reject();
+        });
+      };
+    })(this));
+  },
+  activateMovement: function() {
+    var configData;
+    devicelogger("activateMovement entry. device " + this.name);
+    configData = new Uint16Array(1);
+    configData[0] = 0x017F;
+    return ble.withPromises.write(this.attributes.id, accelerometer.service, accelerometer.configuration, configData.buffer, (function(_this) {
+      return function(whatnot) {
+        devicelogger("activateMovement Started movement monitor. device " + _this.name);
+        return resolve();
+      };
+    })(this), (function(_this) {
+      return function(e) {
+        devicelogger("activateMovement error starting movement device " + _this.name + " monitor " + e);
+        return reject();
+      };
+    })(this));
+  },
+  resubscribe: (function(_this) {
+    return function() {
+      var e, error1, resulting, thePromise;
+      try {
+        devicelogger("Device resubscribe attempt " + _this.name);
+        thePromise = new Promise(function(res, rej) {
+          return res();
+        });
+        resulting = resulting.then(_this.activateMovement.bind(_this));
+        resulting = resulting.then(_this.idlePromise.bind(_this));
+        resulting = resulting.then(_this.setPeriod.bind(_this));
+        resulting = resulting.then(_this.idlePromise.bind(_this));
+        resulting = resulting.then(_this.startNotification.bind(_this));
+        devicelogger("resubscribe promise has been built");
+        devicelogger(resulting);
+      } catch (error1) {
+        e = error1;
+        Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+        devicelogger("error in resubscribe");
+        devicelogger(e);
+        device.set({
+          deviceStatus: 'Failed re-subscribe'
+        });
+      }
+    };
+  })(this),
   subscribe: function() {
     return (function(_this) {
       return function(device) {
-        var activateMovement, e, error1, idlePromise, resulting, setPeriod, thePromise;
-        idlePromise = function() {
-          return new Promise(function(resolve, reject) {
-            devicelogger("idlePromise entry");
-            return setTimeout(resolve, 100);
-          });
-        };
-        setPeriod = function() {
-          devicelogger("setPeriod entry");
-          return new Promise(function(resolve, reject) {
-            var periodData;
-            periodData = new Uint8Array(1);
-            periodData[0] = _this.attributes.rate;
-            devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
-            return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-              devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
-              return resolve();
-            }, function(e) {
-              devicelogger("setPeriod error starting movement monitor " + e);
-              return reject();
-            });
-          });
-        };
-        activateMovement = function() {
-          var configData;
-          devicelogger("activateMovement entry. device " + device.name);
-          configData = new Uint16Array(1);
-          configData[0] = 0x017F;
-          return ble.withPromises.write(device.id, accelerometer.service, accelerometer.configuration, configData.buffer, (function(_this) {
-            return function(whatnot) {
-              devicelogger("activateMovement Started movement monitor. device " + device.name);
-              return resolve();
-            };
-          })(this), (function(_this) {
-            return function(e) {
-              devicelogger("activateMovement error starting movement device " + device.name + " monitor " + e);
-              return reject();
-            };
-          })(this));
-        };
+        var e, error1, resulting, thePromise;
         try {
           devicelogger("Device subscribe attempt " + device.name);
           thePromise = Promise.all(_this.getBoilerplate());
-          resulting = thePromise.then(idlePromise);
-          resulting = resulting.then(activateMovement);
-          resulting = resulting.then(idlePromise);
-          resulting = resulting.then(setPeriod);
-          resulting = resulting.then(idlePromise);
+          resulting = thePromise.then(_this.idlePromise.bind(_this));
+          resulting = resulting.then(_this.activateMovement.bind(_this));
+          resulting = resulting.then(_this.idlePromise.bind(_this));
+          resulting = resulting.then(_this.setPeriod.bind(_this));
+          resulting = resulting.then(_this.idlePromise.bind(_this));
           resulting = resulting.then(_this.startNotification.bind(_this));
           devicelogger("the promise has been built");
           devicelogger(resulting);
-
-          /*
-          configData = new Uint16Array(1);
-          #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
-          configData[0] = 0x0000;
-          ble.stopNotification device.id,
-            accelerometer.service
-            accelerometer.data
-            (whatnot)=> 
-              devicelogger "Terminated movement monitor. device #{device.name}"
-            (e)=> devicelogger "error terminating movement device #{device.name} monitor #{e}"
-          ble.startNotification device.id,
-            accelerometer.service
-            accelerometer.data
-             * convert raw iOS data into js and update the device model
-            (data)=>
-              debugger
-              @.set rawData: new Int16Array(data);
-            (xxx)=>
-              devicelogger "can't start movement service for device #{device.name}: #{xxx}"
-              return
-              
-          
-          periodData = new Uint8Array(1);
-          periodData[0] = @.attributes.rate;
-          devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
-          ble.write @.attributes.id,
-            accelerometer.service
-            accelerometer.period
-            periodData.buffer
-            ()=> devicelogger "Configured movement #{10*@.attributes.rate}ms period device #{@.attributes.name}."
-            (e)=> devicelogger "error starting movement monitor #{e}"
-              
-          
-           * turn accelerometer on
-          #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
-          configData[0] = 0x017F;
-          ble.write device.id,
-            accelerometer.service
-            accelerometer.configuration
-            configData.buffer
-            (whatnot)=> 
-              devicelogger "Started movement monitor. device #{device.name}"
-            (e)=> devicelogger "error starting movement device #{device.name} monitor #{e}"
-           */
         } catch (error1) {
           e = error1;
-          Pylon.trigger("systemEvent:sanity:fail", device.get('role'));
-          devicelogger("error in attachSensor");
+          Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+          devicelogger("error in subscribe");
           devicelogger(e);
           device.set({
             deviceStatus: 'Failed connection'
@@ -2511,12 +2494,12 @@ exports.deviceModel = Backbone.Model.extend({
     return data / (65536 / 500);
   },
   sensorMpu9250AccConvert: function(data) {
-    return data / (32768 / 2);
+    return data / (32768 / 16);
   },
   processMovement: function(data) {
     var accel, gyro, mag, recording, sequence, timeval;
     timeval = Date.now();
-    recording = Pylon.get('globalState').get('recording');
+    recording = Pylon.state.get('recording');
     if (recording || this.get('notify')) {
       this.attributes.numReadings += 1;
     }
@@ -2553,7 +2536,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":13,"Backbone":20}],13:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":13,"Backbone":21}],13:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2616,12 +2599,45 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":11,"backbone":22,"underscore":32}],14:[function(require,module,exports){
+},{"../lib/upload.coffee":11,"backbone":23,"underscore":33}],14:[function(require,module,exports){
+var Backbone, State, _, buglog, statelog, statelogger;
+
+buglog = require('../lib/buglog.coffee');
+
+statelogger = (statelog = new buglog("app")).log;
+
+statelog.enabled = true;
+
+Backbone = require('backbone');
+
+_ = require('underscore');
+
+State = Backbone.Model.extend({
+  defaults: {
+    calibrating: false,
+    recording: false,
+    scanning: false,
+    connected: [],
+    calibrate: false,
+    loggedIn: false
+  },
+  initialize: function() {
+    this.on('change', function() {
+      return statelogger(JSON.stringify(this.attributes));
+    });
+  }
+});
+
+exports.state = new State;
+
+
+
+},{"../lib/buglog.coffee":3,"backbone":23,"underscore":33}],15:[function(require,module,exports){
 module.exports = '1.6.2';
 
 
 
-},{}],15:[function(require,module,exports){
+},{}],16:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, adminlog, adminlogger, buglog, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2936,7 +2952,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":22,"jquery":29,"teacup":31}],16:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":23,"jquery":30,"teacup":32}],17:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -3041,7 +3057,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":22,"jquery":29,"teacup":31}],17:[function(require,module,exports){
+},{"backbone":23,"jquery":30,"teacup":32}],18:[function(require,module,exports){
 var $, Backbone, Teacup, a, body, br, buglog, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, introlog, intrologger, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3165,7 +3181,7 @@ exports.countDownView = new countDownViewTemplate;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":22,"jquery":29,"teacup":31}],18:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":23,"jquery":30,"teacup":32}],19:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3209,6 +3225,26 @@ Pages = (function() {
     this.forceTest = bind(this.forceTest, this);
   }
 
+  Pylon.on('systemEvent:sanity:fail', function(role) {
+    return $("#" + role + "Status").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red");
+  });
+
+  Pylon.on('systemEvent:sanity:disconnect', function(role) {
+    return $("#" + role + "Status").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+  });
+
+  Pylon.on('systemEvent:sanity:active', function(role) {
+    return $("#" + role + "Status").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green");
+  });
+
+  Pylon.on('systemEvent:sanity:warn', function(role) {
+    return $("#" + role + "Status").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow");
+  });
+
+  Pylon.on('systemEvent:sanity:idle', function(role) {
+    return $("#" + role + "Status").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+  });
+
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
     div('#capture-display.container', function() {
       div('.row', function() {
@@ -3230,13 +3266,19 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('.sensorElement.six.columns', function() {
+        div('#leftVertmeter.one.columns.vertmeter', function() {
+          return div('.bar', {
+            style: 'height:0'
+          });
+        });
+        div('.sensorElement.five.columns', function() {
           p('.va-mid', function() {
             span('#LeftStatus.led-box.led-green');
-            span('.mr-rt-10', "Left Tag");
-            return span('#LeftVersion.mr-rt-10', 'L - version');
+            return span('#LeftSerialNumber.mr-rt-10', 'L - version');
           });
-          div('#sensor-Left.u-pull-right', function() {
+          div('#LeftVersion', 'L - serial number');
+          div('#LeftAssignedName', 'name');
+          return div('#sensor-Left', function() {
             button('.connect.needsclick', {
               onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
             }, "Connect");
@@ -3244,16 +3286,20 @@ Pages = (function() {
               onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
             }, "Disconnect");
           });
-          div('#LeftSerialNumber', 'L - serial number');
-          return div('#LeftAssignedName', 'name');
         });
-        return div('.sensorElement.six.columns', function() {
+        div('#rightVertmeter.one.columns.vertmeter', function() {
+          return div('.bar', {
+            style: 'height:0'
+          });
+        });
+        return div('.sensorElement.five.columns', function() {
           p('.va-mid', function() {
             span('#RightStatus.led-box.led-dark');
-            span('.mr-rt-10', "Right Tag");
-            return span('#RightVersion.mr-rt-10', 'R - version');
+            return span('#RightSerialNumber.mr-rt-10', 'R - serial number');
           });
-          div('#sensor-Right.u-pull-right', function() {
+          div('#RightVersion', 'R - version');
+          div('#RightAssignedName', 'name');
+          return div('#sensor-Right', function() {
             button('.connect.needsclick', {
               onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
             }, "Connect");
@@ -3261,8 +3307,6 @@ Pages = (function() {
               onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
             }, "Disconnect");
           });
-          div('#RightSerialNumber', 'R - serial number');
-          return div('#RightAssignedName', 'name');
         });
       });
       div('.row', function() {
@@ -3276,7 +3320,7 @@ Pages = (function() {
         return div('#UploadCount.two.columns', "Queued:0");
       });
       raw(contents1());
-      div("#scanActiveReport");
+      div("#scanningReport");
       return div('#footer', {
         style: "display:none;"
       }, function() {
@@ -3429,7 +3473,7 @@ Pages = (function() {
   };
 
   Pages.prototype.renderPage = function() {
-    var bodyHtml, protocolViewTemplate;
+    var bodyHtml, protocolViewTemplate, setVertmeter;
     bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
@@ -3481,6 +3525,25 @@ Pages = (function() {
       }
     });
     this.protocolView = new protocolViewTemplate;
+    setVertmeter = function(role) {
+      var widget;
+      widget = null;
+      return function(val) {
+        var color;
+        if (!widget) {
+          widget = $("#" + role + "Vertmeter .bar");
+        }
+        color = "#a22";
+        if (val > 90) {
+          color = "#2e2";
+        }
+        if (widget) {
+          widget.css("height", val + "%").css("background-color", color);
+        }
+      };
+    };
+    Pylon.on('LeftVertmeter', setVertmeter("left"));
+    Pylon.on('RightVertmeter', setVertmeter("right"));
     Pylon.on('change:Right', (function(_this) {
       return function() {
         var dev, old, statusRightViewTemplate;
@@ -3558,7 +3621,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":15,"./count-up-down.coffee":17,"./protocol-active.coffee":19,"backbone":22,"jquery":29,"teacup":31}],19:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":16,"./count-up-down.coffee":18,"./protocol-active.coffee":20,"backbone":23,"jquery":30,"teacup":32}],20:[function(require,module,exports){
 var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
   slice = [].slice;
 
@@ -3689,7 +3752,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":10,"./button-view.coffee":16,"backbone":22,"jquery":29,"teacup":31}],20:[function(require,module,exports){
+},{"../lib/stopwatch.coffee":10,"./button-view.coffee":17,"backbone":23,"jquery":30,"teacup":32}],21:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5613,7 +5676,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":29,"underscore":21}],21:[function(require,module,exports){
+},{"jquery":30,"underscore":22}],22:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -7163,11 +7226,11 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
   }
 }.call(this));
 
-},{}],22:[function(require,module,exports){
-arguments[4][20][0].apply(exports,arguments)
-},{"dup":20,"jquery":29,"underscore":23}],23:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 arguments[4][21][0].apply(exports,arguments)
-},{"dup":21}],24:[function(require,module,exports){
+},{"dup":21,"jquery":30,"underscore":24}],24:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}],25:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -7227,7 +7290,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],25:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -7381,7 +7444,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],26:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -7532,7 +7595,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's'
 }
 
-},{}],27:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -7721,7 +7784,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":28,"_process":24}],28:[function(require,module,exports){
+},{"./debug":29,"_process":25}],29:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -7925,7 +7988,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":26}],29:[function(require,module,exports){
+},{"ms":27}],30:[function(require,module,exports){
 /*eslint-disable no-unused-vars*/
 /*!
  * jQuery JavaScript Library v3.1.0
@@ -18001,7 +18064,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],30:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -18030,7 +18093,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],31:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -18465,6 +18528,6 @@ function serializer(replacer, cycleReplacer) {
 
 }).call(this);
 
-},{}],32:[function(require,module,exports){
-arguments[4][21][0].apply(exports,arguments)
-},{"dup":21}]},{},[2]);
+},{}],33:[function(require,module,exports){
+arguments[4][22][0].apply(exports,arguments)
+},{"dup":22}]},{},[2]);

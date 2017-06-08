@@ -129,3 +129,18 @@
   border-radius: 50%;
   box-shadow: rgba(0, 0, 0, 0.2) 0 -1px 7px 1px, inset #006 0 -1px 9px, #3F8CFF 0 2px 14px;
 }
+
+.vertmeter
+{
+  height:100px;
+  width:10px; 
+  background-color:#D1D7DF;
+    position:relative
+}   
+.vertmeter .bar
+{
+  background-color:#CF3500;
+  width:100%;
+    top:0;
+    position:absolute;
+}

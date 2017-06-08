@@ -7,9 +7,10 @@ module.exports = class statistics
 
   clear: () ->
     @N = 0
+    @crowd = 0
     @M1 = @M2 = @M3 = @M4 = 0
-    @max = -66000
-    @min = 66000
+    @max = 0
+    @min = 0
     return
   name: ()->
     return @whoAmI
@@ -20,6 +21,7 @@ module.exports = class statistics
   push: (x)->
     @max = x if @max<x
     @min = x if @min>x
+    @crowd = (@crowd*4+x)/5
     oldn = @N++
     n = @N
     delta = x-@M1
@@ -60,4 +62,10 @@ module.exports = class statistics
     return @max
   minimum: ()->
     return @min
+  percent: ()->
+    return 0 unless @max > @min
+    return 100*(@mean()-@min)/(@max-@min)
+  decay: ()->
+    return 0 unless @max > @min
+    return 100*(@crowd-@min)/(@max-@min)
     

@@ -25,6 +25,17 @@ class Pages
 
   constructor: () ->
 
+  Pylon.on 'systemEvent:sanity:fail',(role)->
+    $("##{role}Status").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red")
+  Pylon.on 'systemEvent:sanity:disconnect',(role)->
+    $("##{role}Status").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
+  Pylon.on 'systemEvent:sanity:active',(role)->
+    $("##{role}Status").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green")
+  Pylon.on 'systemEvent:sanity:warn',(role)->
+    $("##{role}Status").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow")
+  Pylon.on 'systemEvent:sanity:idle',(role)->
+    $("##{role}Status").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
+  
   theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
       div '.row', ->
@@ -37,34 +48,36 @@ class Pages
         div '#net-ble.six.columns'
       buttons()
       div '.row',->
-        div '.sensorElement.six.columns', ->
+        div '#leftVertmeter.one.columns.vertmeter', ->
+          div '.bar',style: 'height:0'
+        div '.sensorElement.five.columns', ->
           p '.va-mid',->
             span '#LeftStatus.led-box.led-green'
-            span '.mr-rt-10',"Left Tag"
-            span '#LeftVersion.mr-rt-10', 'L - version'
-          div '#sensor-Left.u-pull-right',->
+            span '#LeftSerialNumber.mr-rt-10', 'L - version'
+          div '#LeftVersion',  'L - serial number'
+          div '#LeftAssignedName', 'name'
+          div '#sensor-Left',->
             button '.connect.needsclick'
               ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
               , "Connect"
             button '.disconnect.needsclick'
               ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
               , "Disconnect"
-          div '#LeftSerialNumber',  'L - serial number'
-          div '#LeftAssignedName', 'name'
-        div '.sensorElement.six.columns', ->
+        div '#rightVertmeter.one.columns.vertmeter', ->
+          div '.bar',style: 'height:0'
+        div '.sensorElement.five.columns', ->
           p '.va-mid',->
             span '#RightStatus.led-box.led-dark'
-            span '.mr-rt-10',"Right Tag"
-            span '#RightVersion.mr-rt-10' , 'R - version'
-          div '#sensor-Right.u-pull-right',->
+            span '#RightSerialNumber.mr-rt-10' , 'R - serial number'
+          div '#RightVersion', 'R - version'
+          div '#RightAssignedName', 'name'
+          div '#sensor-Right',->
             button '.connect.needsclick'
               ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
               , "Connect"
             button '.disconnect.needsclick'
               ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
               , "Disconnect"
-          div '#RightSerialNumber', 'R - serial number'
-          div '#RightAssignedName', 'name'
       div '.row', ->
         div '.three.columns',"Platform UUID"
         div '#platformUUID.five.columns', ->
@@ -73,7 +86,7 @@ class Pages
           raw '&nbsp;'
         div '#UploadCount.two.columns',"Queued:0"
       raw contents1()
-      div "#scanActiveReport"
+      div "#scanningReport"
       div '#footer', style: "display:none;", ->
         hr()
         div '#console-log.container'
@@ -209,6 +222,19 @@ class Pages
         return this
     @protocolView = new protocolViewTemplate
 
+    setVertmeter=(role)->
+      widget=null
+      return (val)->
+        widget = $("##{role}Vertmeter .bar") unless widget
+        color = "#a22"
+        if val > 90
+          color = "#2e2"
+        widget.css("height", "#{val}%").css("background-color",color) if widget
+        return
+        
+        
+    Pylon.on 'LeftVertmeter', setVertmeter "left"
+    Pylon.on 'RightVertmeter', setVertmeter "right"
     Pylon.on 'change:Right', ()=>
       dev = Pylon.get 'Right'
       return unless dev
