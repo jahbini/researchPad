@@ -70,15 +70,13 @@ pView = Backbone.View.extend({
   changer: function() {
     TIlogger("Start Scan button activated");
     Pylon.state.set({
-      scanning: true,
-      sensorsOn: true
+      scanning: true
     });
     this.render();
     setTimeout((function(_this) {
       return function() {
         Pylon.state.set({
-          scanning: false,
-          sensorsOn: false
+          scanning: false
         });
         _this.render();
       };
@@ -135,6 +133,7 @@ TiHandler = (function() {
     if (0 < name.search(/\(([Rr]).*\)/)) {
       device.role = 'Right';
     }
+    Pylon.trigger("systemEvent:sanity:idle", device.role);
     d = new deviceModel(device);
     pd.push(d);
     if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
@@ -197,11 +196,15 @@ TiHandler = (function() {
     TIlogger("Device removed from state, attempt dicconnect");
     ble.disconnect(d.get("id"), (function(_this) {
       return function() {
+        Pylon.trigger("systemEvent:sanity:idle", d.get('role'));
         return TIlogger("disconnection of " + name);
       };
-    })(this), function(e) {
-      return TIlogger("Failure to connect", e);
-    });
+    })(this), (function(_this) {
+      return function(e) {
+        Pylon.trigger("systemEvent:sanity:fail", d.get('role'));
+        return TIlogger("Failure to disconnect", e);
+      };
+    })(this));
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
@@ -329,7 +332,7 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-localStorage.setItem('debug', "app,TIhandler,sensor,logon,sanity");
+localStorage.setItem('debug', "app,TIhandler,sensor,logon,state");
 
 buglog = require('./lib/buglog.coffee');
 
@@ -585,21 +588,19 @@ activateNewButtons = function() {
       enabled: true
     });
     Pylon.state.set({
-      sensorsOn: false,
       calibrating: false
     });
     return false;
   };
   Pylon.on("systemEvent:calibrate:notify", function() {
     Pylon.state.set({
-      sensorsOn: true,
       calibrating: true
     });
     CalibrateButton.set({
       legend: "burst mode",
       enabled: false
     });
-    setTimeout(stopNotify, 5000);
+    setTimeout(stopNotify, 10000);
     return false;
   });
   ActionButton = new BV('action');
@@ -734,7 +735,7 @@ theProtocol = function() {
 };
 
 enterRecording = function() {
-  var numSensors, testID, theTest;
+  var numSensors, ref1, ref2, testID, theTest;
   testID = sessionInfo.get('testID');
   if (!testID) {
     pageGen.forceTest('red');
@@ -765,12 +766,21 @@ enterRecording = function() {
   if (Pylon.state.get('recording')) {
     return;
   }
-  Pylon.state.set({
-    recording: true,
-    sensorsOn: true
-  });
   (Pylon.get('button-calibrate')).set('enabled', false);
+  if ((ref1 = Pylon.get('Left')) != null) {
+    ref1.set({
+      numReadings: 0
+    });
+  }
+  if ((ref2 = Pylon.get('Right')) != null) {
+    ref2.set({
+      numReadings: 0
+    });
+  }
   $('#testID').prop("disabled", true);
+  Pylon.state.set({
+    recording: true
+  });
   Pylon.trigger('systemEvent:recordCountDown:start', 5);
   return applogger('Recording --- actively recording sensor info');
 };
@@ -778,8 +788,7 @@ enterRecording = function() {
 Pylon.on('systemEvent:recordCountDown:fail', function() {
   applog("Failure to obtain host session credentials");
   Pylon.state.set({
-    recording: false,
-    sensorsOn: false
+    recording: false
   });
   (Pylon.get('button-calibrate')).set('enabled', true);
   pageGen.forceTest('orange');
@@ -798,26 +807,37 @@ exitRecording = function() {
   if ('stopping' === Pylon.state.get('recording')) {
     return;
   }
-  Pylon.state.set('recording', 'stopping');
+  Pylon.state.set({
+    recording: 'stopping'
+  });
   Pylon.trigger('systemEvent:stopCountDown:start', 5);
   Pylon.get('button-action').set({
     enabled: false
   });
-  (Pylon.get('button-admin')).set('enabled', true);
+  (Pylon.get('button-admin')).set({
+    enabled: true
+  });
   return false;
 };
 
 Pylon.on('systemEvent:stopCountDown:over', function() {
   applogger('Stop -- stop recording');
   Pylon.state.set({
-    sensorsOn: false,
     recording: false
   });
   Pylon.trigger('systemEvent:endRecording');
-  (Pylon.get('button-upload')).set('enabled', true);
-  (Pylon.get('button-calibrate')).set('enabled', true);
-  (Pylon.get('button-clear')).set('enabled', true);
-  (Pylon.get('button-admin')).set('enabled', true);
+  (Pylon.get('button-upload')).set({
+    enabled: true
+  });
+  (Pylon.get('button-calibrate')).set({
+    enabled: true
+  });
+  (Pylon.get('button-clear')).set({
+    enabled: true
+  });
+  (Pylon.get('button-admin')).set({
+    enabled: true
+  });
   return false;
 });
 
@@ -873,7 +893,7 @@ Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('connected', function() {
   applogger('enable recording button');
-  Pylon.get('globalState').set({
+  Pylon.state.set({
     connected: true
   });
   return enableRecordButtonOK();
@@ -881,7 +901,7 @@ Pylon.on('connected', function() {
 
 Pylon.on('adminDone', function() {
   (Pylon.get('button-admin')).set('legend', "Log Out");
-  Pylon.get('globalState').set('loggedIn', true);
+  Pylon.state.set('loggedIn', true);
   pageGen.activateSensorPage();
   return enableRecordButtonOK();
 });
@@ -2259,7 +2279,7 @@ exports.deviceModel = Backbone.Model.extend({
     buttonClass: 'button-primary',
     deviceStatus: '--',
     rate: 20,
-    notify: true,
+    subscribeState: true,
     lastDisplay: Date.now()
   },
   urlRoot: function() {
@@ -2270,6 +2290,7 @@ exports.deviceModel = Backbone.Model.extend({
     role = this.get('role');
     this.set('readings', new EventModel(role, this));
     this.set('rowName', "sensor-" + role);
+    this.attributes.subscribeState = true;
     this.sanity = new Sanity(role);
     try {
       $("#" + role + "AssignedName").text(this.get('name'));
@@ -2283,26 +2304,32 @@ exports.deviceModel = Backbone.Model.extend({
       this.set('rowName', "sensor-" + role);
       $("#" + role + "AssignedName").text(this.get('name'));
     });
-    Pylon.on("systemEvent:action:record", (function(_this) {
+    Pylon.state.on("change:recording change:connecting" + (this.get('role')) + " change:calibrating", (function(_this) {
       return function() {
-        _this.sanity.clear();
-        _this.set('numReadings', 0);
-      };
-    })(this));
-    Pylon.state.on("change:calibrating", (function(_this) {
-      return function() {
-        _this.sanity.clear();
+        var subscribe;
+        role = _this.get('role');
+        devicelogger('Change in connection request');
+        if (Pylon.state.get("connecting" + role)) {
+          devicelogger('Change in connection request: pylon says I am connecting');
+          return;
+        }
+        subscribe = ['recording', "connecting" + role, 'calibrating'].reduce(function(memo, v) {
+          return memo || Boolean(Pylon.state.get(v));
+        }, false);
+        if (subscribe === _this.get('subscribeState')) {
+          devicelogger('Change in connection request: no change in subscribe status');
+          return;
+        }
         _this.set({
-          notify: Pylon.state.get('calibrating')
+          subscribeState: subscribe
         });
-      };
-    })(this));
-    Pylon.state.on("change:sensorsOn", (function(_this) {
-      return function() {
-        if (Pylon.get('sensorsOn')) {
+        if (subscribe) {
+          devicelogger('Change in connection request: resubscribe');
+          debugger;
           _this.sanity.clear();
           _this.resubscribe();
         } else {
+          devicelogger('Change in connection request: stopNotification');
           _this.stopNotification();
         }
       };
@@ -2343,22 +2370,19 @@ exports.deviceModel = Backbone.Model.extend({
       results = [];
       for (attribute in boilerplate) {
         uuid = boilerplate[attribute];
-        devicelogger("Device " + this.attributes.name + ": getting " + attribute + " at " + uuid);
         results.push(plates.push(new Promise((function(_this) {
           return function(resolve, reject) {
             var attr;
             attr = attribute;
-            ble.read(_this.id, infoService, uuid, function(data) {
+            return ble.read(_this.id, infoService, uuid, function(data) {
               var val;
               val = ab2str(data);
-              devicelogger("Setting attribute for " + attr + " to " + val);
               _this.set(attr, val);
               return resolve();
             }, function(err) {
               devicelogger("unable to obtain " + attr + " from " + _this.attributes.name);
               return reject();
             });
-            return devicelogger("Promised attribute for " + attr);
           };
         })(this))));
       }
@@ -2368,12 +2392,13 @@ exports.deviceModel = Backbone.Model.extend({
   },
   startNotification: function() {
     devicelogger("startNotification entry");
+    Pylon.trigger("systemEvent:sanity:active", device.role);
     return new Promise((function(_this) {
       return function(resolve, reject) {
         return ble.withPromises.startNotification(_this.id, accelerometer.service, accelerometer.data, function(data) {
           return _this.processMovement(new Int16Array(data));
         }, function(xxx) {
-          devicelogger("startNotification failure for device " + _this.name + ": " + xxx);
+          devicelogger("startNotification failure for device " + (_this.get('name')) + ": " + xxx);
           return reject();
         });
       };
@@ -2381,37 +2406,34 @@ exports.deviceModel = Backbone.Model.extend({
   },
   stopNotification: function() {
     var configData;
+    Pylon.trigger("systemEvent:sanity:idle", device.role);
     devicelogger("stopNotification entry");
     configData = new Uint16Array(1);
     configData[0] = 0x0000;
     return ble.withPromises.stopNotification(this.id, accelerometer.service, accelerometer.data, (function(_this) {
       return function(whatnot) {
-        devicelogger("stopNotification Terminated movement monitor. device " + _this.name);
+        devicelogger("stopNotification Terminated movement monitor. device " + (_this.get('name')));
         return resolve();
       };
     })(this), (function(_this) {
       return function(e) {
-        devicelogger("stopNotification error terminating movement device " + _this.name + " monitor " + e);
+        devicelogger("stopNotification error terminating movement device " + (_this.get('name')) + " monitor " + e);
         return reject();
       };
     })(this));
   },
   idlePromise: function() {
     return new Promise(function(resolve, reject) {
-      devicelogger("idlePromise entry");
       return setTimeout(resolve, 100);
     });
   },
   setPeriod: function() {
-    devicelogger("setPeriod entry");
     return new Promise((function(_this) {
       return function(resolve, reject) {
         var periodData;
         periodData = new Uint8Array(1);
         periodData[0] = _this.attributes.rate;
-        devicelogger("Timing parameter for sensor rate = " + _this.attributes.rate);
         return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
-          devicelogger("setPeriod Configured movement " + (10 * _this.attributes.rate) + "ms period device " + _this.attributes.name + ".");
           return resolve();
         }, function(e) {
           devicelogger("setPeriod error starting movement monitor " + e);
@@ -2422,51 +2444,52 @@ exports.deviceModel = Backbone.Model.extend({
   },
   activateMovement: function() {
     var configData;
-    devicelogger("activateMovement entry. device " + this.name);
     configData = new Uint16Array(1);
     configData[0] = 0x017F;
     return ble.withPromises.write(this.attributes.id, accelerometer.service, accelerometer.configuration, configData.buffer, (function(_this) {
       return function(whatnot) {
-        devicelogger("activateMovement Started movement monitor. device " + _this.name);
         return resolve();
       };
     })(this), (function(_this) {
       return function(e) {
-        devicelogger("activateMovement error starting movement device " + _this.name + " monitor " + e);
+        devicelogger("activateMovement error starting movement device " + (_this.get('name')) + " monitor " + e);
         return reject();
       };
     })(this));
   },
-  resubscribe: (function(_this) {
-    return function() {
-      var e, error1, resulting, thePromise;
-      try {
-        devicelogger("Device resubscribe attempt " + _this.name);
-        thePromise = new Promise(function(res, rej) {
-          return res();
-        });
-        resulting = resulting.then(_this.activateMovement.bind(_this));
-        resulting = resulting.then(_this.idlePromise.bind(_this));
-        resulting = resulting.then(_this.setPeriod.bind(_this));
-        resulting = resulting.then(_this.idlePromise.bind(_this));
-        resulting = resulting.then(_this.startNotification.bind(_this));
-        devicelogger("resubscribe promise has been built");
-        devicelogger(resulting);
-      } catch (error1) {
-        e = error1;
-        Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
-        devicelogger("error in resubscribe");
-        devicelogger(e);
-        device.set({
-          deviceStatus: 'Failed re-subscribe'
-        });
-      }
-    };
-  })(this),
+  resubscribe: function() {
+    var e, error1, resulting, role, thePromise;
+    devicelogger("RESUBSCRIBE");
+    role = this.get('role');
+    Pylon.state.timedState("connecting" + role);
+    Pylon.trigger("systemEvent:sanity:idle", role);
+    try {
+      devicelogger("Device resubscribe attempt " + (this.get('name')));
+      thePromise = new Promise(function(res, rej) {
+        return res();
+      });
+      resulting = thePromise.then(this.activateMovement.bind(this));
+      resulting = resulting.then(this.idlePromise.bind(this));
+      resulting = resulting.then(this.setPeriod.bind(this));
+      resulting = resulting.then(this.idlePromise.bind(this));
+      resulting = resulting.then(this.startNotification.bind(this));
+    } catch (error1) {
+      e = error1;
+      Pylon.trigger("systemEvent:sanity:fail", this.get('role'));
+      devicelogger("error in resubscribe");
+      devicelogger(e);
+      device.set({
+        deviceStatus: 'Failed re-subscribe'
+      });
+    }
+  },
   subscribe: function() {
     return (function(_this) {
       return function(device) {
         var e, error1, resulting, thePromise;
+        devicelogger("SUBSCRIBE");
+        Pylon.trigger("systemEvent:sanity:idle", device.role);
+        Pylon.state.timedState("connecting" + (_this.get('role')));
         try {
           devicelogger("Device subscribe attempt " + device.name);
           thePromise = Promise.all(_this.getBoilerplate());
@@ -2500,9 +2523,13 @@ exports.deviceModel = Backbone.Model.extend({
     var accel, gyro, mag, recording, sequence, timeval;
     timeval = Date.now();
     recording = Pylon.state.get('recording');
-    if (recording || this.get('notify')) {
-      this.attributes.numReadings += 1;
+    if (this.attributes.numReadings === 0) {
+      this.set({
+        deviceStatus: 'Receiving'
+      });
+      Pylon.trigger('systemEvent:sanity:active', this.get('role'));
     }
+    this.attributes.numReadings += 1;
     if (recording) {
       this.attributes.readings.addSample(data);
     }
@@ -2517,14 +2544,7 @@ exports.deviceModel = Backbone.Model.extend({
       return;
     }
     this.lastDisplay = Date.now();
-    this.set({
-      deviceStatus: 'Receiving'
-    });
     setTimeout(this.sanity.judge, 0);
-    return;
-    this.chain.gyro(gyro);
-    this.chain.accel(accel);
-    this.chain.mag(mag);
   }
 });
 
@@ -2604,7 +2624,7 @@ var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
 
-statelogger = (statelog = new buglog("app")).log;
+statelogger = (statelog = new buglog("state")).log;
 
 statelog.enabled = true;
 
@@ -2618,13 +2638,31 @@ State = Backbone.Model.extend({
     recording: false,
     scanning: false,
     connected: [],
-    calibrate: false,
-    loggedIn: false
+    loggedIn: false,
+    connectingLeft: false,
+    connectingRight: false
   },
   initialize: function() {
     this.on('change', function() {
       return statelogger(JSON.stringify(this.attributes));
     });
+  },
+  timedState: function(key, val1, val2, time) {
+    if (val1 == null) {
+      val1 = true;
+    }
+    if (val2 == null) {
+      val2 = false;
+    }
+    if (time == null) {
+      time = 5000;
+    }
+    setTimeout((function() {
+      return Pylon.state.set(key, val1);
+    }), 0);
+    return setTimeout((function() {
+      return Pylon.state.set(key, val2);
+    }), time);
   }
 });
 
@@ -3564,7 +3602,7 @@ Pages = (function() {
           initialize: function() {
             this.timeScanner = setInterval(this.render.bind(this), 40);
             this.model.set('numReadings', 0);
-            return this.listenTo(this.model, 'change', this.render);
+            return this.listenTo(this.model, 'change:numReadings', this.render);
           },
           render: function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));

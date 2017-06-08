@@ -55,11 +55,11 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       TIlogger "Start Scan button activated"
-      Pylon.state.set scanning: true,sensorsOn: true
+      Pylon.state.set scanning: true
       @render()
       setTimeout(
         ()=>
-          Pylon.state.set scanning: false, sensorsOn: false
+          Pylon.state.set scanning: false
           @render()
           return
         ,20000)
@@ -107,6 +107,7 @@ class TiHandler
     name = device.name
     device.role= 'Left' if 0< name.search /\(([Ll]).*\)/
     device.role= 'Right' if 0< name.search /\(([Rr]).*\)/
+    Pylon.trigger "systemEvent:sanity:idle", device.role
     d = new deviceModel device
     pd.push d
     #queryHostDevice(d)
@@ -158,8 +159,12 @@ class TiHandler
     Pylon.trigger('change respondingDevices')
     TIlogger "Device removed from state, attempt dicconnect"
     ble.disconnect (d.get "id"),
-      ()=> TIlogger "disconnection of #{name}"
-      (e)-> TIlogger "Failure to connect",e
+      ()=> 
+        Pylon.trigger "systemEvent:sanity:idle", d.get 'role'
+        TIlogger "disconnection of #{name}"
+      (e)=> 
+        Pylon.trigger "systemEvent:sanity:fail", d.get 'role'
+        TIlogger "Failure to disconnect",e
     return
 
     

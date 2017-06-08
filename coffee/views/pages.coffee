@@ -249,7 +249,7 @@ class Pages
         initialize: ->
           @timeScanner= setInterval @render.bind(@), 40
           @model.set 'numReadings',0
-          @listenTo @model, 'change', @render
+          @listenTo @model, 'change:numReadings', @render
         render: ->
           @$el.html "Items: "+ @model.get 'numReadings'
       Pylon.set("RightView", new statusRightViewTemplate)

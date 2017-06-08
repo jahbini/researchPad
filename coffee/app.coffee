@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"app,TIhandler,sensor,logon,sanity"
+localStorage.setItem 'debug',"app,TIhandler,sensor,logon,state"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 window.console = new buglog "logon"
@@ -192,16 +192,14 @@ activateNewButtons = ->
   stopNotify = ()->
     CalibrateButton.set legend: "notify",enabled: true
     Pylon.state.set
-      sensorsOn: false
       calibrating: false
     return false
   
   Pylon.on "systemEvent:calibrate:notify",() ->
     Pylon.state.set 
-      sensorsOn: true
       calibrating: true
     CalibrateButton.set legend: "burst mode", enabled: false
-    setTimeout stopNotify,5000
+    setTimeout stopNotify,10000
     return false
     
   ActionButton = new BV 'action'
@@ -325,15 +323,17 @@ enterRecording = ->
   # reject record request if we are already recording
   return if Pylon.state.get 'recording'
   # start recording and show a lead in timer of 5 seconds
-  Pylon.state.set recording:  true, sensorsOn: true
   (Pylon.get 'button-calibrate').set 'enabled',false
+  (Pylon.get 'Left')?.set numReadings: 0
+  (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
+  Pylon.state.set recording: true
   Pylon.trigger 'systemEvent:recordCountDown:start', 5
   applogger 'Recording --- actively recording sensor info'
 
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
     applog "Failure to obtain host session credentials"
-    Pylon.state.set recording:  false, sensorsOn: false
+    Pylon.state.set recording:  false
     (Pylon.get 'button-calibrate').set 'enabled',true
     pageGen.forceTest 'orange'
     $('#testID').prop("disabled",true)
@@ -346,21 +346,21 @@ Pylon.on 'systemEvent:recordCountDown:over', ->
 
 exitRecording = -> # Stop Recording
   return if 'stopping' == Pylon.state.get 'recording'
-  Pylon.state.set 'recording', 'stopping'
+  Pylon.state.set recording: 'stopping'
   Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.get('button-action').set enabled: false
-  (Pylon.get 'button-admin').set 'enabled',true
+  (Pylon.get 'button-admin').set enabled: true
   return false
 
 Pylon.on 'systemEvent:stopCountDown:over', ->
   applogger 'Stop -- stop recording'
   # shut down the notifications
-  Pylon.state.set sensorsOn: false,recording: false
+  Pylon.state.set recording: false
   Pylon.trigger 'systemEvent:endRecording'
-  (Pylon.get 'button-upload').set 'enabled',true
-  (Pylon.get 'button-calibrate').set 'enabled',true
-  (Pylon.get 'button-clear').set 'enabled',true
-  (Pylon.get 'button-admin').set 'enabled',true
+  (Pylon.get 'button-upload').set enabled: true
+  (Pylon.get 'button-calibrate').set enabled: true
+  (Pylon.get 'button-clear').set enabled: true
+  (Pylon.get 'button-admin').set enabled: true
   return false
 
 
@@ -395,12 +395,12 @@ Pylon.on 'sessionUploaded',enableRecordButtonOK
 
 Pylon.on 'connected', ->
   applogger 'enable recording button'
-  Pylon.get('globalState').set connected: true
+  Pylon.state.set connected: true
   return enableRecordButtonOK()
 
 Pylon.on 'adminDone', ->
   (Pylon.get 'button-admin').set 'legend',"Log Out"
-  Pylon.get('globalState').set 'loggedIn',  true
+  Pylon.state.set 'loggedIn',  true
   pageGen.activateSensorPage()
   return enableRecordButtonOK()
 
