@@ -44,7 +44,7 @@ exports.deviceModel = Backbone.Model.extend
     buttonClass: 'button-primary'
     deviceStatus: '--'
     rate: 20
-    subscribeState: true
+    subscribeState: false
     lastDisplay: Date.now()
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
@@ -54,7 +54,6 @@ exports.deviceModel = Backbone.Model.extend
     @set 'readings', new EventModel role,@ 
     @set 'rowName', "sensor-#{role}"
     #set this attribute without firing off any events
-    @.attributes.subscribeState= true
     @sanity = new Sanity role
     try
       $("##{role}AssignedName").text @get 'name'
@@ -70,9 +69,6 @@ exports.deviceModel = Backbone.Model.extend
       role=@get 'role'
       #any of the state values that are truthy will turn on the subscription
       devicelogger 'Change in connection request'
-      if Pylon.state.get "connecting#{role}"
-        devicelogger 'Change in connection request: pylon says I am connecting'
-        return
       subscribe = ['recording',"connecting#{role}",'calibrating'].reduce(
         (memo,v)=> return memo || Boolean Pylon.state.get v
         false
@@ -84,7 +80,6 @@ exports.deviceModel = Backbone.Model.extend
       @.set subscribeState: subscribe
       if subscribe
         devicelogger 'Change in connection request: resubscribe'
-        debugger
         @sanity.clear()
         @resubscribe()
       else
@@ -139,7 +134,7 @@ exports.deviceModel = Backbone.Model.extend
     
   startNotification: ()->
       devicelogger "startNotification entry"
-      Pylon.trigger "systemEvent:sanity:active", device.role
+      @set 'numReadings',0
       
       new Promise (resolve,reject)=>
         ble.withPromises.startNotification @.id,
@@ -147,6 +142,8 @@ exports.deviceModel = Backbone.Model.extend
           accelerometer.data
           # convert raw iOS data into js and update the device model
           (data)=>
+            if @.attributes.numReadings == 0
+              setTimeout (()-> resolve()), 0,@ 
             @processMovement new Int16Array(data)
           (xxx)=>
             devicelogger "startNotification failure for device #{@get 'name'}: #{xxx}"
@@ -211,7 +208,7 @@ exports.deviceModel = Backbone.Model.extend
     devicelogger "RESUBSCRIBE"
     role = @get 'role'
     Pylon.state.timedState "connecting#{role}"
-    Pylon.trigger "systemEvent:sanity:idle", role
+    Pylon.trigger "systemEvent:sanity:warn", role
     try
     #set some attributes
       devicelogger "Device resubscribe attempt #{@.get 'name'}"
@@ -222,6 +219,10 @@ exports.deviceModel = Backbone.Model.extend
       resulting = resulting.then(@setPeriod.bind @)
       resulting = resulting.then(@idlePromise.bind @)
       resulting = resulting.then(@startNotification.bind @)
+      resulting.then ()=>
+        Pylon.trigger "systemEvent:sanity:active", @get 'role'
+      resulting.catch ()=>
+        Pylon.trigger "systemEvent:sanity:fail", @get 'role'
       #devicelogger "resubscribe promise has been built"
       #devicelogger resulting
         
@@ -235,21 +236,16 @@ exports.deviceModel = Backbone.Model.extend
           
   subscribe: ()-> return (device)=>
     devicelogger "SUBSCRIBE"
-    Pylon.trigger "systemEvent:sanity:idle", device.role
-    Pylon.state.timedState "connecting#{@get 'role'}"
+    Pylon.trigger "systemEvent:sanity:warn", device.role
     try
     #set some attributes
       devicelogger "Device subscribe attempt #{device.name}"
   # turn accelerometer off, then set movement  parameters
       thePromise = Promise.all @getBoilerplate()
-      resulting = thePromise.then(@idlePromise.bind @)
-      resulting = resulting.then(@activateMovement.bind @)
-      resulting = resulting.then(@idlePromise.bind @)
-      resulting = resulting.then(@setPeriod.bind @)
-      resulting = resulting.then(@idlePromise.bind @)
-      resulting = resulting.then(@startNotification.bind @)
-      devicelogger "the promise has been built"
-      devicelogger resulting
+      thePromise.then ()=>
+        Pylon.state.timedState "connecting#{@get 'role'}"
+      thePromise.catch ()=>
+        Pylon.trigger "systemEvent:sanity:fail", @get 'role'
         
     catch e
       Pylon.trigger "systemEvent:sanity:fail", @get 'role'

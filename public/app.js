@@ -174,19 +174,9 @@ TiHandler = (function() {
       return;
     }
     name = d.get('name');
+    role = d.get('role');
     TIlogger("detach " + cid + " -- " + name);
-    role = 'Error';
-    if (0 < name.search(/\(([Ll]).*\)/)) {
-      role = 'Left';
-    }
-    if (0 < name.search(/\(([Rr]).*\)/)) {
-      role = 'Right';
-    }
-    if (role === 'Error') {
-      TIlogger("Bad name for sensor: " + name);
-    }
-    d.set('role', '---');
-    Pylon.set(role, d);
+    debugger;
     d.set('buttonText', 'connect');
     d.set('connected', false);
     d.set({
@@ -196,12 +186,15 @@ TiHandler = (function() {
     TIlogger("Device removed from state, attempt dicconnect");
     ble.disconnect(d.get("id"), (function(_this) {
       return function() {
+        debugger;
         Pylon.trigger("systemEvent:sanity:idle", d.get('role'));
+        d.set('role', '---');
         return TIlogger("disconnection of " + name);
       };
     })(this), (function(_this) {
       return function(e) {
         Pylon.trigger("systemEvent:sanity:fail", d.get('role'));
+        d.set('role', '---');
         return TIlogger("Failure to disconnect", e);
       };
     })(this));
@@ -2279,7 +2272,7 @@ exports.deviceModel = Backbone.Model.extend({
     buttonClass: 'button-primary',
     deviceStatus: '--',
     rate: 20,
-    subscribeState: true,
+    subscribeState: false,
     lastDisplay: Date.now()
   },
   urlRoot: function() {
@@ -2290,7 +2283,6 @@ exports.deviceModel = Backbone.Model.extend({
     role = this.get('role');
     this.set('readings', new EventModel(role, this));
     this.set('rowName', "sensor-" + role);
-    this.attributes.subscribeState = true;
     this.sanity = new Sanity(role);
     try {
       $("#" + role + "AssignedName").text(this.get('name'));
@@ -2309,10 +2301,6 @@ exports.deviceModel = Backbone.Model.extend({
         var subscribe;
         role = _this.get('role');
         devicelogger('Change in connection request');
-        if (Pylon.state.get("connecting" + role)) {
-          devicelogger('Change in connection request: pylon says I am connecting');
-          return;
-        }
         subscribe = ['recording', "connecting" + role, 'calibrating'].reduce(function(memo, v) {
           return memo || Boolean(Pylon.state.get(v));
         }, false);
@@ -2325,7 +2313,6 @@ exports.deviceModel = Backbone.Model.extend({
         });
         if (subscribe) {
           devicelogger('Change in connection request: resubscribe');
-          debugger;
           _this.sanity.clear();
           _this.resubscribe();
         } else {
@@ -2392,10 +2379,15 @@ exports.deviceModel = Backbone.Model.extend({
   },
   startNotification: function() {
     devicelogger("startNotification entry");
-    Pylon.trigger("systemEvent:sanity:active", device.role);
+    this.set('numReadings', 0);
     return new Promise((function(_this) {
       return function(resolve, reject) {
         return ble.withPromises.startNotification(_this.id, accelerometer.service, accelerometer.data, function(data) {
+          if (_this.attributes.numReadings === 0) {
+            setTimeout((function() {
+              return resolve();
+            }), 0, _this);
+          }
           return _this.processMovement(new Int16Array(data));
         }, function(xxx) {
           devicelogger("startNotification failure for device " + (_this.get('name')) + ": " + xxx);
@@ -2462,7 +2454,7 @@ exports.deviceModel = Backbone.Model.extend({
     devicelogger("RESUBSCRIBE");
     role = this.get('role');
     Pylon.state.timedState("connecting" + role);
-    Pylon.trigger("systemEvent:sanity:idle", role);
+    Pylon.trigger("systemEvent:sanity:warn", role);
     try {
       devicelogger("Device resubscribe attempt " + (this.get('name')));
       thePromise = new Promise(function(res, rej) {
@@ -2473,6 +2465,16 @@ exports.deviceModel = Backbone.Model.extend({
       resulting = resulting.then(this.setPeriod.bind(this));
       resulting = resulting.then(this.idlePromise.bind(this));
       resulting = resulting.then(this.startNotification.bind(this));
+      resulting.then((function(_this) {
+        return function() {
+          return Pylon.trigger("systemEvent:sanity:active", _this.get('role'));
+        };
+      })(this));
+      resulting["catch"]((function(_this) {
+        return function() {
+          return Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+        };
+      })(this));
     } catch (error1) {
       e = error1;
       Pylon.trigger("systemEvent:sanity:fail", this.get('role'));
@@ -2486,21 +2488,18 @@ exports.deviceModel = Backbone.Model.extend({
   subscribe: function() {
     return (function(_this) {
       return function(device) {
-        var e, error1, resulting, thePromise;
+        var e, error1, thePromise;
         devicelogger("SUBSCRIBE");
-        Pylon.trigger("systemEvent:sanity:idle", device.role);
-        Pylon.state.timedState("connecting" + (_this.get('role')));
+        Pylon.trigger("systemEvent:sanity:warn", device.role);
         try {
           devicelogger("Device subscribe attempt " + device.name);
           thePromise = Promise.all(_this.getBoilerplate());
-          resulting = thePromise.then(_this.idlePromise.bind(_this));
-          resulting = resulting.then(_this.activateMovement.bind(_this));
-          resulting = resulting.then(_this.idlePromise.bind(_this));
-          resulting = resulting.then(_this.setPeriod.bind(_this));
-          resulting = resulting.then(_this.idlePromise.bind(_this));
-          resulting = resulting.then(_this.startNotification.bind(_this));
-          devicelogger("the promise has been built");
-          devicelogger(resulting);
+          thePromise.then(function() {
+            return Pylon.state.timedState("connecting" + (_this.get('role')));
+          });
+          thePromise["catch"](function() {
+            return Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+          });
         } catch (error1) {
           e = error1;
           Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));

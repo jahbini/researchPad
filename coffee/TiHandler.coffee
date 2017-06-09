@@ -144,15 +144,10 @@ class TiHandler
     d = Pylon.get('devices').get  cid
     return unless d
     name = d.get 'name'
+    role = d.get 'role'
     TIlogger "detach #{cid} -- #{name}"
-    role = 'Error'
-    role= 'Left' if 0< name.search /\(([Ll]).*\)/
-    role= 'Right' if 0< name.search /\(([Rr]).*\)/
-    if role == 'Error'
-      TIlogger "Bad name for sensor: #{name}"
-      #return
-    d.set 'role','---'
-    Pylon.set role,d
+    debugger
+    #Pylon.set role,d
     d.set 'buttonText', 'connect'
     d.set 'connected', false
     d.set deviceStatus: 'Disconnected'
@@ -160,10 +155,13 @@ class TiHandler
     TIlogger "Device removed from state, attempt dicconnect"
     ble.disconnect (d.get "id"),
       ()=> 
+        debugger
         Pylon.trigger "systemEvent:sanity:idle", d.get 'role'
+        d.set 'role','---'
         TIlogger "disconnection of #{name}"
       (e)=> 
         Pylon.trigger "systemEvent:sanity:fail", d.get 'role'
+        d.set 'role','---'
         TIlogger "Failure to disconnect",e
     return
 
