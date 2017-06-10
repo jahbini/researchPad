@@ -10,6 +10,8 @@ module.exports = class statistics
     @crowd = 0
     @M1 = @M2 = @M3 = @M4 = 0
     @max = 0
+    @nmin = 0
+    @nmax = 0
     @min = 0
     return
   name: ()->
@@ -19,8 +21,14 @@ module.exports = class statistics
     @clear()
     
   push: (x)->
-    @max = x if @max<x
-    @min = x if @min>x
+    @nmax = 0 if @max<x
+    @max =x if @nmax==0
+    @nmax++ if @max==x
+    
+    @nmin = 0 if @min>x
+    @min = x if @nmin==0
+    @nmin++ if @min==x
+    
     @crowd = (@crowd*4+x)/5
     oldn = @N++
     n = @N
@@ -34,14 +42,16 @@ module.exports = class statistics
     @M2 += term1
     return 
   allValues: ()->
-    return JSON.stringify {
-      n: @N
+    return {
       name: @name()
+      n: @N
       min: @min
+      nmin: @nmin
       max: @max
+      nmax: @nmax
       mean: @M1.toFixed(2)+0
       standardDeviation: @standardDeviation().toFixed(2)+0
-      variance: @variance().toFixed(2)+0
+      #variance: @variance().toFixed(2)+0
       skewness: @skewness().toFixed(2)+0
       kurtiosis: @kurtiosis().toFixed(2)+0
     }
@@ -62,6 +72,10 @@ module.exports = class statistics
     return @max
   minimum: ()->
     return @min
+  nmin: ()->
+    return @nmin
+  nmax: ()->
+    return @nmax
   percent: ()->
     return 0 unless @max > @min
     return 100*(@mean()-@min)/(@max-@min)

@@ -11,13 +11,12 @@ State = Backbone.Model.extend
     calibrating: false
     recording: false
     scanning: false
-    connected: []
     loggedIn:  false
     connectingLeft: false
     connectingRight: false
   initialize: ()->
     @on 'change',->
-      statelogger JSON.stringify @.attributes
+      statelogger JSON.stringify @.changedAttributes()
     return
   timedState: (key,val1=true,val2=false,time=5000)->
     setTimeout (()->Pylon.state.set key, val1),0

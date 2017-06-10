@@ -25,16 +25,30 @@ class Pages
 
   constructor: () ->
 
-  Pylon.on 'systemEvent:sanity:fail',(role)->
-    $("##{role}Status").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red")
-  Pylon.on 'systemEvent:sanity:disconnect',(role)->
-    $("##{role}Status").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
-  Pylon.on 'systemEvent:sanity:active',(role)->
-    $("##{role}Status").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green")
-  Pylon.on 'systemEvent:sanity:warn',(role)->
-    $("##{role}Status").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow")
-  Pylon.on 'systemEvent:sanity:idle',(role)->
-    $("##{role}Status").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
+  Pylon.on 'systemEvent:sanity:failRight',()->
+    $("#RightStatus").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red")
+  Pylon.on 'systemEvent:sanity:failLeft',()->
+    $("#LeftStatus").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red")
+    
+  Pylon.on 'systemEvent:sanity:disconnectRight',()->
+    $("#RightStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
+  Pylon.on 'systemEvent:sanity:disconnectLeft',()->
+    $("#LeftStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
+    
+  Pylon.on 'systemEvent:sanity:activeRight',()->
+    $("#RightStatus").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green")
+  Pylon.on 'systemEvent:sanity:activeLeft',()->
+    $("#LeftStatus").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green")
+    
+  Pylon.on 'systemEvent:sanity:warnRight',()->
+    $("#RightStatus").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow")
+  Pylon.on 'systemEvent:sanity:warnLeft',()->
+    $("#LeftStatus").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow")
+    
+  Pylon.on 'systemEvent:sanity:idleRight',()->
+    $("#RightStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
+  Pylon.on 'systemEvent:sanity:idleLeft',()->
+    $("#LeftStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
   
   theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
@@ -52,7 +66,7 @@ class Pages
           div '.bar',style: 'height:0'
         div '.sensorElement.five.columns', ->
           p '.va-mid',->
-            span '#LeftStatus.led-box.led-green'
+            span '#LeftStatus.led-box.led-dark'
             span '#LeftSerialNumber.mr-rt-10', 'L - version'
           div '#LeftVersion',  'L - serial number'
           div '#LeftAssignedName', 'name'

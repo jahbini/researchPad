@@ -107,7 +107,7 @@ class TiHandler
     name = device.name
     device.role= 'Left' if 0< name.search /\(([Ll]).*\)/
     device.role= 'Right' if 0< name.search /\(([Rr]).*\)/
-    Pylon.trigger "systemEvent:sanity:idle", device.role
+    Pylon.trigger "systemEvent:sanity:idle"+ device.role
     d = new deviceModel device
     pd.push d
     #queryHostDevice(d)
@@ -156,11 +156,11 @@ class TiHandler
     ble.disconnect (d.get "id"),
       ()=> 
         debugger
-        Pylon.trigger "systemEvent:sanity:idle", d.get 'role'
+        Pylon.trigger "systemEvent:sanity:idle"+ d.get 'role'
         d.set 'role','---'
         TIlogger "disconnection of #{name}"
       (e)=> 
-        Pylon.trigger "systemEvent:sanity:fail", d.get 'role'
+        Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
         d.set 'role','---'
         TIlogger "Failure to disconnect",e
     return
@@ -195,78 +195,9 @@ class TiHandler
     ble.connect (d.get "id"),
       d.subscribe()
       (e)-> 
-        Pylon.trigger "systemEvent:sanity:fail", d.get 'role'
+        Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
         TIlogger "Failure to connect",e
     return
-
-   
-###
-        if statusList.SENSORTAG_ONLINE == s
-          sessionInfo = Pylon.get 'sessionInfo'
-          sessionInfo.set role+'sensorUUID', d.id
-          # add FWLevel to session data per Github issue stagapp 99
-          sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
-          #why is there no comment on this next line?  Is that what you want to do??
-          Pylon.trigger 'connected' unless d.get 'connected'
-          d.set {
-            connected: true
-            buttonText: 'on-line'
-            buttonClass: 'button-success'
-            deviceStatus: 'Listening'
-          }
-          newID = sensorInstance.softwareVersion
-          $("#LeftSerialNumber").html sensorInstance.serialNumber
-          $("#LeftVersion").html sensorInstance.softwareVersion
-          d.set 'readings', new EventModel role, d
-            
-          sessionInfo.set role+'sensorUUID', newID
-          d.set 'firmwareVersion', sensorInstance.serialNumber
-          if role == "Left"
-            sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
-            sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
-          else
-            sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
-            sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
-
-          sensorRate = Pylon.get sensorRate
-            # default sensorRate is 10ms and may
-            # be changed from the log with Pylon.rate(ms)
-          askForData sensorInstance, sensorRate
-        return
-      # error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
-      sensorInstance.errorCallback (s)->
-        TIlogger "sensor ERROR report: " +s, ' '+d.id
-        # evothings status reporting errors often report null, for no reason?
-        return if !s
-        err=s.split(' ')
-        if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
-          return
-        if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
-          d.set 'buttonClass', 'button-warning'
-          d.set 'buttonText', 'reconnect'
-          d.set 'deviceStatus', 'Disconnected'
-          d.unset 'role'
-        Pylon.trigger('change respondingDevices')
-        return
-
-      TIlogger "Setting Time-out now",Date.now()
-      setTimeout ()->
-          return if 'Receiving' == d.get 'deviceStatus'
-          TIlogger "Device connection 10 second time-out "
-          sensorInstance.callErrorCallback "No Response"
-          sensorInstance.disconnectDevice()
-        ,10000
-
-      # and plug our data handlers into the evothings scheme
-      sensorInstance.handlers= @createVisualChain d
-      sensorInstance.connectToDevice d.get('rawDevice')
-      
-      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
-        sensorInstance.handlers.accel.finalScale = 2
-        sensorInstance.handlers.mag.finalScale = 0.15
-      askForData sensorInstance, 10
-###
-
 
 if window? then window.exports = TiHandler
 if module?.exports? then module.exports = TiHandler

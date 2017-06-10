@@ -133,7 +133,7 @@ TiHandler = (function() {
     if (0 < name.search(/\(([Rr]).*\)/)) {
       device.role = 'Right';
     }
-    Pylon.trigger("systemEvent:sanity:idle", device.role);
+    Pylon.trigger("systemEvent:sanity:idle" + device.role);
     d = new deviceModel(device);
     pd.push(d);
     if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
@@ -187,13 +187,13 @@ TiHandler = (function() {
     ble.disconnect(d.get("id"), (function(_this) {
       return function() {
         debugger;
-        Pylon.trigger("systemEvent:sanity:idle", d.get('role'));
+        Pylon.trigger("systemEvent:sanity:idle" + d.get('role'));
         d.set('role', '---');
         return TIlogger("disconnection of " + name);
       };
     })(this), (function(_this) {
       return function(e) {
-        Pylon.trigger("systemEvent:sanity:fail", d.get('role'));
+        Pylon.trigger("systemEvent:sanity:fail" + d.get('role'));
         d.set('role', '---');
         return TIlogger("Failure to disconnect", e);
       };
@@ -228,7 +228,7 @@ TiHandler = (function() {
     Pylon.trigger('change respondingDevices');
     TIlogger("Role of Device set, attempt connect");
     ble.connect(d.get("id"), d.subscribe(), function(e) {
-      Pylon.trigger("systemEvent:sanity:fail", d.get('role'));
+      Pylon.trigger("systemEvent:sanity:fail" + d.get('role'));
       return TIlogger("Failure to connect", e);
     });
   };
@@ -236,74 +236,6 @@ TiHandler = (function() {
   return TiHandler;
 
 })();
-
-
-/*
-        if statusList.SENSORTAG_ONLINE == s
-          sessionInfo = Pylon.get 'sessionInfo'
-          sessionInfo.set role+'sensorUUID', d.id
-           * add FWLevel to session data per Github issue stagapp 99
-          sessionInfo.set "FWLevel#{if role=="Left" then 'L' else 'R'}", d.fwRev
-          #why is there no comment on this next line?  Is that what you want to do??
-          Pylon.trigger 'connected' unless d.get 'connected'
-          d.set {
-            connected: true
-            buttonText: 'on-line'
-            buttonClass: 'button-success'
-            deviceStatus: 'Listening'
-          }
-          newID = sensorInstance.softwareVersion
-          $("#LeftSerialNumber").html sensorInstance.serialNumber
-          $("#LeftVersion").html sensorInstance.softwareVersion
-          d.set 'readings', new EventModel role, d
-            
-          sessionInfo.set role+'sensorUUID', newID
-          d.set 'firmwareVersion', sensorInstance.serialNumber
-          if role == "Left"
-            sessionInfo.set 'SerialNoL', sensorInstance.serialNumber
-            sessionInfo.set 'FWLevelL', sensorInstance.getFirmwareString()
-          else
-            sessionInfo.set 'SerialNoR', sensorInstance.serialNumber
-            sessionInfo.set 'FWLevelR', sensorInstance.getFirmwareString()
-
-          sensorRate = Pylon.get sensorRate
-             * default sensorRate is 10ms and may
-             * be changed from the log with Pylon.rate(ms)
-          askForData sensorInstance, sensorRate
-        return
-       * error  handler is set -- d.get('sensorInstance').errorCallback (e)-> {something}
-      sensorInstance.errorCallback (s)->
-        TIlogger "sensor ERROR report: " +s, ' '+d.id
-         * evothings status reporting errors often report null, for no reason?
-        return if !s
-        err=s.split(' ')
-        if evothings.easyble.error.CHARACTERISTIC_NOT_FOUND == err[0]
-          return
-        if evothings.easyble.error.DISCONNECTED == s || s == "No Response"
-          d.set 'buttonClass', 'button-warning'
-          d.set 'buttonText', 'reconnect'
-          d.set 'deviceStatus', 'Disconnected'
-          d.unset 'role'
-        Pylon.trigger('change respondingDevices')
-        return
-
-      TIlogger "Setting Time-out now",Date.now()
-      setTimeout ()->
-          return if 'Receiving' == d.get 'deviceStatus'
-          TIlogger "Device connection 10 second time-out "
-          sensorInstance.callErrorCallback "No Response"
-          sensorInstance.disconnectDevice()
-        ,10000
-
-       * and plug our data handlers into the evothings scheme
-      sensorInstance.handlers= @createVisualChain d
-      sensorInstance.connectToDevice d.get('rawDevice')
-      
-      if d.get 'type' == evothings.tisensortag.CC2650_BLUETOOTH_SMART
-        sensorInstance.handlers.accel.finalScale = 2
-        sensorInstance.handlers.mag.finalScale = 0.15
-      askForData sensorInstance, 10
- */
 
 if (typeof window !== "undefined" && window !== null) {
   window.exports = TiHandler;
@@ -325,7 +257,7 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-localStorage.setItem('debug', "app,TIhandler,sensor,logon,state");
+localStorage.setItem('debug', "app,TIhandler,sanity,logon,state");
 
 buglog = require('./lib/buglog.coffee');
 
@@ -860,12 +792,6 @@ enableRecordButtonOK = function() {
     });
   }
   canRecord = true;
-  if (!Pylon.state.get('connected')) {
-    canRecord = false;
-    (Pylon.get("button-scan")).set({
-      enabled: true
-    });
-  }
   if (!Pylon.state.get('loggedIn')) {
     canRecord = false;
     (Pylon.get("button-admin")).set({
@@ -883,14 +809,6 @@ enableRecordButtonOK = function() {
 };
 
 Pylon.on('sessionUploaded', enableRecordButtonOK);
-
-Pylon.on('connected', function() {
-  applogger('enable recording button');
-  Pylon.state.set({
-    connected: true
-  });
-  return enableRecordButtonOK();
-});
 
 Pylon.on('adminDone', function() {
   (Pylon.get('button-admin')).set('legend', "Log Out");
@@ -1676,7 +1594,7 @@ module.exports = sanity = (function() {
     this.mag[0].push(mag[0]);
     this.mag[1].push(mag[1]);
     this.mag[2].push(mag[2]);
-    Pylon.trigger(this.role + "Vertmeter", this.accel[2].decay());
+    Pylon.trigger(this.role + "Vertmeter", this.accel[0].decay());
     this.oldStartTime = startTime;
     this.oldEndTime = Date.now();
   };
@@ -1686,10 +1604,27 @@ module.exports = sanity = (function() {
   };
 
   sanity.prototype.judge = function() {
+    var report;
+    report = {
+      accel: this.accel.map(function(v) {
+        return v.allValues();
+      }),
+      mag: this.mag.map(function(v) {
+        return v.allValues();
+      }),
+      gyro: this.gyro.map(function(v) {
+        return v.allValues();
+      }),
+      rate: this.timer.allValues(),
+      sequence: this.sequencer.allValues()
+    };
+    Pylon.trigger('sanityReport', report);
     sanitylogger("sequence number of " + this.role + " is " + this.sequence);
-    sanitylogger(this.timer.allValues());
-    sanitylogger(this.accel[2].allValues());
-    sanitylogger(this.role + "Vertmeter", this.accel[2].decay());
+    sanitylogger(JSON.stringify(report.rate));
+    sanitylogger(JSON.stringify(report.sequence));
+    sanitylogger(JSON.stringify(report.accel[0]));
+    sanitylogger(this.role + "Vertmeter", this.accel[0].decay());
+    this.clear();
   };
 
   function sanity(role) {
@@ -1724,6 +1659,8 @@ module.exports = statistics = (function() {
     this.crowd = 0;
     this.M1 = this.M2 = this.M3 = this.M4 = 0;
     this.max = 0;
+    this.nmin = 0;
+    this.nmax = 0;
     this.min = 0;
   };
 
@@ -1739,10 +1676,22 @@ module.exports = statistics = (function() {
   statistics.prototype.push = function(x) {
     var delta, delta_n, delta_n2, n, oldn, term1;
     if (this.max < x) {
+      this.nmax = 0;
+    }
+    if (this.nmax === 0) {
       this.max = x;
     }
+    if (this.max === x) {
+      this.nmax++;
+    }
     if (this.min > x) {
+      this.nmin = 0;
+    }
+    if (this.nmin === 0) {
       this.min = x;
+    }
+    if (this.min === x) {
+      this.nmin++;
     }
     this.crowd = (this.crowd * 4 + x) / 5;
     oldn = this.N++;
@@ -1758,17 +1707,18 @@ module.exports = statistics = (function() {
   };
 
   statistics.prototype.allValues = function() {
-    return JSON.stringify({
-      n: this.N,
+    return {
       name: this.name(),
+      n: this.N,
       min: this.min,
+      nmin: this.nmin,
       max: this.max,
+      nmax: this.nmax,
       mean: this.M1.toFixed(2) + 0,
       standardDeviation: this.standardDeviation().toFixed(2) + 0,
-      variance: this.variance().toFixed(2) + 0,
       skewness: this.skewness().toFixed(2) + 0,
       kurtiosis: this.kurtiosis().toFixed(2) + 0
-    });
+    };
   };
 
   statistics.prototype.numDataValues = function() {
@@ -1801,6 +1751,14 @@ module.exports = statistics = (function() {
 
   statistics.prototype.minimum = function() {
     return this.min;
+  };
+
+  statistics.prototype.nmin = function() {
+    return this.nmin;
+  };
+
+  statistics.prototype.nmax = function() {
+    return this.nmax;
   };
 
   statistics.prototype.percent = function() {
@@ -2271,6 +2229,7 @@ exports.deviceModel = Backbone.Model.extend({
     buttonText: 'connect',
     buttonClass: 'button-primary',
     deviceStatus: '--',
+    connected: false,
     rate: 20,
     subscribeState: false,
     lastDisplay: Date.now()
@@ -2398,7 +2357,7 @@ exports.deviceModel = Backbone.Model.extend({
   },
   stopNotification: function() {
     var configData;
-    Pylon.trigger("systemEvent:sanity:idle", device.role);
+    Pylon.trigger("systemEvent:sanity:idle" + this.get('role'));
     devicelogger("stopNotification entry");
     configData = new Uint16Array(1);
     configData[0] = 0x0000;
@@ -2454,7 +2413,7 @@ exports.deviceModel = Backbone.Model.extend({
     devicelogger("RESUBSCRIBE");
     role = this.get('role');
     Pylon.state.timedState("connecting" + role);
-    Pylon.trigger("systemEvent:sanity:warn", role);
+    Pylon.trigger("systemEvent:sanity:warn" + role);
     try {
       devicelogger("Device resubscribe attempt " + (this.get('name')));
       thePromise = new Promise(function(res, rej) {
@@ -2465,19 +2424,14 @@ exports.deviceModel = Backbone.Model.extend({
       resulting = resulting.then(this.setPeriod.bind(this));
       resulting = resulting.then(this.idlePromise.bind(this));
       resulting = resulting.then(this.startNotification.bind(this));
-      resulting.then((function(_this) {
-        return function() {
-          return Pylon.trigger("systemEvent:sanity:active", _this.get('role'));
-        };
-      })(this));
       resulting["catch"]((function(_this) {
         return function() {
-          return Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
         };
       })(this));
     } catch (error1) {
       e = error1;
-      Pylon.trigger("systemEvent:sanity:fail", this.get('role'));
+      Pylon.trigger("systemEvent:sanity:fail" + this.get('role'));
       devicelogger("error in resubscribe");
       devicelogger(e);
       device.set({
@@ -2490,7 +2444,7 @@ exports.deviceModel = Backbone.Model.extend({
       return function(device) {
         var e, error1, thePromise;
         devicelogger("SUBSCRIBE");
-        Pylon.trigger("systemEvent:sanity:warn", device.role);
+        Pylon.trigger("systemEvent:sanity:warn" + device.role);
         try {
           devicelogger("Device subscribe attempt " + device.name);
           thePromise = Promise.all(_this.getBoilerplate());
@@ -2498,11 +2452,11 @@ exports.deviceModel = Backbone.Model.extend({
             return Pylon.state.timedState("connecting" + (_this.get('role')));
           });
           thePromise["catch"](function() {
-            return Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+            return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
           });
         } catch (error1) {
           e = error1;
-          Pylon.trigger("systemEvent:sanity:fail", _this.get('role'));
+          Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
           devicelogger("error in subscribe");
           devicelogger(e);
           device.set({
@@ -2526,7 +2480,7 @@ exports.deviceModel = Backbone.Model.extend({
       this.set({
         deviceStatus: 'Receiving'
       });
-      Pylon.trigger('systemEvent:sanity:active', this.get('role'));
+      Pylon.trigger('systemEvent:sanity:active' + this.get('role'));
     }
     this.attributes.numReadings += 1;
     if (recording) {
@@ -2636,14 +2590,13 @@ State = Backbone.Model.extend({
     calibrating: false,
     recording: false,
     scanning: false,
-    connected: [],
     loggedIn: false,
     connectingLeft: false,
     connectingRight: false
   },
   initialize: function() {
     this.on('change', function() {
-      return statelogger(JSON.stringify(this.attributes));
+      return statelogger(JSON.stringify(this.changedAttributes()));
     });
   },
   timedState: function(key, val1, val2, time) {
@@ -3262,24 +3215,44 @@ Pages = (function() {
     this.forceTest = bind(this.forceTest, this);
   }
 
-  Pylon.on('systemEvent:sanity:fail', function(role) {
-    return $("#" + role + "Status").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red");
+  Pylon.on('systemEvent:sanity:failRight', function() {
+    return $("#RightStatus").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red");
   });
 
-  Pylon.on('systemEvent:sanity:disconnect', function(role) {
-    return $("#" + role + "Status").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+  Pylon.on('systemEvent:sanity:failLeft', function() {
+    return $("#LeftStatus").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red");
   });
 
-  Pylon.on('systemEvent:sanity:active', function(role) {
-    return $("#" + role + "Status").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green");
+  Pylon.on('systemEvent:sanity:disconnectRight', function() {
+    return $("#RightStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
   });
 
-  Pylon.on('systemEvent:sanity:warn', function(role) {
-    return $("#" + role + "Status").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow");
+  Pylon.on('systemEvent:sanity:disconnectLeft', function() {
+    return $("#LeftStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
   });
 
-  Pylon.on('systemEvent:sanity:idle', function(role) {
-    return $("#" + role + "Status").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+  Pylon.on('systemEvent:sanity:activeRight', function() {
+    return $("#RightStatus").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green");
+  });
+
+  Pylon.on('systemEvent:sanity:activeLeft', function() {
+    return $("#LeftStatus").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green");
+  });
+
+  Pylon.on('systemEvent:sanity:warnRight', function() {
+    return $("#RightStatus").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow");
+  });
+
+  Pylon.on('systemEvent:sanity:warnLeft', function() {
+    return $("#LeftStatus").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow");
+  });
+
+  Pylon.on('systemEvent:sanity:idleRight', function() {
+    return $("#RightStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+  });
+
+  Pylon.on('systemEvent:sanity:idleLeft', function() {
+    return $("#LeftStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
   });
 
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
@@ -3310,7 +3283,7 @@ Pages = (function() {
         });
         div('.sensorElement.five.columns', function() {
           p('.va-mid', function() {
-            span('#LeftStatus.led-box.led-green');
+            span('#LeftStatus.led-box.led-dark');
             return span('#LeftSerialNumber.mr-rt-10', 'L - version');
           });
           div('#LeftVersion', 'L - serial number');

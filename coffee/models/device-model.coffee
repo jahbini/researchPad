@@ -43,6 +43,7 @@ exports.deviceModel = Backbone.Model.extend
     buttonText: 'connect'
     buttonClass: 'button-primary'
     deviceStatus: '--'
+    connected: false
     rate: 20
     subscribeState: false
     lastDisplay: Date.now()
@@ -150,7 +151,7 @@ exports.deviceModel = Backbone.Model.extend
             reject()
     
   stopNotification: ()->
-    Pylon.trigger "systemEvent:sanity:idle", device.role
+    Pylon.trigger "systemEvent:sanity:idle"+ @get 'role'
     devicelogger "stopNotification entry"
     configData = new Uint16Array 1
       #Turn off gyro, accel, and mag, 2G range, Disable wake on motion
@@ -208,7 +209,7 @@ exports.deviceModel = Backbone.Model.extend
     devicelogger "RESUBSCRIBE"
     role = @get 'role'
     Pylon.state.timedState "connecting#{role}"
-    Pylon.trigger "systemEvent:sanity:warn", role
+    Pylon.trigger "systemEvent:sanity:warn"+ role
     try
     #set some attributes
       devicelogger "Device resubscribe attempt #{@.get 'name'}"
@@ -219,15 +220,14 @@ exports.deviceModel = Backbone.Model.extend
       resulting = resulting.then(@setPeriod.bind @)
       resulting = resulting.then(@idlePromise.bind @)
       resulting = resulting.then(@startNotification.bind @)
-      resulting.then ()=>
-        Pylon.trigger "systemEvent:sanity:active", @get 'role'
+      # No resulting.then clause -- device triggers active on first packet recieved 
       resulting.catch ()=>
-        Pylon.trigger "systemEvent:sanity:fail", @get 'role'
+        Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
       #devicelogger "resubscribe promise has been built"
       #devicelogger resulting
         
     catch e
-      Pylon.trigger "systemEvent:sanity:fail", @get 'role'
+      Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
       devicelogger "error in resubscribe"
       devicelogger e
       device.set deviceStatus: 'Failed re-subscribe'
@@ -236,7 +236,7 @@ exports.deviceModel = Backbone.Model.extend
           
   subscribe: ()-> return (device)=>
     devicelogger "SUBSCRIBE"
-    Pylon.trigger "systemEvent:sanity:warn", device.role
+    Pylon.trigger "systemEvent:sanity:warn"+ device.role
     try
     #set some attributes
       devicelogger "Device subscribe attempt #{device.name}"
@@ -245,10 +245,10 @@ exports.deviceModel = Backbone.Model.extend
       thePromise.then ()=>
         Pylon.state.timedState "connecting#{@get 'role'}"
       thePromise.catch ()=>
-        Pylon.trigger "systemEvent:sanity:fail", @get 'role'
+        Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
         
     catch e
-      Pylon.trigger "systemEvent:sanity:fail", @get 'role'
+      Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
       devicelogger "error in subscribe"
       devicelogger e
       device.set deviceStatus: 'Failed connection'
@@ -269,7 +269,7 @@ exports.deviceModel = Backbone.Model.extend
     recording = Pylon.state.get 'recording'
     if @attributes.numReadings == 0
       @set deviceStatus: 'Receiving'
-      Pylon.trigger 'systemEvent:sanity:active',@get 'role'
+      Pylon.trigger 'systemEvent:sanity:active'+@get 'role'
       
     @attributes.numReadings += 1
     if recording

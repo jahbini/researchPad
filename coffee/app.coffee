@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"app,TIhandler,sensor,logon,state"
+localStorage.setItem 'debug',"app,TIhandler,sanity,logon,state"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 window.console = new buglog "logon"
@@ -381,9 +381,6 @@ enableRecordButtonOK= ()->
   (Pylon.get 'Left')?.set numReadings: 0
   (Pylon.get 'Right')?.set numReadings: 0
   canRecord = true
-  if ! Pylon.state.get 'connected'
-    canRecord = false
-    (Pylon.get "button-scan").set enabled: true
   if ! Pylon.state.get 'loggedIn'
     canRecord = false
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
@@ -392,11 +389,6 @@ enableRecordButtonOK= ()->
   return false
   
 Pylon.on 'sessionUploaded',enableRecordButtonOK
-
-Pylon.on 'connected', ->
-  applogger 'enable recording button'
-  Pylon.state.set connected: true
-  return enableRecordButtonOK()
 
 Pylon.on 'adminDone', ->
   (Pylon.get 'button-admin').set 'legend',"Log Out"

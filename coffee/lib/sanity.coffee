@@ -33,23 +33,31 @@ module.exports = class sanity
     @mag[0].push mag[0]
     @mag[1].push mag[1]
     @mag[2].push mag[2]
-    Pylon.trigger "#{@role}Vertmeter",@accel[2].decay()
+    Pylon.trigger "#{@role}Vertmeter",@accel[0].decay()
     @oldStartTime = startTime
     @oldEndTime = Date.now()
     return
   format = (v) ->
     v.mean().toFixed(2)
   judge: ()=>
+    report = {
+      accel: @accel.map (v)-> v.allValues()
+      mag: @mag.map (v)-> v.allValues()
+      gyro: @gyro.map (v)-> v.allValues()
+      rate: @timer.allValues()
+      sequence: @sequencer.allValues()
+    }
+    Pylon.trigger 'sanityReport',report
     sanitylogger "sequence number of #{@role} is #{@sequence}"
     
-    sanitylogger @timer.allValues()
-    #sanitylogger @sequencer.allValues()
+    sanitylogger JSON.stringify report.rate
+    sanitylogger JSON.stringify report.sequence
 
 
     #sanitylogger @accel[0].allValues()
     #sanitylogger @accel[1].allValues()
-    sanitylogger @accel[2].allValues()
-    sanitylogger "#{@role}Vertmeter",@accel[2].decay()
+    sanitylogger JSON.stringify report.accel[0]
+    sanitylogger "#{@role}Vertmeter",@accel[0].decay()
     #sanitylogger @mag[0].allValues()
     #sanitylogger @mag[1].allValues()
     #sanitylogger @mag[2].allValues()
@@ -57,6 +65,7 @@ module.exports = class sanity
     #sanitylogger @gyro[0].allValues()
     #sanitylogger @gyro[1].allValues()
     #sanitylogger @gyro[2].allValues()
+    @clear()
     return
 
   constructor: (@role) ->
