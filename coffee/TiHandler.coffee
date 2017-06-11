@@ -148,6 +148,9 @@ class TiHandler
     TIlogger "detach #{cid} -- #{name}"
     debugger
     #Pylon.set role,d
+    #d.set 'name',"Name"
+    #d.set 'serialNumber','Serial number'
+    #d.set 'firmwareVersion','Version'
     d.set 'buttonText', 'connect'
     d.set 'connected', false
     d.set deviceStatus: 'Disconnected'

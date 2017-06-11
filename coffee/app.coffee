@@ -480,11 +480,21 @@ $(document).on 'deviceready', ->
     applogger "logon.js returns status of "+status
   applogger "device ready"
   return
+  
+onPause= ()->
+  # Handle the pause event
+  devices = Pylon.get 'devices'
+  devices.map (d)->
+    TiHandler.detachDevice d.cid
+  applogger "exit did not exit!!"
 
 $ ->
   # Force a page reload if put in background to wipe the sessionInfo and other state
   document.addEventListener 'resume',()->
     window.location.reload()
+  document.addEventListener 'pause', onPause, false
+
+    
   document.addEventListener 'online', ()->
     return
     require './lib/net-view.coffee'

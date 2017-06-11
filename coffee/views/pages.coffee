@@ -67,9 +67,9 @@ class Pages
         div '.sensorElement.five.columns', ->
           p '.va-mid',->
             span '#LeftStatus.led-box.led-dark'
-            span '#LeftSerialNumber.mr-rt-10', 'L - version'
-          div '#LeftVersion',  'L - serial number'
-          div '#LeftAssignedName', 'name'
+            span '#LeftSerialNumber.mr-rt-10', 'Serial number'
+          div '#LeftVersion',  'Version'
+          div '#LeftAssignedName', 'Name'
           div '#sensor-Left',->
             button '.connect.needsclick'
               ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
@@ -82,9 +82,9 @@ class Pages
         div '.sensorElement.five.columns', ->
           p '.va-mid',->
             span '#RightStatus.led-box.led-dark'
-            span '#RightSerialNumber.mr-rt-10' , 'R - serial number'
-          div '#RightVersion', 'R - version'
-          div '#RightAssignedName', 'name'
+            span '#RightSerialNumber.mr-rt-10' , 'Serial number'
+          div '#RightVersion', 'Version'
+          div '#RightAssignedName', 'Name'
           div '#sensor-Right',->
             button '.connect.needsclick'
               ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"

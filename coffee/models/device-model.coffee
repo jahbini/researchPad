@@ -137,6 +137,8 @@ exports.deviceModel = Backbone.Model.extend
       devicelogger "startNotification entry"
       @set 'numReadings',0
       
+      #hold off the first sanity check to 1000 ms from now
+      @lastDisplay = Date.now()
       new Promise (resolve,reject)=>
         ble.withPromises.startNotification @.id,
           accelerometer.service
@@ -275,8 +277,8 @@ exports.deviceModel = Backbone.Model.extend
     if recording
       @attributes.readings.addSample data
     
-    gyro= data[0..2].map @sensorMpu9250GyroConvert 
-    accel= data[3..5].map @sensorMpu9250AccConvert
+    gyro= data[0..2].map (a)->return a
+    accel= data[3..5].map (a)->return a
     mag= data[6..8].map (a)-> return a
     sequence = data[9]
     

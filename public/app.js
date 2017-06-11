@@ -248,7 +248,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":12,"Case":26,"backbone":23,"jquery":30,"underscore":33}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -953,10 +953,20 @@ $(document).on('deviceready', function() {
   applogger("device ready");
 });
 
+onPause = function() {
+  var devices;
+  devices = Pylon.get('devices');
+  devices.map(function(d) {
+    return TiHandler.detachDevice(d.cid);
+  });
+  return applogger("exit did not exit!!");
+};
+
 $(function() {
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
+  document.addEventListener('pause', onPause, false);
   document.addEventListener('online', function() {
     return;
     return require('./lib/net-view.coffee');
@@ -2339,6 +2349,7 @@ exports.deviceModel = Backbone.Model.extend({
   startNotification: function() {
     devicelogger("startNotification entry");
     this.set('numReadings', 0);
+    this.lastDisplay = Date.now();
     return new Promise((function(_this) {
       return function(resolve, reject) {
         return ble.withPromises.startNotification(_this.id, accelerometer.service, accelerometer.data, function(data) {
@@ -2486,8 +2497,12 @@ exports.deviceModel = Backbone.Model.extend({
     if (recording) {
       this.attributes.readings.addSample(data);
     }
-    gyro = data.slice(0, 3).map(this.sensorMpu9250GyroConvert);
-    accel = data.slice(3, 6).map(this.sensorMpu9250AccConvert);
+    gyro = data.slice(0, 3).map(function(a) {
+      return a;
+    });
+    accel = data.slice(3, 6).map(function(a) {
+      return a;
+    });
     mag = data.slice(6, 9).map(function(a) {
       return a;
     });
@@ -3284,10 +3299,10 @@ Pages = (function() {
         div('.sensorElement.five.columns', function() {
           p('.va-mid', function() {
             span('#LeftStatus.led-box.led-dark');
-            return span('#LeftSerialNumber.mr-rt-10', 'L - version');
+            return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
           });
-          div('#LeftVersion', 'L - serial number');
-          div('#LeftAssignedName', 'name');
+          div('#LeftVersion', 'Version');
+          div('#LeftAssignedName', 'Name');
           return div('#sensor-Left', function() {
             button('.connect.needsclick', {
               onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
@@ -3305,10 +3320,10 @@ Pages = (function() {
         return div('.sensorElement.five.columns', function() {
           p('.va-mid', function() {
             span('#RightStatus.led-box.led-dark');
-            return span('#RightSerialNumber.mr-rt-10', 'R - serial number');
+            return span('#RightSerialNumber.mr-rt-10', 'Serial number');
           });
-          div('#RightVersion', 'R - version');
-          div('#RightAssignedName', 'name');
+          div('#RightVersion', 'Version');
+          div('#RightAssignedName', 'Name');
           return div('#sensor-Right', function() {
             button('.connect.needsclick', {
               onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
