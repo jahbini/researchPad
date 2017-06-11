@@ -33,7 +33,6 @@ module.exports = class sanity
     @mag[0].push mag[0]
     @mag[1].push mag[1]
     @mag[2].push mag[2]
-    Pylon.trigger "#{@role}Vertmeter",@accel[0].decay()
     @oldStartTime = startTime
     @oldEndTime = Date.now()
     return
@@ -57,7 +56,6 @@ module.exports = class sanity
     #sanitylogger @accel[0].allValues()
     #sanitylogger @accel[1].allValues()
     sanitylogger JSON.stringify report.accel[0]
-    sanitylogger "#{@role}Vertmeter",@accel[0].decay()
     #sanitylogger @mag[0].allValues()
     #sanitylogger @mag[1].allValues()
     #sanitylogger @mag[2].allValues()

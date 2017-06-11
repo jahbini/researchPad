@@ -257,7 +257,7 @@ _ = require('underscore');
 
 Backbone = require('backbone');
 
-localStorage.setItem('debug', "app,TIhandler,sanity,logon,state");
+localStorage.setItem('debug', "app,TIhandler,sanity,sensor,logon,state");
 
 buglog = require('./lib/buglog.coffee');
 
@@ -1604,7 +1604,6 @@ module.exports = sanity = (function() {
     this.mag[0].push(mag[0]);
     this.mag[1].push(mag[1]);
     this.mag[2].push(mag[2]);
-    Pylon.trigger(this.role + "Vertmeter", this.accel[0].decay());
     this.oldStartTime = startTime;
     this.oldEndTime = Date.now();
   };
@@ -1633,7 +1632,6 @@ module.exports = sanity = (function() {
     sanitylogger(JSON.stringify(report.rate));
     sanitylogger(JSON.stringify(report.sequence));
     sanitylogger(JSON.stringify(report.accel[0]));
-    sanitylogger(this.role + "Vertmeter", this.accel[0].decay());
     this.clear();
   };
 
@@ -1780,7 +1778,7 @@ module.exports = statistics = (function() {
 
   statistics.prototype.decay = function() {
     if (!(this.max > this.min)) {
-      return 0;
+      return this.M1;
     }
     return 100 * (this.crowd - this.min) / (this.max - this.min);
   };
@@ -2507,6 +2505,7 @@ exports.deviceModel = Backbone.Model.extend({
       return a;
     });
     sequence = data[9];
+    Pylon.trigger((this.get('role')) + "Vertmeter", 100 * (accel[0] + Math.pow(2, 15)) / (Math.pow(2, 16)));
     this.sanity.observe(gyro, accel, mag, sequence, timeval);
     if (this.lastDisplay + 1000 > Date.now()) {
       return;
@@ -3559,7 +3558,7 @@ Pages = (function() {
           widget = $("#" + role + "Vertmeter .bar");
         }
         color = "#a22";
-        if (val > 90) {
+        if (val > 50) {
           color = "#2e2";
         }
         if (widget) {

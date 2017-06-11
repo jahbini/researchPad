@@ -281,6 +281,7 @@ exports.deviceModel = Backbone.Model.extend
     accel= data[3..5].map (a)->return a
     mag= data[6..8].map (a)-> return a
     sequence = data[9]
+    Pylon.trigger "#{@get 'role'}Vertmeter",100*(accel[0]+2**15)/(2**16)
     
     @sanity.observe gyro, accel, mag, sequence, timeval
     #only do sanity checks once per second

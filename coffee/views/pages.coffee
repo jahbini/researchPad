@@ -241,7 +241,7 @@ class Pages
       return (val)->
         widget = $("##{role}Vertmeter .bar") unless widget
         color = "#a22"
-        if val > 90
+        if val > 50
           color = "#2e2"
         widget.css("height", "#{val}%").css("background-color",color) if widget
         return

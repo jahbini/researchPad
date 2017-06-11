@@ -80,6 +80,6 @@ module.exports = class statistics
     return 0 unless @max > @min
     return 100*(@mean()-@min)/(@max-@min)
   decay: ()->
-    return 0 unless @max > @min
+    return @M1 unless @max > @min
     return 100*(@crowd-@min)/(@max-@min)
     

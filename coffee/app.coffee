@@ -6,7 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-localStorage.setItem 'debug',"app,TIhandler,sanity,logon,state"
+localStorage.setItem 'debug',"app,TIhandler,sanity,sensor,logon,state"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 window.console = new buglog "logon"
