@@ -113,7 +113,7 @@ TiHandler = (function() {
   };
 
   ble_found = function(device) {
-    var d, eeee, error, name, pd;
+    var d, eeee, error, pd;
     if (!device.name) {
       return;
     }
@@ -125,17 +125,9 @@ TiHandler = (function() {
       return;
     }
     TIlogger("got new device");
-    device.role = 'Guess';
-    name = device.name;
-    if (0 < name.search(/\(([Ll]).*\)/)) {
-      device.role = 'Left';
-    }
-    if (0 < name.search(/\(([Rr]).*\)/)) {
-      device.role = 'Right';
-    }
-    Pylon.trigger("systemEvent:sanity:idle" + device.role);
     d = new deviceModel(device);
     pd.push(d);
+    Pylon.trigger("systemEvent:sanity:idle" + d.get('role'));
     if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
       try {
         Pylon.trigger('enableDevice', d.cid);
@@ -175,62 +167,28 @@ TiHandler = (function() {
     }
     name = d.get('name');
     role = d.get('role');
+    Pylon.unset(role);
     TIlogger("detach " + cid + " -- " + name);
-    debugger;
-    d.set('buttonText', 'connect');
-    d.set('connected', false);
-    d.set({
-      deviceStatus: 'Disconnected'
-    });
-    Pylon.trigger('change respondingDevices');
-    TIlogger("Device removed from state, attempt dicconnect");
-    ble.disconnect(d.get("id"), (function(_this) {
-      return function() {
-        debugger;
-        Pylon.trigger("systemEvent:sanity:idle" + d.get('role'));
-        d.set('role', '---');
-        return TIlogger("disconnection of " + name);
-      };
-    })(this), (function(_this) {
-      return function(e) {
-        Pylon.trigger("systemEvent:sanity:fail" + d.get('role'));
-        d.set('role', '---');
-        return TIlogger("Failure to disconnect", e);
-      };
-    })(this));
+    d.disconnect();
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
-    var d, name, role;
+    var d, name;
     if (Pylon.state.get('recording')) {
       return;
     }
-    TIlogger("attach " + cid);
     d = Pylon.get('devices').get(cid);
     name = d.get('name');
-    role = 'Error';
-    if (0 < name.search(/\(([Ll]).*\)/)) {
-      role = 'Left';
+    if (!name) {
+      name = 'No Name -- HELP';
     }
-    if (0 < name.search(/\(([Rr]).*\)/)) {
-      role = 'Right';
-    }
-    if (role === 'Error') {
-      TIlogger("Bad name for sensor: " + name);
-    }
+    TIlogger("attach " + cid + " - device name " + name);
     if (d.get('connected')) {
       return;
     }
-    d.set('buttonText', 'connecting');
-    d.set('role', role);
-    d.set('connected', false);
-    Pylon.set(role, d);
-    Pylon.trigger('change respondingDevices');
+    Pylon.set(d.get('role'), d);
     TIlogger("Role of Device set, attempt connect");
-    ble.connect(d.get("id"), d.subscribe(), function(e) {
-      Pylon.trigger("systemEvent:sanity:fail" + d.get('role'));
-      return TIlogger("Failure to connect", e);
-    });
+    Pylon.state.timedState("subscribing" + (d.get('role')));
   };
 
   return TiHandler;
@@ -2246,8 +2204,17 @@ exports.deviceModel = Backbone.Model.extend({
     return Pylon.get('hostUrl') + 'sensor-tag';
   },
   initialize: function() {
-    var error, error1, role;
-    role = this.get('role');
+    var error, error1, name, role;
+    role = 'Guess';
+    name = this.get('name');
+    if (0 < name.search(/\(([Ll]).*\)/)) {
+      role = 'Left';
+    }
+    if (0 < name.search(/\(([Rr]).*\)/)) {
+      role = 'Right';
+    }
+    this.attributes.role = role;
+    Pylon.trigger("systemEvent:sanity:idle" + role);
     this.set('readings', new EventModel(role, this));
     this.set('rowName', "sensor-" + role);
     this.sanity = new Sanity(role);
@@ -2263,28 +2230,28 @@ exports.deviceModel = Backbone.Model.extend({
       this.set('rowName', "sensor-" + role);
       $("#" + role + "AssignedName").text(this.get('name'));
     });
-    Pylon.state.on("change:recording change:connecting" + (this.get('role')) + " change:calibrating", (function(_this) {
+    Pylon.state.on("change:recording change:subscribing" + (this.get('role')) + " change:calibrating", (function(_this) {
       return function() {
-        var subscribe;
+        var subscribeRequest;
         role = _this.get('role');
         devicelogger('Change in connection request');
-        subscribe = ['recording', "connecting" + role, 'calibrating'].reduce(function(memo, v) {
+        subscribeRequest = ['recording', "subscribing" + role, 'calibrating'].reduce(function(memo, v) {
           return memo || Boolean(Pylon.state.get(v));
         }, false);
-        if (subscribe === _this.get('subscribeState')) {
+        if (subscribeRequest === _this.get('subscribeState')) {
           devicelogger('Change in connection request: no change in subscribe status');
           return;
         }
         _this.set({
-          subscribeState: subscribe
+          subscribeState: subscribeRequest
         });
-        if (subscribe) {
-          devicelogger('Change in connection request: resubscribe');
+        if (subscribeRequest) {
+          devicelogger('Change in connection request: (re) attachDevice');
           _this.sanity.clear();
-          _this.resubscribe();
+          _this.connectToDevice().then(_this.subscribe.bind(_this));
         } else {
-          devicelogger('Change in connection request: stopNotification');
-          _this.stopNotification();
+          devicelogger('Change in connection request: detachDevice');
+          _this.disconnect();
         }
       };
     })(this));
@@ -2421,7 +2388,6 @@ exports.deviceModel = Backbone.Model.extend({
     var e, error1, resulting, role, thePromise;
     devicelogger("RESUBSCRIBE");
     role = this.get('role');
-    Pylon.state.timedState("connecting" + role);
     Pylon.trigger("systemEvent:sanity:warn" + role);
     try {
       devicelogger("Device resubscribe attempt " + (this.get('name')));
@@ -2449,31 +2415,71 @@ exports.deviceModel = Backbone.Model.extend({
     }
   },
   subscribe: function() {
-    return (function(_this) {
-      return function(device) {
-        var e, error1, thePromise;
-        devicelogger("SUBSCRIBE");
-        Pylon.trigger("systemEvent:sanity:warn" + device.role);
-        try {
-          devicelogger("Device subscribe attempt " + device.name);
-          thePromise = Promise.all(_this.getBoilerplate());
-          thePromise.then(function() {
-            return Pylon.state.timedState("connecting" + (_this.get('role')));
-          });
-          thePromise["catch"](function() {
-            return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
-          });
-        } catch (error1) {
-          e = error1;
+    var e, error1, thePromise;
+    devicelogger("SUBSCRIBE");
+    Pylon.trigger("systemEvent:sanity:warn" + this.attributes.role);
+    try {
+      devicelogger(" subscribe attempt " + this.attributes.name);
+      thePromise = Promise.all(this.getBoilerplate());
+      thePromise.then(this.resubscribe.bind(this));
+      thePromise["catch"]((function(_this) {
+        return function() {
+          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
+        };
+      })(this));
+    } catch (error1) {
+      e = error1;
+      Pylon.trigger("systemEvent:sanity:fail" + this.get('role'));
+      devicelogger("error in subscribe");
+      devicelogger(e);
+      device.set({
+        deviceStatus: 'Failed connection'
+      });
+    }
+  },
+  connectToDevice: function() {
+    return new Promise((function(_this) {
+      return function(resolve, reject) {
+        return ble.connect(_this.get("id"), resolve, function(e) {
           Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
-          devicelogger("error in subscribe");
-          devicelogger(e);
-          device.set({
-            deviceStatus: 'Failed connection'
+          _this.set({
+            deviceStatus: 'Failed Connection',
+            buttonText: connect,
+            connected: false
           });
-        }
+          devicelogger("Failure to connect", e);
+          return reject();
+        });
       };
-    })(this);
+    })(this));
+  },
+  disconnect: function() {
+    this.set({
+      buttonText: 'connect',
+      connected: 'disconnecting',
+      deviceStatus: "Disconnecting"
+    });
+    ble.disconnect(this.get("id"), (function(_this) {
+      return function() {
+        Pylon.trigger("systemEvent:sanity:idle" + _this.get('role'));
+        _this.set({
+          connected: false,
+          buttonText: 'connect',
+          deviceStatus: 'Available'
+        });
+        return devicelogger("disconnection of " + name);
+      };
+    })(this), (function(_this) {
+      return function(e) {
+        Pylon.trigger("systemEvent:sanity:fail" + d.get('role'));
+        _this.set({
+          connected: false,
+          deviceStatus: 'Unknown',
+          buttonText: 'connect'
+        });
+        return devicelogger("Failure to disconnect", e);
+      };
+    })(this));
   },
   sensorMpu9250GyroConvert: function(data) {
     return data / (65536 / 500);
@@ -2487,7 +2493,8 @@ exports.deviceModel = Backbone.Model.extend({
     recording = Pylon.state.get('recording');
     if (this.attributes.numReadings === 0) {
       this.set({
-        deviceStatus: 'Receiving'
+        deviceStatus: 'Receiving',
+        connected: true
       });
       Pylon.trigger('systemEvent:sanity:active' + this.get('role'));
     }
@@ -2621,7 +2628,7 @@ State = Backbone.Model.extend({
       val2 = false;
     }
     if (time == null) {
-      time = 5000;
+      time = 10000;
     }
     setTimeout((function() {
       return Pylon.state.set(key, val1);
@@ -3290,46 +3297,56 @@ Pages = (function() {
       });
       buttons();
       div('.row', function() {
-        div('#leftVertmeter.one.columns.vertmeter', function() {
-          return div('.bar', {
-            style: 'height:0'
+        div('#sensor-Left', function() {
+          div('#leftVertmeter.one.columns.vertmeter', function() {
+            return div('.bar', {
+              style: 'height:0'
+            });
+          });
+          return div('.sensorElement.five.columns', function() {
+            div('.va-mid', function() {
+              span('#LeftStatus.led-box.led-dark');
+              return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
+            });
+            div('.status', '---');
+            div('#LeftVersion', 'Version');
+            return div('#LeftAssignedName', 'Name');
+
+            /*
+            div '#sensor-Left',->
+              button '.connect.needsclick'
+                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
+                , "Connect"
+              button '.disconnect.needsclick'
+                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
+                , "Disconnect"
+             */
           });
         });
-        div('.sensorElement.five.columns', function() {
-          p('.va-mid', function() {
-            span('#LeftStatus.led-box.led-dark');
-            return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
+        return div('#sensor-Right', function() {
+          div('#rightVertmeter.one.columns.vertmeter', function() {
+            return div('.bar', {
+              style: 'height:0'
+            });
           });
-          div('#LeftVersion', 'Version');
-          div('#LeftAssignedName', 'Name');
-          return div('#sensor-Left', function() {
-            button('.connect.needsclick', {
-              onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-            }, "Connect");
-            return button('.disconnect.needsclick', {
-              onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-            }, "Disconnect");
-          });
-        });
-        div('#rightVertmeter.one.columns.vertmeter', function() {
-          return div('.bar', {
-            style: 'height:0'
-          });
-        });
-        return div('.sensorElement.five.columns', function() {
-          p('.va-mid', function() {
-            span('#RightStatus.led-box.led-dark');
-            return span('#RightSerialNumber.mr-rt-10', 'Serial number');
-          });
-          div('#RightVersion', 'Version');
-          div('#RightAssignedName', 'Name');
-          return div('#sensor-Right', function() {
-            button('.connect.needsclick', {
-              onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-            }, "Connect");
-            return button('.disconnect.needsclick', {
-              onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-            }, "Disconnect");
+          return div('.sensorElement.five.columns', function() {
+            div('.va-mid', function() {
+              span('#RightStatus.led-box.led-dark');
+              return span('#RightSerialNumber.mr-rt-10', 'Serial number');
+            });
+            div('.status', '---');
+            div('#RightVersion', 'Version');
+            return div('#RightAssignedName', 'Name');
+
+            /*
+            div '#sensor-Right',->
+              button '.connect.needsclick'
+                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
+                , "Connect"
+              button '.disconnect.needsclick'
+                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
+                , "Disconnect"
+             */
           });
         });
       });

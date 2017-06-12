@@ -18,7 +18,7 @@ State = Backbone.Model.extend
     @on 'change',->
       statelogger JSON.stringify @.changedAttributes()
     return
-  timedState: (key,val1=true,val2=false,time=5000)->
+  timedState: (key,val1=true,val2=false,time=10000)->
     setTimeout (()->Pylon.state.set key, val1),0
     setTimeout (()->Pylon.state.set key, val2),time
 

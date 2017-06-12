@@ -51,7 +51,12 @@ exports.deviceModel = Backbone.Model.extend
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
   initialize: ->
-    role=@get 'role'
+    role= 'Guess'
+    name = @get 'name'
+    role= 'Left' if 0< name.search /\(([Ll]).*\)/
+    role= 'Right' if 0< name.search /\(([Rr]).*\)/
+    @.attributes.role = role
+    Pylon.trigger "systemEvent:sanity:idle"+ role
     @set 'readings', new EventModel role,@ 
     @set 'rowName', "sensor-#{role}"
     #set this attribute without firing off any events
@@ -66,26 +71,28 @@ exports.deviceModel = Backbone.Model.extend
       @set 'rowName', "sensor-#{role}"
       $("##{role}AssignedName").text @get 'name'
       return
-    Pylon.state.on "change:recording change:connecting#{@get 'role'} change:calibrating", ()=>
+    Pylon.state.on "change:recording change:subscribing#{@get 'role'} change:calibrating", ()=>
       role=@get 'role'
       #any of the state values that are truthy will turn on the subscription
       devicelogger 'Change in connection request'
-      subscribe = ['recording',"connecting#{role}",'calibrating'].reduce(
+      subscribeRequest = ['recording',"subscribing#{role}",'calibrating'].reduce(
         (memo,v)=> return memo || Boolean Pylon.state.get v
         false
         )
       #if we are in the desired state already, just go away
-      if subscribe == @.get 'subscribeState'
+      if subscribeRequest == @.get 'subscribeState'
         devicelogger 'Change in connection request: no change in subscribe status'
         return
-      @.set subscribeState: subscribe
-      if subscribe
-        devicelogger 'Change in connection request: resubscribe'
+      @.set subscribeState: subscribeRequest
+      
+      if subscribeRequest
+        devicelogger 'Change in connection request: (re) attachDevice'
         @sanity.clear()
-        @resubscribe()
+        @.connectToDevice().then  @subscribe.bind @
       else
-        devicelogger 'Change in connection request: stopNotification'
-        @stopNotification()
+        devicelogger 'Change in connection request: detachDevice'
+        @disconnect()
+        #   @stopNotification()
       return
         
     @on "change:serialNumber", ()->
@@ -210,7 +217,6 @@ exports.deviceModel = Backbone.Model.extend
   resubscribe: ()->
     devicelogger "RESUBSCRIBE"
     role = @get 'role'
-    Pylon.state.timedState "connecting#{role}"
     Pylon.trigger "systemEvent:sanity:warn"+ role
     try
     #set some attributes
@@ -236,16 +242,15 @@ exports.deviceModel = Backbone.Model.extend
     return 
    
           
-  subscribe: ()-> return (device)=>
+  subscribe: ()-> 
     devicelogger "SUBSCRIBE"
-    Pylon.trigger "systemEvent:sanity:warn"+ device.role
+    Pylon.trigger "systemEvent:sanity:warn"+ @.attributes.role
     try
     #set some attributes
-      devicelogger "Device subscribe attempt #{device.name}"
+      devicelogger " subscribe attempt #{@.attributes.name}"
   # turn accelerometer off, then set movement  parameters
       thePromise = Promise.all @getBoilerplate()
-      thePromise.then ()=>
-        Pylon.state.timedState "connecting#{@get 'role'}"
+      thePromise.then @resubscribe.bind @
       thePromise.catch ()=>
         Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
         
@@ -255,6 +260,29 @@ exports.deviceModel = Backbone.Model.extend
       devicelogger e
       device.set deviceStatus: 'Failed connection'
     return 
+  connectToDevice:()->
+    return new Promise (resolve,reject)=>
+      ble.connect (@.get "id"),
+        resolve
+        (e)=> 
+          Pylon.trigger "systemEvent:sanity:fail"+ @.get 'role'
+          @.set deviceStatus: 'Failed Connection',buttonText: connect, connected: false
+          devicelogger "Failure to connect",e
+          reject()
+          
+  disconnect:()->
+    @.set buttonText: 'connect',connected: 'disconnecting', deviceStatus: "Disconnecting"
+    ble.disconnect (@.get "id"),
+      ()=> 
+        Pylon.trigger "systemEvent:sanity:idle"+ @.get 'role'
+        @.set connected:false, buttonText: 'connect', deviceStatus: 'Available'
+        devicelogger "disconnection of #{name}"
+      (e)=> 
+        Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
+        @.set connected: false, deviceStatus: 'Unknown', buttonText: 'connect'
+        devicelogger "Failure to disconnect",e
+    return
+
    
   sensorMpu9250GyroConvert: (data)->
       return data/(65536/500)
@@ -270,7 +298,7 @@ exports.deviceModel = Backbone.Model.extend
     timeval = Date.now()
     recording = Pylon.state.get 'recording'
     if @attributes.numReadings == 0
-      @set deviceStatus: 'Receiving'
+      @set deviceStatus: 'Receiving', connected: true
       Pylon.trigger 'systemEvent:sanity:active'+@get 'role'
       
     @attributes.numReadings += 1
@@ -281,6 +309,7 @@ exports.deviceModel = Backbone.Model.extend
     accel= data[3..5].map (a)->return a
     mag= data[6..8].map (a)-> return a
     sequence = data[9]
+    #devicelogger "#{@get 'role'}Vertmeter "+100*(accel[0]+2**15)/(2**16)
     Pylon.trigger "#{@get 'role'}Vertmeter",100*(accel[0]+2**15)/(2**16)
     
     @sanity.observe gyro, accel, mag, sequence, timeval

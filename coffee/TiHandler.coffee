@@ -103,13 +103,9 @@ class TiHandler
       d.set device
       return
     TIlogger "got new device"
-    device.role= 'Guess'
-    name = device.name
-    device.role= 'Left' if 0< name.search /\(([Ll]).*\)/
-    device.role= 'Right' if 0< name.search /\(([Rr]).*\)/
-    Pylon.trigger "systemEvent:sanity:idle"+ device.role
     d = new deviceModel device
     pd.push d
+    Pylon.trigger "systemEvent:sanity:idle"+ d.get 'role'
     #queryHostDevice(d)
     # attempt autoconnect
     if (d.get 'name').match /SensorTag \([LlRr]\)/
@@ -145,27 +141,9 @@ class TiHandler
     return unless d
     name = d.get 'name'
     role = d.get 'role'
+    Pylon.unset role
     TIlogger "detach #{cid} -- #{name}"
-    debugger
-    #Pylon.set role,d
-    #d.set 'name',"Name"
-    #d.set 'serialNumber','Serial number'
-    #d.set 'firmwareVersion','Version'
-    d.set 'buttonText', 'connect'
-    d.set 'connected', false
-    d.set deviceStatus: 'Disconnected'
-    Pylon.trigger('change respondingDevices')
-    TIlogger "Device removed from state, attempt dicconnect"
-    ble.disconnect (d.get "id"),
-      ()=> 
-        debugger
-        Pylon.trigger "systemEvent:sanity:idle"+ d.get 'role'
-        d.set 'role','---'
-        TIlogger "disconnection of #{name}"
-      (e)=> 
-        Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
-        d.set 'role','---'
-        TIlogger "Failure to disconnect",e
+    d.disconnect()
     return
 
     
@@ -175,31 +153,20 @@ class TiHandler
   attachDevice: (cid) ->
     # reject attachDevice request if we are already recording
     return if Pylon.state.get 'recording'
-    
-    TIlogger "attach "+ cid
     d = Pylon.get('devices').get  cid
     name = d.get 'name'
-    role = 'Error'
-    role= 'Left' if 0< name.search /\(([Ll]).*\)/
-    role= 'Right' if 0< name.search /\(([Rr]).*\)/
-    if role == 'Error'
-      TIlogger "Bad name for sensor: #{name}"
-      #return
+    if !name
+      name = 'No Name -- HELP'
+    TIlogger "attach #{cid} - device name #{name}"
     # reject attachDevice if it connected Github issue #73
+    # connected is truthy when it is in state 'connecting'
     return if d.get 'connected'
-    d.set 'buttonText', 'connecting'
-    d.set 'role',role
-    d.set 'connected', false
 
     # triggers change:Right or change:Left
-    Pylon.set role, d
-    Pylon.trigger('change respondingDevices')
+    Pylon.set d.get('role'), d
+    
     TIlogger "Role of Device set, attempt connect"
-    ble.connect (d.get "id"),
-      d.subscribe()
-      (e)-> 
-        Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
-        TIlogger "Failure to connect",e
+    Pylon.state.timedState "subscribing#{d.get 'role'}"
     return
 
 if window? then window.exports = TiHandler

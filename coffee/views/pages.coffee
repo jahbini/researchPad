@@ -62,36 +62,44 @@ class Pages
         div '#net-ble.six.columns'
       buttons()
       div '.row',->
-        div '#leftVertmeter.one.columns.vertmeter', ->
-          div '.bar',style: 'height:0'
-        div '.sensorElement.five.columns', ->
-          p '.va-mid',->
-            span '#LeftStatus.led-box.led-dark'
-            span '#LeftSerialNumber.mr-rt-10', 'Serial number'
-          div '#LeftVersion',  'Version'
-          div '#LeftAssignedName', 'Name'
-          div '#sensor-Left',->
-            button '.connect.needsclick'
-              ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-              , "Connect"
-            button '.disconnect.needsclick'
-              ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-              , "Disconnect"
-        div '#rightVertmeter.one.columns.vertmeter', ->
-          div '.bar',style: 'height:0'
-        div '.sensorElement.five.columns', ->
-          p '.va-mid',->
-            span '#RightStatus.led-box.led-dark'
-            span '#RightSerialNumber.mr-rt-10' , 'Serial number'
-          div '#RightVersion', 'Version'
-          div '#RightAssignedName', 'Name'
-          div '#sensor-Right',->
-            button '.connect.needsclick'
-              ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-              , "Connect"
-            button '.disconnect.needsclick'
-              ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-              , "Disconnect"
+        div '#sensor-Left',->
+          div '#leftVertmeter.one.columns.vertmeter', ->
+            div '.bar',style: 'height:0'
+          div '.sensorElement.five.columns', ->
+            div '.va-mid',->
+              span '#LeftStatus.led-box.led-dark'
+              span '#LeftSerialNumber.mr-rt-10', 'Serial number'
+            div '.status', '---'
+            div '#LeftVersion',  'Version'
+            div '#LeftAssignedName', 'Name'
+            ###
+            div '#sensor-Left',->
+              button '.connect.needsclick'
+                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
+                , "Connect"
+              button '.disconnect.needsclick'
+                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
+                , "Disconnect"
+            ###
+        div '#sensor-Right',->
+          div '#rightVertmeter.one.columns.vertmeter', ->
+            div '.bar',style: 'height:0'
+          div '.sensorElement.five.columns', ->
+            div '.va-mid',->
+              span '#RightStatus.led-box.led-dark'
+              span '#RightSerialNumber.mr-rt-10' , 'Serial number'
+            div '.status', '---'
+            div '#RightVersion', 'Version'
+            div '#RightAssignedName', 'Name'
+            ###
+            div '#sensor-Right',->
+              button '.connect.needsclick'
+                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
+                , "Connect"
+              button '.disconnect.needsclick'
+                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
+                , "Disconnect"
+            ###
       div '.row', ->
         div '.three.columns',"Platform UUID"
         div '#platformUUID.five.columns', ->
