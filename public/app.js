@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":12,"Case":26,"backbone":23,"jquery":30,"underscore":33}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -668,8 +668,26 @@ enterRecording = function() {
   Pylon.state.set({
     recording: true
   });
-  Pylon.trigger('systemEvent:recordCountDown:start', 5);
+  Promise.all([resolveConnected('Left'), resolveConnected('Right')]).then(function() {
+    return Pylon.trigger('systemEvent:recordCountDown:start', 5);
+  });
   return applogger('Recording --- actively recording sensor info');
+};
+
+resolveConnected = function(leftRight) {
+  var device;
+  device = Pylon.get(leftRight);
+  if (device) {
+    return new Promise(function(resolve) {
+      return device.once('change:connected', function() {
+        return resolve();
+      });
+    });
+  } else {
+    return new Promise(function(resolve) {
+      return resolve();
+    });
+  }
 };
 
 Pylon.on('systemEvent:recordCountDown:fail', function() {
@@ -2466,8 +2484,6 @@ exports.deviceModel = Backbone.Model.extend({
   },
   disconnect: function() {
     this.set({
-      buttonText: 'connect',
-      connected: 'disconnecting',
       deviceStatus: "Disconnecting"
     });
     ble.disconnect(this.get("id"), (function(_this) {
@@ -2475,7 +2491,6 @@ exports.deviceModel = Backbone.Model.extend({
         Pylon.trigger("systemEvent:sanity:idle" + _this.get('role'));
         _this.set({
           connected: false,
-          buttonText: 'connect',
           deviceStatus: 'Available'
         });
         return devicelogger("disconnection of " + name);

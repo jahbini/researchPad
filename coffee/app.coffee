@@ -332,8 +332,21 @@ enterRecording = ->
   (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
   Pylon.state.set recording: true
-  Pylon.trigger 'systemEvent:recordCountDown:start', 5
+  
+  Promise.all [
+    resolveConnected 'Left'
+    resolveConnected 'Right'
+    ]
+    .then ()-> Pylon.trigger 'systemEvent:recordCountDown:start', 5
   applogger 'Recording --- actively recording sensor info'
+  
+resolveConnected = (leftRight)->
+  device = Pylon.get leftRight
+  if device
+    return new Promise (resolve)->
+      device.once 'change:connected',()->resolve()
+  else
+    return new Promise (resolve)->resolve()
 
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
     applog "Failure to obtain host session credentials"

@@ -276,11 +276,11 @@ exports.deviceModel = Backbone.Model.extend
           reject()
           
   disconnect:()->
-    @.set buttonText: 'connect',connected: 'disconnecting', deviceStatus: "Disconnecting"
+    @.set deviceStatus: "Disconnecting"
     ble.disconnect (@.get "id"),
       ()=> 
         Pylon.trigger "systemEvent:sanity:idle"+ @.get 'role'
-        @.set connected:false, buttonText: 'connect', deviceStatus: 'Available'
+        @.set connected:false, deviceStatus: 'Available'
         devicelogger "disconnection of #{name}"
       (e)=> 
         Pylon.trigger "systemEvent:sanity:fail"+ d.get 'role'
