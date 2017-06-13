@@ -2670,7 +2670,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":23,"underscore":33}],15:[function(require,module,exports){
-module.exports = '1.7.6';
+module.exports = '1.7.7';
 
 
 
