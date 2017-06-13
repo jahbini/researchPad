@@ -259,6 +259,11 @@ Pylon.set('spearCount', 1);
 
 Pylon.set('hostUrl', hostUrl);
 
+Pylon.set('vertmeterScale', {
+  lo: 55.625,
+  hi: 56.875
+});
+
 Pylon.set('BV', BV = require('./views/button-view.coffee'));
 
 pages = require('./views/pages.coffee');
@@ -3514,7 +3519,7 @@ Pages = (function() {
   };
 
   Pages.prototype.renderPage = function() {
-    var bodyHtml, protocolViewTemplate, setVertmeter;
+    var bodyHtml, protocolViewTemplate, scaleSweetSpot, setVertmeter;
     bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
@@ -3566,20 +3571,36 @@ Pages = (function() {
       }
     });
     this.protocolView = new protocolViewTemplate;
+    scaleSweetSpot = function(v, r) {
+      var x;
+      x = {
+        color: "#a22"
+      };
+      if (v < r.lo) {
+        x.percent = 33 * (v / r.lo);
+        return x;
+      }
+      if (v < r.hi) {
+        x.color = "#2a2";
+        x.percent = 33 + 33 * ((v - r.lo) / (r.hi - r.lo));
+        return x;
+      }
+      x.percent = 66 + 33 * ((v - r.hi) / (100 - r.hi));
+      x.color = "#22a";
+      return x;
+    };
     setVertmeter = function(role) {
       var widget;
       widget = null;
       return function(val) {
-        var color;
+        var color, percent, ref1, scaler;
         if (!widget) {
           widget = $("#" + role + "Vertmeter .bar");
         }
-        color = "#a22";
-        if (val > 50) {
-          color = "#2e2";
-        }
+        scaler = Pylon.get('vertmeterScale');
+        ref1 = scaleSweetSpot(val, scaler), color = ref1.color, percent = ref1.percent;
         if (widget) {
-          widget.css("height", val + "%").css("background-color", color);
+          widget.css("height", percent + "%").css("background-color", color);
         }
       };
     };

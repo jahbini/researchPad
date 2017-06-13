@@ -32,6 +32,10 @@ Pylon.on 'all', (event,rest...)->
 
 Pylon.set 'spearCount', 1
 Pylon.set 'hostUrl', hostUrl
+Pylon.set 'vertmeterScale', 
+  lo: 55.625
+  hi: 56.875 
+  
 # set the button MpdelView
 Pylon.set 'BV', BV = require './views/button-view.coffee'
 

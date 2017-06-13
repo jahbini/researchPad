@@ -243,15 +243,25 @@ class Pages
               option value: protocol.get('name'), protocol.get('name')
         return this
     @protocolView = new protocolViewTemplate
-
+    scaleSweetSpot=(v,r)->
+      x={ color: "#a22" }
+      if v< r.lo
+        x.percent = 33*(v/r.lo)
+        return x
+      if v< r.hi
+        x.color = "#2a2"
+        x.percent=33+33*((v-r.lo)/(r.hi-r.lo))
+        return x
+      x.percent=66+33*((v-r.hi)/(100-r.hi))
+      x.color = "#22a"
+      return x
     setVertmeter=(role)->
       widget=null
       return (val)->
         widget = $("##{role}Vertmeter .bar") unless widget
-        color = "#a22"
-        if val > 50
-          color = "#2e2"
-        widget.css("height", "#{val}%").css("background-color",color) if widget
+        scaler = Pylon.get 'vertmeterScale'
+        {color,percent} = scaleSweetSpot val,scaler
+        widget.css("height", "#{percent}%").css("background-color",color) if widget
         return
         
         
