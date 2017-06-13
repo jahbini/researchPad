@@ -40,6 +40,7 @@ str2ab = (str)->
   
 exports.deviceModel = Backbone.Model.extend
   defaults:
+    hasBoilerPlate: false
     buttonText: 'connect'
     buttonClass: 'button-primary'
     deviceStatus: '--'
@@ -120,8 +121,11 @@ exports.deviceModel = Backbone.Model.extend
     return @
     
   getBoilerplate: ()->
-    plates = []
-    promises = for attribute, uuid of boilerplate
+    #fill in plates with a resolved request 
+    plates = [ new Promise (resolve)-> resolve() ]
+    if @get 'hasBoilerPlate'
+      return plates
+    for attribute, uuid of boilerplate
       #devicelogger "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
       plates.push new Promise (resolve,reject)=>
         # capture current value of attribute
@@ -250,6 +254,7 @@ exports.deviceModel = Backbone.Model.extend
       devicelogger " subscribe attempt #{@.attributes.name}"
   # turn accelerometer off, then set movement  parameters
       thePromise = Promise.all @getBoilerplate()
+      thePromise.then ()=>@set 'hasBoilerPlate',true  # do not get these values again
       thePromise.then @resubscribe.bind @
       thePromise.catch ()=>
         Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
@@ -266,7 +271,7 @@ exports.deviceModel = Backbone.Model.extend
         resolve
         (e)=> 
           Pylon.trigger "systemEvent:sanity:fail"+ @.get 'role'
-          @.set deviceStatus: 'Failed Connection',buttonText: connect, connected: false
+          @.set deviceStatus: 'Failed Connection', connected: false
           devicelogger "Failure to connect",e
           reject()
           

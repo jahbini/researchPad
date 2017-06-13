@@ -127,7 +127,6 @@ TiHandler = (function() {
     TIlogger("got new device");
     d = new deviceModel(device);
     pd.push(d);
-    Pylon.trigger("systemEvent:sanity:idle" + d.get('role'));
     if ((d.get('name')).match(/SensorTag \([LlRr]\)/)) {
       try {
         Pylon.trigger('enableDevice', d.cid);
@@ -2197,6 +2196,7 @@ str2ab = function(str) {
 
 exports.deviceModel = Backbone.Model.extend({
   defaults: {
+    hasBoilerPlate: false,
     buttonText: 'connect',
     buttonClass: 'button-primary',
     deviceStatus: '--',
@@ -2289,31 +2289,33 @@ exports.deviceModel = Backbone.Model.extend({
     return this;
   },
   getBoilerplate: function() {
-    var attribute, plates, promises, uuid;
-    plates = [];
-    promises = (function() {
-      var results;
-      results = [];
-      for (attribute in boilerplate) {
-        uuid = boilerplate[attribute];
-        results.push(plates.push(new Promise((function(_this) {
-          return function(resolve, reject) {
-            var attr;
-            attr = attribute;
-            return ble.read(_this.id, infoService, uuid, function(data) {
-              var val;
-              val = ab2str(data);
-              _this.set(attr, val);
-              return resolve();
-            }, function(err) {
-              devicelogger("unable to obtain " + attr + " from " + _this.attributes.name);
-              return reject();
-            });
-          };
-        })(this))));
-      }
-      return results;
-    }).call(this);
+    var attribute, plates, uuid;
+    plates = [
+      new Promise(function(resolve) {
+        return resolve();
+      })
+    ];
+    if (this.get('hasBoilerPlate')) {
+      return plates;
+    }
+    for (attribute in boilerplate) {
+      uuid = boilerplate[attribute];
+      plates.push(new Promise((function(_this) {
+        return function(resolve, reject) {
+          var attr;
+          attr = attribute;
+          return ble.read(_this.id, infoService, uuid, function(data) {
+            var val;
+            val = ab2str(data);
+            _this.set(attr, val);
+            return resolve();
+          }, function(err) {
+            devicelogger("unable to obtain " + attr + " from " + _this.attributes.name);
+            return reject();
+          });
+        };
+      })(this)));
+    }
     return plates;
   },
   startNotification: function() {
@@ -2426,6 +2428,11 @@ exports.deviceModel = Backbone.Model.extend({
     try {
       devicelogger(" subscribe attempt " + this.attributes.name);
       thePromise = Promise.all(this.getBoilerplate());
+      thePromise.then((function(_this) {
+        return function() {
+          return _this.set('hasBoilerPlate', true);
+        };
+      })(this));
       thePromise.then(this.resubscribe.bind(this));
       thePromise["catch"]((function(_this) {
         return function() {
@@ -2449,7 +2456,6 @@ exports.deviceModel = Backbone.Model.extend({
           Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
           _this.set({
             deviceStatus: 'Failed Connection',
-            buttonText: connect,
             connected: false
           });
           devicelogger("Failure to connect", e);
@@ -3250,11 +3256,19 @@ Pages = (function() {
   });
 
   Pylon.on('systemEvent:sanity:disconnectRight', function() {
-    return $("#RightStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+    var w;
+    w = $("#RightStatus");
+    if (!w.hasClass("led-red")) {
+      return w.removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+    }
   });
 
   Pylon.on('systemEvent:sanity:disconnectLeft', function() {
-    return $("#LeftStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+    var w;
+    w = $("#LeftStatus");
+    if (!w.hasClass("led-red")) {
+      return w.removeClass("led-green led-yellow led-blue led-red").addClass("led-dark");
+    }
   });
 
   Pylon.on('systemEvent:sanity:activeRight', function() {
@@ -3274,11 +3288,19 @@ Pages = (function() {
   });
 
   Pylon.on('systemEvent:sanity:idleRight', function() {
-    return $("#RightStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+    var w;
+    w = $("#RightStatus");
+    if (!w.hasClass("led-red")) {
+      return w.removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+    }
   });
 
   Pylon.on('systemEvent:sanity:idleLeft', function() {
-    return $("#LeftStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+    var w;
+    w = $("#LeftStatus");
+    if (!w.hasClass("led-red")) {
+      return w.removeClass("led-dark led-green led-yellow led-red").addClass("led-blue");
+    }
   });
 
   Pages.prototype.theBody = renderable(function(buttons, contents1) {

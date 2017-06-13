@@ -105,7 +105,7 @@ class TiHandler
     TIlogger "got new device"
     d = new deviceModel device
     pd.push d
-    Pylon.trigger "systemEvent:sanity:idle"+ d.get 'role'
+    
     #queryHostDevice(d)
     # attempt autoconnect
     if (d.get 'name').match /SensorTag \([LlRr]\)/

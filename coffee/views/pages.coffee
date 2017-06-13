@@ -31,9 +31,14 @@ class Pages
     $("#LeftStatus").removeClass("led-green led-yellow led-blue led-dark").addClass("led-red")
     
   Pylon.on 'systemEvent:sanity:disconnectRight',()->
-    $("#RightStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
+    w=$("#RightStatus")
+    w.removeClass("led-green led-yellow led-blue led-red")
+      .addClass("led-dark") unless w.hasClass "led-red"
+  
   Pylon.on 'systemEvent:sanity:disconnectLeft',()->
-    $("#LeftStatus").removeClass("led-green led-yellow led-blue led-red").addClass("led-dark")
+    w=$("#LeftStatus")
+    w.removeClass("led-green led-yellow led-blue led-red")
+      .addClass("led-dark") unless w.hasClass "led-red"
     
   Pylon.on 'systemEvent:sanity:activeRight',()->
     $("#RightStatus").removeClass("led-dark led-yellow led-blue led-red").addClass("led-green")
@@ -46,9 +51,13 @@ class Pages
     $("#LeftStatus").removeClass("led-dark led-green led-blue led-red").addClass("led-yellow")
     
   Pylon.on 'systemEvent:sanity:idleRight',()->
-    $("#RightStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
+    w=$("#RightStatus")
+    w.removeClass("led-dark led-green led-yellow led-red")
+      .addClass("led-blue") unless w.hasClass "led-red"
   Pylon.on 'systemEvent:sanity:idleLeft',()->
-    $("#LeftStatus").removeClass("led-dark led-green led-yellow led-red").addClass("led-blue")
+    w=$("#LeftStatus")
+    w.removeClass("led-dark led-green led-yellow led-red")
+      .addClass("led-blue") unless w.hasClass "led-red"
   
   theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
