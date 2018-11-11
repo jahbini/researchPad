@@ -4,10 +4,8 @@
   <dict>
     <key>CFBundleDevelopmentRegion</key>
     <string>English</string>
-    <key>UIFileSharingEnabled</key>
-    <true/>
     <key>CFBundleDisplayName</key>
-    <string>${PRODUCT_NAME}</string>
+    <string>Retrotope Client</string>
     <key>CFBundleExecutable</key>
     <string>${EXECUTABLE_NAME}</string>
     <key>CFBundleIcons</key>
@@ -30,15 +28,10 @@
     <string>1.7.7</string>
     <key>LSRequiresIPhoneOS</key>
     <true/>
-    <key>NSAppTransportSecurity</key>
-    <dict>
-      <key>NSAllowsArbitraryLoads</key>
-      <true/>
-    </dict>
+    <key>NSMainNibFile</key>
+    <string/>
     <key>NSMainNibFile~ipad</key>
     <string/>
-    <key>UIRequiresFullScreen</key>
-    <true/>
     <key>UISupportedInterfaceOrientations</key>
     <array>
       <string>UIInterfaceOrientationPortrait</string>
@@ -52,6 +45,13 @@
       <string>UIInterfaceOrientationLandscapeLeft</string>
       <string>UIInterfaceOrientationLandscapeRight</string>
     </array>
+    <key>UIRequiresFullScreen</key>
+    <true/>
+    <key>NSAppTransportSecurity</key>
+    <dict>
+      <key>NSAllowsArbitraryLoads</key>
+      <true/>
+    </dict>
     <key>NSBluetoothPeripheralUsageDescription</key>
     <string/>
   </dict>
