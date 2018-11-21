@@ -19,7 +19,6 @@
         "jquery": "^3.3.1",
         "json-stringify-safe": "^5.0.1",
         "lumberjack": "git+https://github.com/jahbini/lumberjack.git",
-        "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": "../lumberjack",
         "seen-js": "^0.2.7",
         "teacup": "latest",
         "underscore": "^1.9.1",

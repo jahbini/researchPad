@@ -4,6 +4,8 @@ Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
 BV = require './button-view.coffee'
+saneTimeout = (time,f) ->
+  setTimeout f,time
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -34,12 +36,17 @@ ProtocolReportTemplate = Backbone.View.extend
 
       Pylon.on 'systemEvent:recordCountDown:over', ()=>
         theTest = Pylon.theProtocol()
-        return unless theTest.get 'showMilestones'
+        $('#protocol-report').attr( style: 'display:none')
+        return unless theTest.get 'showMileStones'
         @$el.addClass 'active'
         @render()
         # start with only the goButton enabled
         @$('button').prop disabled: true
         @$('#goButton').prop disabled: false
+        if  timeOut=theTest.get 'autoGoDuration'
+          saneTimeout timeOut,()->
+            saneTimeout 5000,()->
+              Pylon.trigger 'systemEvent:stopCountDown:start',5
 
       Pylon.on 'systemEvent:goButton:go', (time)=>
         @$('button').prop disabled: false
@@ -49,34 +56,37 @@ ProtocolReportTemplate = Backbone.View.extend
         @$el.removeClass 'active'
         @$('button').prop disabled: true
 
+    showGo: (showIt)->
+      tea.div =>
+        if showIt
+          tea.button '#goButton.primary',
+              {onClick: "Pylon.trigger('systemEvent:goButton:go')"},
+            "Go"
+        else
+          # wait 20ms for mileStones buttons to stabilize in th DOM
+          saneTimeout 20,()=>
+            @$('button').prop disabled: false
+            @stopwatch.start()
+        tea.span  "Total Duration"
+        tea.span '#button-go-time.right'
+
     # show panel of action buttons
     render: ()->
       @$el.html render =>
         tea.hr
-        tag "section", ->
-          h3 "#protocol-result", "record these events"
         theTest = Pylon.theProtocol()
-        if theTest.get 'showMilestones'
+        tag "section", ->
+          h3 "#protocol-result", theTest.get('mileStoneText') || "record these events"
+        if theTest.get 'showMileStones'
+          $('#protocol-report').attr( style: 'display')
+          @showGo theTest.get 'showGo'
           mileStones = theTest.get('mileStones')?.split ','
-          tea.ul =>
-            tea.li "#goList", =>
-              tea.button '#goButton.primary.my1',
-                {onClick: "Pylon.trigger('systemEvent:goButton:go')"},
-                "Go"
-              tea.span  "Total Duration"
-              tea.span '#button-go-time.right'
+          tea.div =>
             for btn in mileStones
               btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-              tea.li ->
-                bound = (who)->
-                  return ()->
-                    $(who).text $('#button-go-time').text()
-                # copy current stopwatch readout into text region
-                Pylon.on "systemEvent:goList:#{btnName}", bound( "#milestone-#{btnName}")
-                tea.button '.primary.mx1',
-                  {onClick: "Pylon.trigger('systemEvent:goList:#{btnName}')"},
-                  btn
-                tea.span "#milestone-#{btnName}.right"
+              tea.button '.primary.round-button',
+                {onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}')"},
+                -> tea.span "#{btn}"
       @
 
 exports.ProtocolReportTemplate = new ProtocolReportTemplate
