@@ -204,7 +204,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":12,"Case":22,"backbone":21,"jquery":25,"underscore":30}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":21,"backbone":20,"jquery":24,"underscore":29}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
@@ -220,8 +220,6 @@ buglog = require('./lib/buglog.coffee');
 
 applogger = (applog = new buglog("app")).log;
 
-window.console = new buglog("logon");
-
 PylonTemplate = Backbone.Model.extend({
   state: (require('./models/state.coffee')).state,
   theSession: function() {
@@ -236,6 +234,9 @@ PylonTemplate = Backbone.Model.extend({
     return protocols.findWhere({
       name: sessionInfo.attributes.testID
     });
+  },
+  saneTimeout: function(t, f) {
+    return setTimeout(f, t);
   }
 });
 
@@ -700,7 +701,7 @@ Pylon.on('systemEvent:recordCountDown:fail', function() {
   $('#testID').prop("disabled", true);
 });
 
-Pylon.on('systemEvent:recordCountDown:over', function() {
+Pylon.on('systemEvent:recordCountDown:start', function() {
   (Pylon.get('button-action')).set({
     enabled: true,
     legend: "Stop"
@@ -731,6 +732,9 @@ Pylon.on('systemEvent:stopCountDown:over', function() {
     recording: false
   });
   Pylon.trigger('systemEvent:endRecording');
+  (Pylon.get('button-action')).set({
+    enabled: false
+  });
   (Pylon.get('button-upload')).set({
     enabled: true
   });
@@ -965,7 +969,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":11,"./models/event-model.coffee":13,"./models/state.coffee":14,"./version.coffee":15,"./views/adminView.coffee":16,"./views/button-view.coffee":17,"./views/pages.coffee":19,"backbone":21,"jquery":25,"underscore":30}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":10,"./models/event-model.coffee":12,"./models/state.coffee":13,"./version.coffee":14,"./views/adminView.coffee":15,"./views/button-view.coffee":16,"./views/pages.coffee":18,"backbone":20,"jquery":24,"underscore":29}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1020,7 +1024,7 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":4,"debug":23,"json-stringify-safe":26}],4:[function(require,module,exports){
+},{"./console":4,"debug":22,"json-stringify-safe":25}],4:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1438,7 +1442,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":30}],7:[function(require,module,exports){
+},{"underscore":29}],7:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
@@ -1542,7 +1546,7 @@ exports.netView = new netView;
 
 
 
-},{"./buglog.coffee":3,"backbone":21,"jquery":25,"teacup":29}],8:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":20,"jquery":24,"teacup":28}],8:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -1770,165 +1774,6 @@ module.exports = statistics = (function() {
 
 
 },{"./buglog.coffee":3}],10:[function(require,module,exports){
-
-/*
- * Javascript Stopwatch class
- * http://www.seph.dk
- *
- * Copyright 2009 Seph soliman
- * Released under the CC BY 4.0 (do whatever you want - just leave my name on it)
- * https://creativecommons.org/licenses/by/4.0/
- */
-var Stopwatch;
-
-module.exports = Stopwatch = (function() {
-  function Stopwatch(tickResolution, countUp, listener1) {
-    this.tickResolution = tickResolution != null ? tickResolution : 100;
-    this.countUp = countUp != null ? countUp : true;
-    this.listener = listener1;
-    this.startTime = 0;
-    this.stopTime = 0;
-    this.totalElapsed = 0;
-    this.started = false;
-    this.tickInterval = null;
-    this.onehour = 1000 * 60 * 60;
-    this.onemin = 1000 * 60;
-    this.onesec = 1000;
-    return;
-  }
-
-  Stopwatch.prototype.start = function() {
-    var delegate;
-    delegate = function(that, method) {
-      return function() {
-        return method.call(that);
-      };
-    };
-    if (!this.started) {
-      this.startTime = (new Date).getTime();
-      this.stopTime = 0;
-      this.started = true;
-      this.tickInterval = setInterval(delegate(this, this.onTick), this.tickResolution);
-    }
-  };
-
-  Stopwatch.prototype.stop = function() {
-    var elapsed;
-    if (this.started) {
-      this.stopTime = (new Date).getTime();
-      this.started = false;
-      elapsed = this.stopTime - this.startTime;
-      this.totalElapsed += elapsed;
-      if (this.tickInterval !== null) {
-        clearInterval(this.tickInterval);
-      }
-    }
-    return this.getElapsed();
-  };
-
-  Stopwatch.prototype.reset = function() {
-    var delegate;
-    this.totalElapsed = 0;
-    this.startTime = (new Date).getTime();
-    this.stopTime = this.startTime;
-    if (!this.countUp) {
-      this.totalElapsed = this.initialElapsed;
-    }
-    if (this.tickInterval !== null) {
-      delegate = function(that, method) {
-        return function() {
-          return method.call(that);
-        };
-      };
-      clearInterval(this.tickInterval);
-      this.tickInterval = setInterval(delegate(this, this.onTick), this.tickResolution);
-    }
-  };
-
-  Stopwatch.prototype.restart = function() {
-    this.stop();
-    this.reset();
-    this.start();
-  };
-
-  Stopwatch.prototype.getElapsed = function() {
-    var elapsed, hours, mins, ms, secs;
-    elapsed = 0;
-    if (this.started) {
-      elapsed = (new Date).getTime() - this.startTime;
-    }
-    elapsed += this.totalElapsed;
-    if (!this.countUp) {
-      elapsed = Math.max(2 * this.initialElapsed - elapsed, 0);
-    }
-    hours = parseInt(elapsed / this.onehour);
-    elapsed %= this.onehour;
-    mins = parseInt(elapsed / this.onemin);
-    elapsed %= this.onemin;
-    secs = parseInt(elapsed / this.onesec);
-    ms = elapsed % this.onesec;
-    return {
-      hours: hours,
-      minutes: mins,
-      seconds: secs,
-      milliseconds: ms
-    };
-  };
-
-  Stopwatch.prototype.setElapsed = function(hours, mins, secs) {
-    var delegate;
-    this.totalElapsed = 0;
-    this.startTime = (new Date).getTime();
-    this.stopTime = this.startTime;
-    this.totalElapsed += hours * this.onehour;
-    this.totalElapsed += mins * this.onemin;
-    this.totalElapsed += this.countUp ? secs * this.onesec : (secs + 1) * this.onesec - 1;
-    this.totalElapsed = Math.max(this.totalElapsed, 0);
-    this.initialElapsed = this.totalElapsed;
-    if (this.tickInterval !== null) {
-      delegate = function(that, method) {
-        return function() {
-          return method.call(that);
-        };
-      };
-      clearInterval(this.tickInterval);
-      this.tickInterval = setInterval(delegate(this, this.onTick), this.tickResolution);
-    }
-  };
-
-  Stopwatch.prototype.toString = function() {
-    var e, zpad;
-    zpad = function(num, digits, pad) {
-      if (pad == null) {
-        pad = '0';
-      }
-      num = num.toString();
-      while (num.length < digits) {
-        num = pad + num;
-      }
-      return num;
-    };
-    e = this.getElapsed();
-    return zpad(e.hours, 2, ' ') + ':' + zpad(e.minutes, 2) + ':' + zpad(e.seconds, 2) + ':' + parseInt(e.milliseconds / 100);
-  };
-
-  Stopwatch.prototype.setListener = function(listener) {
-    this.listener = listener;
-  };
-
-  Stopwatch.prototype.onTick = function() {
-    if (this.listener !== null) {
-      this.listener(this);
-    }
-  };
-
-  return Stopwatch;
-
-})();
-
-
-
-},{}],11:[function(require,module,exports){
 var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
@@ -2157,7 +2002,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":21,"jquery":25,"underscore":30}],12:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":20,"jquery":24,"underscore":29}],11:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('backbone');
@@ -2556,7 +2401,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":13,"backbone":21}],13:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":12,"backbone":20}],12:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2619,7 +2464,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":11,"backbone":21,"underscore":30}],14:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":20,"underscore":29}],13:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -2669,12 +2514,12 @@ exports.state = new State;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":21,"underscore":30}],15:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":20,"underscore":29}],14:[function(require,module,exports){
 module.exports = '1.7.7';
 
 
 
-},{}],16:[function(require,module,exports){
+},{}],15:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, adminlog, adminlogger, buglog, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -2989,7 +2834,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":21,"jquery":25,"teacup":29}],17:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":20,"jquery":24,"teacup":28}],16:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -3094,15 +2939,17 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":21,"jquery":25,"teacup":29}],18:[function(require,module,exports){
-var $, Backbone, Teacup, a, body, br, buglog, button, canvas, countDownViewTemplate, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, introlog, intrologger, label, li, ol, option, p, password, raw, recorderViewTemplate, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
+},{"backbone":20,"jquery":24,"teacup":28}],17:[function(require,module,exports){
+var $, BV, Backbone, T, buglog, implementing, introlog, intrologger, pHT, pP, protocolHeadTemplate, protocolPhase, recorderViewTemplate,
   slice = [].slice;
 
 Backbone = require('backbone');
 
 $ = require('jquery');
 
-Teacup = require('teacup');
+T = require('teacup');
+
+BV = require('./button-view.coffee');
 
 buglog = require('../lib/buglog.coffee');
 
@@ -3122,9 +2969,164 @@ implementing = function() {
   return classReference;
 };
 
-tea = new Teacup.Teacup;
+protocolPhase = Backbone.Model.extend({
+  defaults: {
+    protocol: null
+  },
+  initialize: function() {
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
+      return function() {
+        var p, sessionID;
+        Pylon.state.set({
+          recording: true
+        });
+        _this.set('protocol', p = Pylon.theProtocol());
+        _this.leadIn = p.get('showLeadIn') ? (p.get('leadInDuration')) || 5 : 0;
+        _this.practice = p.get('showPractice') ? p.get('practiceDuration') : 0;
+        _this.goDuraftion = p.get('goDuration');
+        sessionID = Pylon.get('sessionInfo').get('_id');
+        if (sessionID) {
+          Pylon.saneTimeout(0, function() {
+            return _this.trigger('leadIn');
+          });
+        } else {
+          Pylon.saneTimeout(0, function() {
+            return _this.trigger('start');
+          });
+        }
+      };
+    })(this));
+    this.on('abort', (function(_this) {
+      return function() {
+        pHT.stopCount();
+        Pylon.trigger('systemEvent:recordCountdown:fail');
+        Pylon.trigger('removeRecorderWindow');
+      };
+    })(this));
+    this.on('start', (function(_this) {
+      return function() {
+        var sessionID;
+        sessionID = Pylon.get('sessionInfo').get('_id');
+        if (!sessionID) {
+          _this.listenToOnce(Pylon.get('sessionInfo'), 'change:_id', function() {
+            return Pylon.saneTimeout(0, function() {
+              return Pylon.trigger('leadIn');
+            });
+          });
+          pHT.setEnvironment({
+            headline: "waiting for host",
+            paragraph: "",
+            nextPhase: 'abort',
+            linit: 5,
+            start: 0
+          });
+        } else {
+          Pylon.saneTimeout(0, function() {
+            return Pylon.trigger('leadIn');
+          });
+        }
+      };
+    })(this));
+    this.on('leadIn', (function(_this) {
+      return function() {
+        var duration, limit, p, start;
+        p = _this.attributes.protocol;
+        if (!p.get('showLeadIn')) {
+          Pylon.saneTimeout(0, _this.trigger('practice'));
+          return;
+        }
+        duration = p.get('leadInDuration');
+        if (duration === 0) {
+          start = 0;
+          limit = 7;
+        } else {
+          start = duration;
+          limit = 0;
+        }
+        pHT.setEnvironment({
+          headline: "LeadIn",
+          paragraph: "Get Ready",
+          nextPhase: "practice",
+          start: start,
+          limit: limit,
+          abortButton: "Stop"
+        });
+      };
+    })(this));
+    this.on('practice', (function(_this) {
+      return function() {
+        var duration, p;
+        Pylon.trigger('systemEvent:recordCountDown:over');
+        Pylon.trigger('systemEvent:protocol:active');
+        p = _this.attributes.protocol;
+        duration = p.get('practiceDuration');
+        if (!(duration > 0 && p.get('showPractice'))) {
+          Pylon.saneTimeout(0, _this.trigger('underway'));
+          return;
+        }
+        pHT.setEnvironment({
+          headline: "Practice",
+          paragraph: (p.get("mileStoneText")) || "go",
+          limit: 0,
+          start: duration,
+          nextPhase: "underway"
+        });
+      };
+    })(this));
+    this.on('underway', (function(_this) {
+      return function() {
+        var p;
+        p = _this.attributes.protocol;
+        pHT.setEnvironment({
+          headline: "Test In Progress",
+          paragraph: (p.get("mileStoneText")) || "go",
+          limit: (p.get("testDuration")) || 9999,
+          start: 0,
+          nextPhase: 'countOut'
+        });
+      };
+    })(this));
+    Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
+      return function() {
+        return _this.trigger('countOut');
+      };
+    })(this));
+    this.on('countOut', (function(_this) {
+      return function() {
+        var p;
+        Pylon.state.set({
+          recording: 'stopping'
+        });
+        Pylon.trigger('systemEvent:protocol:terminate');
+        p = _this.attributes.protocol;
+        if (!p.get('showLeadIn')) {
+          pHT.stopCount();
+          _this.trigger('terminate');
+          return;
+        }
+        pHT.setEnvironment({
+          headline: "LeadOut",
+          paragraph: "Good Job",
+          start: p.get("leadInDuration"),
+          limit: 0,
+          nextPhase: "terminate"
+        });
+      };
+    })(this));
+    return this.on('terminate', (function(_this) {
+      return function() {
+        pHT.stopCount();
+        Pylon.state.set({
+          recording: false
+        });
+        Pylon.trigger('systemEvent:stopCountDown:over');
+        Pylon.trigger('removeRecorderWindow', 2000);
+      };
+    })(this));
+  }
+});
 
-ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h1 = ref.h1, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
+pP = new protocolPhase;
 
 
 /*
@@ -3139,12 +3141,15 @@ recorderViewTemplate = Backbone.View.extend({
   initialize: function() {
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function(time) {
-        return _this.$el.addClass('active');
+        return _this.$el.fadeIn();
       };
     })(this));
     return Pylon.on('removeRecorderWindow', (function(_this) {
-      return function() {
-        return _this.$el.removeClass('active');
+      return function(time) {
+        if (time == null) {
+          time = 1000;
+        }
+        return _this.$el.fadeOut(time);
       };
     })(this));
   }
@@ -3152,73 +3157,88 @@ recorderViewTemplate = Backbone.View.extend({
 
 exports.recorderViewTemplate = new recorderViewTemplate;
 
-countDownViewTemplate = Backbone.View.extend({
+protocolHeadTemplate = Backbone.View.extend({
   el: "#count-down",
+  stopCount: function() {
+    if (this.clearCount) {
+      clearTimeout(this.clearCount);
+    }
+  },
+  setEnvironment: function(struct) {
+    if (this.clearCount) {
+      clearTimeout(this.clearCount);
+      this.clearCount = null;
+    }
+    this.headline = struct.headline;
+    this.paragraph = struct.paragraph;
+    this.abortButton = struct.abortButton || this.abortButton;
+    this.limit = struct.limit;
+    this.start = struct.start;
+    this.direction = this.limit < this.start ? -1 : 1;
+    this.nextPhase = struct.nextPhase;
+    this.render(this.start);
+  },
   initialize: function() {
-    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
-      return function(time) {
-        _this.headline = "Test in Progress";
-        _this.response = 'systemEvent:recordCountDown:over';
-        return _this.render(time);
+    this.on('count:continue', (function(_this) {
+      return function(t) {
+        return _this.render(t);
       };
     })(this));
-    Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
-      return function(time) {
-        _this.headline = "Test Over";
-        _this.$el.addClass('active');
-        _this.response = 'systemEvent:stopCountDown:over';
-        return _this.render(time);
-      };
-    })(this));
-    return Pylon.on('countDown:continue', (function(_this) {
-      return function(time) {
-        return _this.render(time);
-      };
-    })(this));
+    return this.$el.addClass("container");
   },
   render: function(t) {
-    var sessionID;
-    sessionID = Pylon.get('sessionInfo').get('_id');
-    intrologger("show time " + t + " with id of " + sessionID);
-    this.$el.html(render((function(_this) {
-      return function() {
-        return tag("section", function() {
-          if (t > 0) {
-            h3("#downCount", "count down: " + t);
-          } else {
-            h3(_this.headline);
-          }
-          if (sessionID) {
-            return p("#recorder-active");
-          } else {
-            return p("Waiting for host credential for protocol...");
-          }
-        });
-      };
-    })(this)));
-    if (t === 0) {
-      if (sessionID) {
-        Pylon.trigger("systemEvent:" + this.response);
-        Pylon.trigger(this.response);
-      } else {
-        Pylon.trigger('systemEvent:recordCountdown:fail');
+    var nextTime;
+    if (t !== this.start) {
+      this.$(".timer").html(t);
+    } else {
+      this.$el.html(T.render((function(_this) {
+        return function() {
+          T.div(".row", function() {
+            T.div(".seven.columns", function() {
+              return T.h3(function() {
+                T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
+                return T.span(".timer", t);
+              });
+            });
+            if (_this.abortButton) {
+              return T.button(".two.columns.button-primary", {
+                onClick: "$('#action').click()"
+              }, _this.abortButton);
+            }
+          });
+          return T.div(".row", function() {
+            return T.h4({
+              style: "text-align:center"
+            }, _this.paragraph);
+          });
+        };
+      })(this)));
+    }
+    nextTime = t + this.direction;
+    if (this.direction > 0) {
+      if (nextTime > this.limit) {
+        pP.trigger(this.nextPhase);
+        return;
       }
-      return;
+    } else {
+      if (nextTime < this.limit) {
+        pP.trigger(this.nextPhase);
+        return;
+      }
     }
-    if (t > 0) {
-      setTimeout(function() {
-        return Pylon.trigger('countDown:continue', t - 1);
-      }, 1000);
-    }
-    return this;
+    this.clearCount = Pylon.saneTimeout(1000, (function(_this) {
+      return function() {
+        return _this.trigger("count:continue", nextTime);
+      };
+    })(this));
   }
 });
 
-exports.countDownView = new countDownViewTemplate;
+pHT = new protocolHeadTemplate();
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":21,"jquery":25,"teacup":29}],19:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./button-view.coffee":16,"backbone":20,"jquery":24,"teacup":28}],18:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3412,10 +3432,10 @@ Pages = (function() {
       });
     });
     div("#recorder.modal", function() {
-      div("#count-down");
-      return div("#protocol-report", {
-        style: "display:none;"
-      });
+      return div("#count-down");
+    });
+    div("#protocol-report.modal-test", {
+      style: "display:none;"
     });
   });
 
@@ -3476,7 +3496,7 @@ Pages = (function() {
 
   Pages.prototype.topButtons = renderable(function() {
     div('.row', function() {
-      button('#admin.three.columns button-primary', 'Admin');
+      button('#admin.three.columns.button-primary', 'Admin');
       button('#action.disabled.three.columns', '');
       button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
       return button('#debug.three.columns.disabled', '');
@@ -3720,15 +3740,15 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":16,"./count-up-down.coffee":18,"./protocol-active.coffee":20,"backbone":21,"jquery":25,"teacup":29}],20:[function(require,module,exports){
-var $, BV, Backbone, Button, ProtocolReportTemplate, Stopwatch, Teacup, a, body, br, button, canvas, div, doctype, form, h1, h2, h3, h4, h5, head, hr, img, implementing, input, label, li, ol, option, p, password, raw, ref, render, renderable, saneTimeout, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul,
+},{"../lib/buglog.coffee":3,"./adminView.coffee":15,"./count-up-down.coffee":17,"./protocol-active.coffee":19,"backbone":20,"jquery":24,"teacup":28}],19:[function(require,module,exports){
+var $, BV, Backbone, ProtocolReportTemplate, T, implementing, saneTimeout,
   slice = [].slice;
 
 Backbone = require('backbone');
 
 $ = require('jquery');
 
-Teacup = require('teacup');
+T = require('teacup');
 
 BV = require('./button-view.coffee');
 
@@ -3737,10 +3757,10 @@ saneTimeout = function(time, f) {
 };
 
 implementing = function() {
-  var classReference, i, j, key, len, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
-  for (j = 0, len = mixins.length; j < len; j++) {
-    mixin = mixins[j];
+  var classReference, k, key, l, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, k = arguments.length - 1) : (k = 0, []), classReference = arguments[k++];
+  for (l = 0, len = mixins.length; l < len; l++) {
+    mixin = mixins[l];
     ref = mixin.prototype;
     for (key in ref) {
       value = ref[key];
@@ -3750,29 +3770,19 @@ implementing = function() {
   return classReference;
 };
 
-tea = new Teacup.Teacup;
-
-ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h1 = ref.h1, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
-
-Button = require('./button-view.coffee');
-
-Stopwatch = require('../lib/stopwatch.coffee');
+Pylon.on("quickClass", function(who, domClass) {
+  who.addClass(domClass);
+  return setTimeout((function() {
+    return who.removeClass(domClass);
+  }), 100);
+});
 
 ProtocolReportTemplate = Backbone.View.extend({
   el: "#protocol-report",
   initialize: function() {
-    this.goTime = 0;
-    this.stopwatch = new Stopwatch(100, true, function(stopwatch) {
-      return $('#button-go-time').text(stopwatch.toString());
-    });
-    Pylon.on('systemEvent:goButton:go', (function(_this) {
+    Pylon.on('systemEvent:protocol:active', (function(_this) {
       return function() {
-        return _this.stopwatch.start();
-      };
-    })(this));
-    Pylon.on('systemEvent:recordCountDown:over', (function(_this) {
-      return function() {
-        var theTest, timeOut;
+        var theTest;
         theTest = Pylon.theProtocol();
         $('#protocol-report').attr({
           style: 'display:none'
@@ -3780,89 +3790,126 @@ ProtocolReportTemplate = Backbone.View.extend({
         if (!theTest.get('showMileStones')) {
           return;
         }
+        _this.$el.fadeIn();
         _this.$el.addClass('active');
         _this.render();
+        return _this.$('button').prop({
+          disabled: false
+        });
+      };
+    })(this));
+    return Pylon.on('systemEvent:protocol:terminate', (function(_this) {
+      return function(time) {
+        if (time == null) {
+          time = 1000;
+        }
         _this.$('button').prop({
           disabled: true
         });
-        _this.$('#goButton').prop({
-          disabled: false
-        });
-        if (timeOut = theTest.get('autoGoDuration')) {
-          return saneTimeout(timeOut, function() {
-            return saneTimeout(5000, function() {
-              return Pylon.trigger('systemEvent:stopCountDown:start', 5);
-            });
-          });
-        }
-      };
-    })(this));
-    Pylon.on('systemEvent:goButton:go', (function(_this) {
-      return function(time) {
-        return _this.$('button').prop({
-          disabled: false
-        });
-      };
-    })(this));
-    return Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
-      return function(time) {
-        _this.stopwatch.stop();
-        _this.$el.removeClass('active');
-        return _this.$('button').prop({
-          disabled: true
-        });
-      };
-    })(this));
-  },
-  showGo: function(showIt) {
-    return tea.div((function(_this) {
-      return function() {
-        if (showIt) {
-          tea.button('#goButton.primary', {
-            onClick: "Pylon.trigger('systemEvent:goButton:go')"
-          });
-          "Go";
-        } else {
-          saneTimeout(20, function() {
-            _this.$('button').prop({
-              disabled: false
-            });
-            return _this.stopwatch.start();
-          });
-        }
-        tea.span("Total Duration");
-        return tea.span('#button-go-time.right');
+        return _this.$el.fadeOut(time);
       };
     })(this));
   },
   render: function() {
-    this.$el.html(render((function(_this) {
+    var shuffle;
+    shuffle = function(a) {
+      var i, j, k, ref, ref1;
+      for (i = k = ref = a.length - 1; ref <= 1 ? k <= 1 : k >= 1; i = ref <= 1 ? ++k : --k) {
+        j = Math.floor(Math.random() * (i + 1));
+        ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
+      }
+      return a;
+    };
+    this.$el.html(T.render((function(_this) {
       return function() {
-        var mileStones, ref1, theTest;
-        tea.hr;
+        var colors, mileStones, ref, ref1, ref2, theTest;
+        T.hr;
         theTest = Pylon.theProtocol();
-        tag("section", function() {
-          return h3("#protocol-result", theTest.get('mileStoneText') || "record these events");
-        });
-        if (theTest.get('showMileStones')) {
+        debugger;
+        if ((theTest.get('showMileStones')) && 'color text' === theTest.get('name')) {
+          $('#protocol-report').attr({
+            style: 'display;font-size:265%'
+          });
+          mileStones = shuffle((ref = theTest.get('mileStones')) != null ? ref.split(',') : void 0);
+          mileStones = mileStones.slice(0, 5);
+          colors = mileStones.concat(mileStones);
+          colors = colors.slice(Math.floor(Math.random() * 3) + 2);
+          return T.div(".container", function() {
+            var extraClass;
+            extraClass = ".u-pull-left";
+            return T.div(".row", function() {
+              var btn, btnName, i, k, len, results;
+              i = 0;
+              results = [];
+              for (k = 0, len = mileStones.length; k < len; k++) {
+                btn = mileStones[k];
+                if (4 < i++) {
+                  continue;
+                }
+                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+                results.push(T.div("" + extraClass, {
+                  style: "padding-right:0.5em;",
+                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');"
+                }, function() {
+                  return T.div({
+                    style: "color:" + colors[i]
+                  }, btn);
+                }));
+              }
+              return results;
+            });
+          });
+        } else if ((theTest.get('showMileStones')) && 'ten icons' === theTest.get('name')) {
+          $('#protocol-report').attr({
+            style: 'display;font-size:265%'
+          });
+          mileStones = shuffle((ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0);
+          return T.div(".container", function() {
+            var extraClass;
+            extraClass = ".u-pull-left";
+            return T.div(".row", function() {
+              var btn, btnName, i, k, len, results;
+              i = 0;
+              results = [];
+              for (k = 0, len = mileStones.length; k < len; k++) {
+                btn = mileStones[k];
+                if (9 < i++) {
+                  continue;
+                }
+                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+                results.push(T.div("" + extraClass, {
+                  style: "padding-right:0.5em;",
+                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');"
+                }, function() {
+                  return T.pre(btn + "\n" + i);
+                }));
+              }
+              return results;
+            });
+          });
+        } else if (theTest.get('showMileStones')) {
           $('#protocol-report').attr({
             style: 'display'
           });
-          _this.showGo(theTest.get('showGo'));
-          mileStones = (ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0;
-          return tea.div(function() {
-            var btn, btnName, i, len, results;
-            results = [];
-            for (i = 0, len = mileStones.length; i < len; i++) {
-              btn = mileStones[i];
-              btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(tea.button('.primary.round-button', {
-                onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "')"
-              }, function() {
-                return tea.span("" + btn);
-              }));
-            }
-            return results;
+          mileStones = (ref2 = theTest.get('mileStones')) != null ? ref2.split(',') : void 0;
+          return T.div(".container", function() {
+            var extraClass;
+            extraClass = ".u-pull-left";
+            return T.div(".row", function() {
+              var btn, btnName, k, len, results;
+              results = [];
+              for (k = 0, len = mileStones.length; k < len; k++) {
+                btn = mileStones[k];
+                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+                T.button(".primary.round-button" + extraClass, {
+                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
+                }, function() {
+                  return T.span("" + btn);
+                });
+                results.push(extraClass = ".offset-by-one.column");
+              }
+              return results;
+            });
           });
         }
       };
@@ -3875,7 +3922,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"../lib/stopwatch.coffee":10,"./button-view.coffee":17,"backbone":21,"jquery":25,"teacup":29}],21:[function(require,module,exports){
+},{"./button-view.coffee":16,"backbone":20,"jquery":24,"teacup":28}],20:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -5799,7 +5846,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":25,"underscore":30}],22:[function(require,module,exports){
+},{"jquery":24,"underscore":29}],21:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -5953,7 +6000,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 }).call(this);
 
-},{}],23:[function(require,module,exports){
+},{}],22:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -6142,7 +6189,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":24,"_process":28}],24:[function(require,module,exports){
+},{"./debug":23,"_process":27}],23:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -6346,7 +6393,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":27}],25:[function(require,module,exports){
+},{"ms":26}],24:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.3.1
  * https://jquery.com/
@@ -16712,7 +16759,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],26:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -16741,7 +16788,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],27:[function(require,module,exports){
+},{}],26:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -16895,7 +16942,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],28:[function(require,module,exports){
+},{}],27:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -16955,7 +17002,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],29:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -17390,7 +17437,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],30:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 (function (global){
 //     Underscore.js 1.9.1
 //     http://underscorejs.org

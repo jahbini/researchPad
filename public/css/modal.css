@@ -5,12 +5,11 @@ body {
   touch-action: manipulation;
   display: none;
   position: fixed;
-  top: 50%;
+  top: 10%;
   left: 10%;
   width: 75%;
   height: auto;
   margin-left: 0px;
-  margin-top: -150px;
   background-color: #4b9070;
   padding: 25px;
   border-radius: 5px;
@@ -35,6 +34,38 @@ body {
 
 .modal button {margin-right:5px}
 
+.modal-test {
+  touch-action: manipulation;
+  display: none;
+  position: fixed;
+  top: 50%;
+  left: 0 ;
+  width: 100%;
+  height: auto;
+  margin-left: 0px;
+  background-color: lightcyan;
+  padding: 15px;
+  border-radius: 5px;
+  z-index: 10;
+}
+.modal-test.active {
+  display: block;
+}
+.modal-test header {
+  position: relative;
+}
+.modal-test hr {
+  text-align: center;
+}
+.modal-test .close {
+  position: absolute;
+  top: 3px;
+  right: 0;
+  margin: 0;
+}
+
+.modal-test button {margin-right:5px}
+
 .icon {
   display: inline-block;
   font-size: inherit;
@@ -47,7 +78,7 @@ body {
   -o-text-rendering: geometricPrecision;
   text-rendering: geometricPrecision;
 }
-.round-button{
+.round-button {
   height: 200px;
   width: 200px;
     text-decoration: none;
@@ -55,8 +86,8 @@ body {
     outline: none;
     cursor: pointer;
     border-style: none;
-    color: white;
-    background-color: #3498db;
+    color: black;
+    background-color: #6898db;
     border-radius: 100%;
     overflow: none;
     text-align: center;
@@ -75,6 +106,7 @@ body {
     vertical-align:middle;
    /* max-width:90%; */
   }
-  .round-button:active{
-    background-color: #2980b9;
+  .round-button.reversed{
+    color: white;
+    background-color: #29405c;
   }

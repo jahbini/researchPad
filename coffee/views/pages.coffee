@@ -124,7 +124,7 @@ class Pages
     # the test activity portal -- populated in modalView.coffee
     div "#recorder.modal",->
       div "#count-down"
-      div "#protocol-report", style: "display:none;"
+    div "#protocol-report.modal-test", style: "display:none;"
     return
 
   scanBody: renderable ()->
@@ -175,7 +175,7 @@ class Pages
 
   topButtons: renderable ()->
       div '.row', ->
-        button '#admin.three.columns button-primary', 'Admin'
+        button '#admin.three.columns.button-primary', 'Admin'
         button '#action.disabled.three.columns', ''
         button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
         button '#debug.three.columns.disabled', ''

@@ -9,7 +9,7 @@ Backbone = require ('backbone')
 localStorage.setItem 'debug',"app,TIhandler,sanity,sensor,logon,state"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
-window.console = new buglog "logon"
+#window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
   state: (require './models/state.coffee').state
@@ -20,6 +20,8 @@ PylonTemplate = Backbone.Model.extend
     return {} if !protocols || !sessionInfo.attributes.testID
     return protocols.findWhere
       name: sessionInfo.attributes.testID
+  saneTimeout: (t,f)->
+    return setTimeout f,t
 
 window.Pylon = Pylon = new PylonTemplate
 Pylon.on 'all', (event,rest...)->
@@ -356,7 +358,7 @@ Pylon.on ('systemEvent:recordCountDown:fail'), ->
     $('#testID').prop("disabled",true)
     return
 
-Pylon.on 'systemEvent:recordCountDown:over', ->
+Pylon.on 'systemEvent:recordCountDown:start', ->
   # change the record button into the stop button
   (Pylon.get 'button-action').set enabled: true, legend: "Stop"
   return false
@@ -374,6 +376,7 @@ Pylon.on 'systemEvent:stopCountDown:over', ->
   # shut down the notifications
   Pylon.state.set recording: false
   Pylon.trigger 'systemEvent:endRecording'
+  (Pylon.get 'button-action').set enabled: false
   (Pylon.get 'button-upload').set enabled: true
   (Pylon.get 'button-calibrate').set enabled: true
   (Pylon.get 'button-clear').set enabled: true

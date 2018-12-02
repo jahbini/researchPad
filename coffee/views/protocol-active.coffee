@@ -2,7 +2,7 @@
 
 Backbone = require('backbone')
 $=require('jquery')
-Teacup = require('teacup')
+T = require('teacup')
 BV = require './button-view.coffee'
 saneTimeout = (time,f) ->
   setTimeout f,time
@@ -13,80 +13,86 @@ implementing = (mixins..., classReference) ->
       classReference::[key] = value
   classReference
 
-tea = new Teacup.Teacup
-{table,tr,th,thead,tbody,td,ul,li,ol,a,render
-    ,input,renderable,raw,div,img,h1,h2,h3,h4,h5,label
-    ,button,p,text,span,canvas,option,select,form
-    ,body,head,doctype,hr,br,password,tag} = tea.tags()
-
-Button = require './button-view.coffee'
-Stopwatch = require '../lib/stopwatch.coffee'
+Pylon.on "quickClass",(who,domClass)->
+  who.addClass domClass
+  setTimeout (()->who.removeClass domClass ), 100
 
 #upload view template is now non-functional -- noop for initialize,render
 ProtocolReportTemplate = Backbone.View.extend
     el: "#protocol-report"
     initialize: ()->
       # show protocol-report when the start count-down is finished
-      @goTime =0
-      @stopwatch = new Stopwatch 100,true, (stopwatch)->
-        $('#button-go-time').text stopwatch.toString()
 
-      Pylon.on 'systemEvent:goButton:go', =>
-        @stopwatch.start()
-
-      Pylon.on 'systemEvent:recordCountDown:over', ()=>
+      Pylon.on 'systemEvent:protocol:active', ()=>
         theTest = Pylon.theProtocol()
         $('#protocol-report').attr( style: 'display:none')
         return unless theTest.get 'showMileStones'
+        @$el.fadeIn()
         @$el.addClass 'active'
         @render()
         # start with only the goButton enabled
-        @$('button').prop disabled: true
-        @$('#goButton').prop disabled: false
-        if  timeOut=theTest.get 'autoGoDuration'
-          saneTimeout timeOut,()->
-            saneTimeout 5000,()->
-              Pylon.trigger 'systemEvent:stopCountDown:start',5
-
-      Pylon.on 'systemEvent:goButton:go', (time)=>
         @$('button').prop disabled: false
 
-      Pylon.on 'systemEvent:stopCountDown:start', (time)=>
-        @stopwatch.stop()
-        @$el.removeClass 'active'
+      Pylon.on 'systemEvent:protocol:terminate', (time=1000)=>
         @$('button').prop disabled: true
-
-    showGo: (showIt)->
-      tea.div =>
-        if showIt
-          tea.button '#goButton.primary',
-              {onClick: "Pylon.trigger('systemEvent:goButton:go')"},
-            "Go"
-        else
-          # wait 20ms for mileStones buttons to stabilize in th DOM
-          saneTimeout 20,()=>
-            @$('button').prop disabled: false
-            @stopwatch.start()
-        tea.span  "Total Duration"
-        tea.span '#button-go-time.right'
+        @$el.fadeOut(time)
 
     # show panel of action buttons
     render: ()->
-      @$el.html render =>
-        tea.hr
+      shuffle = (a) ->
+        for i in [a.length-1..1]
+          j = Math.floor Math.random() * (i + 1)
+          [a[i], a[j]] = [a[j], a[i]]
+        a
+      @$el.html T.render =>
+        T.hr
         theTest = Pylon.theProtocol()
-        tag "section", ->
-          h3 "#protocol-result", theTest.get('mileStoneText') || "record these events"
-        if theTest.get 'showMileStones'
+        debugger
+        if (theTest.get 'showMileStones') && 'color text' ==theTest.get 'name'
+          $('#protocol-report').attr( style: 'display;font-size:265%')
+          mileStones = shuffle theTest.get('mileStones')?.split ','
+          mileStones = mileStones[0..4]
+          colors = mileStones.concat mileStones
+          colors = colors[Math.floor(Math.random()*3)+2 ..]
+
+          T.div ".container", =>
+            extraClass = ".u-pull-left"
+            T.div ".row", =>
+              i=0
+              for btn in mileStones
+                continue if 4< i++
+                btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
+                T.div "#{extraClass}",
+                  {style:"padding-right:0.5em;", onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"},
+                  -> T.div style: "color:#{colors[i]}", btn
+                #extraClass = ".offset-by-one.column"
+
+        else if (theTest.get 'showMileStones') && 'ten icons' ==theTest.get 'name'
+          $('#protocol-report').attr( style: 'display;font-size:265%')
+          mileStones = shuffle theTest.get('mileStones')?.split ','
+          T.div ".container", =>
+            extraClass = ".u-pull-left"
+            T.div ".row", =>
+              i=0
+              for btn in mileStones
+                continue if 9< i++
+                btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
+                T.div "#{extraClass}",
+                  {style:"padding-right:0.5em;", onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"},
+                  -> T.pre "#{btn}\n#{i}"
+                #extraClass = ".offset-by-one.column"
+        else if theTest.get 'showMileStones'
           $('#protocol-report').attr( style: 'display')
-          @showGo theTest.get 'showGo'
           mileStones = theTest.get('mileStones')?.split ','
-          tea.div =>
-            for btn in mileStones
-              btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-              tea.button '.primary.round-button',
-                {onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}')"},
-                -> tea.span "#{btn}"
+          T.div ".container", =>
+            extraClass = ".u-pull-left"
+            T.div ".row", =>
+              for btn in mileStones
+                btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
+                T.button ".primary.round-button#{extraClass}",
+                  {onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
+                  -> T.span "#{btn}"
+                extraClass = ".offset-by-one.column"
       @
 
 exports.ProtocolReportTemplate = new ProtocolReportTemplate
