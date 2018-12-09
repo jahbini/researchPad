@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":21,"backbone":20,"jquery":24,"underscore":29}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, resolveConnected, sessionInfo, setSensor, shuffle, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -319,11 +319,44 @@ clients = new clientCollection;
 
 Pylon.set('clients', clients);
 
+shuffle = function(a) {
+  var i, j, k, ref1, ref2;
+  for (i = k = ref1 = a.length - 1; ref1 <= 1 ? k <= 1 : k >= 1; i = ref1 <= 1 ? ++k : --k) {
+    j = Math.floor(Math.random() * (i + 1));
+    ref2 = [a[j], a[i]], a[i] = ref2[0], a[j] = ref2[1];
+  }
+  return a;
+};
+
 protocol = Backbone.Model.extend({
   defaults: {
     name: "Other",
     comments: "Other",
-    mileStones: "initiation,completion"
+    mileStones: ["initiation", "completion"]
+  },
+  parse: function(attributes) {
+    attributes.mileStones = attributes.mileStones.split(',');
+    return attributes;
+  },
+  initialize: function() {},
+  setCurrentTest: function(limit) {
+    var k, key, len, m, ref1;
+    this.attributes.order = {};
+    this.attributes.currentTest = (shuffle(this.attributes.mileStones.slice(0))).slice(0, limit);
+    ref1 = this.attributes.currentTest;
+    for (m = k = 0, len = ref1.length; k < len; m = ++k) {
+      key = ref1[m];
+      this.attributes.order[key] = m;
+    }
+    return this.attributes.currentTest;
+  },
+  selectFromCurrentTest: function() {
+    var c;
+    c = this.attributes.currentTest;
+    return c[Math.floor(Math.random() * c.length)];
+  },
+  order: function(icon) {
+    return this.attributes.order[icon];
   }
 });
 
@@ -3194,14 +3227,14 @@ protocolHeadTemplate = Backbone.View.extend({
       this.$el.html(T.render((function(_this) {
         return function() {
           T.div(".row", function() {
-            T.div(".seven.columns", function() {
+            T.div(".u-pull-left", function() {
               return T.h3(function() {
                 T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
                 return T.span(".timer", t);
               });
             });
             if (_this.abortButton) {
-              return T.button(".two.columns.button-primary", {
+              return T.button(".u-pull-right.button-primary", {
                 onClick: "$('#action').click()"
               }, _this.abortButton);
             }
@@ -3432,7 +3465,10 @@ Pages = (function() {
       });
     });
     div("#recorder.modal", function() {
-      return div("#count-down");
+      div("#count-down");
+      return div("#example", {
+        style: "background-color:lightcyan;font-size:265%"
+      });
     });
     div("#protocol-report.modal-test", {
       style: "display:none;"
@@ -3741,7 +3777,7 @@ exports.Pages = Pages;
 
 
 },{"../lib/buglog.coffee":3,"./adminView.coffee":15,"./count-up-down.coffee":17,"./protocol-active.coffee":19,"backbone":20,"jquery":24,"teacup":28}],19:[function(require,module,exports){
-var $, BV, Backbone, ProtocolReportTemplate, T, implementing, saneTimeout,
+var $, BV, Backbone, ProtocolReportTemplate, T, activeKey, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -3757,10 +3793,10 @@ saneTimeout = function(time, f) {
 };
 
 implementing = function() {
-  var classReference, k, key, l, len, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, k = arguments.length - 1) : (k = 0, []), classReference = arguments[k++];
-  for (l = 0, len = mixins.length; l < len; l++) {
-    mixin = mixins[l];
+  var classReference, key, l, len, m, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, l = arguments.length - 1) : (l = 0, []), classReference = arguments[l++];
+  for (m = 0, len = mixins.length; m < len; m++) {
+    mixin = mixins[m];
     ref = mixin.prototype;
     for (key in ref) {
       value = ref[key];
@@ -3768,6 +3804,130 @@ implementing = function() {
     }
   }
   return classReference;
+};
+
+shuffle = function(a) {
+  var i, j, l, ref, ref1;
+  for (i = l = ref = a.length - 1; ref <= 1 ? l <= 1 : l >= 1; i = ref <= 1 ? ++l : --l) {
+    j = Math.floor(Math.random() * i);
+    ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
+  }
+  return a;
+};
+
+
+/*
+#type: "touchstart"
+#touches: TouchList
+#0: Touch
+ * altitudeAngle: 0
+ *  azimuthAngle: 0
+ *   clientX: 321
+ *    clientY: 158
+ *     force: 0
+ *      identifier: 2043187604
+ *       pageX: 321
+ *        pageY: 158
+ *         radiusX: 128.796875
+ *          radiusY: 128.796875
+ *           rotationAngle: 0
+ *            screenX: 321
+ *             screenY: 158
+ *              target: <div class="three columns">
+ *               touchType: "direct"
+ *                Touch Prototype
+ *                1: Touch
+ *                 altitudeAngle: 0
+ *                  azimuthAngle: 0
+ *                   clientX: 562
+ *                    clientY: 354
+ *                     force: 0
+ *                      identifier: 2043187605
+ *                       pageX: 562
+ *                        pageY: 354
+ *                         radiusX: 154.5625
+ *                          radiusY: 154.5625
+ *                           rotationAngle: 0
+ *                            screenX: 562
+ *                             screenY: 354
+ *                              target: <div class="row">
+ *                               touchType: "direct"
+ *                                Touch Prototype
+ *                                length: 2
+ */
+
+touchEntries = {
+  screenX: function(x) {
+    return x.toFixed(2);
+  },
+  screenY: function(y) {
+    return y.toFixed(2);
+  },
+  touchType: function(v) {
+    return v;
+  },
+  identifier: function(i) {
+    return "" + i;
+  },
+  radiusX: function(x) {
+    return x.toFixed(2);
+  },
+  radiusY: function(y) {
+    return y.toFixed(2);
+  },
+  target: function(t) {
+    var v;
+    v = "<" + t.localName;
+    if (t.id) {
+      v += ' id="' + t.id(+'"');
+    }
+    if (t.className) {
+      v += ' className="' + t.className + '"';
+    }
+    v += '>';
+    return v;
+  }
+};
+
+logTouch = function(event) {
+  var eachTouch, f, key, touch, touches;
+  touches = (function() {
+    var l, len, ref, results;
+    ref = event.targetTouches;
+    results = [];
+    for (l = 0, len = ref.length; l < len; l++) {
+      eachTouch = ref[l];
+      touch = {};
+      for (key in touchEntries) {
+        f = touchEntries[key];
+        touch[key] = f(eachTouch[key]);
+      }
+      results.push(touch);
+    }
+    return results;
+  })();
+  return Pylon.trigger('externalEvent', JSON.stringify({
+    type: event.type,
+    touches: touches
+  }));
+};
+
+listenForTouch = function() {
+  var b;
+  b = document.body;
+  b.addEventListener("touchstart", logTouch);
+  b.addEventListener("touchend", logTouch);
+  b.addEventListener("touchcancel", logTouch);
+  return b.addEventListener("touchmove", logTouch);
+};
+
+dontListenForTouch = function() {
+  var b;
+  b = document.body;
+  b.removeEventListener("touchstart", logTouch);
+  b.removeEventListener("touchend", logTouch);
+  b.removeEventListener("touchcancel", logTouch);
+  return b.removeEventListener("touchmove", logTouch);
 };
 
 Pylon.on("quickClass", function(who, domClass) {
@@ -3780,22 +3940,61 @@ Pylon.on("quickClass", function(who, domClass) {
 ProtocolReportTemplate = Backbone.View.extend({
   el: "#protocol-report",
   initialize: function() {
+    Pylon.on('protocol:response', (function(_this) {
+      return function(entry) {
+        if (_this.renderExample) {
+          _this.renderExample.response(entry, _this.renderBody.wanted);
+        }
+      };
+    })(this));
     Pylon.on('systemEvent:protocol:active', (function(_this) {
       return function() {
         var theTest;
+        dontListenForTouch();
         theTest = Pylon.theProtocol();
-        $('#protocol-report').attr({
+        _this.$el.attr({
           style: 'display:none'
         });
         if (!theTest.get('showMileStones')) {
           return;
         }
+        _this.$el.attr({
+          style: 'display'
+        });
+        listenForTouch();
         _this.$el.fadeIn();
         _this.$el.addClass('active');
-        _this.render();
-        return _this.$('button').prop({
+        _this.$('button').prop({
           disabled: false
         });
+        switch (theTest.get('name')) {
+          case 'Stroop Test':
+          case 'stroop test':
+          case 'Stroop test':
+            _this.renderExample = new colorTextExample({
+              model: theTest
+            });
+            _this.renderBody = new colorTextBody({
+              model: theTest
+            });
+            break;
+          case 'ten icons':
+            _this.renderExample = new tenIconExample({
+              model: theTest
+            });
+            _this.renderBody = new tenIconBody({
+              model: theTest
+            });
+            break;
+          default:
+            _this.renderExample = new tappingExample({
+              model: theTest
+            });
+            _this.renderBody = new tappingBody({
+              model: theTest
+            });
+        }
+        _this.render();
       };
     })(this));
     return Pylon.on('systemEvent:protocol:terminate', (function(_this) {
@@ -3803,6 +4002,12 @@ ProtocolReportTemplate = Backbone.View.extend({
         if (time == null) {
           time = 1000;
         }
+        if (_this.renderExample) {
+          _this.renderExample.clear();
+        }
+        _this.renderExample = null;
+        _this.renderBody = null;
+        dontListenForTouch();
         _this.$('button').prop({
           disabled: true
         });
@@ -3811,110 +4016,261 @@ ProtocolReportTemplate = Backbone.View.extend({
     })(this));
   },
   render: function() {
-    var shuffle;
-    shuffle = function(a) {
-      var i, j, k, ref, ref1;
-      for (i = k = ref = a.length - 1; ref <= 1 ? k <= 1 : k >= 1; i = ref <= 1 ? ++k : --k) {
-        j = Math.floor(Math.random() * (i + 1));
-        ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
-      }
-      return a;
-    };
+    var theTest;
+    theTest = Pylon.theProtocol();
+    if (!theTest.get('showMileStones')) {
+      return;
+    }
+    this.renderBody.render();
+    return this;
+  }
+});
+
+tappingBody = Backbone.View.extend({
+  el: "#protocol-report",
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {
+    var mileStones;
+    mileStones = this.model.get('mileStones');
     this.$el.html(T.render((function(_this) {
       return function() {
-        var colors, mileStones, ref, ref1, ref2, theTest;
-        T.hr;
-        theTest = Pylon.theProtocol();
-        debugger;
-        if ((theTest.get('showMileStones')) && 'color text' === theTest.get('name')) {
-          $('#protocol-report').attr({
-            style: 'display;font-size:265%'
+        return T.div(".container", function() {
+          var extraClass;
+          extraClass = "";
+          return T.div("row", {
+            style: "text-align:center"
+          }, function() {
+            var btn, btnName, l, len, results;
+            results = [];
+            for (l = 0, len = mileStones.length; l < len; l++) {
+              btn = mileStones[l];
+              btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+              results.push(T.button(".primary.round-button" + extraClass, {
+                style: "margin-right:1in",
+                onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
+              }, function() {
+                return T.span("" + btn);
+              }));
+            }
+            return results;
           });
-          mileStones = shuffle((ref = theTest.get('mileStones')) != null ? ref.split(',') : void 0);
-          mileStones = mileStones.slice(0, 5);
-          colors = mileStones.concat(mileStones);
-          colors = colors.slice(Math.floor(Math.random() * 3) + 2);
-          return T.div(".container", function() {
-            var extraClass;
-            extraClass = ".u-pull-left";
-            return T.div(".row", function() {
-              var btn, btnName, i, k, len, results;
-              i = 0;
-              results = [];
-              for (k = 0, len = mileStones.length; k < len; k++) {
-                btn = mileStones[k];
-                if (4 < i++) {
-                  continue;
-                }
-                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-                results.push(T.div("" + extraClass, {
-                  style: "padding-right:0.5em;",
-                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');"
-                }, function() {
-                  return T.div({
-                    style: "color:" + colors[i]
-                  }, btn);
-                }));
-              }
-              return results;
-            });
-          });
-        } else if ((theTest.get('showMileStones')) && 'ten icons' === theTest.get('name')) {
-          $('#protocol-report').attr({
-            style: 'display;font-size:265%'
-          });
-          mileStones = shuffle((ref1 = theTest.get('mileStones')) != null ? ref1.split(',') : void 0);
-          return T.div(".container", function() {
-            var extraClass;
-            extraClass = ".u-pull-left";
-            return T.div(".row", function() {
-              var btn, btnName, i, k, len, results;
-              i = 0;
-              results = [];
-              for (k = 0, len = mileStones.length; k < len; k++) {
-                btn = mileStones[k];
-                if (9 < i++) {
-                  continue;
-                }
-                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-                results.push(T.div("" + extraClass, {
-                  style: "padding-right:0.5em;",
-                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');"
-                }, function() {
-                  return T.pre(btn + "\n" + i);
-                }));
-              }
-              return results;
-            });
-          });
-        } else if (theTest.get('showMileStones')) {
-          $('#protocol-report').attr({
-            style: 'display'
-          });
-          mileStones = (ref2 = theTest.get('mileStones')) != null ? ref2.split(',') : void 0;
-          return T.div(".container", function() {
-            var extraClass;
-            extraClass = ".u-pull-left";
-            return T.div(".row", function() {
-              var btn, btnName, k, len, results;
-              results = [];
-              for (k = 0, len = mileStones.length; k < len; k++) {
-                btn = mileStones[k];
-                btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-                T.button(".primary.round-button" + extraClass, {
-                  onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
-                }, function() {
-                  return T.span("" + btn);
-                });
-                results.push(extraClass = ".offset-by-one.column");
-              }
-              return results;
-            });
-          });
-        }
+        });
       };
     })(this)));
-    return this;
+  }
+});
+
+colorTextBody = Backbone.View.extend({
+  el: "#protocol-report",
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {
+    this.wanted = null;
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", {
+          style: "font-size:265%"
+        }, function() {
+          var extraClass;
+          extraClass = "";
+          T.div(".row", {
+            style: "text-align:center"
+          }, function() {
+            var btn, btnName, example, examples, i, l, len, names, results;
+            examples = shuffle((_this.model.get('currentTest')).slice(0));
+            names = shuffle(examples.slice(0));
+            results = [];
+            for (i = l = 0, len = examples.length; l < len; i = ++l) {
+              example = examples[i];
+              btn = names[i];
+              btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+              results.push(T.span({
+                onClick: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
+                style: "padding-right:0.5em; text-shadow:2px 2px 3px #000000; color:" + example
+              }, btn));
+            }
+            return results;
+          });
+          return T.div(".row", {
+            style: "text-align:center;border:black;"
+          }, function() {
+            return T.span("#text-here", "What is the name of this color?");
+          });
+        });
+      };
+    })(this)));
+  },
+  render: function() {
+    var text;
+    text = this.model.selectFromCurrentTest();
+    this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + text);
+    this.wanted = text;
+  }
+});
+
+activeKey = function(digit) {
+  return T.div("#digit-" + digit + ".two.columns", {
+    style: "text-align: center;",
+    onclick: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
+  }, digit);
+};
+
+tenIconBody = Backbone.View.extend({
+  el: "#protocol-report",
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {
+    this.wanted = null;
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", {
+          style: "font-size:265%"
+        }, function() {
+          return T.div(".row", function() {
+            T.div(".three.columns", function() {
+              T.div(".row", function() {
+                return T.raw("&nbsp;");
+              });
+              return T.div(".row", function() {});
+            });
+            return T.div(".five.columns", "keypad", function() {
+              T.div(".row", function() {
+                var k, l, results;
+                results = [];
+                for (k = l = 1; l <= 3; k = ++l) {
+                  results.push(activeKey(k));
+                }
+                return results;
+              });
+              T.div(".row", function() {
+                var k, l;
+                for (k = l = 4; l <= 6; k = ++l) {
+                  activeKey(k);
+                }
+                return T.div("#icon-here.offset-by-two.two.columns", "icon");
+              });
+              T.div(".row", function() {
+                var k, l, results;
+                results = [];
+                for (k = l = 7; l <= 9; k = ++l) {
+                  results.push(activeKey(k));
+                }
+                return results;
+              });
+              return T.div(".row", function() {
+                T.div(".two.columns", function() {
+                  return T.raw("&nbsp;");
+                });
+                activeKey(0);
+                return T.div(".two.columns", function() {
+                  return T.raw("&nbsp;");
+                });
+              });
+            });
+          });
+        });
+      };
+    })(this)));
+  },
+  render: function() {
+    var icon;
+    icon = this.model.selectFromCurrentTest();
+    this.$('#icon-here').html(icon);
+    this.wanted = this.model.order(icon);
+  }
+});
+
+tappingExample = Backbone.View.extend({
+  el: "#example",
+  response: function(got, wanted) {
+    Pylon.trigger("systemEvent:protocol:got-" + got);
+  },
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {}
+});
+
+colorTextExample = Backbone.View.extend({
+  el: "#example",
+  clear: function() {
+    this.$el.html('');
+  },
+  response: function(got, wanted) {
+    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
+  },
+  initialize: function() {
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", function() {
+          return T.div(".row", {
+            style: "text-align:center"
+          }, function() {
+            var example, l, len, ref, results;
+            ref = _this.model.setCurrentTest(5);
+            results = [];
+            for (l = 0, len = ref.length; l < len; l++) {
+              example = ref[l];
+              results.push(T.span(".example", {
+                style: "padding-right:1em;"
+              }, function() {
+                T.text(example);
+                T.raw("&nbsp;");
+                return T.span({
+                  style: "background-color:" + example
+                }, function() {
+                  return T.raw("&nbsp&nbsp;&nbsp&nbsp; ");
+                });
+              }));
+            }
+            return results;
+          });
+        });
+      };
+    })(this)));
+  }
+});
+
+tenIconExample = Backbone.View.extend({
+  el: "#example",
+  clear: function() {
+    this.$el.html('');
+  },
+  response: function(got, wanted) {
+    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
+  },
+  initialize: function() {
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", {
+          style: "width:100%"
+        }, function() {
+          var extraClass;
+          extraClass = ".u-pull-left";
+          return T.div(".row", {
+            style: "text-align:center"
+          }, function() {
+            var example, i, l, len, ref, results;
+            i = 0;
+            ref = _this.model.setCurrentTest(10);
+            results = [];
+            for (l = 0, len = ref.length; l < len; l++) {
+              example = ref[l];
+              results.push(T.div("#example-" + example + "." + extraClass, {
+                style: "padding-right:0.5em;"
+              }, function() {
+                return T.pre(example + "\n" + (i++));
+              }));
+            }
+            return results;
+          });
+        });
+      };
+    })(this)));
   }
 });
 

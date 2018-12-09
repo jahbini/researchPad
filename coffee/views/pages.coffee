@@ -124,6 +124,7 @@ class Pages
     # the test activity portal -- populated in modalView.coffee
     div "#recorder.modal",->
       div "#count-down"
+      div "#example", style:"background-color:lightcyan;font-size:265%"
     div "#protocol-report.modal-test", style: "display:none;"
     return
 

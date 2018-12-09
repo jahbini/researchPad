@@ -175,12 +175,12 @@ protocolHeadTemplate = Backbone.View.extend
     else
       @$el.html T.render =>
         T.div ".row",=>
-          T.div ".seven.columns",=>
+          T.div ".u-pull-left",=>
             T.h3  =>
               T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
               T.span ".timer", t
           if @abortButton
-            T.button ".two.columns.button-primary",
+            T.button ".u-pull-right.button-primary",
               {onClick:  "$('#action').click()"},
               @abortButton
         T.div ".row",=>

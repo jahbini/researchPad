@@ -83,11 +83,33 @@ clients = new clientCollection
 Pylon.set('clients',clients)
 
 # #Test Protocols
+shuffle = (a) ->
+  for i in [a.length-1..1]
+    j = Math.floor Math.random() * (i + 1)
+    [a[i], a[j]] = [a[j], a[i]]
+  a
 protocol = Backbone.Model.extend
   defaults:
     name: "Other"
     comments: "Other"
-    mileStones: "initiation,completion"
+    mileStones: ["initiation","completion"]
+  parse: (attributes)->
+    attributes.mileStones = attributes.mileStones.split ','
+    attributes
+  initialize: ()->
+
+  setCurrentTest:(limit)->
+    @attributes.order={}
+    @attributes.currentTest = (shuffle @.attributes.mileStones[..])[...limit]
+    @attributes.order[key]=m for key,m in @attributes.currentTest
+    @.attributes.currentTest
+  selectFromCurrentTest:()->
+    c= @.attributes.currentTest
+    c[ Math.floor Math.random()*(c.length)]
+
+  order:(icon)->
+    @.attributes.order[icon]
+    
 protocolCollection = Backbone.Collection.extend
   model: protocol
   url: Pylon.get('hostUrl')+'protocols'

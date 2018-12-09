@@ -1,15 +1,18 @@
 body {
+  box-sizing: border-box;
   touch-action: manipulation;
 }
 .modal {
+  box-sizing: border-box;
   touch-action: manipulation;
   display: none;
   position: fixed;
-  top: 10%;
-  left: 10%;
-  width: 75%;
+  top: 7%;
+  left: 0;
+  width: 94%;
+  margin-left: 3%; 
+  margin-right: 3%; 
   height: auto;
-  margin-left: 0px;
   background-color: #4b9070;
   padding: 25px;
   border-radius: 5px;
@@ -36,15 +39,17 @@ body {
 
 .modal-test {
   touch-action: manipulation;
+  box-sizing: border-box;
   display: none;
   position: fixed;
-  top: 50%;
+  bottom: 0;
   left: 0 ;
-  width: 100%;
+  width: 94%;
+  margin-left: 3%; 
+  margin-right: 3%; 
   height: auto;
-  margin-left: 0px;
   background-color: lightcyan;
-  padding: 15px;
+  padding: 2rem; 
   border-radius: 5px;
   z-index: 10;
 }
@@ -110,3 +115,8 @@ body {
     color: white;
     background-color: #29405c;
   }
+span.reversed,
+div.reversed{
+    color: white;
+    background-color: #29405c;
+}
