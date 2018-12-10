@@ -103,6 +103,7 @@ protocol = Backbone.Model.extend
     @attributes.currentTest = (shuffle @.attributes.mileStones[..])[...limit]
     @attributes.order[key]=m for key,m in @attributes.currentTest
     @.attributes.currentTest
+
   selectFromCurrentTest:()->
     c= @.attributes.currentTest
     c[ Math.floor Math.random()*(c.length)]

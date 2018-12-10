@@ -204,7 +204,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":21,"backbone":20,"jquery":24,"underscore":29}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":11,"Case":24,"backbone":23,"jquery":27,"underscore":32}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, aButtonModel, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clientCollection, clientModel, clients, clinicCollection, clinicModel, clinicShowedErrors, clinicTimer, clinicianCollection, clinicianModel, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocol, protocolCollection, protocolTimer, protocols, protocolsShowedErrors, rawSession, ref, resolveConnected, sessionInfo, setSensor, shuffle, startBlueTooth, theProtocol, uploader,
   slice = [].slice;
 
@@ -1002,7 +1002,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":10,"./models/event-model.coffee":12,"./models/state.coffee":13,"./version.coffee":14,"./views/adminView.coffee":15,"./views/button-view.coffee":16,"./views/pages.coffee":18,"backbone":20,"jquery":24,"underscore":29}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":10,"./models/event-model.coffee":12,"./models/state.coffee":13,"./version.coffee":14,"./views/adminView.coffee":15,"./views/button-view.coffee":16,"./views/pages.coffee":18,"backbone":23,"jquery":27,"underscore":32}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1057,7 +1057,7 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":4,"debug":22,"json-stringify-safe":25}],4:[function(require,module,exports){
+},{"./console":4,"debug":25,"json-stringify-safe":28}],4:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1475,7 +1475,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":29}],7:[function(require,module,exports){
+},{"underscore":32}],7:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
@@ -1579,7 +1579,7 @@ exports.netView = new netView;
 
 
 
-},{"./buglog.coffee":3,"backbone":20,"jquery":24,"teacup":28}],8:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":23,"jquery":27,"teacup":31}],8:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2035,7 +2035,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":20,"jquery":24,"underscore":29}],11:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":23,"jquery":27,"underscore":32}],11:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('backbone');
@@ -2434,7 +2434,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":12,"backbone":20}],12:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":12,"backbone":23}],12:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2497,7 +2497,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":10,"backbone":20,"underscore":29}],13:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":23,"underscore":32}],13:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -2547,7 +2547,7 @@ exports.state = new State;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":20,"underscore":29}],14:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":23,"underscore":32}],14:[function(require,module,exports){
 module.exports = '1.7.7';
 
 
@@ -2867,7 +2867,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":20,"jquery":24,"teacup":28}],16:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":23,"jquery":27,"teacup":31}],16:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -2972,7 +2972,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":20,"jquery":24,"teacup":28}],17:[function(require,module,exports){
+},{"backbone":23,"jquery":27,"teacup":31}],17:[function(require,module,exports){
 var $, BV, Backbone, T, buglog, implementing, introlog, intrologger, pHT, pP, protocolHeadTemplate, protocolPhase, recorderViewTemplate,
   slice = [].slice;
 
@@ -3271,7 +3271,7 @@ pHT = new protocolHeadTemplate();
 
 
 
-},{"../lib/buglog.coffee":3,"./button-view.coffee":16,"backbone":20,"jquery":24,"teacup":28}],18:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./button-view.coffee":16,"backbone":23,"jquery":27,"teacup":31}],18:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3776,8 +3776,8 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":15,"./count-up-down.coffee":17,"./protocol-active.coffee":19,"backbone":20,"jquery":24,"teacup":28}],19:[function(require,module,exports){
-var $, BV, Backbone, ProtocolReportTemplate, T, activeKey, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
+},{"../lib/buglog.coffee":3,"./adminView.coffee":15,"./count-up-down.coffee":17,"./protocol-active.coffee":19,"backbone":23,"jquery":27,"teacup":31}],19:[function(require,module,exports){
+var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, ref, ref1, ref2, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -3788,18 +3788,24 @@ T = require('teacup');
 
 BV = require('./button-view.coffee');
 
+ref = require('./stroop.coffee'), colorTextBody = ref.colorTextBody, colorTextExample = ref.colorTextExample;
+
+ref1 = require('./tapping.coffee'), tappingBody = ref1.tappingBody, tappingExample = ref1.tappingExample;
+
+ref2 = require('./ten-icon.coffee'), tenIconBody = ref2.tenIconBody, tenIconExample = ref2.tenIconExample;
+
 saneTimeout = function(time, f) {
   return setTimeout(f, time);
 };
 
 implementing = function() {
-  var classReference, key, l, len, m, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, l = arguments.length - 1) : (l = 0, []), classReference = arguments[l++];
-  for (m = 0, len = mixins.length; m < len; m++) {
-    mixin = mixins[m];
-    ref = mixin.prototype;
-    for (key in ref) {
-      value = ref[key];
+  var classReference, k, key, l, len, mixin, mixins, ref3, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, k = arguments.length - 1) : (k = 0, []), classReference = arguments[k++];
+  for (l = 0, len = mixins.length; l < len; l++) {
+    mixin = mixins[l];
+    ref3 = mixin.prototype;
+    for (key in ref3) {
+      value = ref3[key];
       classReference.prototype[key] = value;
     }
   }
@@ -3807,10 +3813,10 @@ implementing = function() {
 };
 
 shuffle = function(a) {
-  var i, j, l, ref, ref1;
-  for (i = l = ref = a.length - 1; ref <= 1 ? l <= 1 : l >= 1; i = ref <= 1 ? ++l : --l) {
+  var i, j, k, ref3, ref4;
+  for (i = k = ref3 = a.length - 1; ref3 <= 1 ? k <= 1 : k >= 1; i = ref3 <= 1 ? ++k : --k) {
     j = Math.floor(Math.random() * i);
-    ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
+    ref4 = [a[j], a[i]], a[i] = ref4[0], a[j] = ref4[1];
   }
   return a;
 };
@@ -3892,11 +3898,11 @@ touchEntries = {
 logTouch = function(event) {
   var eachTouch, f, key, touch, touches;
   touches = (function() {
-    var l, len, ref, results;
-    ref = event.targetTouches;
+    var k, len, ref3, results;
+    ref3 = event.targetTouches;
     results = [];
-    for (l = 0, len = ref.length; l < len; l++) {
-      eachTouch = ref[l];
+    for (k = 0, len = ref3.length; k < len; k++) {
+      eachTouch = ref3[k];
       touch = {};
       for (key in touchEntries) {
         f = touchEntries[key];
@@ -4026,41 +4032,42 @@ ProtocolReportTemplate = Backbone.View.extend({
   }
 });
 
-tappingBody = Backbone.View.extend({
-  el: "#protocol-report",
-  clear: function() {
-    this.$el.html('');
-  },
-  initialize: function() {
-    var mileStones;
-    mileStones = this.model.get('mileStones');
-    this.$el.html(T.render((function(_this) {
-      return function() {
-        return T.div(".container", function() {
-          var extraClass;
-          extraClass = "";
-          return T.div("row", {
-            style: "text-align:center"
-          }, function() {
-            var btn, btnName, l, len, results;
-            results = [];
-            for (l = 0, len = mileStones.length; l < len; l++) {
-              btn = mileStones[l];
-              btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(T.button(".primary.round-button" + extraClass, {
-                style: "margin-right:1in",
-                onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
-              }, function() {
-                return T.span("" + btn);
-              }));
-            }
-            return results;
-          });
-        });
-      };
-    })(this)));
+exports.ProtocolReportTemplate = new ProtocolReportTemplate;
+
+
+
+},{"./button-view.coffee":16,"./stroop.coffee":20,"./tapping.coffee":21,"./ten-icon.coffee":22,"backbone":23,"jquery":27,"teacup":31}],20:[function(require,module,exports){
+var $, Backbone, T, activeKey, colorTextBody, colorTextExample, implementing, shuffle,
+  slice = [].slice;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+implementing = function() {
+  var classReference, k, key, l, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, k = arguments.length - 1) : (k = 0, []), classReference = arguments[k++];
+  for (l = 0, len = mixins.length; l < len; l++) {
+    mixin = mixins[l];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
   }
-});
+  return classReference;
+};
+
+shuffle = function(a) {
+  var i, j, k, ref, ref1;
+  for (i = k = ref = a.length - 1; ref <= 1 ? k <= 1 : k >= 1; i = ref <= 1 ? ++k : --k) {
+    j = Math.floor(Math.random() * i);
+    ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
+  }
+  return a;
+};
 
 colorTextBody = Backbone.View.extend({
   el: "#protocol-report",
@@ -4079,11 +4086,11 @@ colorTextBody = Backbone.View.extend({
           T.div(".row", {
             style: "text-align:center"
           }, function() {
-            var btn, btnName, example, examples, i, l, len, names, results;
+            var btn, btnName, example, examples, i, k, len, names, results;
             examples = shuffle((_this.model.get('currentTest')).slice(0));
             names = shuffle(examples.slice(0));
             results = [];
-            for (i = l = 0, len = examples.length; l < len; i = ++l) {
+            for (i = k = 0, len = examples.length; k < len; i = ++k) {
               example = examples[i];
               btn = names[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
@@ -4110,6 +4117,171 @@ colorTextBody = Backbone.View.extend({
     this.wanted = text;
   }
 });
+
+activeKey = function(digit) {
+  return T.div("#digit-" + digit + ".two.columns", {
+    style: "text-align: center;",
+    onclick: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
+  }, digit);
+};
+
+colorTextExample = Backbone.View.extend({
+  el: "#example",
+  clear: function() {
+    this.$el.html('');
+  },
+  response: function(got, wanted) {
+    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
+  },
+  initialize: function() {
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", function() {
+          return T.div(".row", {
+            style: "text-align:center"
+          }, function() {
+            var example, k, len, ref, results;
+            ref = _this.model.setCurrentTest(5);
+            results = [];
+            for (k = 0, len = ref.length; k < len; k++) {
+              example = ref[k];
+              results.push(T.span(".example", {
+                style: "padding-right:1em;"
+              }, function() {
+                T.text(example);
+                T.raw("&nbsp;");
+                return T.span({
+                  style: "background-color:" + example
+                }, function() {
+                  return T.raw("&nbsp&nbsp;&nbsp&nbsp; ");
+                });
+              }));
+            }
+            return results;
+          });
+        });
+      };
+    })(this)));
+  }
+});
+
+exports.colorTextBody = colorTextBody;
+
+exports.colorTextExample = colorTextExample;
+
+
+
+},{"backbone":23,"jquery":27,"teacup":31}],21:[function(require,module,exports){
+var $, BV, Backbone, T, implementing, tappingBody, tappingExample,
+  slice = [].slice;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+BV = require('./button-view.coffee');
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+tappingBody = Backbone.View.extend({
+  el: "#protocol-report",
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {
+    var mileStones;
+    mileStones = this.model.get('mileStones');
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", function() {
+          var extraClass;
+          extraClass = "";
+          return T.div("row", {
+            style: "text-align:center"
+          }, function() {
+            var btn, btnName, i, len, results;
+            results = [];
+            for (i = 0, len = mileStones.length; i < len; i++) {
+              btn = mileStones[i];
+              btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
+              results.push(T.button(".primary.round-button" + extraClass, {
+                style: "margin-right:1in",
+                onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
+              }, function() {
+                return T.span("" + btn);
+              }));
+            }
+            return results;
+          });
+        });
+      };
+    })(this)));
+  }
+});
+
+tappingExample = Backbone.View.extend({
+  el: "#example",
+  response: function(got, wanted) {
+    Pylon.trigger("systemEvent:protocol:got-" + got);
+  },
+  clear: function() {
+    this.$el.html('');
+  },
+  initialize: function() {}
+});
+
+exports.tappingBody = tappingBody;
+
+exports.tappingExample = tappingExample;
+
+
+
+},{"./button-view.coffee":16,"backbone":23,"jquery":27,"teacup":31}],22:[function(require,module,exports){
+var $, Backbone, T, activeKey, implementing, shuffle, tenIconBody, tenIconExample,
+  slice = [].slice;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+implementing = function() {
+  var classReference, key, l, len, m, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, l = arguments.length - 1) : (l = 0, []), classReference = arguments[l++];
+  for (m = 0, len = mixins.length; m < len; m++) {
+    mixin = mixins[m];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+shuffle = function(a) {
+  var i, j, l, ref, ref1;
+  for (i = l = ref = a.length - 1; ref <= 1 ? l <= 1 : l >= 1; i = ref <= 1 ? ++l : --l) {
+    j = Math.floor(Math.random() * i);
+    ref1 = [a[j], a[i]], a[i] = ref1[0], a[j] = ref1[1];
+  }
+  return a;
+};
 
 activeKey = function(digit) {
   return T.div("#digit-" + digit + ".two.columns", {
@@ -4184,57 +4356,6 @@ tenIconBody = Backbone.View.extend({
   }
 });
 
-tappingExample = Backbone.View.extend({
-  el: "#example",
-  response: function(got, wanted) {
-    Pylon.trigger("systemEvent:protocol:got-" + got);
-  },
-  clear: function() {
-    this.$el.html('');
-  },
-  initialize: function() {}
-});
-
-colorTextExample = Backbone.View.extend({
-  el: "#example",
-  clear: function() {
-    this.$el.html('');
-  },
-  response: function(got, wanted) {
-    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
-  },
-  initialize: function() {
-    this.$el.html(T.render((function(_this) {
-      return function() {
-        return T.div(".container", function() {
-          return T.div(".row", {
-            style: "text-align:center"
-          }, function() {
-            var example, l, len, ref, results;
-            ref = _this.model.setCurrentTest(5);
-            results = [];
-            for (l = 0, len = ref.length; l < len; l++) {
-              example = ref[l];
-              results.push(T.span(".example", {
-                style: "padding-right:1em;"
-              }, function() {
-                T.text(example);
-                T.raw("&nbsp;");
-                return T.span({
-                  style: "background-color:" + example
-                }, function() {
-                  return T.raw("&nbsp&nbsp;&nbsp&nbsp; ");
-                });
-              }));
-            }
-            return results;
-          });
-        });
-      };
-    })(this)));
-  }
-});
-
 tenIconExample = Backbone.View.extend({
   el: "#example",
   clear: function() {
@@ -4274,11 +4395,13 @@ tenIconExample = Backbone.View.extend({
   }
 });
 
-exports.ProtocolReportTemplate = new ProtocolReportTemplate;
+exports.tenIconBody = tenIconBody;
+
+exports.tenIconExample = tenIconExample;
 
 
 
-},{"./button-view.coffee":16,"backbone":20,"jquery":24,"teacup":28}],20:[function(require,module,exports){
+},{"backbone":23,"jquery":27,"teacup":31}],23:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -6202,7 +6325,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":24,"underscore":29}],21:[function(require,module,exports){
+},{"jquery":27,"underscore":32}],24:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -6356,7 +6479,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 }).call(this);
 
-},{}],22:[function(require,module,exports){
+},{}],25:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -6545,7 +6668,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":23,"_process":27}],23:[function(require,module,exports){
+},{"./debug":26,"_process":30}],26:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -6749,7 +6872,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":26}],24:[function(require,module,exports){
+},{"ms":29}],27:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.3.1
  * https://jquery.com/
@@ -17115,7 +17238,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],25:[function(require,module,exports){
+},{}],28:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -17144,7 +17267,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],26:[function(require,module,exports){
+},{}],29:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -17298,7 +17421,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],27:[function(require,module,exports){
+},{}],30:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -17358,7 +17481,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],28:[function(require,module,exports){
+},{}],31:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -17793,7 +17916,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],29:[function(require,module,exports){
+},{}],32:[function(require,module,exports){
 (function (global){
 //     Underscore.js 1.9.1
 //     http://underscorejs.org

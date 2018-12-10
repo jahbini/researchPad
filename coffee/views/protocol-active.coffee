@@ -4,6 +4,10 @@ Backbone = require('backbone')
 $=require('jquery')
 T = require('teacup')
 BV = require './button-view.coffee'
+{colorTextBody,colorTextExample} = require './stroop.coffee'
+{tappingBody,tappingExample} = require './tapping.coffee'
+{tenIconBody,tenIconExample} = require './ten-icon.coffee'
+
 saneTimeout = (time,f) ->
   setTimeout f,time
 
@@ -148,148 +152,6 @@ ProtocolReportTemplate = Backbone.View.extend
       return unless theTest.get 'showMileStones'
       @renderBody.render()
       @
-
-tappingBody = Backbone.View.extend
-  el: "#protocol-report"
-  clear: ()->
-    @$el.html('')
-    return
-  initialize: ()->
-    mileStones = @model.get('mileStones')
-    @$el.html T.render =>
-      T.div ".container", =>
-        extraClass = ""
-        T.div "row",style:"text-align:center", =>
-          for btn in mileStones
-            btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-            T.button ".primary.round-button#{extraClass}",
-              {style:"margin-right:1in",onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
-              -> T.span "#{btn}"
-    return
-
-colorTextBody = Backbone.View.extend
-  el: "#protocol-report"
-  clear: ()->
-    @$el.html('')
-    return
-  initialize: ()->
-    @wanted=null
-
-    @$el.html T.render =>
-      T.div ".container",style:"font-size:265%", =>
-        extraClass = ""
-        T.div ".row",style:"text-align:center", =>
-          #select ther elements of currentTest in random order
-          examples= shuffle (@model.get 'currentTest')[..]
-          #make sure that the text and color are never the same
-          names = shuffle examples[..]
-          for example,i in examples
-            btn = names[i]
-            btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-            T.span 
-              onClick: "Pylon.trigger('protocol:response','#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"
-              style: "padding-right:0.5em; text-shadow:2px 2px 3px #000000; color:#{example}"
-              ,btn
-        T.div ".row",style:"text-align:center;border:black;",->
-          T.span "#text-here","What is the name of this color?"
-    return
-  render:()->
-    text = @model.selectFromCurrentTest()
-    #@$('#text-here').html  text
-    @$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{text}"
-    @wanted = text
-    return
-
-activeKey = (digit)->
-  T.div "#digit-#{digit}.two.columns",
-    style: "text-align: center;",
-    onclick:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
-    digit
-
-tenIconBody = Backbone.View.extend
-  el: "#protocol-report"
-  clear: ()->
-    @$el.html('')
-    return
-  initialize: ()->
-    @wanted=null
-    @$el.html T.render =>
-      T.div ".container",style:"font-size:265%", =>
-        T.div ".row", =>
-          T.div ".three.columns", =>
-            T.div ".row",-> T.raw "&nbsp;"
-            T.div ".row",->
-          T.div  ".five.columns","keypad",->
-            T.div ".row",->
-              activeKey k for k in [1..3]
-            T.div ".row",->
-              activeKey k for k in [4..6]
-              T.div  "#icon-here.offset-by-two.two.columns","icon"
-            T.div ".row",->
-              activeKey k for k in [7..9]
-            T.div ".row",->
-              T.div ".two.columns",->T.raw "&nbsp;"
-              activeKey 0
-              T.div ".two.columns",->T.raw "&nbsp;"
-    return
-  render:()->
-    icon = @model.selectFromCurrentTest()
-    @$('#icon-here').html  icon
-    @wanted = @model.order icon
-    return
-
-tappingExample = Backbone.View.extend
-  el: "#example"
-  response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}"
-    return
-  clear: ()->
-    @$el.html('')
-    return
-  initialize: ()->
-    return
-
-colorTextExample = Backbone.View.extend
-  el: "#example"
-  clear: ()->
-    @$el.html('')
-    return
-  response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}/wanted-#{wanted}"
-    return
-  initialize: ()->
-    @$el.html T.render =>
-      T.div ".container", =>
-        T.div ".row",style:"text-align:center", =>
-          for example in @model.setCurrentTest 5
-            T.span ".example",
-              {style:"padding-right:1em;"},
-              => 
-                T.text example
-                T.raw "&nbsp;"
-                T.span style: "background-color:#{example}", -> T.raw "&nbsp&nbsp;&nbsp&nbsp; "
-    return
-
-tenIconExample = Backbone.View.extend
-  el: "#example"
-  clear: ()->
-    @$el.html('')
-    return
-  response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}/wanted-#{wanted}"
-    return
-  initialize: ()->
-    @$el.html T.render =>
-      T.div ".container",style:"width:100%", =>
-        extraClass = ".u-pull-left"
-        T.div ".row",style:"text-align:center", =>
-          i=0
-          for example in @model.setCurrentTest 10
-            T.div "#example-#{example}.#{extraClass}",
-              {style:"padding-right:0.5em;" },
-              -> T.pre "#{example}\n#{i++}"
-            #extraClass = ".offset-by-one.column"
-    return
 
 exports.ProtocolReportTemplate = new ProtocolReportTemplate
 #if window? then window.exports = Pages
