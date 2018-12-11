@@ -25,8 +25,17 @@ colorTextBody = Backbone.View.extend
     @$el.html('')
     return
   initialize: ()->
+    Pylon.on "reRender:colorText",()=>
+      @$el.fadeOut 100,()=>
+        @render()
+        @$el.fadeIn 100
+        return
+      return
     @wanted=null
-
+    @$el.html T.render =>
+      T.div ".container",style:"font-size:265%"
+    return
+  render:()->
     @$el.html T.render =>
       T.div ".container",style:"font-size:265%", =>
         extraClass = ""
@@ -44,20 +53,11 @@ colorTextBody = Backbone.View.extend
               ,btn
         T.div ".row",style:"text-align:center;border:black;",->
           T.span "#text-here","What is the name of this color?"
-    return
-  render:()->
     text = @model.selectFromCurrentTest()
     #@$('#text-here').html  text
     @$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{text}"
     @wanted = text
     return
-
-activeKey = (digit)->
-  T.div "#digit-#{digit}.two.columns",
-    style: "text-align: center;",
-    onclick:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
-    digit
-
 
 colorTextExample = Backbone.View.extend
   el: "#example"
@@ -65,7 +65,8 @@ colorTextExample = Backbone.View.extend
     @$el.html('')
     return
   response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}/wanted-#{wanted}"
+    Pylon.trigger "systemEvent:stroop:got-#{got}/wanted-#{wanted}"
+    Pylon.trigger "reRender:colorText"
     return
   initialize: ()->
     @$el.html T.render =>
@@ -78,6 +79,7 @@ colorTextExample = Backbone.View.extend
                 T.text example
                 T.raw "&nbsp;"
                 T.span style: "background-color:#{example}", -> T.raw "&nbsp&nbsp;&nbsp&nbsp; "
+    Pylon.trigger "systemEvent:stroop:colors-#{(@model.get 'currentTest').join ','}"
     return
 
 exports.colorTextBody = colorTextBody

@@ -28,6 +28,12 @@ tenIconBody = Backbone.View.extend
     @$el.html('')
     return
   initialize: ()->
+    Pylon.on "reRender:tenIcon",()=>
+      @$('#icon-here').fadeOut 100,()=>
+        @render()
+        @$('#icon-here').fadeIn 100
+        return
+      return
     @wanted=null
     @$el.html T.render =>
       T.div ".container",style:"font-size:265%", =>
@@ -60,7 +66,8 @@ tenIconExample = Backbone.View.extend
     @$el.html('')
     return
   response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}/wanted-#{wanted}"
+    Pylon.trigger "systemEvent:tenIcon:got-#{got}/wanted-#{wanted}"
+    Pylon.trigger "reRender:tenIcon"
     return
   initialize: ()->
     @$el.html T.render =>
@@ -73,6 +80,7 @@ tenIconExample = Backbone.View.extend
               {style:"padding-right:0.5em;" },
               -> T.pre "#{example}\n#{i++}"
             #extraClass = ".offset-by-one.column"
+    Pylon.trigger "systemEvent:tenIcon:iconOrder-#{(@model.get 'currentTest').join ','}"
     return
 
 exports.tenIconBody = tenIconBody

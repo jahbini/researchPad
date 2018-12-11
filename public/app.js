@@ -4037,7 +4037,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 },{"./button-view.coffee":16,"./stroop.coffee":20,"./tapping.coffee":21,"./ten-icon.coffee":22,"backbone":23,"jquery":27,"teacup":31}],20:[function(require,module,exports){
-var $, Backbone, T, activeKey, colorTextBody, colorTextExample, implementing, shuffle,
+var $, Backbone, T, colorTextBody, colorTextExample, implementing, shuffle,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -4075,7 +4075,25 @@ colorTextBody = Backbone.View.extend({
     this.$el.html('');
   },
   initialize: function() {
+    Pylon.on("reRender:colorText", (function(_this) {
+      return function() {
+        _this.$el.fadeOut(100, function() {
+          _this.render();
+          _this.$el.fadeIn(100);
+        });
+      };
+    })(this));
     this.wanted = null;
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", {
+          style: "font-size:265%"
+        });
+      };
+    })(this)));
+  },
+  render: function() {
+    var text;
     this.$el.html(T.render((function(_this) {
       return function() {
         return T.div(".container", {
@@ -4109,21 +4127,11 @@ colorTextBody = Backbone.View.extend({
         });
       };
     })(this)));
-  },
-  render: function() {
-    var text;
     text = this.model.selectFromCurrentTest();
     this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + text);
     this.wanted = text;
   }
 });
-
-activeKey = function(digit) {
-  return T.div("#digit-" + digit + ".two.columns", {
-    style: "text-align: center;",
-    onclick: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
-  }, digit);
-};
 
 colorTextExample = Backbone.View.extend({
   el: "#example",
@@ -4131,7 +4139,8 @@ colorTextExample = Backbone.View.extend({
     this.$el.html('');
   },
   response: function(got, wanted) {
-    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
+    Pylon.trigger("systemEvent:stroop:got-" + got + "/wanted-" + wanted);
+    Pylon.trigger("reRender:colorText");
   },
   initialize: function() {
     this.$el.html(T.render((function(_this) {
@@ -4162,6 +4171,7 @@ colorTextExample = Backbone.View.extend({
         });
       };
     })(this)));
+    Pylon.trigger("systemEvent:stroop:colors-" + ((this.model.get('currentTest')).join(',')));
   }
 });
 
@@ -4296,6 +4306,14 @@ tenIconBody = Backbone.View.extend({
     this.$el.html('');
   },
   initialize: function() {
+    Pylon.on("reRender:tenIcon", (function(_this) {
+      return function() {
+        _this.$('#icon-here').fadeOut(100, function() {
+          _this.render();
+          _this.$('#icon-here').fadeIn(100);
+        });
+      };
+    })(this));
     this.wanted = null;
     this.$el.html(T.render((function(_this) {
       return function() {
@@ -4362,7 +4380,8 @@ tenIconExample = Backbone.View.extend({
     this.$el.html('');
   },
   response: function(got, wanted) {
-    Pylon.trigger("systemEvent:protocol:got-" + got + "/wanted-" + wanted);
+    Pylon.trigger("systemEvent:tenIcon:got-" + got + "/wanted-" + wanted);
+    Pylon.trigger("reRender:tenIcon");
   },
   initialize: function() {
     this.$el.html(T.render((function(_this) {
@@ -4392,6 +4411,7 @@ tenIconExample = Backbone.View.extend({
         });
       };
     })(this)));
+    Pylon.trigger("systemEvent:tenIcon:iconOrder-" + ((this.model.get('currentTest')).join(',')));
   }
 });
 

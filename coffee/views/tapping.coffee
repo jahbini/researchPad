@@ -36,7 +36,7 @@ tappingBody = Backbone.View.extend
 tappingExample = Backbone.View.extend
   el: "#example"
   response: (got,wanted)->
-    Pylon.trigger "systemEvent:protocol:got-#{got}"
+    Pylon.trigger "systemEvent:tapping:got-#{got}"
     return
   clear: ()->
     @$el.html('')
