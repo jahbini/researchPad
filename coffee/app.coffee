@@ -100,7 +100,7 @@ protocol = Backbone.Model.extend
 
   setCurrentTest:(limit)->
     @attributes.order={}
-    @attributes.currentTest = (shuffle @.attributes.mileStones[..])[...limit]
+    @attributes.currentTest = (shuffle (@.attributes.mileStones[..]))[...limit]
     @attributes.order[key]=m for key,m in @attributes.currentTest
     @.attributes.currentTest
 

@@ -3985,6 +3985,7 @@ ProtocolReportTemplate = Backbone.View.extend({
             });
             break;
           case 'ten icons':
+          case '(SDMT) Symbol Digit Modalities Test':
             _this.renderExample = new tenIconExample({
               model: theTest
             });
@@ -4093,7 +4094,9 @@ colorTextBody = Backbone.View.extend({
     })(this)));
   },
   render: function() {
-    var text;
+    var examples, names, text, textColor;
+    examples = shuffle((this.model.get('currentTest')).slice(0));
+    names = shuffle(examples.slice(0));
     this.$el.html(T.render((function(_this) {
       return function() {
         return T.div(".container", {
@@ -4104,31 +4107,33 @@ colorTextBody = Backbone.View.extend({
           T.div(".row", {
             style: "text-align:center"
           }, function() {
-            var btn, btnName, example, examples, i, k, len, names, results;
-            examples = shuffle((_this.model.get('currentTest')).slice(0));
-            names = shuffle(examples.slice(0));
+            var btn, btnName, example, i, k, len, ref, results;
+            ref = _this.model.get('mileStones');
             results = [];
-            for (i = k = 0, len = examples.length; k < len; i = ++k) {
-              example = examples[i];
-              btn = names[i];
+            for (i = k = 0, len = ref.length; k < len; i = ++k) {
+              example = ref[i];
+              btn = example;
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(T.span({
+              T.span({
                 onClick: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
-                style: "padding-right:0.5em; text-shadow:2px 2px 3px #000000; color:" + example
-              }, btn));
+                style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;text-shadow:2px 2px 3px #000000;"
+              }, btn);
+              results.push(T.span(" "));
             }
             return results;
           });
           return T.div(".row", {
             style: "text-align:center;border:black;"
           }, function() {
-            return T.span("#text-here", "What is the name of this color?");
+            return T.span("#text-here", "Select");
           });
         });
       };
     })(this)));
-    text = this.model.selectFromCurrentTest();
-    this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + text);
+    textColor = examples[0];
+    text = examples[1];
+    this.$('#text-here').html(text);
+    this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + textColor);
     this.wanted = text;
   }
 });
@@ -4246,7 +4251,7 @@ tappingBody = Backbone.View.extend({
 tappingExample = Backbone.View.extend({
   el: "#example",
   response: function(got, wanted) {
-    Pylon.trigger("systemEvent:protocol:got-" + got);
+    Pylon.trigger("systemEvent:tapping:got-" + got);
   },
   clear: function() {
     this.$el.html('');

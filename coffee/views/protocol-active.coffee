@@ -129,7 +129,7 @@ ProtocolReportTemplate = Backbone.View.extend
           when 'Stroop Test' , 'stroop test' , 'Stroop test'
             @renderExample =  new colorTextExample model: theTest
             @renderBody = new colorTextBody model: theTest
-          when 'ten icons'
+          when 'ten icons', '(SDMT) Symbol Digit Modalities Test'
             @renderExample = new tenIconExample model: theTest
             @renderBody = new tenIconBody model: theTest
           else
