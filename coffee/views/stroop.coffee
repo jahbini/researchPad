@@ -25,6 +25,7 @@ colorTextBody = Backbone.View.extend
     @$el.html('')
     return
   initialize: ()->
+    @text = @textColor = null
     Pylon.on "reRender:colorText",()=>
       @$el.fadeOut 100,()=>
         @render()
@@ -37,29 +38,31 @@ colorTextBody = Backbone.View.extend
     return
   render:()->
     examples= shuffle (@model.get 'currentTest')[..]
-    #make sure that the text and color are never the same
     names = shuffle examples[..]
     @$el.html T.render =>
       T.div ".container",style:"font-size:265%", =>
         extraClass = ""
+        examples=shuffle (@model.get 'currentTest')[..]
         T.div ".row",style:"text-align:center", =>
           #select ther elements of currentTest
-          for example,i in @model.get 'mileStones'
+          for example,i in examples
             btn = example
             #btn = names[i]
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
             T.span 
               onClick: "Pylon.trigger('protocol:response','#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"
-              style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;text-shadow:2px 2px 3px #000000;"
+              style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
               ,btn
             T.span " "
         T.div ".row",style:"text-align:center;border:black;",->
           T.span "#text-here","Select"
-    textColor = examples[0]
-    text = examples[1]
-    @$('#text-here').html  text
-    @$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{textColor}"
-    @wanted = text
+    #make sure that the text and color are never the same
+    @textColor = @model.selectFromCurrentTest @textColor
+    @text = @model.selectFromCurrentTest @text,@textColor
+    @$('#text-here').html  @text
+    @$('#text-here').attr "style", "color:#{@textColor}"
+    #@$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{@textColor}"
+    @wanted = @text
     return
 
 colorTextExample = Backbone.View.extend

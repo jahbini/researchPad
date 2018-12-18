@@ -104,9 +104,12 @@ protocol = Backbone.Model.extend
     @attributes.order[key]=m for key,m in @attributes.currentTest
     @.attributes.currentTest
 
-  selectFromCurrentTest:()->
+  selectFromCurrentTest:(notThis,orThis=notThis)->
     c= @.attributes.currentTest
-    c[ Math.floor Math.random()*(c.length)]
+    thisOne = c[ Math.floor Math.random()*(c.length)]
+    while notThis==  thisOne || thisOne == orThis
+      thisOne = c[ Math.floor Math.random()*(c.length)]
+    return thisOne
 
   order:(icon)->
     @.attributes.order[icon]

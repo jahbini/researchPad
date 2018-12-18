@@ -350,10 +350,17 @@ protocol = Backbone.Model.extend({
     }
     return this.attributes.currentTest;
   },
-  selectFromCurrentTest: function() {
-    var c;
+  selectFromCurrentTest: function(notThis, orThis) {
+    var c, thisOne;
+    if (orThis == null) {
+      orThis = notThis;
+    }
     c = this.attributes.currentTest;
-    return c[Math.floor(Math.random() * c.length)];
+    thisOne = c[Math.floor(Math.random() * c.length)];
+    while (notThis === thisOne || thisOne === orThis) {
+      thisOne = c[Math.floor(Math.random() * c.length)];
+    }
+    return thisOne;
   },
   order: function(icon) {
     return this.attributes.order[icon];
@@ -4076,6 +4083,7 @@ colorTextBody = Backbone.View.extend({
     this.$el.html('');
   },
   initialize: function() {
+    this.text = this.textColor = null;
     Pylon.on("reRender:colorText", (function(_this) {
       return function() {
         _this.$el.fadeOut(100, function() {
@@ -4094,7 +4102,7 @@ colorTextBody = Backbone.View.extend({
     })(this)));
   },
   render: function() {
-    var examples, names, text, textColor;
+    var examples, names;
     examples = shuffle((this.model.get('currentTest')).slice(0));
     names = shuffle(examples.slice(0));
     this.$el.html(T.render((function(_this) {
@@ -4104,19 +4112,19 @@ colorTextBody = Backbone.View.extend({
         }, function() {
           var extraClass;
           extraClass = "";
+          examples = shuffle((_this.model.get('currentTest')).slice(0));
           T.div(".row", {
             style: "text-align:center"
           }, function() {
-            var btn, btnName, example, i, k, len, ref, results;
-            ref = _this.model.get('mileStones');
+            var btn, btnName, example, i, k, len, results;
             results = [];
-            for (i = k = 0, len = ref.length; k < len; i = ++k) {
-              example = ref[i];
+            for (i = k = 0, len = examples.length; k < len; i = ++k) {
+              example = examples[i];
               btn = example;
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               T.span({
                 onClick: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
-                style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;text-shadow:2px 2px 3px #000000;"
+                style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
               }, btn);
               results.push(T.span(" "));
             }
@@ -4130,11 +4138,11 @@ colorTextBody = Backbone.View.extend({
         });
       };
     })(this)));
-    textColor = examples[0];
-    text = examples[1];
-    this.$('#text-here').html(text);
-    this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + textColor);
-    this.wanted = text;
+    this.textColor = this.model.selectFromCurrentTest(this.textColor);
+    this.text = this.model.selectFromCurrentTest(this.text, this.textColor);
+    this.$('#text-here').html(this.text);
+    this.$('#text-here').attr("style", "color:" + this.textColor);
+    this.wanted = this.text;
   }
 });
 
@@ -4311,6 +4319,7 @@ tenIconBody = Backbone.View.extend({
     this.$el.html('');
   },
   initialize: function() {
+    this.icon = null;
     Pylon.on("reRender:tenIcon", (function(_this) {
       return function() {
         _this.$('#icon-here').fadeOut(100, function() {
@@ -4372,10 +4381,9 @@ tenIconBody = Backbone.View.extend({
     })(this)));
   },
   render: function() {
-    var icon;
-    icon = this.model.selectFromCurrentTest();
-    this.$('#icon-here').html(icon);
-    this.wanted = this.model.order(icon);
+    this.icon = this.model.selectFromCurrentTest(this.icon);
+    this.$('#icon-here').html(this.icon);
+    this.wanted = this.model.order(this.icon);
   }
 });
 

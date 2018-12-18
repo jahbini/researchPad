@@ -28,6 +28,7 @@ tenIconBody = Backbone.View.extend
     @$el.html('')
     return
   initialize: ()->
+    @icon=null
     Pylon.on "reRender:tenIcon",()=>
       @$('#icon-here').fadeOut 100,()=>
         @render()
@@ -55,9 +56,9 @@ tenIconBody = Backbone.View.extend
               T.div ".two.columns",->T.raw "&nbsp;"
     return
   render:()->
-    icon = @model.selectFromCurrentTest()
-    @$('#icon-here').html  icon
-    @wanted = @model.order icon
+    @icon = @model.selectFromCurrentTest @icon
+    @$('#icon-here').html  @icon
+    @wanted = @model.order @icon
     return
 
 tenIconExample = Backbone.View.extend
