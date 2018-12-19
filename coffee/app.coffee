@@ -50,46 +50,18 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
 ###
 
-
-clinicModel = Backbone.Model.extend()
-
-clinicCollection = Backbone.Collection.extend
-  model: clinicModel
-  url: Pylon.get('hostUrl')+'clinics'
-
-clinics = new clinicCollection
+clinics = require './models/clinics.coffee'
 Pylon.set('clinics',clinics)
 
-# #Clinicians --
-clinicianModel = Backbone.Model.extend
-  defaults:
-    name: 'Text'
-    password: 'Password'
-clinicianCollection = Backbone.Collection.extend
-  model: clinicianModel
-clinicians = new clinicianCollection
+# Clinicians --
+clinicians = require './models/clinicians.coffee'
 Pylon.set('clinicians',clinicians)
 
-# #Clients --
-clientModel = Backbone.Model.extend
-  defaults:
-    name: 'Text'
-    patientOnly: 'Boolean'
-clientCollection = Backbone.Collection.extend
-  model: clientModel
-clients = new clientCollection
-Pylon.set('clients',clients)
+clients = require './models/clients.coffee'
+Pylon.set 'clients',clients
 
 # #Test Protocols
-protocol = Backbone.Model.extend
-  defaults:
-    name: "Other"
-    comments: "Other"
-    mileStones: "initiation,completion"
-protocolCollection = Backbone.Collection.extend
-  model: protocol
-  url: Pylon.get('hostUrl')+'protocols'
-protocols = new protocolCollection
+protocols = require './models/protocols.coffee'
 Pylon.set('protocols',protocols)
 
 adminData = Backbone.Model.extend()
@@ -99,21 +71,11 @@ admin = new adminData
     clients: clients
     protocol: protocols
 
-rawSession = Backbone.Model.extend {
-  idAttribute: '_id'
-  url: Pylon.get('hostUrl')+'session'
-}
-
+#get the session model
+Pylon.sessionInfo = sessionInfo = require './models/session.coffee'
 applicationVersion = require './version.coffee'
-sessionInfo = new rawSession
-  user: ''
-  clinic: ''
-  patient: ''
-  testID: ''
-  leftSensorUUID: ''
-  rightSensorUUID: ''
-  platformIosVersion: ''
-  applicationVersion: applicationVersion
+sessionInfo.set 'applicationVersion' , applicationVersion
+
 applogger "Version:#{sessionInfo.get 'applicationVersion'}"
 
 pageGen = new pages.Pages sessionInfo
@@ -134,13 +96,6 @@ Pylon.on 'externalEvent', (what="unknown")->
     catch booBoo
       applogger booBoo
   true
-
-aButtonModel = Backbone.Model.extend
-  defaults:
-    active: false
-    funct: ->
-    text: '--'
-    selector: 'button'
 
 activateNewButtons = ->
   DebugButton = new BV 'debug'
