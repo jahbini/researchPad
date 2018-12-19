@@ -1,4 +1,4 @@
-Backbone = require 'Backbone'
+Backbone = require 'backbone'
 {EventModel} = require './event-model.coffee'
 
 buglog = require '../lib/buglog.coffee'
