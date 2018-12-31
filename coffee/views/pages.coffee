@@ -17,7 +17,7 @@ implementing = (mixins..., classReference) ->
 Pylon.set 'adminView', require('./adminView.coffee').adminView
 
 class Pages
-  tea = new Teacup.Teacup
+  T= tea = new Teacup.Teacup
   {table,tr,th,thead,tbody,td,ul,li,ol,a,render
     ,input,renderable,raw,div,img,h2,h3,h4,h5,label
     ,button,p,text,span,canvas,option,select,form
@@ -197,7 +197,7 @@ class Pages
   forceTest: (color = 'violet',txt='Must Select Test') =>
     $('#ProtocolSelect').text(txt).css('color',color)
     Pylon.trigger 'renderTest'
-    Pylon.get('sessionInfo').unset 'testID', silent: true
+    Pylon.get('sessionInfo').unset 'testID'
 
   wireButtons: =>
     # all buttons converted to button-view objects
@@ -249,10 +249,16 @@ class Pages
         viewlogger "Rendering Tests"
         @$el.html render =>
           option '.selected', selected: 'selected', value: '', "Select ---"
-          for protocol in @collection.models
-              option value: protocol.get('name'), protocol.get('name')
+          for protocol in @collection.models 
+              option value: protocol.get('name'), protocol.get('name') unless protocol.get 'suppressInDropDown'
+          return
         return this
     @protocolView = new protocolViewTemplate
+
+    ###
+    # scale sensorTag gravity sensor to display green when in proper orientation
+    # for attachment on patients ankle
+    ###
     scaleSweetSpot=(v,r)->
       x={ color: "#a22" }
       if v< r.lo

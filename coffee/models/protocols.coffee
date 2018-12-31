@@ -31,9 +31,11 @@ protocol = Backbone.Model.extend
 
   selectFromCurrentTest:(notThis,orThis=notThis)->
     c= @.attributes.currentTest
-    thisOne = c[ Math.floor Math.random()*(c.length)]
-    while notThis==  thisOne || thisOne == orThis
+    keepGoing = true
+    while keepGoing
       thisOne = c[ Math.floor Math.random()*(c.length)]
+      keepGoing = thisOne == notThis
+      keepGoing |= thisOne == orThis
     return thisOne
 
   order:(icon)->

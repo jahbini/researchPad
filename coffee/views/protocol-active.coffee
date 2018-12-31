@@ -125,17 +125,7 @@ ProtocolReportTemplate = Backbone.View.extend
         @$el.addClass 'active'
         # start with only the goButton enabled
         @$('button').prop disabled: false
-        switch theTest.get 'name'
-          when 'Stroop Test' , 'stroop test' , 'Stroop test'
-            @renderExample =  new colorTextExample model: theTest
-            @renderBody = new colorTextBody model: theTest
-          when 'ten icons', '(SDMT) Symbol Digit Modalities Test'
-            @renderExample = new tenIconExample model: theTest
-            @renderBody = new tenIconBody model: theTest
-          else
-            @renderExample = new tappingExample model: theTest
-            @renderBody = new tappingBody model: theTest
-        @render()
+        @showProtocol (theTest.get 'name'),theTest
         return
 
       Pylon.on 'systemEvent:protocol:terminate', (time=1000)=>
@@ -145,6 +135,29 @@ ProtocolReportTemplate = Backbone.View.extend
         dontListenForTouch()
         @$('button').prop disabled: true
         @$el.fadeOut(time)
+      ###
+      # Protocol pause to turn off active test body region
+      ###
+      Pylon.on 'protocol:pause',()=>
+        @$el.fadeOut(100)
+        return 
+      Pylon.on 'protocol:proceed',()=>
+        @$el.fadeIn(100)
+        return 
+
+    showProtocol: (name,theTest)->
+      switch name
+        when 'Stroop Test' , 'stroop test' , 'Stroop test'
+          @renderExample =  new colorTextExample model: theTest
+          @renderBody = new colorTextBody model: theTest
+        when 'ten icons', '(SDMT) Symbol Digit Modalities Test'
+          @renderExample = new tenIconExample model: theTest
+          @renderBody = new tenIconBody model: theTest
+        else
+          @renderExample = new tappingExample model: theTest
+          @renderBody = new tappingBody model: theTest
+      @render()
+      return
 
     # show panel of action buttons
     render: ()->

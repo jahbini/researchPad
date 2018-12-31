@@ -39,10 +39,10 @@ tenIconBody = Backbone.View.extend
     @$el.html T.render =>
       T.div ".container",style:"font-size:265%", =>
         T.div ".row", =>
-          T.div ".three.columns", =>
+          T.div ".four.columns", =>
             T.div ".row",-> T.raw "&nbsp;"
             T.div ".row",->
-          T.div  ".five.columns","keypad",->
+          T.div  ".six.columns","keypad",->
             T.div ".row",->
               activeKey k for k in [1..3]
             T.div ".row",->
@@ -73,13 +73,16 @@ tenIconExample = Backbone.View.extend
   initialize: ()->
     @$el.html T.render =>
       T.div ".container",style:"width:100%", =>
-        extraClass = ".u-pull-left"
+        extraClass = ""
         T.div ".row",style:"text-align:center", =>
           i=0
           for example in @model.setCurrentTest 10
-            T.div "#example-#{example}.#{extraClass}",
-              {style:"padding-right:0.5em;" },
-              -> T.pre "#{example}\n#{i++}"
+            T.div "#example-#{example}#{extraClass}",
+              {style:"padding-right:0.5em;display:inline-block;" },
+              -> 
+                T.span example
+                T.br()
+                T.span i++
             #extraClass = ".offset-by-one.column"
     Pylon.trigger "systemEvent:tenIcon:iconOrder-#{(@model.get 'currentTest').join ','}"
     return

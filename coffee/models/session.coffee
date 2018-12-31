@@ -7,6 +7,10 @@ Backbone = require ('backbone')
 rawSession = Backbone.Model.extend {
   idAttribute: '_id'
   url: Pylon.get('hostUrl')+'session'
+  initialize: ()->
+    # clear out the subprotocol of a suite of tests
+    @on 'change:testID',()->
+      Pylon.setTheCurrentProtocol null
 }
 
 sessionInfo = new rawSession

@@ -15,10 +15,17 @@ PylonTemplate = Backbone.Model.extend
   state: (require './models/state.coffee').state
   theSession: ()->
     return @.attributes.sessionInfo
+  setTheCurrentProtocol: (p)->
+    if !p
+      @currentProtocol = p if p == null
+    else
+      @currentProtocol =  protocols.findWhere
+        name: p
   theProtocol: ()->
+    return @currentProtocol if @currentProtocol
     protocols= @.attributes.protocols
     return {} if !protocols || !sessionInfo.attributes.testID
-    return protocols.findWhere
+    return @currentProtocol = protocols.findWhere
       name: sessionInfo.attributes.testID
   saneTimeout: (t,f)->
     return setTimeout f,t
@@ -189,7 +196,7 @@ enterLogout = () ->
   model.unset 'clinician', silent: true
   model.unset 'password', silent: true
   model.unset 'client', silent: true
-  model.unset 'testID', silent: true
+  model.unset 'testID'
 
   $('#password').val('')
   $('option:selected').prop('selected',false)
@@ -248,13 +255,6 @@ exitCalibrate = ->
   (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
   return false
 
-theProtocol = ->
-  testID = sessionInfo.get 'testID'
-  protocol= Pylon.get 'protocols'
-  return {} if !testID || !protocol
-  return theTest = protocol.findWhere
-    name: sessionInfo.get 'testID'
-  
 
 enterRecording = ->
   # reject record request if no protocol is selected
@@ -266,9 +266,7 @@ enterRecording = ->
   numSensors=0
   numSensors++ if Pylon.get "Left"
   numSensors++ if Pylon.get "Right"
-  protocol= Pylon.get 'protocols'
-  theTest = protocol.findWhere
-    name: sessionInfo.get 'testID'
+  theTest = Pylon.theProtocol()
   if numSensors < theTest.get 'sensorsNeeded'
     pageGen.forceTest 'red',"need sensor"
     return false

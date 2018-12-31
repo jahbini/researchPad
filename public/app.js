@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":14,"Case":29,"backbone":28,"jquery":32,"underscore":37}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, theProtocol, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -225,13 +225,27 @@ PylonTemplate = Backbone.Model.extend({
   theSession: function() {
     return this.attributes.sessionInfo;
   },
+  setTheCurrentProtocol: function(p) {
+    if (!p) {
+      if (p === null) {
+        return this.currentProtocol = p;
+      }
+    } else {
+      return this.currentProtocol = protocols.findWhere({
+        name: p
+      });
+    }
+  },
   theProtocol: function() {
     var protocols;
+    if (this.currentProtocol) {
+      return this.currentProtocol;
+    }
     protocols = this.attributes.protocols;
     if (!protocols || !sessionInfo.attributes.testID) {
       return {};
     }
-    return protocols.findWhere({
+    return this.currentProtocol = protocols.findWhere({
       name: sessionInfo.attributes.testID
     });
   },
@@ -472,9 +486,7 @@ enterLogout = function() {
   model.unset('client', {
     silent: true
   });
-  model.unset('testID', {
-    silent: true
-  });
+  model.unset('testID');
   $('#password').val('');
   $('option:selected').prop('selected', false);
   $('option.forceSelect').prop('selected', true);
@@ -547,20 +559,8 @@ exitCalibrate = function() {
   return false;
 };
 
-theProtocol = function() {
-  var protocol, testID, theTest;
-  testID = sessionInfo.get('testID');
-  protocol = Pylon.get('protocols');
-  if (!testID || !protocol) {
-    return {};
-  }
-  return theTest = protocol.findWhere({
-    name: sessionInfo.get('testID')
-  });
-};
-
 enterRecording = function() {
-  var numSensors, protocol, ref1, ref2, testID, theTest;
+  var numSensors, ref1, ref2, testID, theTest;
   testID = sessionInfo.get('testID');
   if (!testID) {
     pageGen.forceTest('red');
@@ -573,10 +573,7 @@ enterRecording = function() {
   if (Pylon.get("Right")) {
     numSensors++;
   }
-  protocol = Pylon.get('protocols');
-  theTest = protocol.findWhere({
-    name: sessionInfo.get('testID')
-  });
+  theTest = Pylon.theProtocol();
   if (numSensors < theTest.get('sensorsNeeded')) {
     pageGen.forceTest('red', "need sensor");
     return false;
@@ -2504,14 +2501,16 @@ protocol = Backbone.Model.extend({
     return this.attributes.currentTest;
   },
   selectFromCurrentTest: function(notThis, orThis) {
-    var c, thisOne;
+    var c, keepGoing, thisOne;
     if (orThis == null) {
       orThis = notThis;
     }
     c = this.attributes.currentTest;
-    thisOne = c[Math.floor(Math.random() * c.length)];
-    while (notThis === thisOne || thisOne === orThis) {
+    keepGoing = true;
+    while (keepGoing) {
       thisOne = c[Math.floor(Math.random() * c.length)];
+      keepGoing = thisOne === notThis;
+      keepGoing |= thisOne === orThis;
     }
     return thisOne;
   },
@@ -2536,7 +2535,12 @@ Backbone = require('backbone');
 
 rawSession = Backbone.Model.extend({
   idAttribute: '_id',
-  url: Pylon.get('hostUrl') + 'session'
+  url: Pylon.get('hostUrl') + 'session',
+  initialize: function() {
+    return this.on('change:testID', function() {
+      return Pylon.setTheCurrentProtocol(null);
+    });
+  }
 });
 
 sessionInfo = new rawSession({
@@ -3071,9 +3075,11 @@ protocolPhase = Backbone.Model.extend({
           recording: true
         });
         _this.set('protocol', p = Pylon.theProtocol());
-        _this.leadIn = p.get('showLeadIn') ? (p.get('leadInDuration')) || 5 : 0;
-        _this.practice = p.get('showPractice') ? p.get('practiceDuration') : 0;
-        _this.goDuraftion = p.get('goDuration');
+        if (p.get('mileStonesAreProtocols')) {
+          _this.allMyProtocols = (p.get('mileStones')).slice(0);
+        } else {
+          _this.allMyProtocols = [p];
+        }
         sessionID = Pylon.get('sessionInfo').get('_id');
         if (sessionID) {
           Pylon.saneTimeout(0, function() {
@@ -3107,7 +3113,7 @@ protocolPhase = Backbone.Model.extend({
             headline: "waiting for host",
             paragraph: "",
             nextPhase: 'abort',
-            linit: 5,
+            limit: 5,
             start: 0
           });
         } else {
@@ -3120,15 +3126,15 @@ protocolPhase = Backbone.Model.extend({
     this.on('leadIn', (function(_this) {
       return function() {
         var duration, limit, p, start;
-        p = _this.attributes.protocol;
+        p = Pylon.theProtocol();
         if (!p.get('showLeadIn')) {
-          Pylon.saneTimeout(0, _this.trigger('practice'));
+          Pylon.saneTimeout(0, _this.trigger('selectTheFirstTest'));
           return;
         }
         duration = p.get('leadInDuration');
         if (duration === 0) {
-          start = 0;
-          limit = 7;
+          start = 5;
+          limit = 0;
         } else {
           start = duration;
           limit = 0;
@@ -3136,19 +3142,24 @@ protocolPhase = Backbone.Model.extend({
         pHT.setEnvironment({
           headline: "LeadIn",
           paragraph: "Get Ready",
-          nextPhase: "practice",
+          nextPhase: "selectTheFirstTest",
           start: start,
           limit: limit,
-          abortButton: "Stop"
+          phaseButton: "Stop"
         });
+      };
+    })(this));
+    this.on('close preamble', (function(_this) {
+      return function() {
+        Pylon.trigger('systemEvent:recordCountDown:over');
+        return _this.trigger('selectTheFirstTest');
       };
     })(this));
     this.on('practice', (function(_this) {
       return function() {
         var duration, p;
-        Pylon.trigger('systemEvent:recordCountDown:over');
         Pylon.trigger('systemEvent:protocol:active');
-        p = _this.attributes.protocol;
+        p = Pylon.theProtocol();
         duration = p.get('practiceDuration');
         if (!(duration > 0 && p.get('showPractice'))) {
           Pylon.saneTimeout(0, _this.trigger('underway'));
@@ -3159,23 +3170,67 @@ protocolPhase = Backbone.Model.extend({
           paragraph: (p.get("mileStoneText")) || "go",
           limit: 0,
           start: duration,
-          nextPhase: "underway"
+          nextPhase: "justWait",
+          phaseButton: "Proceed to Test",
+          buttonPhaseNext: "underway"
         });
+      };
+    })(this));
+    this.on('justWait', (function(_this) {
+      return function() {
+        Pylon.trigger('protocol:pause');
       };
     })(this));
     this.on('underway', (function(_this) {
       return function() {
         var p;
-        p = _this.attributes.protocol;
+        Pylon.trigger('protocol:proceed');
+        p = Pylon.theProtocol();
         pHT.setEnvironment({
           headline: "Test In Progress",
           paragraph: (p.get("mileStoneText")) || "go",
-          limit: (p.get("testDuration")) || 9999,
-          start: 0,
-          nextPhase: 'countOut'
+          start: (p.get("testDuration")) || 9999,
+          limit: 0,
+          nextPhase: 'selectTheNextTest'
         });
       };
     })(this));
+    this.on('selectTheNextTest', function() {
+      var newTest;
+      Pylon.trigger('protocol:pause');
+      newTest = this.allMyProtocols.shift();
+      if (!newTest) {
+        this.trigger('countOut');
+        return;
+      }
+      this.allMyProtocols.unshift(newTest);
+      pHT.setEnvironment({
+        headline: "Ready?",
+        paragraph: "Press button to proceed",
+        limit: 0,
+        start: 1,
+        nextPhase: "justWait",
+        phaseButton: "Proceed to Test",
+        buttonPhaseNext: "proceedWithNextTest"
+      });
+    });
+    this.on('proceedWithNextTest', function() {
+      var newTest;
+      newTest = this.allMyProtocols.shift();
+      Pylon.setTheCurrentProtocol(newTest);
+      this.trigger('practice');
+    });
+    this.on('selectTheFirstTest', function() {
+      var newTest;
+      Pylon.trigger('protocol:pause');
+      newTest = this.allMyProtocols.shift();
+      if (!newTest) {
+        this.trigger('countOut');
+        return;
+      }
+      Pylon.setTheCurrentProtocol(newTest);
+      this.trigger('practice');
+    });
     Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
       return function() {
         return _this.trigger('countOut');
@@ -3261,14 +3316,20 @@ protocolHeadTemplate = Backbone.View.extend({
     }
     this.headline = struct.headline;
     this.paragraph = struct.paragraph;
-    this.abortButton = struct.abortButton || this.abortButton;
+    this.phaseButton = struct.phaseButton;
     this.limit = struct.limit;
     this.start = struct.start;
     this.direction = this.limit < this.start ? -1 : 1;
     this.nextPhase = struct.nextPhase;
+    this.buttonPhase = struct.buttonPhaseNext || struct.nextPhase;
     this.render(this.start);
   },
   initialize: function() {
+    Pylon.on('buttonPhase', (function(_this) {
+      return function() {
+        pP.trigger(_this.buttonPhase);
+      };
+    })(this));
     this.on('count:continue', (function(_this) {
       return function(t) {
         return _this.render(t);
@@ -3284,17 +3345,17 @@ protocolHeadTemplate = Backbone.View.extend({
       this.$el.html(T.render((function(_this) {
         return function() {
           T.div(".row", function() {
-            T.div(".u-pull-left", function() {
+            if (_this.phaseButton) {
+              T.button(".u-pull-left.button-primary", {
+                onClick: "Pylon.trigger('buttonPhase');"
+              }, _this.phaseButton);
+            }
+            return T.div(".u-pull-left", function() {
               return T.h3(function() {
                 T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
                 return T.span(".timer", t);
               });
             });
-            if (_this.abortButton) {
-              return T.button(".u-pull-right.button-primary", {
-                onClick: "$('#action').click()"
-              }, _this.abortButton);
-            }
           });
           return T.div(".row", function() {
             return T.h4({
@@ -3360,9 +3421,9 @@ implementing = function() {
 Pylon.set('adminView', require('./adminView.coffee').adminView);
 
 Pages = (function() {
-  var a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
-  tea = new Teacup.Teacup;
+  T = tea = new Teacup.Teacup;
 
   ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
 
@@ -3631,9 +3692,7 @@ Pages = (function() {
     }
     $('#ProtocolSelect').text(txt).css('color', color);
     Pylon.trigger('renderTest');
-    return Pylon.get('sessionInfo').unset('testID', {
-      silent: true
-    });
+    return Pylon.get('sessionInfo').unset('testID');
   };
 
   Pages.prototype.wireButtons = function() {
@@ -3701,26 +3760,31 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(render((function(_this) {
           return function() {
-            var i, len, protocol, ref1, results;
+            var i, len, protocol, ref1;
             option('.selected', {
               selected: 'selected',
               value: ''
             }, "Select ---");
             ref1 = _this.collection.models;
-            results = [];
             for (i = 0, len = ref1.length; i < len; i++) {
               protocol = ref1[i];
-              results.push(option({
-                value: protocol.get('name')
-              }, protocol.get('name')));
+              if (!protocol.get('suppressInDropDown')) {
+                option({
+                  value: protocol.get('name')
+                }, protocol.get('name'));
+              }
             }
-            return results;
           };
         })(this)));
         return this;
       }
     });
     this.protocolView = new protocolViewTemplate;
+
+    /*
+     * scale sensorTag gravity sensor to display green when in proper orientation
+     * for attachment on patients ankle
+     */
     scaleSweetSpot = function(v, r) {
       var x;
       x = {
@@ -4030,38 +4094,10 @@ ProtocolReportTemplate = Backbone.View.extend({
         _this.$('button').prop({
           disabled: false
         });
-        switch (theTest.get('name')) {
-          case 'Stroop Test':
-          case 'stroop test':
-          case 'Stroop test':
-            _this.renderExample = new colorTextExample({
-              model: theTest
-            });
-            _this.renderBody = new colorTextBody({
-              model: theTest
-            });
-            break;
-          case 'ten icons':
-          case '(SDMT) Symbol Digit Modalities Test':
-            _this.renderExample = new tenIconExample({
-              model: theTest
-            });
-            _this.renderBody = new tenIconBody({
-              model: theTest
-            });
-            break;
-          default:
-            _this.renderExample = new tappingExample({
-              model: theTest
-            });
-            _this.renderBody = new tappingBody({
-              model: theTest
-            });
-        }
-        _this.render();
+        _this.showProtocol(theTest.get('name'), theTest);
       };
     })(this));
-    return Pylon.on('systemEvent:protocol:terminate', (function(_this) {
+    Pylon.on('systemEvent:protocol:terminate', (function(_this) {
       return function(time) {
         if (time == null) {
           time = 1000;
@@ -4078,6 +4114,51 @@ ProtocolReportTemplate = Backbone.View.extend({
         return _this.$el.fadeOut(time);
       };
     })(this));
+
+    /*
+     * Protocol pause to turn off active test body region
+     */
+    Pylon.on('protocol:pause', (function(_this) {
+      return function() {
+        _this.$el.fadeOut(100);
+      };
+    })(this));
+    return Pylon.on('protocol:proceed', (function(_this) {
+      return function() {
+        _this.$el.fadeIn(100);
+      };
+    })(this));
+  },
+  showProtocol: function(name, theTest) {
+    switch (name) {
+      case 'Stroop Test':
+      case 'stroop test':
+      case 'Stroop test':
+        this.renderExample = new colorTextExample({
+          model: theTest
+        });
+        this.renderBody = new colorTextBody({
+          model: theTest
+        });
+        break;
+      case 'ten icons':
+      case '(SDMT) Symbol Digit Modalities Test':
+        this.renderExample = new tenIconExample({
+          model: theTest
+        });
+        this.renderBody = new tenIconBody({
+          model: theTest
+        });
+        break;
+      default:
+        this.renderExample = new tappingExample({
+          model: theTest
+        });
+        this.renderBody = new tappingBody({
+          model: theTest
+        });
+    }
+    this.render();
   },
   render: function() {
     var theTest;
@@ -4292,7 +4373,7 @@ tappingBody = Backbone.View.extend({
               btn = mileStones[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               results.push(T.button(".primary.round-button" + extraClass, {
-                style: "margin-right:1in",
+                style: "margin-right:0.7in",
                 onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
               }, function() {
                 return T.span("" + btn);
@@ -4385,13 +4466,13 @@ tenIconBody = Backbone.View.extend({
           style: "font-size:265%"
         }, function() {
           return T.div(".row", function() {
-            T.div(".three.columns", function() {
+            T.div(".four.columns", function() {
               T.div(".row", function() {
                 return T.raw("&nbsp;");
               });
               return T.div(".row", function() {});
             });
-            return T.div(".five.columns", "keypad", function() {
+            return T.div(".six.columns", "keypad", function() {
               T.div(".row", function() {
                 var k, l, results;
                 results = [];
@@ -4453,7 +4534,7 @@ tenIconExample = Backbone.View.extend({
           style: "width:100%"
         }, function() {
           var extraClass;
-          extraClass = ".u-pull-left";
+          extraClass = "";
           return T.div(".row", {
             style: "text-align:center"
           }, function() {
@@ -4463,10 +4544,12 @@ tenIconExample = Backbone.View.extend({
             results = [];
             for (l = 0, len = ref.length; l < len; l++) {
               example = ref[l];
-              results.push(T.div("#example-" + example + "." + extraClass, {
-                style: "padding-right:0.5em;"
+              results.push(T.div("#example-" + example + extraClass, {
+                style: "padding-right:0.5em;display:inline-block;"
               }, function() {
-                return T.pre(example + "\n" + (i++));
+                T.span(example);
+                T.br();
+                return T.span(i++);
               }));
             }
             return results;

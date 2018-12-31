@@ -23,9 +23,10 @@ protocolPhase = Backbone.Model.extend
     Pylon.on 'systemEvent:recordCountDown:start', =>
       Pylon.state.set recording: true
       @set 'protocol', p= Pylon.theProtocol()
-      @leadIn = if p.get 'showLeadIn' then (p.get 'leadInDuration') || 5 else 0
-      @practice = if p.get 'showPractice' then p.get 'practiceDuration' else 0
-      @goDuraftion =  p.get 'goDuration'
+      if p.get 'mileStonesAreProtocols'
+        @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
+      else
+        @allMyProtocols = [p]
       sessionID=Pylon.get('sessionInfo').get('_id')
       if sessionID
         Pylon.saneTimeout 0,()=>@trigger 'leadIn'
@@ -50,37 +51,41 @@ protocolPhase = Backbone.Model.extend
           headline: "waiting for host"
           paragraph: ""
           nextPhase: 'abort'
-          linit: 5
+          limit: 5
           start: 0
       else
         Pylon.saneTimeout 0,->
           Pylon.trigger 'leadIn'
       return
     @on 'leadIn',()=>
-      p = @attributes.protocol
+      p = Pylon.theProtocol()
       unless  p.get 'showLeadIn'
-        Pylon.saneTimeout 0, @trigger 'practice'
+        Pylon.saneTimeout 0, @trigger 'selectTheFirstTest'
         return
       duration = p.get 'leadInDuration'
       if duration == 0
-        start=0
-        limit=7
+        start=5
+        limit=0
       else
         start = duration
         limit = 0
       pHT.setEnvironment
         headline: "LeadIn"
         paragraph: "Get Ready"
-        nextPhase: "practice"
+        nextPhase: "selectTheFirstTest"
         start: start
         limit: limit
-        abortButton: "Stop"
+        phaseButton: "Stop"
       return
 
-    @on 'practice', =>
+    @on 'close preamble',()=>
       Pylon.trigger 'systemEvent:recordCountDown:over'
+      @.trigger 'selectTheFirstTest'
+
+    @on 'practice', =>
       Pylon.trigger 'systemEvent:protocol:active'
-      p = @attributes.protocol
+      # this is the moment the protocol is selected for display
+      p = Pylon.theProtocol()
       duration = p.get 'practiceDuration'
       unless  (duration >0 && p.get 'showPractice' )
         Pylon.saneTimeout 0, @trigger 'underway' 
@@ -90,17 +95,58 @@ protocolPhase = Backbone.Model.extend
         paragraph:  (p.get "mileStoneText") || "go"
         limit: 0
         start: duration
-        nextPhase: "underway"
+        nextPhase: "justWait"
+        phaseButton: "Proceed to Test"
+        buttonPhaseNext: "underway"
+      return
+
+    @on 'justWait',=>
+      Pylon.trigger 'protocol:pause'
       return
 
     @on 'underway', =>
-      p = @attributes.protocol
+      Pylon.trigger 'protocol:proceed'
+      p = Pylon.theProtocol()
       pHT.setEnvironment
         headline: "Test In Progress"
         paragraph:  (p.get "mileStoneText") || "go"
-        limit: (p.get "testDuration") || 9999
-        start: 0
-        nextPhase: 'countOut'
+        start: (p.get "testDuration") || 9999
+        limit: 0
+        nextPhase: 'selectTheNextTest'
+      return
+
+    @on 'selectTheNextTest',()->
+      Pylon.trigger 'protocol:pause'
+      newTest = @allMyProtocols.shift()
+      if !newTest 
+        @trigger 'countOut'
+        return
+      @allMyProtocols.unshift newTest
+      pHT.setEnvironment
+        headline: "Ready?"
+        paragraph: "Press button to proceed"
+        limit: 0
+        start: 1
+        nextPhase: "justWait"
+        phaseButton: "Proceed to Test"
+        buttonPhaseNext: "proceedWithNextTest"
+      return
+    
+    @on 'proceedWithNextTest',()->
+      newTest = @allMyProtocols.shift()
+      Pylon.setTheCurrentProtocol newTest
+      @.trigger 'practice'
+      return
+
+    @on 'selectTheFirstTest',()->
+      Pylon.trigger 'protocol:pause'
+      newTest = @allMyProtocols.shift()
+      if !newTest 
+        @trigger 'countOut'
+        return
+
+      Pylon.setTheCurrentProtocol newTest
+      @.trigger 'practice'
       return
 
     Pylon.on 'systemEvent:stopCountDown:start', =>
@@ -158,14 +204,18 @@ protocolHeadTemplate = Backbone.View.extend
       @clearCount = null
     @headline = struct.headline
     @paragraph = struct.paragraph
-    @abortButton = struct.abortButton || @abortButton
+    @phaseButton = struct.phaseButton
     @limit = struct.limit
     @start = struct.start
     @direction = if @limit < @start  then -1 else 1
     @nextPhase = struct.nextPhase 
+    @buttonPhase = struct.buttonPhaseNext || struct.nextPhase
     @render @start
     return
   initialize:()->
+    Pylon.on 'buttonPhase',()=>
+      pP.trigger @buttonPhase
+      return
     @on 'count:continue', (t)=>
       @render t
     @$el.addClass "container"
@@ -175,14 +225,14 @@ protocolHeadTemplate = Backbone.View.extend
     else
       @$el.html T.render =>
         T.div ".row",=>
+          if @phaseButton
+            T.button ".u-pull-left.button-primary",
+              {onClick:  "Pylon.trigger('buttonPhase');"},
+              @phaseButton
           T.div ".u-pull-left",=>
             T.h3  =>
               T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
               T.span ".timer", t
-          if @abortButton
-            T.button ".u-pull-right.button-primary",
-              {onClick:  "$('#action').click()"},
-              @abortButton
         T.div ".row",=>
           T.h4 style:"text-align:center",@paragraph
     nextTime = t + @direction
