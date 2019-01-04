@@ -96,7 +96,7 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         start: duration
         nextPhase: "justWait"
-        phaseButton: "Proceed to Test"
+        phaseButton: "Proceed"
         buttonPhaseNext: "underway"
       return
 
@@ -123,21 +123,32 @@ protocolPhase = Backbone.Model.extend
         return
       @allMyProtocols.unshift newTest
       pHT.setEnvironment
-        headline: "Ready?"
+        headline: "Test Over. More to come."
         paragraph: "Press button to proceed"
         limit: 0
         start: 1
         nextPhase: "justWait"
-        phaseButton: "Proceed to Test"
+        phaseButton: "Proceed"
         buttonPhaseNext: "proceedWithNextTest"
       return
     
+    setTestOrDefault = (name)->
+      test = Pylon.setTheCurrentProtocol name
+      if !test
+        test = Pylon.setTheCurrentProtocol 'Default'
+        if !test || !test.attributes
+          alert "No Default Protocol from Server"
+        else
+          m= test.get 'mileStoneText'
+          m += " '" + name + "'"
+          test.set 'mileStoneText' ,m
+      test
+
     @on 'proceedWithNextTest',()->
       newTest = @allMyProtocols.shift()
-      Pylon.setTheCurrentProtocol newTest
+      setTestOrDefault newTest
       @.trigger 'practice'
       return
-
     @on 'selectTheFirstTest',()->
       Pylon.trigger 'protocol:pause'
       newTest = @allMyProtocols.shift()
@@ -145,7 +156,7 @@ protocolPhase = Backbone.Model.extend
         @trigger 'countOut'
         return
 
-      Pylon.setTheCurrentProtocol newTest
+      setTestOrDefault newTest
       @.trigger 'practice'
       return
 
@@ -220,7 +231,7 @@ protocolHeadTemplate = Backbone.View.extend
       @render t
     @$el.addClass "container"
   render:(t)->
-    if t != @start
+    if t != @start && t != @limit
       @$( ".timer").html t
     else
       @$el.html T.render =>
@@ -231,8 +242,11 @@ protocolHeadTemplate = Backbone.View.extend
               @phaseButton
           T.div ".u-pull-left",=>
             T.h3  =>
-              T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
-              T.span ".timer", t
+              if t
+                T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
+                T.span ".timer", t
+              else
+                T.text @headline + "- Finished"
         T.div ".row",=>
           T.h4 style:"text-align:center",@paragraph
     nextTime = t + @direction

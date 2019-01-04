@@ -64,6 +64,10 @@ shuffle = (a) ->
 #                                length: 2
 ###
 
+###
+# touchEntries has a converter fn for each of the keys of the touch structure from the OS
+# used by logTouch fn to create uploadable event object from touch stuff from iOS
+###
 touchEntries =
   screenX:  (x)-> x.toFixed 2
   screenY:  (y)-> y.toFixed 2

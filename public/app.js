@@ -2527,6 +2527,50 @@ protocolCollection = Backbone.Collection.extend({
 module.exports = new protocolCollection;
 
 
+/*
+ *  From keystone
+name: "unknown"
+comments: "Default test"
+sensorsNeeded: 0
+showLeadIn: false
+leadInDuration: 0
+showPractice: false
+practiceDuration: 0
+testDuration: 10000 # show test /error message for ten seconds
+mileStonesAreProtocols: false
+suppressInDropDown: true
+showMileStones: true
+mileStoneText: "Bad name speccified in test sequencing"
+mileStones: "😵,😵"
+#Protocol.add
+  name:
+    type: Types.Text
+    required: true
+    index: true
+    unique: true
+    default: "Other"
+  comments: type: Types.Text
+  sensorsNeeded: type: Types.Number , default: 0
+
+  showLeadIn: type: Types.Boolean, default: false
+  leadInDuration: type: Types.Number, default: 5
+
+  showPractice: type: Types.Boolean, default: false
+  practiceDuration: type: Types.Number, default:5
+
+  testDuration: type: Types.Number, default:0
+
+  mileStonesAreProtocols: type: Types.Boolean, default: false
+  suppressInDropDown: type: Types.Boolean, default: false
+  showMileStones: type: Types.Boolean, default: false
+  mileStoneText: type:Types.Text, default: "The test"
+
+  mileStones:
+    type: Types.Text
+    default: ""
+ */
+
+
 
 },{"backbone":28,"underscore":37}],17:[function(require,module,exports){
 var Backbone, rawSession, sessionInfo;
@@ -3068,6 +3112,7 @@ protocolPhase = Backbone.Model.extend({
     protocol: null
   },
   initialize: function() {
+    var setTestOrDefault;
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
         var p, sessionID;
@@ -3171,7 +3216,7 @@ protocolPhase = Backbone.Model.extend({
           limit: 0,
           start: duration,
           nextPhase: "justWait",
-          phaseButton: "Proceed to Test",
+          phaseButton: "Proceed",
           buttonPhaseNext: "underway"
         });
       };
@@ -3205,19 +3250,34 @@ protocolPhase = Backbone.Model.extend({
       }
       this.allMyProtocols.unshift(newTest);
       pHT.setEnvironment({
-        headline: "Ready?",
+        headline: "Test Over. More to come.",
         paragraph: "Press button to proceed",
         limit: 0,
         start: 1,
         nextPhase: "justWait",
-        phaseButton: "Proceed to Test",
+        phaseButton: "Proceed",
         buttonPhaseNext: "proceedWithNextTest"
       });
     });
+    setTestOrDefault = function(name) {
+      var m, test;
+      test = Pylon.setTheCurrentProtocol(name);
+      if (!test) {
+        test = Pylon.setTheCurrentProtocol('Default');
+        if (!test || !test.attributes) {
+          alert("No Default Protocol from Server");
+        } else {
+          m = test.get('mileStoneText');
+          m += " '" + name + "'";
+          test.set('mileStoneText', m);
+        }
+      }
+      return test;
+    };
     this.on('proceedWithNextTest', function() {
       var newTest;
       newTest = this.allMyProtocols.shift();
-      Pylon.setTheCurrentProtocol(newTest);
+      setTestOrDefault(newTest);
       this.trigger('practice');
     });
     this.on('selectTheFirstTest', function() {
@@ -3228,7 +3288,7 @@ protocolPhase = Backbone.Model.extend({
         this.trigger('countOut');
         return;
       }
-      Pylon.setTheCurrentProtocol(newTest);
+      setTestOrDefault(newTest);
       this.trigger('practice');
     });
     Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
@@ -3339,7 +3399,7 @@ protocolHeadTemplate = Backbone.View.extend({
   },
   render: function(t) {
     var nextTime;
-    if (t !== this.start) {
+    if (t !== this.start && t !== this.limit) {
       this.$(".timer").html(t);
     } else {
       this.$el.html(T.render((function(_this) {
@@ -3352,8 +3412,12 @@ protocolHeadTemplate = Backbone.View.extend({
             }
             return T.div(".u-pull-left", function() {
               return T.h3(function() {
-                T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
-                return T.span(".timer", t);
+                if (t) {
+                  T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
+                  return T.span(".timer", t);
+                } else {
+                  return T.text(_this.headline + "- Finished");
+                }
               });
             });
           });
@@ -3981,6 +4045,12 @@ shuffle = function(a) {
  *                               touchType: "direct"
  *                                Touch Prototype
  *                                length: 2
+ */
+
+
+/*
+ * touchEntries has a converter fn for each of the keys of the touch structure from the OS
+ * used by logTouch fn to create uploadable event object from touch stuff from iOS
  */
 
 touchEntries = {
