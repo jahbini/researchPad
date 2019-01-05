@@ -19,7 +19,8 @@ protocol = Backbone.Model.extend
     comments: "Other"
     mileStones: ["initiation","completion"]
   parse: (attributes)->
-    attributes.mileStones = attributes.mileStones.split ','
+    # split on commas and trim the substrings fore and aft
+    attributes.mileStones = attributes.mileStones.split /\s*,\s*/
     attributes
   initialize: ()->
 

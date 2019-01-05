@@ -2485,7 +2485,7 @@ protocol = Backbone.Model.extend({
     mileStones: ["initiation", "completion"]
   },
   parse: function(attributes) {
-    attributes.mileStones = attributes.mileStones.split(',');
+    attributes.mileStones = attributes.mileStones.split(/\s*,\s*/);
     return attributes;
   },
   initialize: function() {},
@@ -3123,7 +3123,7 @@ protocolPhase = Backbone.Model.extend({
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
         } else {
-          _this.allMyProtocols = [p];
+          _this.allMyProtocols = [p.get('name')];
         }
         sessionID = Pylon.get('sessionInfo').get('_id');
         if (sessionID) {

@@ -26,7 +26,7 @@ protocolPhase = Backbone.Model.extend
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
       else
-        @allMyProtocols = [p]
+        @allMyProtocols = [p.get 'name' ]
       sessionID=Pylon.get('sessionInfo').get('_id')
       if sessionID
         Pylon.saneTimeout 0,()=>@trigger 'leadIn'
