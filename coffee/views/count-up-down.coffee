@@ -25,6 +25,11 @@ protocolPhase = Backbone.Model.extend
       @set 'protocol', p= Pylon.theProtocol()
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
+        code = prompt "Ready for next test. enter code to abort","proceed"
+        if code == "x"   # temporary -- the clinician has entered the code
+          localStorage['hash']=''
+          window.location.reload()
+          return
       else
         @allMyProtocols = [p.get 'name' ]
       sessionID=Pylon.get('sessionInfo').get('_id')
@@ -57,8 +62,12 @@ protocolPhase = Backbone.Model.extend
         Pylon.saneTimeout 0,->
           Pylon.trigger 'leadIn'
       return
+    # leadIn means the sessionID for this test run exists
     @on 'leadIn',()=>
       p = Pylon.theProtocol()
+      if p.get 'cloneable'
+        debugger
+        localStorage['hash']= (Pylon.get 'sessionInfo').id unless localStorage['hash']
       unless  p.get 'showLeadIn'
         Pylon.saneTimeout 0, @trigger 'selectTheFirstTest'
         return

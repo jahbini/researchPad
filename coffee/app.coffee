@@ -6,6 +6,7 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
+localStorage = window.localStorage
 localStorage.setItem 'debug',"app,TIhandler,sanity,sensor,logon,state"
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
@@ -188,6 +189,32 @@ exitAdmin = () ->
   enterLogout()
   return false
 
+enterLogin = (hash)->
+  sessionLoad = Backbone.Model.extend
+    url: "http://retroserv.411-source.com/session/#{hash}"
+    parse: (m)->
+      sessionInfo.set 
+        _id: m._id
+      sessionInfo.set 
+        client: m.client
+        clinic: m.clinic
+        clinician: m.clinician
+        password: m.password
+        testID: m.testID
+      debugger
+      enterRecording()
+      return
+
+  model = new sessionLoad
+  model.on 'fetched',()->
+    debugger
+    enterRecording()
+
+  model.set 'id',hash[1..]
+  model.fetch()
+  return
+
+
 enterLogout = () ->
   Pylon.state.set loggedIn: false, recording: false
 
@@ -234,6 +261,8 @@ enterClear = (accept=false)->
   sessionInfo.set '_id',null,{silent:true}
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
+  if localStorage['hash']
+    window.location.reload()
   return
 
 # upload and clear keys are equivalent and only suggest failure or success
@@ -359,11 +388,13 @@ enableRecordButtonOK= ()->
     (Pylon.get "button-admin").set enabled: true, legend: "log in"
   if canRecord
     (Pylon.get 'button-action').set enabled: true, legend: "Record"
+    $('#testID').prop("disabled",false)
   return false
   
 Pylon.on 'sessionUploaded',enableRecordButtonOK
 
 Pylon.on 'adminDone', ->
+  localStorage['hash']='' # stop any long running test suite from re-occuring
   (Pylon.get 'button-admin').set 'legend',"Log Out"
   Pylon.state.set 'loggedIn',  true
   pageGen.activateSensorPage()
@@ -461,6 +492,22 @@ onPause= ()->
     TiHandler.detachDevice d.cid
   applogger "exit did not exit!!"
 
+detectHash= ()-> #if there is a hash, it is a session to be cloned
+  if window.location.hash  #the URL hash takes precedence
+    if hash = window.location.hash[1..]
+      enterLogin hash
+    localStorage['hash'] = hash  #update or erase hash
+  if hash = localStorage['hash']
+    enterLogin hash
+  
+onGotSession= ()->
+  theTest = sessionInfo.get 'protocol'
+  unless localStorage['hash']
+    #save the first sessionID if protocol is cloneable
+    if theTest.get 'cloneable'
+      localStorage['hash']=sessionInfo.ID
+
+
 $ ->
   # Force a page reload if put in background to wipe the sessionInfo and other state
   document.addEventListener 'resume',()->
@@ -480,5 +527,6 @@ $ ->
     Pylon.trigger "systemEvent:debug:Hide Log"
   initAll()
   setSensor()
+  detectHash()
   applogger "DOM ready"
   return false

@@ -46,7 +46,7 @@ colorTextBody = Backbone.View.extend
         T.div ".row",style:"text-align:center", =>
           #select ther elements of currentTest
           for example,i in examples
-            btn = example
+            btn = colorToName example
             #btn = names[i]
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
             T.span 
@@ -59,11 +59,19 @@ colorTextBody = Backbone.View.extend
     #make sure that the text and color are never the same
     @textColor = @model.selectFromCurrentTest @textColor
     @text = @model.selectFromCurrentTest @text,@textColor
-    @$('#text-here').html  @text
-    @$('#text-here').attr "style", "color:#{@textColor}"
-    #@$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{@textColor}"
+    @$('#text-here').html  colorToName @text
+    @$('#text-here').attr "style", "color:#{colorToHue @textColor}"
+    #@$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{colorToHue @textColor}"
     @wanted = @text
     return
+  
+colorToName = (text)-> # also works if there is no : in the string
+  c = text.split /\s*:\s*/
+  c[0]
+
+colorToHue = (text)-> # also works if there is no : in the string
+  c = text.split /\s*:\s*/
+  c[c.length-1]
 
 colorTextExample = Backbone.View.extend
   el: "#example"
@@ -82,9 +90,9 @@ colorTextExample = Backbone.View.extend
             T.span ".example",
               {style:"padding-right:1em;"},
               => 
-                T.text example
+                T.text colorToName example
                 T.raw "&nbsp;"
-                T.span style: "background-color:#{example}", -> T.raw "&nbsp&nbsp;&nbsp&nbsp; "
+                T.span style: "background-color:#{colorToHue example}", -> T.raw "&nbsp&nbsp;&nbsp&nbsp; "
     Pylon.trigger "systemEvent:stroop:colors-#{(@model.get 'currentTest').join ','}"
     return
 

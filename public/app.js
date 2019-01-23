@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":14,"Case":29,"backbone":28,"jquery":32,"underscore":37}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, localStorage, onGotSession, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -213,6 +213,8 @@ window.$ = $ = require('jquery');
 _ = require('underscore');
 
 Backbone = require('backbone');
+
+localStorage = window.localStorage;
 
 localStorage.setItem('debug', "app,TIhandler,sanity,sensor,logon,state");
 
@@ -467,6 +469,34 @@ exitAdmin = function() {
   return false;
 };
 
+enterLogin = function(hash) {
+  var model, sessionLoad;
+  sessionLoad = Backbone.Model.extend({
+    url: "http://retroserv.411-source.com/session/" + hash,
+    parse: function(m) {
+      sessionInfo.set({
+        _id: m._id
+      });
+      sessionInfo.set({
+        client: m.client,
+        clinic: m.clinic,
+        clinician: m.clinician,
+        password: m.password,
+        testID: m.testID
+      });
+      debugger;
+      enterRecording();
+    }
+  });
+  model = new sessionLoad;
+  model.on('fetched', function() {
+    debugger;
+    return enterRecording();
+  });
+  model.set('id', hash.slice(1));
+  model.fetch();
+};
+
 enterLogout = function() {
   var model;
   Pylon.state.set({
@@ -530,6 +560,9 @@ enterClear = function(accept) {
   });
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
+  if (localStorage['hash']) {
+    window.location.reload();
+  }
 };
 
 enterUpload = function() {
@@ -722,6 +755,7 @@ enableRecordButtonOK = function() {
       enabled: true,
       legend: "Record"
     });
+    $('#testID').prop("disabled", false);
   }
   return false;
 };
@@ -729,6 +763,7 @@ enableRecordButtonOK = function() {
 Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('adminDone', function() {
+  localStorage['hash'] = '';
   (Pylon.get('button-admin')).set('legend', "Log Out");
   Pylon.state.set('loggedIn', true);
   pageGen.activateSensorPage();
@@ -880,6 +915,29 @@ onPause = function() {
   return applogger("exit did not exit!!");
 };
 
+detectHash = function() {
+  var hash;
+  if (window.location.hash) {
+    if (hash = window.location.hash.slice(1)) {
+      enterLogin(hash);
+    }
+    localStorage['hash'] = hash;
+  }
+  if (hash = localStorage['hash']) {
+    return enterLogin(hash);
+  }
+};
+
+onGotSession = function() {
+  var theTest;
+  theTest = sessionInfo.get('protocol');
+  if (!localStorage['hash']) {
+    if (theTest.get('cloneable')) {
+      return localStorage['hash'] = sessionInfo.ID;
+    }
+  }
+};
+
 $(function() {
   document.addEventListener('resume', function() {
     return window.location.reload();
@@ -897,6 +955,7 @@ $(function() {
   }
   initAll();
   setSensor();
+  detectHash();
   applogger("DOM ready");
   return false;
 });
@@ -3115,13 +3174,19 @@ protocolPhase = Backbone.Model.extend({
     var setTestOrDefault;
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
-        var p, sessionID;
+        var code, p, sessionID;
         Pylon.state.set({
           recording: true
         });
         _this.set('protocol', p = Pylon.theProtocol());
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
+          code = prompt("Ready for next test. enter code to abort", "proceed");
+          if (code === "x") {
+            localStorage['hash'] = '';
+            window.location.reload();
+            return;
+          }
         } else {
           _this.allMyProtocols = [p.get('name')];
         }
@@ -3172,6 +3237,12 @@ protocolPhase = Backbone.Model.extend({
       return function() {
         var duration, limit, p, start;
         p = Pylon.theProtocol();
+        if (p.get('cloneable')) {
+          debugger;
+          if (!localStorage['hash']) {
+            localStorage['hash'] = (Pylon.get('sessionInfo')).id;
+          }
+        }
         if (!p.get('showLeadIn')) {
           Pylon.saneTimeout(0, _this.trigger('selectTheFirstTest'));
           return;
@@ -4246,7 +4317,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 },{"./button-view.coffee":21,"./stroop.coffee":25,"./tapping.coffee":26,"./ten-icon.coffee":27,"backbone":28,"jquery":32,"teacup":36}],25:[function(require,module,exports){
-var $, Backbone, T, colorTextBody, colorTextExample, implementing, shuffle,
+var $, Backbone, T, colorTextBody, colorTextExample, colorToHue, colorToName, implementing, shuffle,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -4321,7 +4392,7 @@ colorTextBody = Backbone.View.extend({
             results = [];
             for (i = k = 0, len = examples.length; k < len; i = ++k) {
               example = examples[i];
-              btn = example;
+              btn = colorToName(example);
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               T.span({
                 onClick: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
@@ -4341,11 +4412,23 @@ colorTextBody = Backbone.View.extend({
     })(this)));
     this.textColor = this.model.selectFromCurrentTest(this.textColor);
     this.text = this.model.selectFromCurrentTest(this.text, this.textColor);
-    this.$('#text-here').html(this.text);
-    this.$('#text-here').attr("style", "color:" + this.textColor);
+    this.$('#text-here').html(colorToName(this.text));
+    this.$('#text-here').attr("style", "color:" + (colorToHue(this.textColor)));
     this.wanted = this.text;
   }
 });
+
+colorToName = function(text) {
+  var c;
+  c = text.split(/\s*:\s*/);
+  return c[0];
+};
+
+colorToHue = function(text) {
+  var c;
+  c = text.split(/\s*:\s*/);
+  return c[c.length - 1];
+};
 
 colorTextExample = Backbone.View.extend({
   el: "#example",
@@ -4371,10 +4454,10 @@ colorTextExample = Backbone.View.extend({
               results.push(T.span(".example", {
                 style: "padding-right:1em;"
               }, function() {
-                T.text(example);
+                T.text(colorToName(example));
                 T.raw("&nbsp;");
                 return T.span({
-                  style: "background-color:" + example
+                  style: "background-color:" + (colorToHue(example))
                 }, function() {
                   return T.raw("&nbsp&nbsp;&nbsp&nbsp; ");
                 });
