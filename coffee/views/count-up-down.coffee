@@ -25,11 +25,12 @@ protocolPhase = Backbone.Model.extend
       @set 'protocol', p= Pylon.theProtocol()
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
-        code = prompt "Ready for next test. enter code to abort","proceed"
-        if code == "x"   # temporary -- the clinician has entered the code
-          localStorage['hash']=''
-          window.location.reload()
-          return
+        if p.get 'cloneable'
+          code = prompt "Ready for next test. enter code to abort","proceed"
+          if code == "x"   # temporary -- the clinician has entered the code
+            localStorage['hash']=''
+            window.location.reload()
+            return
       else
         @allMyProtocols = [p.get 'name' ]
       sessionID=Pylon.get('sessionInfo').get('_id')
@@ -49,8 +50,8 @@ protocolPhase = Backbone.Model.extend
       sessionID=Pylon.get('sessionInfo').get('_id')
       unless sessionID
         @listenToOnce Pylon.get('sessionInfo'), 'change:_id',()=>
-          Pylon.saneTimeout 0,()->
-            Pylon.trigger 'leadIn'
+          Pylon.saneTimeout 0,()=>
+            @.trigger 'leadIn'
 
         pHT.setEnvironment
           headline: "waiting for host"
@@ -59,8 +60,8 @@ protocolPhase = Backbone.Model.extend
           limit: 5
           start: 0
       else
-        Pylon.saneTimeout 0,->
-          Pylon.trigger 'leadIn'
+        Pylon.saneTimeout 0,()=>
+          @.trigger 'leadIn'
       return
     # leadIn means the sessionID for this test run exists
     @on 'leadIn',()=>
@@ -105,7 +106,7 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         start: duration
         nextPhase: "justWait"
-        phaseButton: "Proceed"
+        phaseButton: "Skip"
         buttonPhaseNext: "underway"
       return
 

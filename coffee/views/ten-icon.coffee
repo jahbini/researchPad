@@ -39,10 +39,10 @@ tenIconBody = Backbone.View.extend
     @$el.html T.render =>
       T.div ".container",style:"font-size:265%", =>
         T.div ".row", =>
-          T.div ".four.columns", =>
+          T.div ".three.columns", =>
             T.div ".row",-> T.raw "&nbsp;"
             T.div ".row",->
-          T.div  ".six.columns","keypad",->
+          T.div  ".nine.columns","keypad",->
             T.div ".row",->
               activeKey k for k in [1..3]
             T.div ".row",->

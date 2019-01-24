@@ -3181,11 +3181,13 @@ protocolPhase = Backbone.Model.extend({
         _this.set('protocol', p = Pylon.theProtocol());
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
-          code = prompt("Ready for next test. enter code to abort", "proceed");
-          if (code === "x") {
-            localStorage['hash'] = '';
-            window.location.reload();
-            return;
+          if (p.get('cloneable')) {
+            code = prompt("Ready for next test. enter code to abort", "proceed");
+            if (code === "x") {
+              localStorage['hash'] = '';
+              window.location.reload();
+              return;
+            }
           }
         } else {
           _this.allMyProtocols = [p.get('name')];
@@ -3216,7 +3218,7 @@ protocolPhase = Backbone.Model.extend({
         if (!sessionID) {
           _this.listenToOnce(Pylon.get('sessionInfo'), 'change:_id', function() {
             return Pylon.saneTimeout(0, function() {
-              return Pylon.trigger('leadIn');
+              return _this.trigger('leadIn');
             });
           });
           pHT.setEnvironment({
@@ -3228,7 +3230,7 @@ protocolPhase = Backbone.Model.extend({
           });
         } else {
           Pylon.saneTimeout(0, function() {
-            return Pylon.trigger('leadIn');
+            return _this.trigger('leadIn');
           });
         }
       };
@@ -3287,7 +3289,7 @@ protocolPhase = Backbone.Model.extend({
           limit: 0,
           start: duration,
           nextPhase: "justWait",
-          phaseButton: "Proceed",
+          phaseButton: "Skip",
           buttonPhaseNext: "underway"
         });
       };
@@ -4619,13 +4621,13 @@ tenIconBody = Backbone.View.extend({
           style: "font-size:265%"
         }, function() {
           return T.div(".row", function() {
-            T.div(".four.columns", function() {
+            T.div(".three.columns", function() {
               T.div(".row", function() {
                 return T.raw("&nbsp;");
               });
               return T.div(".row", function() {});
             });
-            return T.div(".six.columns", "keypad", function() {
+            return T.div(".nine.columns", "keypad", function() {
               T.div(".row", function() {
                 var k, l, results;
                 results = [];
