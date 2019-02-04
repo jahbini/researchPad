@@ -25,12 +25,6 @@ protocolPhase = Backbone.Model.extend
       @set 'protocol', p= Pylon.theProtocol()
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
-        if p.get 'cloneable'
-          code = prompt "Ready for next test. enter code to abort","proceed"
-          if code == "x"   # temporary -- the clinician has entered the code
-            localStorage['hash']=''
-            window.location.reload()
-            return
       else
         @allMyProtocols = [p.get 'name' ]
       sessionID=Pylon.get('sessionInfo').get('_id')
@@ -62,13 +56,46 @@ protocolPhase = Backbone.Model.extend
       else
         Pylon.saneTimeout 0,()=>
           @.trigger 'leadIn'
+      returientUnlock
+    startCloneableSuite= ()->
+      c=localStorage['hash']= (Pylon.get 'sessionInfo').id
+      c= parseInt c[-4..],16
+      c = c % 10000
+      c = c + 100 if c<100
+      localStorage['clientUnlock']=c
+      pHT.setEnvironment
+        headline: "Write This Unlock Code Down"
+        paragraph: "#{localStorage['clientUnlock']} This four digit code is your patient unlock code for this series."
+        nextPhase: "leadIn"
+        start: 0
+        limit: 0
+        buttonSpec:
+          phaseButton: "Enter Lock Down Mode"
       return
+
+    continueCloneableSuite= ()->  # put up unlock screen
+      #code = prompt "Ready for next test. enter code to abort","proceed"
+      pHT.setEnvironment
+        headline: "Enter the Unlock Code -- #{localStorage['clientUnlock']}"
+        paragraph: "put up a  text entry widget with wout showing this code: #{localStorage['clientUnlock']}"
+        nextPhase: "selectTheFirstTest"
+        clientcode: localStorage['clientUnlock']
+        start: 0
+        limit: 0
+        #buttonSpec:
+        #  phaseButton: "Hi I am unlock"
+      return
+
     # leadIn means the sessionID for this test run exists
     @on 'leadIn',()=>
       p = Pylon.theProtocol()
       if p.get 'cloneable'
-        debugger
-        localStorage['hash']= (Pylon.get 'sessionInfo').id unless localStorage['hash']
+        if localStorage['hash']
+          continueCloneableSuite()
+        else
+          startCloneableSuite()
+        return
+
       unless  p.get 'showLeadIn'
         Pylon.saneTimeout 0, @trigger 'selectTheFirstTest'
         return
@@ -85,7 +112,8 @@ protocolPhase = Backbone.Model.extend
         nextPhase: "selectTheFirstTest"
         start: start
         limit: limit
-        phaseButton: "Stop"
+        buttonSpec:
+          phaseButton: "Stop"
       return
 
     @on 'close preamble',()=>
@@ -106,8 +134,9 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         start: duration
         nextPhase: "justWait"
-        phaseButton: "Skip"
-        buttonPhaseNext: "underway"
+        buttonSpec:
+          phaseButton: "Skip"
+          buttonPhaseNext: "underway"
       return
 
     @on 'justWait',=>
@@ -138,8 +167,9 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         start: 1
         nextPhase: "justWait"
-        phaseButton: "Proceed"
-        buttonPhaseNext: "proceedWithNextTest"
+        buttonSpec:
+          phaseButton: "Proceed"
+          buttonPhaseNext: "proceedWithNextTest"
       return
     
     setTestOrDefault = (name)->
@@ -225,40 +255,59 @@ protocolHeadTemplate = Backbone.View.extend
       @clearCount = null
     @headline = struct.headline
     @paragraph = struct.paragraph
-    @phaseButton = struct.phaseButton
+    @buttonSpec = struct.buttonSpec
+    @buttonPhase = @buttonSpec?.buttonPhaseNext || struct.nextPhase
     @limit = struct.limit
     @start = struct.start
-    @direction = if @limit < @start  then -1 else 1
+    @direction = if @limit < @start  then -1 else if @limit==@start then 0 else 1
     @nextPhase = struct.nextPhase 
-    @buttonPhase = struct.buttonPhaseNext || struct.nextPhase
+    @clientcode = struct.clientcode
     @render @start
     return
   initialize:()->
+    @code = ''
     Pylon.on 'buttonPhase',()=>
       pP.trigger @buttonPhase
       return
     @on 'count:continue', (t)=>
       @render t
     @$el.addClass "container"
+    Pylon.on 'clientcode', (digit)=>
+      @code += digit
+      @code=@code[-10..]
+      if @code.match @clientcode
+        pP.trigger @nextPhase
+      if @code.match '16180339'
+        localStorage['hash']=''
+        window.location.reload()
+
   render:(t)->
     if t != @start && t != @limit
       @$( ".timer").html t
     else
       @$el.html T.render =>
         T.div ".row",=>
-          if @phaseButton
+          if @buttonSpec
             T.button ".u-pull-left.button-primary",
               {onClick:  "Pylon.trigger('buttonPhase');"},
-              @phaseButton
+              @buttonSpec.phaseButton
           T.div ".u-pull-left",=>
             T.h3  =>
-              if t
-                T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
-                T.span ".timer", t
+              if @direction
+                if t
+                  T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
+                  T.span ".timer", t
+                else
+                  T.text @headline + "- Finished"
               else
-                T.text @headline + "- Finished"
+                T.text @headline 
+        if @clientcode
+          T.div ".row",=>
+            for i in [0..9]
+              activeKey i
         T.div ".row",=>
           T.h4 style:"text-align:center",@paragraph
+    return unless @direction
     nextTime = t + @direction
     if @direction > 0
       if nextTime > @limit
@@ -270,6 +319,12 @@ protocolHeadTemplate = Backbone.View.extend
         return
     @clearCount = Pylon.saneTimeout 1000, ()=>@trigger "count:continue", nextTime
     return
+
+activeKey = (digit)->
+  T.div "#digit-#{digit}.one.column",
+    style: "text-align: center;font-size:265%;",
+    onclick:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
+    digit
 pHT = new protocolHeadTemplate()
 #if window? then window.exports = Pages
 #if module?.exports? then module.exports = Pages

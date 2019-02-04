@@ -500,14 +500,6 @@ detectHash= ()-> #if there is a hash, it is a session to be cloned
   if hash = localStorage['hash']
     enterLogin hash
   
-onGotSession= ()->
-  theTest = sessionInfo.get 'protocol'
-  unless localStorage['hash']
-    #save the first sessionID if protocol is cloneable
-    if theTest.get 'cloneable'
-      localStorage['hash']=sessionInfo.ID
-
-
 $ ->
   # Force a page reload if put in background to wipe the sessionInfo and other state
   document.addEventListener 'resume',()->

@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":14,"Case":29,"backbone":28,"jquery":32,"underscore":37}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, localStorage, onGotSession, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getProtocol, initAll, localStorage, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -925,16 +925,6 @@ detectHash = function() {
   }
   if (hash = localStorage['hash']) {
     return enterLogin(hash);
-  }
-};
-
-onGotSession = function() {
-  var theTest;
-  theTest = sessionInfo.get('protocol');
-  if (!localStorage['hash']) {
-    if (theTest.get('cloneable')) {
-      return localStorage['hash'] = sessionInfo.ID;
-    }
   }
 };
 
@@ -3137,7 +3127,7 @@ module.exports = Backbone.Model.extend({
 
 
 },{"backbone":28,"jquery":32,"teacup":36}],22:[function(require,module,exports){
-var $, BV, Backbone, T, buglog, implementing, introlog, intrologger, pHT, pP, protocolHeadTemplate, protocolPhase, recorderViewTemplate,
+var $, BV, Backbone, T, activeKey, buglog, implementing, introlog, intrologger, pHT, pP, protocolHeadTemplate, protocolPhase, recorderViewTemplate,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -3153,10 +3143,10 @@ buglog = require('../lib/buglog.coffee');
 intrologger = (introlog = new buglog("intro")).log;
 
 implementing = function() {
-  var classReference, i, j, key, len, mixin, mixins, ref, value;
-  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
-  for (j = 0, len = mixins.length; j < len; j++) {
-    mixin = mixins[j];
+  var classReference, j, k, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, j = arguments.length - 1) : (j = 0, []), classReference = arguments[j++];
+  for (k = 0, len = mixins.length; k < len; k++) {
+    mixin = mixins[k];
     ref = mixin.prototype;
     for (key in ref) {
       value = ref[key];
@@ -3171,24 +3161,16 @@ protocolPhase = Backbone.Model.extend({
     protocol: null
   },
   initialize: function() {
-    var setTestOrDefault;
+    var continueCloneableSuite, setTestOrDefault, startCloneableSuite;
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
-        var code, p, sessionID;
+        var p, sessionID;
         Pylon.state.set({
           recording: true
         });
         _this.set('protocol', p = Pylon.theProtocol());
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
-          if (p.get('cloneable')) {
-            code = prompt("Ready for next test. enter code to abort", "proceed");
-            if (code === "x") {
-              localStorage['hash'] = '';
-              window.location.reload();
-              return;
-            }
-          }
         } else {
           _this.allMyProtocols = [p.get('name')];
         }
@@ -3233,17 +3215,50 @@ protocolPhase = Backbone.Model.extend({
             return _this.trigger('leadIn');
           });
         }
+        return returientUnlock;
       };
     })(this));
+    startCloneableSuite = function() {
+      var c;
+      c = localStorage['hash'] = (Pylon.get('sessionInfo')).id;
+      c = parseInt(c.slice(-4), 16);
+      c = c % 10000;
+      if (c < 100) {
+        c = c + 100;
+      }
+      localStorage['clientUnlock'] = c;
+      pHT.setEnvironment({
+        headline: "Write This Unlock Code Down",
+        paragraph: localStorage['clientUnlock'] + " This four digit code is your patient unlock code for this series.",
+        nextPhase: "leadIn",
+        start: 0,
+        limit: 0,
+        buttonSpec: {
+          phaseButton: "Enter Lock Down Mode"
+        }
+      });
+    };
+    continueCloneableSuite = function() {
+      pHT.setEnvironment({
+        headline: "Enter the Unlock Code -- " + localStorage['clientUnlock'],
+        paragraph: "put up a  text entry widget with wout showing this code: " + localStorage['clientUnlock'],
+        nextPhase: "selectTheFirstTest",
+        clientcode: localStorage['clientUnlock'],
+        start: 0,
+        limit: 0
+      });
+    };
     this.on('leadIn', (function(_this) {
       return function() {
         var duration, limit, p, start;
         p = Pylon.theProtocol();
         if (p.get('cloneable')) {
-          debugger;
-          if (!localStorage['hash']) {
-            localStorage['hash'] = (Pylon.get('sessionInfo')).id;
+          if (localStorage['hash']) {
+            continueCloneableSuite();
+          } else {
+            startCloneableSuite();
           }
+          return;
         }
         if (!p.get('showLeadIn')) {
           Pylon.saneTimeout(0, _this.trigger('selectTheFirstTest'));
@@ -3263,7 +3278,9 @@ protocolPhase = Backbone.Model.extend({
           nextPhase: "selectTheFirstTest",
           start: start,
           limit: limit,
-          phaseButton: "Stop"
+          buttonSpec: {
+            phaseButton: "Stop"
+          }
         });
       };
     })(this));
@@ -3289,8 +3306,10 @@ protocolPhase = Backbone.Model.extend({
           limit: 0,
           start: duration,
           nextPhase: "justWait",
-          phaseButton: "Skip",
-          buttonPhaseNext: "underway"
+          buttonSpec: {
+            phaseButton: "Skip",
+            buttonPhaseNext: "underway"
+          }
         });
       };
     })(this));
@@ -3328,8 +3347,10 @@ protocolPhase = Backbone.Model.extend({
         limit: 0,
         start: 1,
         nextPhase: "justWait",
-        phaseButton: "Proceed",
-        buttonPhaseNext: "proceedWithNextTest"
+        buttonSpec: {
+          phaseButton: "Proceed",
+          buttonPhaseNext: "proceedWithNextTest"
+        }
       });
     });
     setTestOrDefault = function(name) {
@@ -3443,21 +3464,24 @@ protocolHeadTemplate = Backbone.View.extend({
     }
   },
   setEnvironment: function(struct) {
+    var ref;
     if (this.clearCount) {
       clearTimeout(this.clearCount);
       this.clearCount = null;
     }
     this.headline = struct.headline;
     this.paragraph = struct.paragraph;
-    this.phaseButton = struct.phaseButton;
+    this.buttonSpec = struct.buttonSpec;
+    this.buttonPhase = ((ref = this.buttonSpec) != null ? ref.buttonPhaseNext : void 0) || struct.nextPhase;
     this.limit = struct.limit;
     this.start = struct.start;
-    this.direction = this.limit < this.start ? -1 : 1;
+    this.direction = this.limit < this.start ? -1 : this.limit === this.start ? 0 : 1;
     this.nextPhase = struct.nextPhase;
-    this.buttonPhase = struct.buttonPhaseNext || struct.nextPhase;
+    this.clientcode = struct.clientcode;
     this.render(this.start);
   },
   initialize: function() {
+    this.code = '';
     Pylon.on('buttonPhase', (function(_this) {
       return function() {
         pP.trigger(_this.buttonPhase);
@@ -3468,7 +3492,20 @@ protocolHeadTemplate = Backbone.View.extend({
         return _this.render(t);
       };
     })(this));
-    return this.$el.addClass("container");
+    this.$el.addClass("container");
+    return Pylon.on('clientcode', (function(_this) {
+      return function(digit) {
+        _this.code += digit;
+        _this.code = _this.code.slice(-10);
+        if (_this.code.match(_this.clientcode)) {
+          pP.trigger(_this.nextPhase);
+        }
+        if (_this.code.match('16180339')) {
+          localStorage['hash'] = '';
+          return window.location.reload();
+        }
+      };
+    })(this));
   },
   render: function(t) {
     var nextTime;
@@ -3478,22 +3515,36 @@ protocolHeadTemplate = Backbone.View.extend({
       this.$el.html(T.render((function(_this) {
         return function() {
           T.div(".row", function() {
-            if (_this.phaseButton) {
+            if (_this.buttonSpec) {
               T.button(".u-pull-left.button-primary", {
                 onClick: "Pylon.trigger('buttonPhase');"
-              }, _this.phaseButton);
+              }, _this.buttonSpec.phaseButton);
             }
             return T.div(".u-pull-left", function() {
               return T.h3(function() {
-                if (t) {
-                  T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
-                  return T.span(".timer", t);
+                if (_this.direction) {
+                  if (t) {
+                    T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
+                    return T.span(".timer", t);
+                  } else {
+                    return T.text(_this.headline + "- Finished");
+                  }
                 } else {
-                  return T.text(_this.headline + "- Finished");
+                  return T.text(_this.headline);
                 }
               });
             });
           });
+          if (_this.clientcode) {
+            T.div(".row", function() {
+              var i, j, results;
+              results = [];
+              for (i = j = 0; j <= 9; i = ++j) {
+                results.push(activeKey(i));
+              }
+              return results;
+            });
+          }
           return T.div(".row", function() {
             return T.h4({
               style: "text-align:center"
@@ -3501,6 +3552,9 @@ protocolHeadTemplate = Backbone.View.extend({
           });
         };
       })(this)));
+    }
+    if (!this.direction) {
+      return;
     }
     nextTime = t + this.direction;
     if (this.direction > 0) {
@@ -3521,6 +3575,13 @@ protocolHeadTemplate = Backbone.View.extend({
     })(this));
   }
 });
+
+activeKey = function(digit) {
+  return T.div("#digit-" + digit + ".one.column", {
+    style: "text-align: center;font-size:265%;",
+    onclick: "Pylon.trigger('clientcode','" + digit + "');Pylon.trigger('quickClass',$(this),'reversed')"
+  }, digit);
+};
 
 pHT = new protocolHeadTemplate();
 
