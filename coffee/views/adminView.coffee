@@ -130,8 +130,9 @@ class adminView
           Pylon.trigger 'renderTest'
           return false
       render: ->
+        pwMatch = (@model.get 'password') == Pylon.loginPassword
         if (@model.get 'clinic') && (@model.get 'clinician') &&
-            (@model.get 'client') && 'retro2017' == (@model.get 'password')?.slice(0,9)
+            (@model.get 'client') && pwMatch
           @$el.addClass('button-primary').removeClass('disabled').removeAttr('disabled')
           @$el.text "Done"
           @$el.show().fadeTo(500,1)

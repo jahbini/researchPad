@@ -16,11 +16,41 @@ shuffle = (a) ->
     [a[i], a[j]] = [a[j], a[i]]
   a
 #
-activeKey = (digit)->
-  T.div "#digit-#{digit}.two.columns",
+
+activeKey = (digit,cols='two')->
+  T.div "#digit-#{digit}.#{cols}.columns",
     style: "text-align: center;",
     onclick:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
     digit
+
+rowWithIcon= ()->
+  T.div ".container",style:"font-size:265%", =>
+    T.div ".row", =>
+      for i in [0..9]
+        activeKey i,'one'
+    T.div ".row", =>
+        T.div  "#icon-here.offset-by-five.two.columns","icon"
+  return
+
+keyPadWithIcon= ()->
+  T.div ".container",style:"font-size:265%", =>
+    T.div ".row", =>
+      T.div ".three.columns", =>
+        T.div ".row",-> T.raw "&nbsp;"
+        T.div ".row",->
+      T.div  ".nine.columns","keypad",->
+        T.div ".row",->
+          activeKey k for k in [1..3]
+        T.div ".row",->
+          activeKey k for k in [4..6]
+          T.div  "#icon-here.offset-by-two.two.columns","icon"
+        T.div ".row",->
+          activeKey k for k in [7..9]
+        T.div ".row",->
+          T.div ".two.columns",->T.raw "&nbsp;"
+          activeKey 0
+          T.div ".two.columns",->T.raw "&nbsp;"
+  return
 
 tenIconBody = Backbone.View.extend
   el: "#protocol-report"
@@ -37,30 +67,14 @@ tenIconBody = Backbone.View.extend
       return
     @wanted=null
     @$el.html T.render =>
-      T.div ".container",style:"font-size:265%", =>
-        T.div ".row", =>
-          T.div ".three.columns", =>
-            T.div ".row",-> T.raw "&nbsp;"
-            T.div ".row",->
-          T.div  ".nine.columns","keypad",->
-            T.div ".row",->
-              activeKey k for k in [1..3]
-            T.div ".row",->
-              activeKey k for k in [4..6]
-              T.div  "#icon-here.offset-by-two.two.columns","icon"
-            T.div ".row",->
-              activeKey k for k in [7..9]
-            T.div ".row",->
-              T.div ".two.columns",->T.raw "&nbsp;"
-              activeKey 0
-              T.div ".two.columns",->T.raw "&nbsp;"
+      rowWithIcon()
+      #keyPadWithIcon()
     return
   render:()->
     @icon = @model.selectFromCurrentTest @icon
     @$('#icon-here').html  @icon
     @wanted = @model.order @icon
     return
-
 tenIconExample = Backbone.View.extend
   el: "#example"
   clear: ()->

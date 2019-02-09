@@ -60,6 +60,9 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
 ###
 
+configurations = require './models/configurations.coffee'
+Pylon.set('configurations',configurations)
+
 clinics = require './models/clinics.coffee'
 Pylon.set('clinics',clinics)
 
@@ -409,7 +412,32 @@ clinics.on 'fetched', ->
   Pylon.state.set 'clinics',true
   if Pylon.state.get 'protocols'
     Pylon.trigger 'canLogIn'
-  
+configurations.on 'fetched',->
+  debugger
+  Pylon.retroPW = configurations
+  Pylon.userUnlock = configurations
+  return
+
+
+getConfiguration = ->
+  applogger "configurations request initiate"
+  configurations.fetch
+    success: (collection,response,options)->
+      applogger "configurations request success"
+      collection.trigger 'fetched'
+    error: (collection,response,options)->
+      configurationsShowedErrors--
+      if configurationsShowedErrors
+        return
+      configurationsShowedErrors=15
+      applogger (Pylon.get('hostUrl')+'configurations'), "configurations fetch error - response:", response.statusText
+getConfiguration()
+configurationTimer = setInterval getConfiguration, 11000
+configurations.on 'fetched' , ->
+  clearInterval configurationTimer
+
+
+
 getProtocol = ->
   applogger "protocol request initiate"
   protocols.fetch

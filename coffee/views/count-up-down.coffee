@@ -277,7 +277,7 @@ protocolHeadTemplate = Backbone.View.extend
       @code=@code[-10..]
       if @code.match @clientcode
         pP.trigger @nextPhase
-      if @code.match '16180339'
+      if @code.match Pylon.unlock
         localStorage['hash']=''
         window.location.reload()
 
@@ -301,12 +301,24 @@ protocolHeadTemplate = Backbone.View.extend
                   T.text @headline + "- Finished"
               else
                 T.text @headline 
-        if @clientcode
-          T.div ".row",=>
-            for i in [0..9]
-              activeKey i
         T.div ".row",=>
           T.h4 style:"text-align:center",@paragraph
+        if @clientcode  #put up ten key pad
+          T.div style:"height:0.5in"
+          T.div ".row", =>
+            T.div ".three.columns", =>
+              T.div ".row",-> T.raw "&nbsp;"
+              T.div ".row",->
+            T.div  ".nine.columns","keypad",->
+              T.div ".row",->
+                activeKey k for k in [1..3]
+              T.div ".row",->
+                activeKey k for k in [4..6]
+              T.div ".row",->
+                activeKey k for k in [7..9]
+              T.div ".row",->
+                T.div ".two.columns",->T.raw "&nbsp;"
+                activeKey 0
     return unless @direction
     nextTime = t + @direction
     if @direction > 0
@@ -321,8 +333,8 @@ protocolHeadTemplate = Backbone.View.extend
     return
 
 activeKey = (digit)->
-  T.div "#digit-#{digit}.one.column",
-    style: "text-align: center;font-size:265%;",
+  T.div "#digit-#{digit}.two.columns",
+    style: "text-align: center;font-size:265%;background:#ccc;border:black;border-radius:100%",
     onclick:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 pHT = new protocolHeadTemplate()
