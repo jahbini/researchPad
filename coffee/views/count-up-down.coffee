@@ -56,7 +56,8 @@ protocolPhase = Backbone.Model.extend
       else
         Pylon.saneTimeout 0,()=>
           @.trigger 'leadIn'
-      returientUnlock
+      return 
+
     startCloneableSuite= ()->
       c=localStorage['hash']= (Pylon.get 'sessionInfo').id
       c= parseInt c[-4..],16

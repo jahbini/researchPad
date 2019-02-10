@@ -20,7 +20,7 @@ shuffle = (a) ->
 #
 
 colorTextBody = Backbone.View.extend
-  el: "#protocol-report"
+  el: "#protocol-here"
   clear: ()->
     @$el.html('')
     return
@@ -34,13 +34,13 @@ colorTextBody = Backbone.View.extend
       return
     @wanted=null
     @$el.html T.render =>
-      T.div ".container",style:"font-size:265%"
+      T.div ".container"
     return
   render:()->
     examples= shuffle (@model.get 'currentTest')[..]
     names = shuffle examples[..]
     @$el.html T.render =>
-      T.div ".container",style:"font-size:265%", =>
+      T.div ".container",=>
         extraClass = ""
         examples=shuffle (@model.get 'currentTest')[..]
         T.div ".row",style:"text-align:center", =>

@@ -3282,7 +3282,6 @@ protocolPhase = Backbone.Model.extend({
             return _this.trigger('leadIn');
           });
         }
-        return returientUnlock;
       };
     })(this));
     startCloneableSuite = function() {
@@ -3892,6 +3891,10 @@ Pages = (function() {
     });
     div("#protocol-report.modal-test", {
       style: "display:none;"
+    }, function() {
+      return div("#protocol-here", {
+        style: "background-color:lightcyan;font-size:265%"
+      });
     });
   });
 
@@ -4438,10 +4441,10 @@ ProtocolReportTemplate = Backbone.View.extend({
     })(this));
   },
   showProtocol: function(name, theTest) {
-    switch (name) {
-      case 'Stroop Test':
-      case 'stroop test':
-      case 'Stroop test':
+    var engine;
+    engine = theTest.get('engine');
+    switch (engine) {
+      case 'stroop':
         this.renderExample = new colorTextExample({
           model: theTest
         });
@@ -4449,8 +4452,7 @@ ProtocolReportTemplate = Backbone.View.extend({
           model: theTest
         });
         break;
-      case 'ten icons':
-      case '(SDMT) Symbol Digit Modalities Test':
+      case 'smdt':
         this.renderExample = new tenIconExample({
           model: theTest
         });
@@ -4517,7 +4519,7 @@ shuffle = function(a) {
 };
 
 colorTextBody = Backbone.View.extend({
-  el: "#protocol-report",
+  el: "#protocol-here",
   clear: function() {
     this.$el.html('');
   },
@@ -4534,9 +4536,7 @@ colorTextBody = Backbone.View.extend({
     this.wanted = null;
     this.$el.html(T.render((function(_this) {
       return function() {
-        return T.div(".container", {
-          style: "font-size:265%"
-        });
+        return T.div(".container");
       };
     })(this)));
   },
@@ -4546,9 +4546,7 @@ colorTextBody = Backbone.View.extend({
     names = shuffle(examples.slice(0));
     this.$el.html(T.render((function(_this) {
       return function() {
-        return T.div(".container", {
-          style: "font-size:265%"
-        }, function() {
+        return T.div(".container", function() {
           var extraClass;
           extraClass = "";
           examples = shuffle((_this.model.get('currentTest')).slice(0));
@@ -4672,7 +4670,7 @@ implementing = function() {
 };
 
 tappingBody = Backbone.View.extend({
-  el: "#protocol-report",
+  el: "#protocol-here",
   clear: function() {
     this.$el.html('');
   },
@@ -4681,7 +4679,9 @@ tappingBody = Backbone.View.extend({
     mileStones = this.model.get('mileStones');
     this.$el.html(T.render((function(_this) {
       return function() {
-        return T.div(".container", function() {
+        return T.div(".container", {
+          style: "padding-top:25px;padding-bottom:25px"
+        }, function() {
           var extraClass;
           extraClass = "";
           return T.div("row", {
@@ -4693,7 +4693,7 @@ tappingBody = Backbone.View.extend({
               btn = mileStones[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               results.push(T.button(".primary.round-button" + extraClass, {
-                style: "margin-right:0.7in",
+                style: "font-size:5rem;margin-right:0.7in",
                 onClick: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
               }, function() {
                 return T.span("" + btn);
@@ -4757,26 +4757,26 @@ shuffle = function(a) {
   return a;
 };
 
-activeKey = function(digit, cols) {
-  if (cols == null) {
-    cols = 'two';
+activeKey = function(digit, cls) {
+  if (cls == null) {
+    cls = '.two.columns';
   }
-  return T.div("#digit-" + digit + "." + cols + ".columns", {
-    style: "text-align: center;",
+  return T.div("#digit-" + digit + cls, {
+    style: "width:1em;padding-right:0.5em;display:inline-block;",
     onclick: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
   }, digit);
 };
 
 rowWithIcon = function() {
-  T.div(".container", {
-    style: "font-size:265%"
-  }, (function(_this) {
+  T.div(".container", (function(_this) {
     return function() {
-      T.div(".row", function() {
+      T.div(".row", {
+        style: "text-align:center;"
+      }, function() {
         var i, l, results;
         results = [];
-        for (i = l = 0; l <= 9; i = ++l) {
-          results.push(activeKey(i, 'one'));
+        for (i = l = 1; l <= 9; i = ++l) {
+          results.push(activeKey(i, ''));
         }
         return results;
       });
@@ -4839,7 +4839,7 @@ keyPadWithIcon = function() {
 };
 
 tenIconBody = Backbone.View.extend({
-  el: "#protocol-report",
+  el: "#protocol-here",
   clear: function() {
     this.$el.html('');
   },
@@ -4874,9 +4874,20 @@ tenIconExample = Backbone.View.extend({
   },
   response: function(got, wanted) {
     Pylon.trigger("systemEvent:tenIcon:got-" + got + "/wanted-" + wanted);
+    switch (this.model.get('entropy')) {
+      case 'high':
+        this.randomize();
+    }
     Pylon.trigger("reRender:tenIcon");
   },
+  randomize: function() {
+    Pylon.trigger("systemEvent:tenIcon:iconOrder-" + ((this.model.setCurrentTest(9)).join(',')));
+    return this.render();
+  },
   initialize: function() {
+    return this.randomize();
+  },
+  render: function() {
     this.$el.html(T.render((function(_this) {
       return function() {
         return T.div(".container", {
@@ -4887,12 +4898,12 @@ tenIconExample = Backbone.View.extend({
           return T.div(".row", {
             style: "text-align:center"
           }, function() {
-            var example, i, l, len, ref, results;
-            i = 0;
-            ref = _this.model.setCurrentTest(10);
+            var example, i, l, len, results, tests;
+            i = 1;
+            tests = _this.model.get('currentTest');
             results = [];
-            for (l = 0, len = ref.length; l < len; l++) {
-              example = ref[l];
+            for (l = 0, len = tests.length; l < len; l++) {
+              example = tests[l];
               results.push(T.div("#example-" + example + extraClass, {
                 style: "padding-right:0.5em;display:inline-block;"
               }, function() {
@@ -4906,7 +4917,6 @@ tenIconExample = Backbone.View.extend({
         });
       };
     })(this)));
-    Pylon.trigger("systemEvent:tenIcon:iconOrder-" + ((this.model.get('currentTest')).join(',')));
   }
 });
 

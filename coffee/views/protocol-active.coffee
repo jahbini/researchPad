@@ -150,11 +150,12 @@ ProtocolReportTemplate = Backbone.View.extend
         return 
 
     showProtocol: (name,theTest)->
-      switch name
-        when 'Stroop Test' , 'stroop test' , 'Stroop test'
+      engine=theTest.get 'engine'
+      switch engine
+        when 'stroop'
           @renderExample =  new colorTextExample model: theTest
           @renderBody = new colorTextBody model: theTest
-        when 'ten icons', '(SDMT) Symbol Digit Modalities Test'
+        when 'smdt'
           @renderExample = new tenIconExample model: theTest
           @renderBody = new tenIconBody model: theTest
         else

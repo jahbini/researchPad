@@ -48,8 +48,8 @@ body {
   margin-left: 3%; 
   margin-right: 3%; 
   height: auto;
-  background-color: lightcyan;
-  padding: 2rem; 
+  background-color: #4b9070;
+  padding: 25px;
   border-radius: 5px;
   z-index: 10;
 }

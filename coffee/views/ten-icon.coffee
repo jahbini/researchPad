@@ -17,17 +17,17 @@ shuffle = (a) ->
   a
 #
 
-activeKey = (digit,cols='two')->
-  T.div "#digit-#{digit}.#{cols}.columns",
-    style: "text-align: center;",
+activeKey = (digit,cls='.two.columns')->
+  T.div "#digit-#{digit}#{cls}",
+    style:"width:1em;padding-right:0.5em;display:inline-block;" ,
     onclick:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 
 rowWithIcon= ()->
-  T.div ".container",style:"font-size:265%", =>
-    T.div ".row", =>
-      for i in [0..9]
-        activeKey i,'one'
+  T.div ".container",=>
+    T.div ".row", style:"text-align:center;", =>
+      for i in [1..9]
+        activeKey i,''
     T.div ".row", =>
         T.div  "#icon-here.offset-by-five.two.columns","icon"
   return
@@ -53,7 +53,7 @@ keyPadWithIcon= ()->
   return
 
 tenIconBody = Backbone.View.extend
-  el: "#protocol-report"
+  el: "#protocol-here"
   clear: ()->
     @$el.html('')
     return
@@ -73,7 +73,8 @@ tenIconBody = Backbone.View.extend
   render:()->
     @icon = @model.selectFromCurrentTest @icon
     @$('#icon-here').html  @icon
-    @wanted = @model.order @icon
+    # add oone because patient entries are 1..9
+    @wanted = 1+ @model.order @icon
     return
 tenIconExample = Backbone.View.extend
   el: "#example"
@@ -82,15 +83,28 @@ tenIconExample = Backbone.View.extend
     return
   response: (got,wanted)->
     Pylon.trigger "systemEvent:tenIcon:got-#{got}/wanted-#{wanted}"
+    switch @model.get 'entropy'
+      when 'high'
+        @randomize()
+
     Pylon.trigger "reRender:tenIcon"
     return
+  randomize: ()->
+    Pylon.trigger "systemEvent:tenIcon:iconOrder-#{(@model.setCurrentTest 9).join ','}"
+    @render()
+
   initialize: ()->
+    @randomize()
+  
+  render: ()->
     @$el.html T.render =>
       T.div ".container",style:"width:100%", =>
         extraClass = ""
         T.div ".row",style:"text-align:center", =>
-          i=0
-          for example in @model.setCurrentTest 10
+          # patient responds 1 -- 9
+          i=1
+          tests = @model.get 'currentTest'
+          for example in tests
             T.div "#example-#{example}#{extraClass}",
               {style:"padding-right:0.5em;display:inline-block;" },
               -> 
@@ -98,7 +112,6 @@ tenIconExample = Backbone.View.extend
                 T.br()
                 T.span i++
             #extraClass = ".offset-by-one.column"
-    Pylon.trigger "systemEvent:tenIcon:iconOrder-#{(@model.get 'currentTest').join ','}"
     return
 
 exports.tenIconBody = tenIconBody

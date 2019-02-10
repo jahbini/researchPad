@@ -16,20 +16,20 @@ implementing = (mixins..., classReference) ->
 
 
 tappingBody = Backbone.View.extend
-  el: "#protocol-report"
+  el: "#protocol-here"
   clear: ()->
     @$el.html('')
     return
   initialize: ()->
     mileStones = @model.get('mileStones')
     @$el.html T.render =>
-      T.div ".container", =>
+      T.div ".container",style: "padding-top:25px;padding-bottom:25px", =>
         extraClass = ""
         T.div "row",style:"text-align:center", =>
           for btn in mileStones
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
             T.button ".primary.round-button#{extraClass}",
-              {style:"margin-right:0.7in",onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
+              {style:"font-size:5rem;margin-right:0.7in",onClick: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
               -> T.span "#{btn}"
     return
 
