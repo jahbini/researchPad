@@ -3618,7 +3618,9 @@ protocolHeadTemplate = Backbone.View.extend({
                 return T.div(".row", function() {});
               });
               return T.div(".nine.columns", "keypad", function() {
-                T.div(".row", function() {
+                T.div(".row", {
+                  style: 'padding-bottom:13px;'
+                }, function() {
                   var i, k, results;
                   results = [];
                   for (k = i = 1; i <= 3; k = ++i) {
@@ -3626,7 +3628,9 @@ protocolHeadTemplate = Backbone.View.extend({
                   }
                   return results;
                 });
-                T.div(".row", function() {
+                T.div(".row", {
+                  style: 'padding-bottom:13px;'
+                }, function() {
                   var i, k, results;
                   results = [];
                   for (k = i = 4; i <= 6; k = ++i) {
@@ -3634,7 +3638,9 @@ protocolHeadTemplate = Backbone.View.extend({
                   }
                   return results;
                 });
-                T.div(".row", function() {
+                T.div(".row", {
+                  style: 'padding-bottom:13px;'
+                }, function() {
                   var i, k, results;
                   results = [];
                   for (k = i = 7; i <= 9; k = ++i) {
@@ -3678,8 +3684,7 @@ protocolHeadTemplate = Backbone.View.extend({
 });
 
 activeKey = function(digit) {
-  return T.div("#digit-" + digit + ".two.columns", {
-    style: "text-align: center;font-size:265%;background:#ccc;border:black;border-radius:100%",
+  return T.div(".two.columns.round-button", {
     onclick: "Pylon.trigger('clientcode','" + digit + "');Pylon.trigger('quickClass',$(this),'reversed')"
   }, digit);
 };
@@ -4578,7 +4583,7 @@ colorTextBody = Backbone.View.extend({
     this.textColor = this.model.selectFromCurrentTest(this.textColor);
     this.text = this.model.selectFromCurrentTest(this.text, this.textColor);
     this.$('#text-here').html(colorToName(this.text));
-    this.$('#text-here').attr("style", "text-shadow:2px 2px 3px #000000; color:" + (colorToHue(this.textColor)));
+    this.$('#text-here').attr("style", "font-weight:900;text-shadow:2px 2px 3px #000000; color:" + (colorToHue(this.textColor)));
     this.wanted = this.text;
   }
 });
@@ -4863,7 +4868,7 @@ tenIconBody = Backbone.View.extend({
   render: function() {
     this.icon = this.model.selectFromCurrentTest(this.icon);
     this.$('#icon-here').html(this.icon);
-    this.wanted = this.model.order(this.icon);
+    this.wanted = 1 + this.model.order(this.icon);
   }
 });
 

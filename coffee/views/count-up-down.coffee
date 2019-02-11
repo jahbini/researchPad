@@ -311,11 +311,11 @@ protocolHeadTemplate = Backbone.View.extend
               T.div ".row",-> T.raw "&nbsp;"
               T.div ".row",->
             T.div  ".nine.columns","keypad",->
-              T.div ".row",->
+              T.div ".row",style:'padding-bottom:13px;',->
                 activeKey k for k in [1..3]
-              T.div ".row",->
+              T.div ".row",style:'padding-bottom:13px;',->
                 activeKey k for k in [4..6]
-              T.div ".row",->
+              T.div ".row",style:'padding-bottom:13px;',->
                 activeKey k for k in [7..9]
               T.div ".row",->
                 T.div ".two.columns",->T.raw "&nbsp;"
@@ -334,8 +334,8 @@ protocolHeadTemplate = Backbone.View.extend
     return
 
 activeKey = (digit)->
-  T.div "#digit-#{digit}.two.columns",
-    style: "text-align: center;font-size:265%;background:#ccc;border:black;border-radius:100%",
+  T.div ".two.columns.round-button",
+    #style: "text-align: center;font-size:265%;background:#ccc;border:black;border-radius:100%",
     onclick:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 pHT = new protocolHeadTemplate()

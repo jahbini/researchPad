@@ -61,7 +61,7 @@ colorTextBody = Backbone.View.extend
     @text = @model.selectFromCurrentTest @text,@textColor
     @$('#text-here').html  colorToName @text
     #@$('#text-here').attr "style", "color:#{colorToHue @textColor}"
-    @$('#text-here').attr "style", "text-shadow:2px 2px 3px #000000; color:#{colorToHue @textColor}"
+    @$('#text-here').attr "style", "font-weight:900;text-shadow:2px 2px 3px #000000; color:#{colorToHue @textColor}"
     @wanted = @text
     return
   
