@@ -3304,16 +3304,23 @@ protocolPhase = Backbone.Model.extend({
         }
       });
     };
-    continueCloneableSuite = function() {
-      pHT.setEnvironment({
-        headline: "Enter the Unlock Code -- " + localStorage['clientUnlock'],
-        paragraph: "put up a  text entry widget with wout showing this code: " + localStorage['clientUnlock'],
-        nextPhase: "selectTheFirstTest",
-        clientcode: localStorage['clientUnlock'],
-        start: 0,
-        limit: 0
-      });
-    };
+    continueCloneableSuite = (function(_this) {
+      return function() {
+        var paragraph;
+        paragraph = "Press the keys with your unlock code";
+        if (_this.attributes.protocol.attributes.demoOnly) {
+          paragraph += " DEMO ONLY code = " + localStorage['clientUnlock'];
+        }
+        pHT.setEnvironment({
+          headline: "Enter the Unlock Code",
+          paragraph: paragraph,
+          nextPhase: "selectTheFirstTest",
+          clientcode: localStorage['clientUnlock'],
+          start: 0,
+          limit: 0
+        });
+      };
+    })(this);
     this.on('leadIn', (function(_this) {
       return function() {
         var duration, limit, p, start;
@@ -3374,7 +3381,8 @@ protocolPhase = Backbone.Model.extend({
           nextPhase: "justWait",
           buttonSpec: {
             phaseButton: "Skip",
-            buttonPhaseNext: "underway"
+            buttonPhaseNext: "underway",
+            zeroButton: "Proceed"
           }
         });
       };
@@ -3411,7 +3419,7 @@ protocolPhase = Backbone.Model.extend({
         headline: "Test Over. More to come.",
         paragraph: "Press button to proceed",
         limit: 0,
-        start: 1,
+        start: 0,
         nextPhase: "justWait",
         buttonSpec: {
           phaseButton: "Proceed",
@@ -3584,7 +3592,7 @@ protocolHeadTemplate = Backbone.View.extend({
             if (_this.buttonSpec) {
               T.button(".u-pull-left.button-primary", {
                 onClick: "Pylon.trigger('buttonPhase');"
-              }, _this.buttonSpec.phaseButton);
+              }, t === 0 ? _this.buttonSpec.zeroButton || _this.buttonSpec.phaseButton : _this.buttonSpec.phaseButton);
             }
             return T.div(".u-pull-left", function() {
               return T.h3(function() {
@@ -4582,6 +4590,10 @@ colorTextBody = Backbone.View.extend({
     })(this)));
     this.textColor = this.model.selectFromCurrentTest(this.textColor);
     this.text = this.model.selectFromCurrentTest(this.text, this.textColor);
+    switch (this.model.get('entropy')) {
+      case 'low':
+        this.text = this.textColor;
+    }
     this.$('#text-here').html(colorToName(this.text));
     this.$('#text-here').attr("style", "font-weight:900;text-shadow:2px 2px 3px #000000; color:" + (colorToHue(this.textColor)));
     this.wanted = this.text;

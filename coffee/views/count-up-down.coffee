@@ -74,11 +74,14 @@ protocolPhase = Backbone.Model.extend
           phaseButton: "Enter Lock Down Mode"
       return
 
-    continueCloneableSuite= ()->  # put up unlock screen
+    continueCloneableSuite= ()=>  # put up unlock screen
       #code = prompt "Ready for next test. enter code to abort","proceed"
+      paragraph = "Press the keys with your unlock code"
+      if @attributes.protocol.attributes.demoOnly
+        paragraph += " DEMO ONLY code = #{localStorage['clientUnlock']}"
       pHT.setEnvironment
-        headline: "Enter the Unlock Code -- #{localStorage['clientUnlock']}"
-        paragraph: "put up a  text entry widget with wout showing this code: #{localStorage['clientUnlock']}"
+        headline: "Enter the Unlock Code"
+        paragraph: paragraph
         nextPhase: "selectTheFirstTest"
         clientcode: localStorage['clientUnlock']
         start: 0
@@ -138,6 +141,7 @@ protocolPhase = Backbone.Model.extend
         buttonSpec:
           phaseButton: "Skip"
           buttonPhaseNext: "underway"
+          zeroButton: "Proceed"
       return
 
     @on 'justWait',=>
@@ -166,7 +170,7 @@ protocolPhase = Backbone.Model.extend
         headline: "Test Over. More to come."
         paragraph: "Press button to proceed"
         limit: 0
-        start: 1
+        start: 0
         nextPhase: "justWait"
         buttonSpec:
           phaseButton: "Proceed"
@@ -291,7 +295,10 @@ protocolHeadTemplate = Backbone.View.extend
           if @buttonSpec
             T.button ".u-pull-left.button-primary",
               {onClick:  "Pylon.trigger('buttonPhase');"},
-              @buttonSpec.phaseButton
+              if t==0
+                @buttonSpec.zeroButton || @buttonSpec.phaseButton
+              else
+                @buttonSpec.phaseButton
           T.div ".u-pull-left",=>
             T.h3  =>
               if @direction

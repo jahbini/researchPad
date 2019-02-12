@@ -59,6 +59,9 @@ colorTextBody = Backbone.View.extend
     #make sure that the text and color are never the same
     @textColor = @model.selectFromCurrentTest @textColor
     @text = @model.selectFromCurrentTest @text,@textColor
+    switch @model.get 'entropy'
+      when 'low'
+        @text = @textColor
     @$('#text-here').html  colorToName @text
     #@$('#text-here').attr "style", "color:#{colorToHue @textColor}"
     @$('#text-here').attr "style", "font-weight:900;text-shadow:2px 2px 3px #000000; color:#{colorToHue @textColor}"
