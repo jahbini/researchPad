@@ -325,7 +325,7 @@ protocolHeadTemplate = Backbone.View.extend
               T.div ".row",style:'padding-bottom:13px;',->
                 activeKey k for k in [7..9]
               T.div ".row",->
-                T.div ".two.columns",->T.raw "&nbsp;"
+                T.div ".two.columns",style:"min-width:90px;",->T.raw "&nbsp;"
                 activeKey 0
     return unless @direction
     nextTime = t + @direction
@@ -342,7 +342,7 @@ protocolHeadTemplate = Backbone.View.extend
 
 activeKey = (digit)->
   T.div ".two.columns.round-button",
-    #style: "text-align: center;font-size:265%;background:#ccc;border:black;border-radius:100%",
+    style: "min-width:90px;height:100%",
     onclick:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 pHT = new protocolHeadTemplate()

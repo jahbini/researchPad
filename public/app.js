@@ -3657,7 +3657,9 @@ protocolHeadTemplate = Backbone.View.extend({
                   return results;
                 });
                 return T.div(".row", function() {
-                  T.div(".two.columns", function() {
+                  T.div(".two.columns", {
+                    style: "min-width:90px;"
+                  }, function() {
                     return T.raw("&nbsp;");
                   });
                   return activeKey(0);
@@ -3693,6 +3695,7 @@ protocolHeadTemplate = Backbone.View.extend({
 
 activeKey = function(digit) {
   return T.div(".two.columns.round-button", {
+    style: "min-width:90px;height:100%",
     onclick: "Pylon.trigger('clientcode','" + digit + "');Pylon.trigger('quickClass',$(this),'reversed')"
   }, digit);
 };
