@@ -4468,7 +4468,7 @@ ProtocolReportTemplate = Backbone.View.extend({
           model: theTest
         });
         break;
-      case 'smdt':
+      case 'sdmt':
         this.renderExample = new tenIconExample({
           model: theTest
         });
@@ -4562,7 +4562,9 @@ colorTextBody = Backbone.View.extend({
     names = shuffle(examples.slice(0));
     this.$el.html(T.render((function(_this) {
       return function() {
-        return T.div(".container", function() {
+        return T.div(".container", {
+          style: "font-size:165%;"
+        }, function() {
           var extraClass;
           extraClass = "";
           examples = shuffle((_this.model.get('currentTest')).slice(0));
