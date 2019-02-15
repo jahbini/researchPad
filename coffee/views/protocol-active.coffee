@@ -155,7 +155,7 @@ ProtocolReportTemplate = Backbone.View.extend
         when 'stroop'
           @renderExample =  new colorTextExample model: theTest
           @renderBody = new colorTextBody model: theTest
-        when 'sdmt'
+        when 'sdmt','smdt'
           @renderExample = new tenIconExample model: theTest
           @renderBody = new tenIconBody model: theTest
         else

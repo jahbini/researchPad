@@ -4469,6 +4469,7 @@ ProtocolReportTemplate = Backbone.View.extend({
         });
         break;
       case 'sdmt':
+      case 'smdt':
         this.renderExample = new tenIconExample({
           model: theTest
         });
