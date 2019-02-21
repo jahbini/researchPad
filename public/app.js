@@ -4564,7 +4564,7 @@ colorTextBody = Backbone.View.extend({
     this.$el.html(T.render((function(_this) {
       return function() {
         return T.div(".container", {
-          style: "font-size:165%;"
+          style: "font-size:140%;"
         }, function() {
           var extraClass;
           extraClass = "";
