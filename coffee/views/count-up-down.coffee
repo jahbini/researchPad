@@ -138,6 +138,7 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         start: duration
         nextPhase: "justWait"
+        action: "practice/#{duration}"
         buttonSpec:
           phaseButton: "Skip"
           buttonPhaseNext: "underway"
@@ -157,6 +158,7 @@ protocolPhase = Backbone.Model.extend
         start: (p.get "testDuration") || 9999
         limit: 0
         nextPhase: 'selectTheNextTest'
+        action: "underway/#{p.get 'testDuration'}"
       return
 
     @on 'selectTheNextTest',()->
@@ -266,6 +268,8 @@ protocolHeadTemplate = Backbone.View.extend
     @start = struct.start
     @direction = if @limit < @start  then -1 else if @limit==@start then 0 else 1
     @nextPhase = struct.nextPhase 
+    if struct.action
+      Pylon.trigger "protocol:phase", struct.action 
     @clientcode = struct.clientcode
     @render @start
     return

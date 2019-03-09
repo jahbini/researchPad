@@ -115,6 +115,11 @@ ProtocolReportTemplate = Backbone.View.extend
     initialize: ()->
       # show protocol-report when the start count-down is finished
 
+      Pylon.on 'protocol:phase',(phase)=>
+        if phase
+          theTest = Pylon.theProtocol()
+          Pylon.trigger "systemEvent:phase:#{theTest.get 'name'}/#{phase}".replace /\ /g,'-'
+        return
       Pylon.on 'protocol:response',(entry)=>
         @renderExample.response entry,@renderBody.wanted  if @renderExample
         return

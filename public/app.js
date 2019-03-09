@@ -3379,6 +3379,7 @@ protocolPhase = Backbone.Model.extend({
           limit: 0,
           start: duration,
           nextPhase: "justWait",
+          action: "practice/" + duration,
           buttonSpec: {
             phaseButton: "Skip",
             buttonPhaseNext: "underway",
@@ -3402,7 +3403,8 @@ protocolPhase = Backbone.Model.extend({
           paragraph: (p.get("mileStoneText")) || "go",
           start: (p.get("testDuration")) || 9999,
           limit: 0,
-          nextPhase: 'selectTheNextTest'
+          nextPhase: 'selectTheNextTest',
+          action: "underway/" + (p.get('testDuration'))
         });
       };
     })(this));
@@ -3551,6 +3553,9 @@ protocolHeadTemplate = Backbone.View.extend({
     this.start = struct.start;
     this.direction = this.limit < this.start ? -1 : this.limit === this.start ? 0 : 1;
     this.nextPhase = struct.nextPhase;
+    if (struct.action) {
+      Pylon.trigger("protocol:phase", struct.action);
+    }
     this.clientcode = struct.clientcode;
     this.render(this.start);
   },
@@ -4394,6 +4399,15 @@ Pylon.on("quickClass", function(who, domClass) {
 ProtocolReportTemplate = Backbone.View.extend({
   el: "#protocol-report",
   initialize: function() {
+    Pylon.on('protocol:phase', (function(_this) {
+      return function(phase) {
+        var theTest;
+        if (phase) {
+          theTest = Pylon.theProtocol();
+          Pylon.trigger(("systemEvent:phase:" + (theTest.get('name')) + "/" + phase).replace(/\ /g, '-'));
+        }
+      };
+    })(this));
     Pylon.on('protocol:response', (function(_this) {
       return function(entry) {
         if (_this.renderExample) {
