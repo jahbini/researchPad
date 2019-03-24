@@ -10,3 +10,4 @@ cordova.js
 plugins/*
 platforms/*
 .c9/
+._*
