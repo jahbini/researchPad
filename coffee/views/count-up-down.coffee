@@ -347,7 +347,7 @@ protocolHeadTemplate = Backbone.View.extend
 activeKey = (digit)->
   T.div ".two.columns.round-button",
     style: "min-width:90px;height:100%",
-    onclick:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
+    ontouchstart:"Pylon.trigger('clientcode','#{digit}');Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 pHT = new protocolHeadTemplate()
 #if window? then window.exports = Pages
