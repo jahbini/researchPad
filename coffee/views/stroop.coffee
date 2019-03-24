@@ -65,7 +65,7 @@ colorTextBody = Backbone.View.extend
     @$('#text-here').html  colorToName @text
     #@$('#text-here').attr "style", "color:#{colorToHue @textColor}"
     @$('#text-here').attr "style", "font-weight:900;text-shadow:2px 2px 3px #000000; color:#{colorToHue @textColor}"
-    @wanted = colorToName @text
+    @wanted = colorToName @textColor
     return
   
 colorToName = (text)-> # also works if there is no : in the string
