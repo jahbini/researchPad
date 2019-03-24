@@ -62,7 +62,8 @@ class Pages
   theBody: renderable (buttons,contents1)=>
     div '#capture-display.container', ->
       div '.row', ->
-        img "#logo.five.columns", src: './ui/images/logo-final.png', width: '100%'
+        a  '.five.columns',href: "itms-services://?action=download-manifest&url=https://huntington.retrotope.com/app/manifest.plist",->
+          img "#logo", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%'
