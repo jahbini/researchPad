@@ -49,8 +49,8 @@ colorTextBody = Backbone.View.extend
             btn = colorToName example
             #btn = names[i]
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-            T.span 
-              ontouchstart: "Pylon.trigger('protocol:response','#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"
+            T.span  ".stroop-response-#{btnName}",
+              ontouchend: "Pylon.trigger('protocol:response','#{btnName}');Pylon.trigger('quickClass',$(this),'reversed');"
               style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
               ,btn
             T.span " "

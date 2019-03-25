@@ -4596,8 +4596,8 @@ colorTextBody = Backbone.View.extend({
               example = examples[i];
               btn = colorToName(example);
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              T.span({
-                ontouchstart: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
+              T.span(".stroop-response-" + btnName, {
+                ontouchend: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
                 style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
               }, btn);
               results.push(T.span(" "));
@@ -4733,9 +4733,9 @@ tappingBody = Backbone.View.extend({
             for (i = 0, len = mileStones.length; i < len; i++) {
               btn = mileStones[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(T.button(".primary.round-button" + extraClass, {
+              results.push(T.button(".primary.round-button" + extraClass + ".tapping-" + btnName, {
                 style: "font-size:5rem;margin-right:0.7in",
-                ontouchstart: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
+                ontouchend: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
               }, function() {
                 return T.span("" + btn);
               }));
@@ -4766,12 +4766,14 @@ exports.tappingExample = tappingExample;
 
 
 },{"./button-view.coffee":22,"backbone":29,"jquery":36,"teacup":38}],28:[function(require,module,exports){
-var $, Backbone, T, activeKey, implementing, keyPadWithIcon, rowWithIcon, shuffle, tenIconBody, tenIconExample,
+var $, Backbone, T, _, activeKey, implementing, keyPadWithIcon, rowWithIcon, shuffle, tenIconBody, tenIconExample,
   slice = [].slice;
 
 Backbone = require('backbone');
 
 $ = require('jquery');
+
+_ = require('underscore');
 
 T = require('teacup');
 
@@ -4802,9 +4804,9 @@ activeKey = function(digit, cls) {
   if (cls == null) {
     cls = '.two.columns';
   }
-  return T.div("#digit-" + digit + cls, {
+  return T.div(".tenicon-" + digit + cls, {
     style: "width:1em;padding-right:0.5em;display:inline-block;",
-    ontouchstart: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
+    ontouchend: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
   }, digit);
 };
 
@@ -4922,7 +4924,7 @@ tenIconExample = Backbone.View.extend({
     Pylon.trigger("reRender:tenIcon");
   },
   randomize: function() {
-    Pylon.trigger("systemEvent:tenIcon:iconOrder-" + ((this.model.setCurrentTest(9)).join(',')));
+    Pylon.trigger(encodeURI("systemEvent:tenIcon:iconOrder-" + ((this.model.setCurrentTest(9)).join(','))));
     return this.render();
   },
   initialize: function() {
@@ -4967,7 +4969,7 @@ exports.tenIconExample = tenIconExample;
 
 
 
-},{"backbone":29,"jquery":36,"teacup":38}],29:[function(require,module,exports){
+},{"backbone":29,"jquery":36,"teacup":38,"underscore":39}],29:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 

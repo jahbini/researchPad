@@ -2,6 +2,7 @@
 
 Backbone = require('backbone')
 $=require('jquery')
+_=require 'underscore'
 T = require('teacup')
 
 implementing = (mixins..., classReference) ->
@@ -18,9 +19,9 @@ shuffle = (a) ->
 #
 
 activeKey = (digit,cls='.two.columns')->
-  T.div "#digit-#{digit}#{cls}",
+  T.div ".tenicon-#{digit}#{cls}",
     style:"width:1em;padding-right:0.5em;display:inline-block;" ,
-    ontouchstart:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
+    ontouchend:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 
 rowWithIcon= ()->
@@ -90,7 +91,7 @@ tenIconExample = Backbone.View.extend
     Pylon.trigger "reRender:tenIcon"
     return
   randomize: ()->
-    Pylon.trigger "systemEvent:tenIcon:iconOrder-#{(@model.setCurrentTest 9).join ','}"
+    Pylon.trigger encodeURI "systemEvent:tenIcon:iconOrder-#{( @model.setCurrentTest 9).join ','}"
     @render()
 
   initialize: ()->
