@@ -21,7 +21,7 @@ shuffle = (a) ->
 activeKey = (digit,cls='.two.columns')->
   T.div ".tenicon-#{digit}#{cls}",
     style:"width:1em;padding-right:0.5em;display:inline-block;" ,
-    ontouchend:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
+    ontouchstart:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 
 rowWithIcon= ()->

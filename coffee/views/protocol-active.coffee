@@ -76,11 +76,16 @@ touchEntries =
   radiusX: (x)-> x.toFixed 2
   radiusY: (y)-> y.toFixed 2
   target: (t)->
+    extent = t.getBoundingClientRect()
     v="<#{t.localName}"
-    v+= ' id="' + t.id +'"' if t.id
+    v+= " id=\"#{t.id}\"" if t.id
     v+= ' className="' + t.className + '"' if t.className
+    v+= ' t=' + extent.top
+    v+= ' b=' + extent.bottom
+    v+= ' l=' + extent.left
+    v+= ' r=' + extent.right
     v+= '>'
-    v
+    return v
 
 logTouch = (event)->
   touches = for eachTouch in event.targetTouches

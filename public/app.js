@@ -2768,7 +2768,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.8.0';
+module.exports = '2.8.5';
 
 
 
@@ -4339,14 +4339,19 @@ touchEntries = {
     return y.toFixed(2);
   },
   target: function(t) {
-    var v;
+    var extent, v;
+    extent = t.getBoundingClientRect();
     v = "<" + t.localName;
     if (t.id) {
-      v += ' id="' + t.id(+'"');
+      v += " id=\"" + t.id + "\"";
     }
     if (t.className) {
       v += ' className="' + t.className + '"';
     }
+    v += ' t=' + extent.top;
+    v += ' b=' + extent.bottom;
+    v += ' l=' + extent.left;
+    v += ' r=' + extent.right;
     v += '>';
     return v;
   }
@@ -4597,7 +4602,7 @@ colorTextBody = Backbone.View.extend({
               btn = colorToName(example);
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               T.span(".stroop-response-" + btnName, {
-                ontouchend: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
+                ontouchstart: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
                 style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
               }, btn);
               results.push(T.span(" "));
@@ -4735,7 +4740,7 @@ tappingBody = Backbone.View.extend({
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
               results.push(T.button(".primary.round-button" + extraClass + ".tapping-" + btnName, {
                 style: "font-size:5rem;margin-right:0.7in",
-                ontouchend: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
+                ontouchstart: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
               }, function() {
                 return T.span("" + btn);
               }));
@@ -4806,7 +4811,7 @@ activeKey = function(digit, cls) {
   }
   return T.div(".tenicon-" + digit + cls, {
     style: "width:1em;padding-right:0.5em;display:inline-block;",
-    ontouchend: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
+    ontouchstart: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
   }, digit);
 };
 
