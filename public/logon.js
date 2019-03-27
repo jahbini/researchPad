@@ -32,3 +32,4 @@ console.log('my new logon.js loaded - live system with events');
 /*Retrotope App Version  "1.7.6" */
 /*Retrotope App Version  "1.7.7" */
 /*Retrotope App Version  "2.8.5" */
+/*Retrotope App Version  "2.8.9" */
