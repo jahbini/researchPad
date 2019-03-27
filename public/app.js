@@ -4321,10 +4321,10 @@ shuffle = function(a) {
 
 touchEntries = {
   screenX: function(x) {
-    return x.toFixed(2);
+    return x.toFixed(0);
   },
   screenY: function(y) {
-    return y.toFixed(2);
+    return y.toFixed(0);
   },
   touchType: function(v) {
     return v;
@@ -4333,10 +4333,10 @@ touchEntries = {
     return "" + i;
   },
   radiusX: function(x) {
-    return x.toFixed(2);
+    return x.toFixed(0);
   },
   radiusY: function(y) {
-    return y.toFixed(2);
+    return y.toFixed(0);
   },
   target: function(t) {
     var extent, v;
@@ -4348,10 +4348,10 @@ touchEntries = {
     if (t.className) {
       v += ' className="' + t.className + '"';
     }
-    v += ' t=' + extent.top;
-    v += ' b=' + extent.bottom;
-    v += ' l=' + extent.left;
-    v += ' r=' + extent.right;
+    v += ' t=' + extent.top.toFixed(0);
+    v += ' b=' + extent.bottom.toFixed(0);
+    v += ' l=' + extent.left.toFixed(0);
+    v += ' r=' + extent.right.toFixed(0);
     v += '>';
     return v;
   }
@@ -4368,6 +4368,11 @@ logTouch = function(event) {
       touch = {};
       for (key in touchEntries) {
         f = touchEntries[key];
+        if (key === 'radiusX' || key === 'radiusY') {
+          if (0 === eachTouch[key]) {
+            continue;
+          }
+        }
         touch[key] = f(eachTouch[key]);
       }
       results.push(touch);

@@ -69,21 +69,21 @@ shuffle = (a) ->
 # used by logTouch fn to create uploadable event object from touch stuff from iOS
 ###
 touchEntries =
-  screenX:  (x)-> x.toFixed 2
-  screenY:  (y)-> y.toFixed 2
+  screenX:  (x)-> x.toFixed 0
+  screenY:  (y)-> y.toFixed 0
   touchType:  (v)-> v
   identifier:  (i)-> ""+i
-  radiusX: (x)-> x.toFixed 2
-  radiusY: (y)-> y.toFixed 2
+  radiusX: (x)-> x.toFixed 0
+  radiusY: (y)-> y.toFixed 0
   target: (t)->
     extent = t.getBoundingClientRect()
     v="<#{t.localName}"
     v+= " id=\"#{t.id}\"" if t.id
     v+= ' className="' + t.className + '"' if t.className
-    v+= ' t=' + extent.top
-    v+= ' b=' + extent.bottom
-    v+= ' l=' + extent.left
-    v+= ' r=' + extent.right
+    v+= ' t=' + extent.top.toFixed 0
+    v+= ' b=' + extent.bottom.toFixed 0
+    v+= ' l=' + extent.left.toFixed 0
+    v+= ' r=' + extent.right.toFixed 0
     v+= '>'
     return v
 
@@ -91,6 +91,9 @@ logTouch = (event)->
   touches = for eachTouch in event.targetTouches
     touch={}
     for key,f of touchEntries
+      if key == 'radiusX' || key == 'radiusY'
+        if  0 == eachTouch[key]
+          continue
       touch[key] = f eachTouch[key] 
     touch
   Pylon.trigger 'externalEvent', JSON.stringify {type: event.type,touches: touches}
