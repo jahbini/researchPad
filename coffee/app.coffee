@@ -194,7 +194,7 @@ exitAdmin = () ->
 
 enterLogin = (hash)->
   sessionLoad = Backbone.Model.extend
-    url: "http://retroserv.411-source.com/session/#{hash}"
+    url: "#{Pylon.get('hostUrl')}session/#{hash}"
     parse: (m)->
       sessionInfo.set 
         _id: m._id

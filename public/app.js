@@ -476,7 +476,7 @@ exitAdmin = function() {
 enterLogin = function(hash) {
   var model, sessionLoad;
   sessionLoad = Backbone.Model.extend({
-    url: "http://retroserv.411-source.com/session/" + hash,
+    url: (Pylon.get('hostUrl')) + "session/" + hash,
     parse: function(m) {
       sessionInfo.set({
         _id: m._id
@@ -2768,7 +2768,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.8.9';
+module.exports = '2.9.0';
 
 
 
