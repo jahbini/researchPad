@@ -559,9 +559,6 @@ enterClear = function(accept) {
     accepted: accept
   });
   eventModelLoader(sessionInfo);
-  sessionInfo.set('_id', null, {
-    silent: true
-  });
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
   if (localStorage['hash']) {
@@ -2768,7 +2765,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.0';
+module.exports = '2.9.1';
 
 
 

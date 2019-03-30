@@ -261,7 +261,7 @@ enterClear = (accept=false)->
   pageGen.forceTest()
   sessionInfo.set accepted: accept
   eventModelLoader sessionInfo
-  sessionInfo.set '_id',null,{silent:true}
+  #sessionInfo.set '_id',null,{silent:true}
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
   if localStorage['hash']
