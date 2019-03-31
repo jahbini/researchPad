@@ -193,6 +193,7 @@ exitAdmin = () ->
   return false
 
 enterLogin = (hash)->
+  applogger "Obtaining Clone of", hash
   sessionLoad = Backbone.Model.extend
     url: "#{Pylon.get('hostUrl')}session/#{hash}"
     parse: (m)->
@@ -205,11 +206,13 @@ enterLogin = (hash)->
         password: m.password
         testID: m.testID
       debugger
+      applogger "session fetched on parse",model
       enterRecording()
       return
 
   model = new sessionLoad
   model.on 'fetched',()->
+    applogger "session fetched on fetch",model
     debugger
     enterRecording()
 
@@ -244,7 +247,6 @@ enterLogout = () ->
 # ## Section State Handlers
 
 initAll = ->
-  rtemp = undefined
   # start with the logging info suppressed
   Pylon.trigger "systemEvent:debug:Hide Log"
   $('#uuid').html("Must connect to sensor").css('color',"violet")
@@ -289,22 +291,31 @@ exitCalibrate = ->
 
 
 enterRecording = ->
+  applogger "Attempt to enter Record Phase"
   # reject record request if no protocol is selected
   testID = sessionInfo.get 'testID'
   if !testID
     pageGen.forceTest 'red'
     return false
 
+  applogger "Attempt to enter Record Phase -- testID ok"
   numSensors=0
   numSensors++ if Pylon.get "Left"
   numSensors++ if Pylon.get "Right"
-  theTest = Pylon.theProtocol()
-  if numSensors < theTest.get 'sensorsNeeded'
-    pageGen.forceTest 'red',"need sensor"
-    return false
+  try
+    theTest = Pylon.theProtocol()
+    if numSensors < theTest.get 'sensorsNeeded'
+      pageGen.forceTest 'red',"need sensor"
+      return false
+  catch 
+    applogger "theTest is not initialized"
+    Pylon.saneTimeout 500, enterRecording
+    return
   # sync the sessionInfo up to the server as an empty
   # session structure.  We need the mongo _id that the server
   # sends back
+  applogger "Attempt to enter Record Phase -- number of sensors ok"
+
   if !sessionInfo.get '_id'
     sessionInfo.save()
   # signal for logon.js that we are not scanning
@@ -313,12 +324,15 @@ enterRecording = ->
   (Pylon.get 'button-admin').set 'enabled',false
   # reject record request if we are already recording
   return if Pylon.state.get 'recording'
+  applogger "Attempt to enter Record Phase -- not already recording ok"
+
   # start recording and show a lead in timer of 5 seconds
   (Pylon.get 'button-calibrate').set 'enabled',false
   (Pylon.get 'Left')?.set numReadings: 0
   (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
   Pylon.state.set recording: true
+  applogger "Attempt to enter Record Phase -- awaiting promise resolution"
   
   Promise.all [
     resolveConnected 'Left'
@@ -367,7 +381,6 @@ Pylon.on 'systemEvent:stopCountDown:over', ->
   (Pylon.get 'button-clear').set enabled: true
   (Pylon.get 'button-admin').set enabled: true
   return false
-
 
 #
 # ### Subsection State Handlers that depend on the Hardware

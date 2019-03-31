@@ -475,6 +475,7 @@ exitAdmin = function() {
 
 enterLogin = function(hash) {
   var model, sessionLoad;
+  applogger("Obtaining Clone of", hash);
   sessionLoad = Backbone.Model.extend({
     url: (Pylon.get('hostUrl')) + "session/" + hash,
     parse: function(m) {
@@ -489,11 +490,13 @@ enterLogin = function(hash) {
         testID: m.testID
       });
       debugger;
+      applogger("session fetched on parse", model);
       enterRecording();
     }
   });
   model = new sessionLoad;
   model.on('fetched', function() {
+    applogger("session fetched on fetch", model);
     debugger;
     return enterRecording();
   });
@@ -539,8 +542,6 @@ enterLogout = function() {
 };
 
 initAll = function() {
-  var rtemp;
-  rtemp = void 0;
   Pylon.trigger("systemEvent:debug:Hide Log");
   $('#uuid').html("Must connect to sensor").css('color', "violet");
   enterAdmin();
@@ -595,11 +596,13 @@ exitCalibrate = function() {
 
 enterRecording = function() {
   var numSensors, ref1, ref2, testID, theTest;
+  applogger("Attempt to enter Record Phase");
   testID = sessionInfo.get('testID');
   if (!testID) {
     pageGen.forceTest('red');
     return false;
   }
+  applogger("Attempt to enter Record Phase -- testID ok");
   numSensors = 0;
   if (Pylon.get("Left")) {
     numSensors++;
@@ -607,11 +610,18 @@ enterRecording = function() {
   if (Pylon.get("Right")) {
     numSensors++;
   }
-  theTest = Pylon.theProtocol();
-  if (numSensors < theTest.get('sensorsNeeded')) {
-    pageGen.forceTest('red', "need sensor");
-    return false;
+  try {
+    theTest = Pylon.theProtocol();
+    if (numSensors < theTest.get('sensorsNeeded')) {
+      pageGen.forceTest('red', "need sensor");
+      return false;
+    }
+  } catch (error) {
+    applogger("theTest is not initialized");
+    Pylon.saneTimeout(500, enterRecording);
+    return;
   }
+  applogger("Attempt to enter Record Phase -- number of sensors ok");
   if (!sessionInfo.get('_id')) {
     sessionInfo.save();
   }
@@ -622,6 +632,7 @@ enterRecording = function() {
   if (Pylon.state.get('recording')) {
     return;
   }
+  applogger("Attempt to enter Record Phase -- not already recording ok");
   (Pylon.get('button-calibrate')).set('enabled', false);
   if ((ref1 = Pylon.get('Left')) != null) {
     ref1.set({
@@ -637,6 +648,7 @@ enterRecording = function() {
   Pylon.state.set({
     recording: true
   });
+  applogger("Attempt to enter Record Phase -- awaiting promise resolution");
   Promise.all([resolveConnected('Left'), resolveConnected('Right')]).then(function() {
     return Pylon.trigger('systemEvent:recordCountDown:start', 5);
   });
@@ -2765,7 +2777,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.1';
+module.exports = '2.9.2';
 
 
 
