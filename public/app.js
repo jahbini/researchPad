@@ -478,29 +478,32 @@ enterLogin = function(hash) {
   applogger("Obtaining Clone of", hash);
   sessionLoad = Backbone.Model.extend({
     url: (Pylon.get('hostUrl')) + "session/" + hash,
-    parse: function(m) {
-      sessionInfo.set({
-        _id: m._id
-      });
-      sessionInfo.set({
-        client: m.client,
-        clinic: m.clinic,
-        clinician: m.clinician,
-        password: m.password,
-        testID: m.testID
-      });
-      debugger;
-      applogger("session fetched on parse", model);
-      enterRecording();
-    }
+    idAttribute: '_id'
   });
   model = new sessionLoad;
-  model.on('fetched', function() {
+  model.on('sync', function() {
+    var m, mHash;
+    mHash = model.get(model.idAttribute);
+    if (mHash === hash) {
+      alert("hash not changed");
+    }
+    if (!mHash) {
+      alert("No Hash");
+    }
+    sessionInfo.set(sessionInfo.idAttribute, model.get(model.idAttribute));
+    m = model.attributes;
+    sessionInfo.set({
+      client: m.client,
+      clinic: m.clinic,
+      clinician: m.clinician,
+      password: m.password,
+      testID: m.testID
+    });
+    applogger("now sessionInfo is", sessionInfo);
     applogger("session fetched on fetch", model);
     debugger;
-    return enterRecording();
+    enterRecording();
   });
-  model.set('id', hash.slice(1));
   model.fetch();
 };
 
@@ -560,6 +563,10 @@ enterClear = function(accept) {
     accepted: accept
   });
   eventModelLoader(sessionInfo);
+  debugger;
+  sessionInfo.unset(sessionInfo.idAttribute, {
+    silent: true
+  });
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
   if (localStorage['hash']) {
@@ -622,7 +629,7 @@ enterRecording = function() {
     return;
   }
   applogger("Attempt to enter Record Phase -- number of sensors ok");
-  if (!sessionInfo.get('_id')) {
+  if (sessionInfo.isNew()) {
     sessionInfo.save();
   }
   Pylon.state.set({
@@ -800,7 +807,6 @@ clinics.on('fetched', function() {
 });
 
 configurations.on('fetched', function() {
-  debugger;
   Pylon.retroPW = configurations;
   Pylon.userUnlock = configurations;
 });
@@ -2777,7 +2783,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.2';
+module.exports = '2.9.3';
 
 
 

@@ -196,27 +196,30 @@ enterLogin = (hash)->
   applogger "Obtaining Clone of", hash
   sessionLoad = Backbone.Model.extend
     url: "#{Pylon.get('hostUrl')}session/#{hash}"
-    parse: (m)->
-      sessionInfo.set 
-        _id: m._id
-      sessionInfo.set 
-        client: m.client
-        clinic: m.clinic
-        clinician: m.clinician
-        password: m.password
-        testID: m.testID
-      debugger
-      applogger "session fetched on parse",model
-      enterRecording()
-      return
+    idAttribute: '_id'
 
   model = new sessionLoad
-  model.on 'fetched',()->
+  model.on 'sync',()->
+    mHash = model.get model.idAttribute
+    if mHash == hash
+      alert "hash not changed"
+    if !mHash 
+      alert "No Hash"
+    sessionInfo.set  sessionInfo.idAttribute, (model.get model.idAttribute)
+    m= model.attributes
+    sessionInfo.set 
+      client: m.client
+      clinic: m.clinic
+      clinician: m.clinician
+      password: m.password
+      testID: m.testID
+
+    applogger "now sessionInfo is",sessionInfo
     applogger "session fetched on fetch",model
     debugger
     enterRecording()
+    return
 
-  model.set 'id',hash[1..]
   model.fetch()
   return
 
@@ -263,7 +266,8 @@ enterClear = (accept=false)->
   pageGen.forceTest()
   sessionInfo.set accepted: accept
   eventModelLoader sessionInfo
-  #sessionInfo.set '_id',null,{silent:true}
+  debugger
+  sessionInfo.unset sessionInfo.idAttribute, silent:true
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
   if localStorage['hash']
@@ -316,7 +320,7 @@ enterRecording = ->
   # sends back
   applogger "Attempt to enter Record Phase -- number of sensors ok"
 
-  if !sessionInfo.get '_id'
+  if sessionInfo.isNew()
     sessionInfo.save()
   # signal for logon.js that we are not scanning
   Pylon.state.set scanning: false
@@ -426,7 +430,6 @@ clinics.on 'fetched', ->
   if Pylon.state.get 'protocols'
     Pylon.trigger 'canLogIn'
 configurations.on 'fetched',->
-  debugger
   Pylon.retroPW = configurations
   Pylon.userUnlock = configurations
   return
