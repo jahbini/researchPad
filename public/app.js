@@ -2783,7 +2783,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.3';
+module.exports = '2.9.4';
 
 
 
@@ -3047,6 +3047,7 @@ adminView = (function() {
                 "for": "password"
               }, "Password");
               return input("#password", {
+                style: "-webkit-user-select:text;",
                 type: 'password'
               });
             });
@@ -3304,8 +3305,8 @@ protocolPhase = Backbone.Model.extend({
       c = localStorage['hash'] = (Pylon.get('sessionInfo')).id;
       c = parseInt(c.slice(-4), 16);
       c = c % 10000;
-      if (c < 100) {
-        c = c + 100;
+      if (c < 1000) {
+        c = c + 1000;
       }
       localStorage['clientUnlock'] = c;
       pHT.setEnvironment({

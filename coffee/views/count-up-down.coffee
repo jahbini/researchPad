@@ -62,7 +62,7 @@ protocolPhase = Backbone.Model.extend
       c=localStorage['hash']= (Pylon.get 'sessionInfo').id
       c= parseInt c[-4..],16
       c = c % 10000
-      c = c + 100 if c<100
+      c = c + 1000 if c<1000  # make sure no leading zeroes
       localStorage['clientUnlock']=c
       pHT.setEnvironment
         headline: "Write This Unlock Code Down"
