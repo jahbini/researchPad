@@ -213,10 +213,16 @@ enterLogin = (hash)->
       clinician: m.clinician
       password: m.password
       testID: m.testID
+      platformUUID: window.device?.uuid || "No ID"
+      platformIosVersion: window.device?.version|| "noPlatform"
+      applicationVersion: applicationVersion
+      captureDate: Date()
+      timeStamp: Date.now()
 
     applogger "now sessionInfo is",sessionInfo
     applogger "session fetched on fetch",model
     debugger
+    sessionInfo.save()
     enterRecording()
     return
 

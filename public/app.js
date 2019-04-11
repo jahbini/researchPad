@@ -482,7 +482,7 @@ enterLogin = function(hash) {
   });
   model = new sessionLoad;
   model.on('sync', function() {
-    var m, mHash;
+    var m, mHash, ref1, ref2;
     mHash = model.get(model.idAttribute);
     if (mHash === hash) {
       alert("hash not changed");
@@ -497,11 +497,17 @@ enterLogin = function(hash) {
       clinic: m.clinic,
       clinician: m.clinician,
       password: m.password,
-      testID: m.testID
+      testID: m.testID,
+      platformUUID: ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID",
+      platformIosVersion: ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform",
+      applicationVersion: applicationVersion,
+      captureDate: Date(),
+      timeStamp: Date.now()
     });
     applogger("now sessionInfo is", sessionInfo);
     applogger("session fetched on fetch", model);
     debugger;
+    sessionInfo.save();
     enterRecording();
   });
   model.fetch();
@@ -2783,7 +2789,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.4';
+module.exports = '2.9.5';
 
 
 
