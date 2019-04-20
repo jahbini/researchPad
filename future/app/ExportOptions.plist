@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>compileBitcode</key>
+	<false/>
+	<key>destination</key>
+	<string>export</string>
+	<key>method</key>
+	<string>ad-hoc</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>com.bamboocando.retroclient</key>
+		<string>Eight RetroPads</string>
+	</dict>
+	<key>signingCertificate</key>
+	<string>D712DB3B24D00727047D9ECD31B24FFD5BFEC134</string>
+	<key>signingStyle</key>
+	<string>manual</string>
+	<key>stripSwiftSymbols</key>
+	<true/>
+	<key>teamID</key>
+	<string>RLH89CX485</string>
+	<key>thinning</key>
+	<string>&lt;none&gt;</string>
+</dict>
+</plist>
