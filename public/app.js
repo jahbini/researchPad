@@ -3835,7 +3835,7 @@ Pages = (function() {
     div('#capture-display.container', function() {
       div('.row', function() {
         a('.five.columns', {
-          href: "itms-services://?action=download-manifest&url=https://huntington.retrotope.com/app/manifest.plist"
+          href: "itms-services://?action=download-manifest&url=" + hostUrl + "app/manifest.plist"
         }, function() {
           return img("#logo", {
             src: './ui/images/logo-final.png',
