@@ -87,7 +87,10 @@ admin = new adminData
 #get the session model
 Pylon.sessionInfo = sessionInfo = require './models/session.coffee'
 applicationVersion = require './version.coffee'
-sessionInfo.set 'applicationVersion' , applicationVersion
+sessionInfo.set 
+  platformUUID: window.device?.uuid || "No ID"
+  platformIosVersion: window.device?.version|| "noPlatform"
+  applicationVersion: applicationVersion
 
 applogger "Version:#{sessionInfo.get 'applicationVersion'}"
 

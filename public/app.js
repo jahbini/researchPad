@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":15,"Case":32,"backbone":29,"jquery":36,"underscore":39}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, ref, ref1, ref2, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -327,7 +327,11 @@ Pylon.sessionInfo = sessionInfo = require('./models/session.coffee');
 
 applicationVersion = require('./version.coffee');
 
-sessionInfo.set('applicationVersion', applicationVersion);
+sessionInfo.set({
+  platformUUID: ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID",
+  platformIosVersion: ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform",
+  applicationVersion: applicationVersion
+});
 
 applogger("Version:" + (sessionInfo.get('applicationVersion')));
 
@@ -482,7 +486,7 @@ enterLogin = function(hash) {
   });
   model = new sessionLoad;
   model.on('sync', function() {
-    var m, mHash, ref1, ref2;
+    var m, mHash, ref3, ref4;
     mHash = model.get(model.idAttribute);
     if (mHash === hash) {
       alert("hash not changed");
@@ -498,8 +502,8 @@ enterLogin = function(hash) {
       clinician: m.clinician,
       password: m.password,
       testID: m.testID,
-      platformUUID: ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID",
-      platformIosVersion: ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform",
+      platformUUID: ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID",
+      platformIosVersion: ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform",
       applicationVersion: applicationVersion,
       captureDate: Date(),
       timeStamp: Date.now()
@@ -608,7 +612,7 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
-  var numSensors, ref1, ref2, testID, theTest;
+  var numSensors, ref3, ref4, testID, theTest;
   applogger("Attempt to enter Record Phase");
   testID = sessionInfo.get('testID');
   if (!testID) {
@@ -647,13 +651,13 @@ enterRecording = function() {
   }
   applogger("Attempt to enter Record Phase -- not already recording ok");
   (Pylon.get('button-calibrate')).set('enabled', false);
-  if ((ref1 = Pylon.get('Left')) != null) {
-    ref1.set({
+  if ((ref3 = Pylon.get('Left')) != null) {
+    ref3.set({
       numReadings: 0
     });
   }
-  if ((ref2 = Pylon.get('Right')) != null) {
-    ref2.set({
+  if ((ref4 = Pylon.get('Right')) != null) {
+    ref4.set({
       numReadings: 0
     });
   }
@@ -757,14 +761,14 @@ setSensor = function() {
 };
 
 enableRecordButtonOK = function() {
-  var canRecord, ref1, ref2;
-  if ((ref1 = Pylon.get('Left')) != null) {
-    ref1.set({
+  var canRecord, ref3, ref4;
+  if ((ref3 = Pylon.get('Left')) != null) {
+    ref3.set({
       numReadings: 0
     });
   }
-  if ((ref2 = Pylon.get('Right')) != null) {
-    ref2.set({
+  if ((ref4 = Pylon.get('Right')) != null) {
+    ref4.set({
       numReadings: 0
     });
   }
@@ -948,9 +952,9 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var loadScript, ref1, ref2;
-  sessionInfo.set('platformUUID', ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID");
-  sessionInfo.set('platformIosVersion', ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform");
+  var loadScript, ref3, ref4;
+  sessionInfo.set('platformUUID', ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID");
+  sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
   Pylon.on("UploadCount", function(count) {
@@ -2789,7 +2793,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":29,"underscore":39}],20:[function(require,module,exports){
-module.exports = '2.9.7-test';
+module.exports = '2.9.8-test';
 
 
 
@@ -3831,7 +3835,34 @@ Pages = (function() {
     }
   });
 
+  Pylon.on('showVersion', function() {
+    var msg;
+    msg = $('#alerter').html(render(function() {
+      h3("Thanks for being a part of the Retrotope Experience");
+      h4("All contents Copyright 2015-2019 Retrotope, inc");
+      return div(".container", function() {
+        div(".row", function() {
+          div(".five.columns", 'platformUUID');
+          div(".two.columns", ' ');
+          return div(".five.columns", 'applicationVersion');
+        });
+        return div(".row", function() {
+          div(".five.columns", Pylon.sessionInfo.get('platformUUID'));
+          div(".two.columns", ' ');
+          return div(".five.columns", Pylon.sessionInfo.get('applicationVersion'));
+        });
+      });
+    }));
+    msg.fadeIn();
+    return Pylon.saneTimeout(5000, function() {
+      return msg.fadeOut(1000);
+    });
+  });
+
   Pages.prototype.theBody = renderable(function(buttons, contents1) {
+    div("#alerter.modal", {
+      style: "display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    });
     div('#capture-display.container', function() {
       div('.row', function() {
         a('.five.columns', {
@@ -3847,7 +3878,8 @@ Pages = (function() {
         });
         return img(".five.columns", {
           src: './ui/images/movdatcap.png',
-          width: '100%'
+          width: '100%',
+          onClick: "Pylon.trigger('showVersion');"
         });
       });
       div('#net-info.row', function() {
