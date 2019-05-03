@@ -14,7 +14,6 @@ implementing = (mixins..., classReference) ->
       classReference::[key] = value
   classReference
 
-
 tappingBody = Backbone.View.extend
   el: "#protocol-here"
   clear: ()->
@@ -29,7 +28,7 @@ tappingBody = Backbone.View.extend
           for btn in mileStones
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
             T.button ".primary.round-button#{extraClass}.tapping-#{btnName}",
-              {style:"font-size:5rem;margin-right:0.7in",ontouchstart: "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
+              {style:"font-size:5rem;margin-right:0.7in","#{Pylon.onWhat}": "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
               -> T.span "#{btn}"
     return
 

@@ -16,12 +16,11 @@ shuffle = (a) ->
     j = Math.floor Math.random() * (i)
     [a[i], a[j]] = [a[j], a[i]]
   a
-#
 
 activeKey = (digit,cls='.two.columns')->
   T.div ".tenicon-#{digit}#{cls}",
     style:"width:1em;padding-right:0.5em;display:inline-block;" ,
-    ontouchstart:"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
+    "#{Pylon.onWhat}":"Pylon.trigger('protocol:response',#{digit});Pylon.trigger('quickClass',$(this),'reversed')",
     digit
 
 rowWithIcon= ()->

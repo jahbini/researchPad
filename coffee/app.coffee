@@ -522,8 +522,16 @@ Pylon.rate = (ms=10)->
   Pylon.set sensorRate: ms
 Pylon.rate 10
 
+###
+# set up information regarding the specific device
+# and switch from web onclick to app touchstart
+# web access does not generate touch info, so buttons get onclick
+###
 
+Pylon.onWhat = "onclick"
 $(document).on 'deviceready', ->
+  # we are running on a device, not from the web demo page.
+  Pylon.onWhat = "ontouchstart"
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
   $("#platformUUID").text sessionInfo.attributes.platformUUID

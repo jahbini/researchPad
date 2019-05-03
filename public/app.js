@@ -951,8 +951,18 @@ Pylon.rate = function(ms) {
 
 Pylon.rate(10);
 
+
+/*
+ * set up information regarding the specific device
+ * and switch from web onclick to app touchstart
+ * web access does not generate touch info, so buttons get onclick
+ */
+
+Pylon.onWhat = "onclick";
+
 $(document).on('deviceready', function() {
   var loadScript, ref3, ref4;
+  Pylon.onWhat = "ontouchstart";
   sessionInfo.set('platformUUID', ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID");
   sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
@@ -3725,10 +3735,14 @@ protocolHeadTemplate = Backbone.View.extend({
 });
 
 activeKey = function(digit) {
-  return T.div(".two.columns.round-button", {
-    style: "min-width:90px;height:100%",
-    ontouchstart: "Pylon.trigger('clientcode','" + digit + "');Pylon.trigger('quickClass',$(this),'reversed')"
-  }, digit);
+  var obj;
+  return T.div(".two.columns.round-button", (
+    obj = {
+      style: "min-width:90px;height:100%"
+    },
+    obj["" + Pylon.onWhat] = "Pylon.trigger('clientcode','" + digit + "');Pylon.trigger('quickClass',$(this),'reversed')",
+    obj
+  ), digit);
 };
 
 pHT = new protocolHeadTemplate();
@@ -4654,16 +4668,18 @@ colorTextBody = Backbone.View.extend({
           T.div(".row", {
             style: "text-align:center"
           }, function() {
-            var btn, btnName, example, i, k, len, results;
+            var btn, btnName, example, i, k, len, obj, results;
             results = [];
             for (i = k = 0, len = examples.length; k < len; i = ++k) {
               example = examples[i];
               btn = colorToName(example);
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              T.span(".stroop-response-" + btnName, {
-                ontouchstart: "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
-                style: "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;"
-              }, btn);
+              T.span(".stroop-response-" + btnName, (
+                obj = {},
+                obj["" + Pylon.onWhat] = "Pylon.trigger('protocol:response','" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed');",
+                obj.style = "margin-right:0.5em;padding-left:0.5em;border-radius:4px;border:1px solid #bbb;padding-right:0.5em;",
+                obj
+              ), btn);
               results.push(T.span(" "));
             }
             return results;
@@ -4792,15 +4808,18 @@ tappingBody = Backbone.View.extend({
           return T.div("row", {
             style: "text-align:center"
           }, function() {
-            var btn, btnName, i, len, results;
+            var btn, btnName, i, len, obj, results;
             results = [];
             for (i = 0, len = mileStones.length; i < len; i++) {
               btn = mileStones[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(T.button(".primary.round-button" + extraClass + ".tapping-" + btnName, {
-                style: "font-size:5rem;margin-right:0.7in",
-                ontouchstart: "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')"
-              }, function() {
+              results.push(T.button(".primary.round-button" + extraClass + ".tapping-" + btnName, (
+                obj = {
+                  style: "font-size:5rem;margin-right:0.7in"
+                },
+                obj["" + Pylon.onWhat] = "Pylon.trigger('systemEvent:mileStone:" + btnName + "');Pylon.trigger('quickClass',$(this),'reversed')",
+                obj
+              ), function() {
                 return T.span("" + btn);
               }));
             }
@@ -4865,13 +4884,17 @@ shuffle = function(a) {
 };
 
 activeKey = function(digit, cls) {
+  var obj;
   if (cls == null) {
     cls = '.two.columns';
   }
-  return T.div(".tenicon-" + digit + cls, {
-    style: "width:1em;padding-right:0.5em;display:inline-block;",
-    ontouchstart: "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')"
-  }, digit);
+  return T.div(".tenicon-" + digit + cls, (
+    obj = {
+      style: "width:1em;padding-right:0.5em;display:inline-block;"
+    },
+    obj["" + Pylon.onWhat] = "Pylon.trigger('protocol:response'," + digit + ");Pylon.trigger('quickClass',$(this),'reversed')",
+    obj
+  ), digit);
 };
 
 rowWithIcon = function() {
