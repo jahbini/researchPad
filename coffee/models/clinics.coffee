@@ -6,7 +6,8 @@
 window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
-clinicModel = Backbone.Model.extend()
+clinicModel = Backbone.Model.extend
+  idAttribute: '_id'
 
 clinicCollection = Backbone.Collection.extend
   model: clinicModel

@@ -1,7 +1,7 @@
 {
     "name": "stagApp",
     "description": "Retrotope acuire data for clinical mobility study",
-    "version": "2.9.8-test",
+    "version": "3.0.1-test",
     "author": "James A. Hinds",
     "dependencies": {
         "backbone": "^1.3.3",
@@ -42,6 +42,7 @@
         "fix-manifest": "export H='huntington'; [[ $npm_package_version == *test* ]]  && H='huntingtest';echo $H is host; sed -e s/HOST/${H}.retrotope.com/ -e s/VERSION/$npm_package_version/ templates/manifest.raw >app/manifest.plist",
         "fix-config": "sed -e s/VERSION/$npm_package_version/ templates/config.raw >config.xml",
         "fix-index": "export H='huntington'; [[ $npm_package_version == *test* ]]  && H='huntingtest';echo $H is host; sed -e s/HOST/${H}.retrotope.com/ templates/index.raw >public/index.html",
+        "fix-khufu": "export H='khufu.local:3030';echo $H is host; sed -e s?s://HOST?://${H}? templates/index.raw >public/index.html",
         "tailor": "echo $npm_package_version; npm run fix-index; npm run fix-config; npm run fix-manifest",
         "clean-cordova": "rm -rf platforms/*; rm -rf plugins/*",
         "prepare-cordova": "cordova prepare;",

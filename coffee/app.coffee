@@ -204,10 +204,14 @@ enterLogin = (hash)->
   model = new sessionLoad
   model.on 'sync',()->
     mHash = model.get model.idAttribute
+    ###
     if mHash == hash
       alert "hash not changed"
     if !mHash 
       alert "No Hash"
+    ###
+    #
+
     sessionInfo.set  sessionInfo.idAttribute, (model.get model.idAttribute)
     m= model.attributes
     sessionInfo.set 
@@ -224,7 +228,6 @@ enterLogin = (hash)->
 
     applogger "now sessionInfo is",sessionInfo
     applogger "session fetched on fetch",model
-    debugger
     sessionInfo.save()
     enterRecording()
     return
@@ -275,12 +278,12 @@ enterClear = (accept=false)->
   pageGen.forceTest()
   sessionInfo.set accepted: accept
   eventModelLoader sessionInfo
-  debugger
-  sessionInfo.unset sessionInfo.idAttribute, silent:true
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
-  if localStorage['hash']
-    window.location.reload()
+  Pylon.saneTimeout 200,()->
+    sessionInfo.unset sessionInfo.idAttribute, silent:true
+    if localStorage['hash']
+      window.location.reload()
   return
 
 # upload and clear keys are equivalent and only suggest failure or success
@@ -344,16 +347,27 @@ enterRecording = ->
   (Pylon.get 'Left')?.set numReadings: 0
   (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
-  Pylon.state.set recording: true
   applogger "Attempt to enter Record Phase -- awaiting promise resolution"
   
   Promise.all [
     resolveConnected 'Left'
     resolveConnected 'Right'
     ]
-    .then ()-> Pylon.trigger 'systemEvent:recordCountDown:start', 5
+    .then recordingIsActive
   applogger 'Recording --- actively recording sensor info'
   
+recordingIsActive = ()->
+  Pylon.trigger 'systemEvent:recordCountDown:start',5
+  Pylon.state.set recording: true
+
+  testID = sessionInfo.get 'testID'
+  hash = localStorage['hash']
+  delete Pylon.handheld.attributes.__v
+  lastSession = sessionInfo.get sessionInfo.idAttribute
+  Pylon.handheld.save {testID,hash,lastSession}
+  return
+
+
 resolveConnected = (leftRight)->
   device = Pylon.get leftRight
   if device
@@ -522,11 +536,6 @@ Pylon.rate = (ms=10)->
   Pylon.set sensorRate: ms
 Pylon.rate 10
 
-###
-# set up information regarding the specific device
-# and switch from web onclick to app touchstart
-# web access does not generate touch info, so buttons get onclick
-###
 
 Pylon.onWhat = "onclick"
 $(document).on 'deviceready', ->
@@ -534,8 +543,11 @@ $(document).on 'deviceready', ->
   Pylon.onWhat = "ontouchstart"
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
+
   $("#platformUUID").text sessionInfo.attributes.platformUUID
   $("#platformIosVersion").text "iOS Ver:"+sessionInfo.attributes.platformIosVersion
+
+  Pylon.handheld = require './models/handheld.coffee'
   Pylon.on "UploadCount", (count)->
     $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
