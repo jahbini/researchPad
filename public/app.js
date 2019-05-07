@@ -2884,7 +2884,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.1-test';
+module.exports = '3.0.2-test';
 
 
 
