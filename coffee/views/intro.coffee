@@ -21,6 +21,7 @@ protocolPhase = Backbone.Model.extend
     #start a session by waiting for the host with a 5 second count-in
     #  if the showLeadIn is active, then put it up, else be quiet
     Pylon.on 'systemEvent:recordCountDown:start', =>
+      intrologger "setting state true in count-up-down"
       Pylon.state.set recording: true
       @set 'protocol', p= Pylon.theProtocol()
       if p.get 'mileStonesAreProtocols'

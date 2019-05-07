@@ -9,6 +9,9 @@
 ###
 
 Backbone = require ('backbone')
+buglog = require '../lib/buglog.coffee'
+handlogger = (introlog= new buglog "hand").log
+
 Handheld = Backbone.Model.extend {
   idAttribute: '_id'
   urlRoot: Pylon.get('hostUrl')+'handheld'
@@ -32,7 +35,6 @@ handheld.on 'change',->
     $('#testID').val testID
     Pylon.setTheCurrentProtocol testID
     localStorage['clientUnlock'] =  clientUnlock
-    localStorage['hash'] =  'Keystone Forced'
     clinician = handheld.get 'clinician'
     clinic = handheld.get 'clinic'
     client = handheld.get 'client'
@@ -43,6 +45,8 @@ handheld.on 'change',->
     $('#password').val password
     sessionInfo.unset sessionInfo.idAttribute
     sessionInfo.save {clinic,clinician,password,client,testID}
+    handlogger "Setting recording state in handheld:change"
+    Pylon.state.set 'recording',false
     Pylon.trigger 'systemEvent:recordCountDown:start'
 
   return

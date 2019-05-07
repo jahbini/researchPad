@@ -7,13 +7,18 @@ window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
 localStorage = window.localStorage
-localStorage.setItem 'debug',"app,TIhandler,sanity,sensor,logon,state"
+localStorage.setItem 'debug',"app,intro,hand,logon,state"
+
+onHandheld = document.URL.match /^file:/
+localStorage['hash']='' if onHandheld
+
 buglog = require './lib/buglog.coffee'
 applogger = (applog= new buglog "app").log
 #window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
   state: (require './models/state.coffee').state
+  onHandheld: onHandheld
   theSession: ()->
     return @.attributes.sessionInfo
   setTheCurrentProtocol: (p)->
@@ -135,7 +140,10 @@ activateNewButtons = ->
     legend: "Wait on Host"
     enabled: false
   #canLogIn will be triggered when both the clinics and protocols are fetched from host
+  #  At this time, we ask for the handheld specific information
+  #  When it returns, it may have started everything
   Pylon.on 'canLogIn', ->
+    Pylon.handheld = require './models/handheld.coffee'
     AdminButton.set 
       enabled:true
       legend: "Log In"
@@ -332,8 +340,6 @@ enterRecording = ->
   # sends back
   applogger "Attempt to enter Record Phase -- number of sensors ok"
 
-  if sessionInfo.isNew()
-    sessionInfo.save()
   # signal for logon.js that we are not scanning
   Pylon.state.set scanning: false
     
@@ -357,14 +363,16 @@ enterRecording = ->
   applogger 'Recording --- actively recording sensor info'
   
 recordingIsActive = ()->
+  if sessionInfo.isNew()
+    sessionInfo.save()
   Pylon.trigger 'systemEvent:recordCountDown:start',5
+  applogger "Setting recording state in recordingIsActive"
   Pylon.state.set recording: true
 
   testID = sessionInfo.get 'testID'
-  hash = localStorage['hash']
   delete Pylon.handheld.attributes.__v
   lastSession = sessionInfo.get sessionInfo.idAttribute
-  Pylon.handheld.save {testID,hash,lastSession}
+  Pylon.handheld.save {testID,lastSession}
   return
 
 
@@ -547,7 +555,6 @@ $(document).on 'deviceready', ->
   $("#platformUUID").text sessionInfo.attributes.platformUUID
   $("#platformIosVersion").text "iOS Ver:"+sessionInfo.attributes.platformIosVersion
 
-  Pylon.handheld = require './models/handheld.coffee'
   Pylon.on "UploadCount", (count)->
     $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
@@ -566,6 +573,7 @@ onPause= ()->
   applogger "exit did not exit!!"
 
 detectHash= ()-> #if there is a hash, it is a session to be cloned
+  return if Pylon.onHandheld
   if window.location.hash  #the URL hash takes precedence
     if hash = window.location.hash[1..]
       enterLogin hash

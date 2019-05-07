@@ -245,7 +245,7 @@ class Pages
     bodyHtml = @theBody @topButtons , Pylon.get('adminView').adminContents
     $('body').html bodyHtml
     @wireButtons()
-    require('./count-up-down.coffee')
+    require('./intro.coffee')
     require('./protocol-active.coffee')
 
     protocolViewTemplate = Backbone.View.extend

@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":15,"Case":33,"backbone":30,"jquery":37,"underscore":40}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -216,7 +216,13 @@ Backbone = require('backbone');
 
 localStorage = window.localStorage;
 
-localStorage.setItem('debug', "app,TIhandler,sanity,sensor,logon,state");
+localStorage.setItem('debug', "app,intro,hand,logon,state");
+
+onHandheld = document.URL.match(/^file:/);
+
+if (onHandheld) {
+  localStorage['hash'] = '';
+}
 
 buglog = require('./lib/buglog.coffee');
 
@@ -224,6 +230,7 @@ applogger = (applog = new buglog("app")).log;
 
 PylonTemplate = Backbone.Model.extend({
   state: (require('./models/state.coffee')).state,
+  onHandheld: onHandheld,
   theSession: function() {
     return this.attributes.sessionInfo;
   },
@@ -401,6 +408,7 @@ activateNewButtons = function() {
     enabled: false
   });
   Pylon.on('canLogIn', function() {
+    Pylon.handheld = require('./models/handheld.coffee');
     return AdminButton.set({
       enabled: true,
       legend: "Log In"
@@ -640,9 +648,6 @@ enterRecording = function() {
     return;
   }
   applogger("Attempt to enter Record Phase -- number of sensors ok");
-  if (sessionInfo.isNew()) {
-    sessionInfo.save();
-  }
   Pylon.state.set({
     scanning: false
   });
@@ -669,18 +674,20 @@ enterRecording = function() {
 };
 
 recordingIsActive = function() {
-  var hash, lastSession, testID;
+  var lastSession, testID;
+  if (sessionInfo.isNew()) {
+    sessionInfo.save();
+  }
   Pylon.trigger('systemEvent:recordCountDown:start', 5);
+  applogger("Setting recording state in recordingIsActive");
   Pylon.state.set({
     recording: true
   });
   testID = sessionInfo.get('testID');
-  hash = localStorage['hash'];
   delete Pylon.handheld.attributes.__v;
   lastSession = sessionInfo.get(sessionInfo.idAttribute);
   Pylon.handheld.save({
     testID: testID,
-    hash: hash,
     lastSession: lastSession
   });
 };
@@ -973,7 +980,6 @@ $(document).on('deviceready', function() {
   sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
-  Pylon.handheld = require('./models/handheld.coffee');
   Pylon.on("UploadCount", function(count) {
     return $("#UploadCount").html("Queued:" + count);
   });
@@ -996,6 +1002,9 @@ onPause = function() {
 
 detectHash = function() {
   var hash;
+  if (Pylon.onHandheld) {
+    return;
+  }
   if (window.location.hash) {
     if (hash = window.location.hash.slice(1)) {
       enterLogin(hash);
@@ -2628,9 +2637,13 @@ exports.EventModel = EventModel;
  * and switch from web onclick to app touchstart
  * web access does not generate touch info, so buttons get onclick
  */
-var Backbone, Handheld, handheld, sessionInfo;
+var Backbone, Handheld, buglog, handheld, handlogger, introlog, sessionInfo;
 
 Backbone = require('backbone');
+
+buglog = require('../lib/buglog.coffee');
+
+handlogger = (introlog = new buglog("hand")).log;
 
 Handheld = Backbone.Model.extend({
   idAttribute: '_id',
@@ -2668,7 +2681,6 @@ handheld.on('change', function() {
     $('#testID').val(testID);
     Pylon.setTheCurrentProtocol(testID);
     localStorage['clientUnlock'] = clientUnlock;
-    localStorage['hash'] = 'Keystone Forced';
     clinician = handheld.get('clinician');
     clinic = handheld.get('clinic');
     client = handheld.get('client');
@@ -2685,6 +2697,8 @@ handheld.on('change', function() {
       client: client,
       testID: testID
     });
+    handlogger("Setting recording state in handheld:change");
+    Pylon.state.set('recording', false);
     Pylon.trigger('systemEvent:recordCountDown:start');
   }
 });
@@ -2693,7 +2707,7 @@ module.exports = handheld;
 
 
 
-},{"backbone":30}],18:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":30}],18:[function(require,module,exports){
 var Backbone, _, protocol, protocolCollection, shuffle;
 
 _ = require('underscore');
@@ -2884,7 +2898,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.2-test';
+module.exports = '3.0.3-test';
 
 
 
@@ -3349,6 +3363,7 @@ protocolPhase = Backbone.Model.extend({
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
         var p, sessionID;
+        intrologger("setting state true in count-up-down");
         Pylon.state.set({
           recording: true
         });
@@ -4211,7 +4226,7 @@ Pages = (function() {
     bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
-    require('./count-up-down.coffee');
+    require('./intro.coffee');
     require('./protocol-active.coffee');
     protocolViewTemplate = Backbone.View.extend({
       el: '#testID',
@@ -4376,7 +4391,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./count-up-down.coffee":24,"./protocol-active.coffee":26,"backbone":30,"jquery":37,"teacup":39}],26:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./intro.coffee":24,"./protocol-active.coffee":26,"backbone":30,"jquery":37,"teacup":39}],26:[function(require,module,exports){
 var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, ref, ref1, ref2, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
