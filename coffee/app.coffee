@@ -582,6 +582,7 @@ detectHash= ()-> #if there is a hash, it is a session to be cloned
     enterLogin hash
   
 $ ->
+  $('body').css 'background:yellow' if (sessionInfo.get 'applicationVersion').match /test/
   # Force a page reload if put in background to wipe the sessionInfo and other state
   document.addEventListener 'resume',()->
     window.location.reload()

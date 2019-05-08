@@ -61,10 +61,10 @@ class Pages
   Pylon.on 'showVersion', ()->
     msg=$('#alerter').html render ->
       h3 "Thanks for being a part of the Retrotope Experience"
-      h4 "All contents Copyright 2015-2019 Retrotope, inc"
+      h4 "All contents Copyright 2015-2019 Retrotope, Inc."
       div ".container" ,->
         div ".row", ->
-          div ".five.columns", 'platformUUID'
+          div ".five.columns", 'platformUDID'
           div ".two.columns", ' '
           div ".five.columns", 'applicationVersion'
         div ".row", ->

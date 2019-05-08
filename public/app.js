@@ -1017,6 +1017,9 @@ detectHash = function() {
 };
 
 $(function() {
+  if ((sessionInfo.get('applicationVersion')).match(/test/)) {
+    $('body').css('background:yellow');
+  }
   document.addEventListener('resume', function() {
     return window.location.reload();
   });
@@ -3949,10 +3952,10 @@ Pages = (function() {
     var msg;
     msg = $('#alerter').html(render(function() {
       h3("Thanks for being a part of the Retrotope Experience");
-      h4("All contents Copyright 2015-2019 Retrotope, inc");
+      h4("All contents Copyright 2015-2019 Retrotope, Inc.");
       return div(".container", function() {
         div(".row", function() {
-          div(".five.columns", 'platformUUID');
+          div(".five.columns", 'platformUDID');
           div(".two.columns", ' ');
           return div(".five.columns", 'applicationVersion');
         });
