@@ -139,11 +139,17 @@ activateNewButtons = ->
   AdminButton.set
     legend: "Wait on Host"
     enabled: false
+  Pylon.canLogIn = false
+  Pylon.deviceReady = false
   #canLogIn will be triggered when both the clinics and protocols are fetched from host
   #  At this time, we ask for the handheld specific information
   #  When it returns, it may have started everything
   Pylon.on 'canLogIn', ->
-    Pylon.handheld = require './models/handheld.coffee'
+    Pylon.canLogIn = true
+    if Pylon.deviceReady
+      applogger "Getting handheld from canLogIn"
+      applogger "device info is", window.device.uuid
+      Pylon.handheld = require './models/handheld.coffee'
     AdminButton.set 
       enabled:true
       legend: "Log In"
@@ -281,8 +287,12 @@ initAll = ->
 enterClear = (accept=false)->
   # Clear only clears the data -- does NOT disconnedt
   Pylon.trigger "removeRecorderWindow"
-
   $('#testID').prop("disabled",false)
+  # on tests that have subtests, we need to regain the 
+  # cloneable status of the parent suite
+  p=Pylon.setTheCurrentProtocol sessionInfo.attributes.testID
+  restart = !!localStorage['hash']
+  restart |= p.get 'cloneable'
   pageGen.forceTest()
   sessionInfo.set accepted: accept
   eventModelLoader sessionInfo
@@ -290,7 +300,7 @@ enterClear = (accept=false)->
   (Pylon.get 'button-upload').set 'enabled',false
   Pylon.saneTimeout 200,()->
     sessionInfo.unset sessionInfo.idAttribute, silent:true
-    if localStorage['hash']
+    if restart
       window.location.reload()
   return
 
@@ -370,7 +380,6 @@ recordingIsActive = ()->
   Pylon.state.set recording: true
 
   testID = sessionInfo.get 'testID'
-  delete Pylon.handheld.attributes.__v
   lastSession = sessionInfo.get sessionInfo.idAttribute
   Pylon.handheld.save {testID,lastSession}
   return
@@ -444,8 +453,22 @@ enableRecordButtonOK= ()->
   
 Pylon.on 'sessionUploaded',enableRecordButtonOK
 
-Pylon.on 'adminDone', ->
+Pylon.on 'adminDone', -> 
+  #the clinician has just logged in via the app admin panel
+  # send up a new client unlock code 
+  # and all the login info from the admin panel to track
+  # the handheld's state
+  #
+  clientUnlock=10000*Math.random()
+  clientUnlock = c + 1000 if c<1000  # make sure no leading zeroes
+  localStorage['clientUnlock']=clientUnlock  
+  {clinic,clinician,client,password} = sessionInfo.attributes
+  handheld.save {clinic,clinician,clientUnlock,client,password},{silent: true}
+
+  #take care of grandfather 'hash' for web browser access
+  #
   localStorage['hash']='' # stop any long running test suite from re-occuring
+
   (Pylon.get 'button-admin').set 'legend',"Log Out"
   Pylon.state.set 'loggedIn',  true
   pageGen.activateSensorPage()
@@ -547,6 +570,7 @@ Pylon.rate 10
 
 Pylon.onWhat = "onclick"
 $(document).on 'deviceready', ->
+  applogger "device ready"
   # we are running on a device, not from the web demo page.
   Pylon.onWhat = "ontouchstart"
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
@@ -555,6 +579,13 @@ $(document).on 'deviceready', ->
   $("#platformUUID").text sessionInfo.attributes.platformUUID
   $("#platformIosVersion").text "iOS Ver:"+sessionInfo.attributes.platformIosVersion
 
+  # the sessionInfo stuff is loaded, and can be transferred to the handheld object
+  Pylon.deviceReady = true
+  if Pylon.canLogIn
+    applogger "Getting handheld from deviceready"
+    applogger "device info is", window.device.uuid
+    Pylon.handheld = require './models/handheld.coffee'
+
   Pylon.on "UploadCount", (count)->
     $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
@@ -562,7 +593,6 @@ $(document).on 'deviceready', ->
   loadScript = require("./lib/loadScript.coffee").loadScript
   loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
     applogger "logon.js returns status of "+status
-  applogger "device ready"
   return
   
 onPause= ()->

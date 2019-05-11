@@ -15,22 +15,27 @@ handlogger = (introlog= new buglog "hand").log
 Handheld = Backbone.Model.extend {
   idAttribute: '_id'
   urlRoot: Pylon.get('hostUrl')+'handheld'
+  parse:(incoming)->
+    # Mongo field __v not currently in use
+    delete incoming.__v
+    return incoming
+
 }
 handheld = new Handheld()
+handlogger "creating handheld structure"
 sessionInfo = Pylon.sessionInfo
+
 handheld.save
   platformUUID: sessionInfo.get 'platformUUID'
   platformIosVersion: sessionInfo.get 'platformIosVersion'
   applicationVersion: sessionInfo.get 'applicationVersion'
 
-Pylon.on 'adminDone', ->  # what other values need to be transferred?
-  {clinic,clinician,client,password} = sessionInfo.attributes
-  debugger
-  delete handheld.attributes.__v
-  handheld.save {clinic,clinician,client,password},{silent: true}
-  return
 
 handheld.on 'change',->
+  handlogger "handheld change", handheld.attributes
+  # set a reminder for the client
+  localStorage['clientUnlockOK'] =  handheld.get 'clientUnlockOK'
+
   if (testID = handheld.get 'testID') and (clientUnlock = handheld.get 'clientUnlock')
     $('#testID').val testID
     Pylon.setTheCurrentProtocol testID

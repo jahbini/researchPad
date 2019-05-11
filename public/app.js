@@ -407,8 +407,15 @@ activateNewButtons = function() {
     legend: "Wait on Host",
     enabled: false
   });
+  Pylon.canLogIn = false;
+  Pylon.deviceReady = false;
   Pylon.on('canLogIn', function() {
-    Pylon.handheld = require('./models/handheld.coffee');
+    Pylon.canLogIn = true;
+    if (Pylon.deviceReady) {
+      applogger("Getting handheld from canLogIn");
+      applogger("device info is", window.device.uuid);
+      Pylon.handheld = require('./models/handheld.coffee');
+    }
     return AdminButton.set({
       enabled: true,
       legend: "Log In"
@@ -571,11 +578,15 @@ initAll = function() {
 eventModelLoader = require('./lib/upload.coffee').eventModelLoader;
 
 enterClear = function(accept) {
+  var p, restart;
   if (accept == null) {
     accept = false;
   }
   Pylon.trigger("removeRecorderWindow");
   $('#testID').prop("disabled", false);
+  p = Pylon.setTheCurrentProtocol(sessionInfo.attributes.testID);
+  restart = !!localStorage['hash'];
+  restart |= p.get('cloneable');
   pageGen.forceTest();
   sessionInfo.set({
     accepted: accept
@@ -587,7 +598,7 @@ enterClear = function(accept) {
     sessionInfo.unset(sessionInfo.idAttribute, {
       silent: true
     });
-    if (localStorage['hash']) {
+    if (restart) {
       return window.location.reload();
     }
   });
@@ -684,7 +695,6 @@ recordingIsActive = function() {
     recording: true
   });
   testID = sessionInfo.get('testID');
-  delete Pylon.handheld.attributes.__v;
   lastSession = sessionInfo.get(sessionInfo.idAttribute);
   Pylon.handheld.save({
     testID: testID,
@@ -813,6 +823,22 @@ enableRecordButtonOK = function() {
 Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('adminDone', function() {
+  var client, clientUnlock, clinic, clinician, password, ref3;
+  clientUnlock = 10000 * Math.random();
+  if (c < 1000) {
+    clientUnlock = c + 1000;
+  }
+  localStorage['clientUnlock'] = clientUnlock;
+  ref3 = sessionInfo.attributes, clinic = ref3.clinic, clinician = ref3.clinician, client = ref3.client, password = ref3.password;
+  handheld.save({
+    clinic: clinic,
+    clinician: clinician,
+    clientUnlock: clientUnlock,
+    client: client,
+    password: password
+  }, {
+    silent: true
+  });
   localStorage['hash'] = '';
   (Pylon.get('button-admin')).set('legend', "Log Out");
   Pylon.state.set('loggedIn', true);
@@ -975,11 +1001,18 @@ Pylon.onWhat = "onclick";
 
 $(document).on('deviceready', function() {
   var loadScript, ref3, ref4;
+  applogger("device ready");
   Pylon.onWhat = "ontouchstart";
   sessionInfo.set('platformUUID', ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID");
   sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
+  Pylon.deviceReady = true;
+  if (Pylon.canLogIn) {
+    applogger("Getting handheld from deviceready");
+    applogger("device info is", window.device.uuid);
+    Pylon.handheld = require('./models/handheld.coffee');
+  }
   Pylon.on("UploadCount", function(count) {
     return $("#UploadCount").html("Queued:" + count);
   });
@@ -988,7 +1021,6 @@ $(document).on('deviceready', function() {
   loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
     return applogger("logon.js returns status of " + status);
   });
-  applogger("device ready");
 });
 
 onPause = function() {
@@ -2650,10 +2682,16 @@ handlogger = (introlog = new buglog("hand")).log;
 
 Handheld = Backbone.Model.extend({
   idAttribute: '_id',
-  urlRoot: Pylon.get('hostUrl') + 'handheld'
+  urlRoot: Pylon.get('hostUrl') + 'handheld',
+  parse: function(incoming) {
+    delete incoming.__v;
+    return incoming;
+  }
 });
 
 handheld = new Handheld();
+
+handlogger("creating handheld structure");
 
 sessionInfo = Pylon.sessionInfo;
 
@@ -2663,23 +2701,10 @@ handheld.save({
   applicationVersion: sessionInfo.get('applicationVersion')
 });
 
-Pylon.on('adminDone', function() {
-  var client, clinic, clinician, password, ref;
-  ref = sessionInfo.attributes, clinic = ref.clinic, clinician = ref.clinician, client = ref.client, password = ref.password;
-  debugger;
-  delete handheld.attributes.__v;
-  handheld.save({
-    clinic: clinic,
-    clinician: clinician,
-    client: client,
-    password: password
-  }, {
-    silent: true
-  });
-});
-
 handheld.on('change', function() {
   var client, clientUnlock, clinic, clinician, password, testID;
+  handlogger("handheld change", handheld.attributes);
+  localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
   if ((testID = handheld.get('testID')) && (clientUnlock = handheld.get('clientUnlock'))) {
     $('#testID').val(testID);
     Pylon.setTheCurrentProtocol(testID);
@@ -2901,7 +2926,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.3-test';
+module.exports = '3.0.4-test';
 
 
 
@@ -3420,18 +3445,10 @@ protocolPhase = Backbone.Model.extend({
       };
     })(this));
     startCloneableSuite = function() {
-      var c;
-      c = localStorage['hash'] = (Pylon.get('sessionInfo')).id;
-      c = parseInt(c.slice(-4), 16);
-      c = c % 10000;
-      if (c < 1000) {
-        c = c + 1000;
-      }
-      localStorage['clientUnlock'] = c;
       pHT.setEnvironment({
         headline: "Write This Unlock Code Down",
         paragraph: localStorage['clientUnlock'] + " This four digit code is your patient unlock code for this series.",
-        nextPhase: "leadIn",
+        nextPhase: "continueCloneableSuite",
         start: 0,
         limit: 0,
         buttonSpec: {
@@ -3456,12 +3473,13 @@ protocolPhase = Backbone.Model.extend({
         });
       };
     })(this);
+    this.on('continueCloneableSuite', continueCloneableSuite);
     this.on('leadIn', (function(_this) {
       return function() {
         var duration, limit, p, start;
         p = Pylon.theProtocol();
         if (p.get('cloneable')) {
-          if (localStorage['hash']) {
+          if (localStorage['clientUnlockOK'] === 'true') {
             continueCloneableSuite();
           } else {
             startCloneableSuite();
@@ -3712,6 +3730,8 @@ protocolHeadTemplate = Backbone.View.extend({
         _this.code += digit;
         _this.code = _this.code.slice(-10);
         if (_this.code.match(_this.clientcode)) {
+          localStorage['clientUnlockOK'] = 'true';
+          Pylon.handheld.save('clientUnlockOK', true);
           pP.trigger(_this.nextPhase);
         }
         if (_this.code.match(Pylon.unlock)) {

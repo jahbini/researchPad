@@ -60,15 +60,10 @@ protocolPhase = Backbone.Model.extend
       return 
 
     startCloneableSuite= ()->
-      c=localStorage['hash']= (Pylon.get 'sessionInfo').id
-      c= parseInt c[-4..],16
-      c = c % 10000
-      c = c + 1000 if c<1000  # make sure no leading zeroes
-      localStorage['clientUnlock']=c
       pHT.setEnvironment
         headline: "Write This Unlock Code Down"
         paragraph: "#{localStorage['clientUnlock']} This four digit code is your patient unlock code for this series."
-        nextPhase: "leadIn"
+        nextPhase: "continueCloneableSuite"
         start: 0
         limit: 0
         buttonSpec:
@@ -91,11 +86,12 @@ protocolPhase = Backbone.Model.extend
         #  phaseButton: "Hi I am unlock"
       return
 
+    @on 'continueCloneableSuite', continueCloneableSuite
     # leadIn means the sessionID for this test run exists
     @on 'leadIn',()=>
       p = Pylon.theProtocol()
       if p.get 'cloneable'
-        if localStorage['hash']
+        if localStorage['clientUnlockOK'] == 'true'
           continueCloneableSuite()
         else
           startCloneableSuite()
@@ -286,6 +282,8 @@ protocolHeadTemplate = Backbone.View.extend
       @code += digit
       @code=@code[-10..]
       if @code.match @clientcode
+        localStorage['clientUnlockOK']='true'
+        Pylon.handheld.save 'clientUnlockOK',true
         pP.trigger @nextPhase
       if @code.match Pylon.unlock
         localStorage['hash']=''
