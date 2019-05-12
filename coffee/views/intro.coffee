@@ -28,11 +28,19 @@ protocolPhase = Backbone.Model.extend
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
       else
         @allMyProtocols = [p.get 'name' ]
-      sessionID=Pylon.get('sessionInfo').get('_id')
-      if sessionID
-        Pylon.saneTimeout 0,()=>@trigger 'leadIn'
-      else
+      
+      p = Pylon.theProtocol()
+      if p.get 'cloneable'
+        if localStorage['clientUnlockOK'] == 'true'
+          Pylon.saneTimeout 0,()=>@trigger 'continueCloneableSuite'
+        else
+          Pylon.saneTimeout 0,()=>@trigger 'startCloneableSuite'
+        return
+      sessionInfo=Pylon.get('sessionInfo')
+      if sessionInfo.isNew()
         Pylon.saneTimeout 0,()=>@trigger 'start'
+      else
+        Pylon.saneTimeout 0,()=>@trigger 'leadIn'
       return 
 
     @on 'abort',=>
@@ -42,6 +50,8 @@ protocolPhase = Backbone.Model.extend
       return
 
     @on 'start', =>
+      if sessionInfo.isNew()
+        sessionInfo.save()
       sessionID=Pylon.get('sessionInfo').get('_id')
       unless sessionID
         @listenToOnce Pylon.get('sessionInfo'), 'change:_id',()=>
@@ -52,8 +62,8 @@ protocolPhase = Backbone.Model.extend
           headline: "waiting for host"
           paragraph: ""
           nextPhase: 'abort'
-          limit: 5
-          start: 0
+          limit: 0
+          start: 5
       else
         Pylon.saneTimeout 0,()=>
           @.trigger 'leadIn'
@@ -78,7 +88,7 @@ protocolPhase = Backbone.Model.extend
       pHT.setEnvironment
         headline: "Enter the Unlock Code"
         paragraph: paragraph
-        nextPhase: "selectTheFirstTest"
+        nextPhase: "leadIn"
         clientcode: localStorage['clientUnlock']
         start: 0
         limit: 0
@@ -87,15 +97,10 @@ protocolPhase = Backbone.Model.extend
       return
 
     @on 'continueCloneableSuite', continueCloneableSuite
+    @on 'startCloneableSuite', startCloneableSuite
     # leadIn means the sessionID for this test run exists
     @on 'leadIn',()=>
       p = Pylon.theProtocol()
-      if p.get 'cloneable'
-        if localStorage['clientUnlockOK'] == 'true'
-          continueCloneableSuite()
-        else
-          startCloneableSuite()
-        return
 
       unless  p.get 'showLeadIn'
         Pylon.saneTimeout 0, @trigger 'selectTheFirstTest'
@@ -181,7 +186,7 @@ protocolPhase = Backbone.Model.extend
       if !test
         test = Pylon.setTheCurrentProtocol 'Default'
         if !test || !test.attributes
-          alert "No Default Protocol from Server"
+          alert "No Default Protocol from Server at #{Pylon.get 'hostUrl'}"
         else
           m= test.get 'mileStoneText'
           m += " '" + name + "'"
@@ -286,8 +291,12 @@ protocolHeadTemplate = Backbone.View.extend
         Pylon.handheld.save 'clientUnlockOK',true
         pP.trigger @nextPhase
       if @code.match Pylon.unlock
-        localStorage['hash']=''
-        window.location.reload()
+        localStorage['clientUnlockOK']='false'
+        localStorage['clientUnlock']=''
+        xhr = Pylon.handheld.save clinic:null, clinician:null, client: null, testID:"", clientUnlock: "", clientUnlockOK:false
+        # force this as binding so window is defined
+        xhr.always ()=> window.location.reload()
+        return
 
   render:(t)->
     if t != @start && t != @limit

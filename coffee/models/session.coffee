@@ -14,9 +14,7 @@ rawSession = Backbone.Model.extend {
 }
 
 sessionInfo = new rawSession
-  user: ''
   clinic: ''
-  patient: ''
   testID: ''
   leftSensorUUID: ''
   rightSensorUUID: ''

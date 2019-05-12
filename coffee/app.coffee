@@ -53,7 +53,10 @@ Pylon.set 'vertmeterScale',
   
 # set the button MpdelView
 Pylon.set 'BV', BV = require './views/button-view.coffee'
-
+if Pylon.onHandheld
+  Pylon.onWhat = "ontouchstart"
+else
+  Pylon.onWhat = "onclick"
 
 pages = require './views/pages.coffee'
 Pylon.set 'adminView', require('./views/adminView.coffee').adminView
@@ -291,8 +294,11 @@ enterClear = (accept=false)->
   # on tests that have subtests, we need to regain the 
   # cloneable status of the parent suite
   p=Pylon.setTheCurrentProtocol sessionInfo.attributes.testID
-  restart = !!localStorage['hash']
-  restart |= p.get 'cloneable'
+  if Pylon.onHandheld
+    restart = p.get 'cloneable'
+  else
+    restart = localStorage['hash']
+
   pageGen.forceTest()
   sessionInfo.set accepted: accept
   eventModelLoader sessionInfo
@@ -373,8 +379,6 @@ enterRecording = ->
   applogger 'Recording --- actively recording sensor info'
   
 recordingIsActive = ()->
-  if sessionInfo.isNew()
-    sessionInfo.save()
   Pylon.trigger 'systemEvent:recordCountDown:start',5
   applogger "Setting recording state in recordingIsActive"
   Pylon.state.set recording: true
@@ -457,22 +461,24 @@ Pylon.on 'adminDone', ->
   #the clinician has just logged in via the app admin panel
   # send up a new client unlock code 
   # and all the login info from the admin panel to track
-  # the handheld's state
+  # the handheld's stateu
   #
   clientUnlock=10000*Math.random()
-  clientUnlock = c + 1000 if c<1000  # make sure no leading zeroes
-  localStorage['clientUnlock']=clientUnlock  
+  clientUnlock +=  1000 if clientUnlock<1000  # make sure no leading zeroes
+  clientUnlock -= 10000 if clientUnlock>10000 #make sure only four digits
+  clientUnlock= localStorage['clientUnlock']="#{clientUnlock.toFixed()}"
+  localStorage['clientUnlocOK']='false'
   {clinic,clinician,client,password} = sessionInfo.attributes
-  handheld.save {clinic,clinician,clientUnlock,client,password},{silent: true}
-
-  #take care of grandfather 'hash' for web browser access
-  #
-  localStorage['hash']='' # stop any long running test suite from re-occuring
+  alert "session not NEW!" unless sessionInfo.isNew() 
+  clientUnlockOK = false
+  testID = ""
+  Pylon.handheld.save {testID,clinic,clinician,clientUnlock,clientUnlockOK,client,password},{silent: true}
 
   (Pylon.get 'button-admin').set 'legend',"Log Out"
   Pylon.state.set 'loggedIn',  true
   pageGen.activateSensorPage()
-  return enableRecordButtonOK()
+  enableRecordButtonOK()
+  return 
 
 protocolsShowedErrors=1
 protocols.on 'fetched', ->
@@ -568,11 +574,9 @@ Pylon.rate = (ms=10)->
 Pylon.rate 10
 
 
-Pylon.onWhat = "onclick"
 $(document).on 'deviceready', ->
   applogger "device ready"
   # we are running on a device, not from the web demo page.
-  Pylon.onWhat = "ontouchstart"
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
 
