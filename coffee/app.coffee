@@ -7,7 +7,7 @@ window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
 localStorage = window.localStorage
-localStorage.setItem 'debug',"app,intro,hand,logon,state"
+localStorage.setItem 'debug',"app,TIhandler,intro,hand,sensor,state"
 
 onHandheld = document.URL.match /^file:/
 localStorage['hash']='' if onHandheld
@@ -292,10 +292,10 @@ enterClear = (accept=false)->
   Pylon.trigger "removeRecorderWindow"
   $('#testID').prop("disabled",false)
   # on tests that have subtests, we need to regain the 
-  # cloneable status of the parent suite
+  # lockDown capability status of the parent suite
   p=Pylon.setTheCurrentProtocol sessionInfo.attributes.testID
   if Pylon.onHandheld
-    restart = p.get 'cloneable'
+    restart = p.get 'lockDown'
   else
     restart = localStorage['hash']
 
@@ -360,9 +360,10 @@ enterRecording = ->
   Pylon.state.set scanning: false
     
   (Pylon.get 'button-admin').set 'enabled',false
-  # reject record request if we are already recording
+  # reject record request if we are already recording or stopping
   return if Pylon.state.get 'recording'
-  applogger "Attempt to enter Record Phase -- not already recording ok"
+  Pylon.state.set 'recording',true
+  applogger "Record state set scanning false, recording true"
 
   # start recording and show a lead in timer of 5 seconds
   (Pylon.get 'button-calibrate').set 'enabled',false
@@ -370,31 +371,44 @@ enterRecording = ->
   (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
   applogger "Attempt to enter Record Phase -- awaiting promise resolution"
-  
+  Pylon.trigger "showRecorderWindow"
   Promise.all [
     resolveConnected 'Left'
     resolveConnected 'Right'
+    resolveLockdown Pylon.theProtocol()
     ]
     .then recordingIsActive
   applogger 'Recording --- actively recording sensor info'
   
 recordingIsActive = ()->
   Pylon.trigger 'systemEvent:recordCountDown:start',5
-  applogger "Setting recording state in recordingIsActive"
-  Pylon.state.set recording: true
 
   testID = sessionInfo.get 'testID'
   lastSession = sessionInfo.get sessionInfo.idAttribute
   Pylon.handheld.save {testID,lastSession}
   return
 
+resolveLockdown = (p)->
+  # are we in lockdown mode?
+  if p.get 'lockDown'
+    Pylon.trigger 'systemEvent:lockdown:lock'
+    applogger "Lockdown needed"
+    return new Promise (resolve)->
+      Pylon.on 'systemEvent:lockdown:unlock',()->
+        applogger "Lockdown Resolved"
+        resolve()
+  return new Promise (resolve)->resolve()
 
 resolveConnected = (leftRight)->
   device = Pylon.get leftRight
-  if device
+  if device && !device.connected
+    applogger "Device needed",leftRight
     return new Promise (resolve)->
-      device.once 'change:connected',()->resolve()
+      device.once 'change:connected',()->
+        applogger 'Device Resolved',leftRight
+        resolve()
   else
+    applogger 'Device Resolved immediate',leftRight
     return new Promise (resolve)->resolve()
 
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
@@ -410,6 +424,7 @@ Pylon.on 'systemEvent:recordCountDown:start', ->
   (Pylon.get 'button-action').set enabled: true, legend: "Stop"
   return false
 
+# Pylon.on "systemEvent:action:stop", exitRecording
 exitRecording = -> # Stop Recording
   return if 'stopping' == Pylon.state.get 'recording'
   Pylon.state.set recording: 'stopping'
@@ -466,8 +481,8 @@ Pylon.on 'adminDone', ->
   clientUnlock=10000*Math.random()
   clientUnlock +=  1000 if clientUnlock<1000  # make sure no leading zeroes
   clientUnlock -= 10000 if clientUnlock>10000 #make sure only four digits
-  clientUnlock= localStorage['clientUnlock']="#{clientUnlock.toFixed()}"
-  localStorage['clientUnlocOK']='false'
+  clientUnlock = localStorage['clientUnlock']="#{clientUnlock.toFixed()}"
+  localStorage['clientUnlockOK']='false'
   {clinic,clinician,client,password} = sessionInfo.attributes
   alert "session not NEW!" unless sessionInfo.isNew() 
   clientUnlockOK = false

@@ -19,6 +19,7 @@ Handheld = Backbone.Model.extend {
     # Mongo field _id,__v do not use
     delete incoming._id
     delete incoming.__v
+    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /\./
     return incoming
 
 }
@@ -39,7 +40,12 @@ handheld.on 'change',->
   return if Pylon.state.get 'recording'
   if (testID = handheld.get 'testID') and (clientUnlock = handheld.get 'clientUnlock')
     $('#testID').val testID
-    Pylon.setTheCurrentProtocol testID
+    p=Pylon.setTheCurrentProtocol testID
+    #if the protocol is not a lock-down protocol, the unlock code is erased
+    unless p.get 'lockDown'
+      localStorage['clientUnlock'] =  ''
+      return
+
     localStorage['clientUnlock'] =  clientUnlock
     clinician = handheld.get 'clinician'
     clinic = handheld.get 'clinic'
@@ -54,7 +60,8 @@ handheld.on 'change',->
     handlogger "Setting recording state in handheld:change"
     Pylon.state.set 'recording',false
     Pylon.state.set 'loggedIn',true
-    Pylon.trigger 'systemEvent:recordCountDown:start'
+    Pylon.trigger "systemEvent:action:record"
+    return
 
   return
 

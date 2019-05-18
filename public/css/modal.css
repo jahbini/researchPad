@@ -2,6 +2,12 @@ body {
   box-sizing: border-box;
   touch-action: manipulation;
 }
+.hide-top {
+  top: 7%;
+}
+.show-top {
+  top: 30%!important;
+}
 .modal {
   box-sizing: border-box;
   touch-action: manipulation;

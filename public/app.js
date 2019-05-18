@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":15,"Case":33,"backbone":30,"jquery":37,"underscore":40}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -216,7 +216,7 @@ Backbone = require('backbone');
 
 localStorage = window.localStorage;
 
-localStorage.setItem('debug', "app,intro,hand,logon,state");
+localStorage.setItem('debug', "app,TIhandler,intro,hand,sensor,state");
 
 onHandheld = document.URL.match(/^file:/);
 
@@ -592,7 +592,7 @@ enterClear = function(accept) {
   $('#testID').prop("disabled", false);
   p = Pylon.setTheCurrentProtocol(sessionInfo.attributes.testID);
   if (Pylon.onHandheld) {
-    restart = p.get('cloneable');
+    restart = p.get('lockDown');
   } else {
     restart = localStorage['hash'];
   }
@@ -675,7 +675,8 @@ enterRecording = function() {
   if (Pylon.state.get('recording')) {
     return;
   }
-  applogger("Attempt to enter Record Phase -- not already recording ok");
+  Pylon.state.set('recording', true);
+  applogger("Record state set scanning false, recording true");
   (Pylon.get('button-calibrate')).set('enabled', false);
   if ((ref3 = Pylon.get('Left')) != null) {
     ref3.set({
@@ -689,17 +690,14 @@ enterRecording = function() {
   }
   $('#testID').prop("disabled", true);
   applogger("Attempt to enter Record Phase -- awaiting promise resolution");
-  Promise.all([resolveConnected('Left'), resolveConnected('Right')]).then(recordingIsActive);
+  Pylon.trigger("showRecorderWindow");
+  Promise.all([resolveConnected('Left'), resolveConnected('Right'), resolveLockdown(Pylon.theProtocol())]).then(recordingIsActive);
   return applogger('Recording --- actively recording sensor info');
 };
 
 recordingIsActive = function() {
   var lastSession, testID;
   Pylon.trigger('systemEvent:recordCountDown:start', 5);
-  applogger("Setting recording state in recordingIsActive");
-  Pylon.state.set({
-    recording: true
-  });
   testID = sessionInfo.get('testID');
   lastSession = sessionInfo.get(sessionInfo.idAttribute);
   Pylon.handheld.save({
@@ -708,16 +706,35 @@ recordingIsActive = function() {
   });
 };
 
+resolveLockdown = function(p) {
+  if (p.get('lockDown')) {
+    Pylon.trigger('systemEvent:lockdown:lock');
+    applogger("Lockdown needed");
+    return new Promise(function(resolve) {
+      return Pylon.on('systemEvent:lockdown:unlock', function() {
+        applogger("Lockdown Resolved");
+        return resolve();
+      });
+    });
+  }
+  return new Promise(function(resolve) {
+    return resolve();
+  });
+};
+
 resolveConnected = function(leftRight) {
   var device;
   device = Pylon.get(leftRight);
-  if (device) {
+  if (device && !device.connected) {
+    applogger("Device needed", leftRight);
     return new Promise(function(resolve) {
       return device.once('change:connected', function() {
+        applogger('Device Resolved', leftRight);
         return resolve();
       });
     });
   } else {
+    applogger('Device Resolved immediate', leftRight);
     return new Promise(function(resolve) {
       return resolve();
     });
@@ -838,7 +855,7 @@ Pylon.on('adminDone', function() {
     clientUnlock -= 10000;
   }
   clientUnlock = localStorage['clientUnlock'] = "" + (clientUnlock.toFixed());
-  localStorage['clientUnlocOK'] = 'false';
+  localStorage['clientUnlockOK'] = 'false';
   ref3 = sessionInfo.attributes, clinic = ref3.clinic, clinician = ref3.clinician, client = ref3.client, password = ref3.password;
   if (!sessionInfo.isNew()) {
     alert("session not NEW!");
@@ -2699,6 +2716,9 @@ Handheld = Backbone.Model.extend({
   parse: function(incoming) {
     delete incoming._id;
     delete incoming.__v;
+    if (incoming.clientUnlock.match(/\./)) {
+      incoming.clientUnlock = parseInt(incoming.clientUnlock, 10);
+    }
     return incoming;
   }
 });
@@ -2716,7 +2736,7 @@ handheld.save({
 });
 
 handheld.on('change', function() {
-  var client, clientUnlock, clinic, clinician, password, testID;
+  var client, clientUnlock, clinic, clinician, p, password, testID;
   handlogger("handheld change", handheld.attributes);
   localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
   if (Pylon.state.get('recording')) {
@@ -2724,7 +2744,11 @@ handheld.on('change', function() {
   }
   if ((testID = handheld.get('testID')) && (clientUnlock = handheld.get('clientUnlock'))) {
     $('#testID').val(testID);
-    Pylon.setTheCurrentProtocol(testID);
+    p = Pylon.setTheCurrentProtocol(testID);
+    if (!p.get('lockDown')) {
+      localStorage['clientUnlock'] = '';
+      return;
+    }
     localStorage['clientUnlock'] = clientUnlock;
     clinician = handheld.get('clinician');
     clinic = handheld.get('clinic');
@@ -2745,7 +2769,8 @@ handheld.on('change', function() {
     handlogger("Setting recording state in handheld:change");
     Pylon.state.set('recording', false);
     Pylon.state.set('loggedIn', true);
-    Pylon.trigger('systemEvent:recordCountDown:start');
+    Pylon.trigger("systemEvent:action:record");
+    return;
   }
 });
 
@@ -2816,50 +2841,6 @@ protocolCollection = Backbone.Collection.extend({
 });
 
 module.exports = new protocolCollection;
-
-
-/*
- *  From keystone
-name: "unknown"
-comments: "Default test"
-sensorsNeeded: 0
-showLeadIn: false
-leadInDuration: 0
-showPractice: false
-practiceDuration: 0
-testDuration: 10000 # show test /error message for ten seconds
-mileStonesAreProtocols: false
-suppressInDropDown: true
-showMileStones: true
-mileStoneText: "Bad name speccified in test sequencing"
-mileStones: "😵,😵"
-#Protocol.add
-  name:
-    type: Types.Text
-    required: true
-    index: true
-    unique: true
-    default: "Other"
-  comments: type: Types.Text
-  sensorsNeeded: type: Types.Number , default: 0
-
-  showLeadIn: type: Types.Boolean, default: false
-  leadInDuration: type: Types.Number, default: 5
-
-  showPractice: type: Types.Boolean, default: false
-  practiceDuration: type: Types.Number, default:5
-
-  testDuration: type: Types.Number, default:0
-
-  mileStonesAreProtocols: type: Types.Boolean, default: false
-  suppressInDropDown: type: Types.Boolean, default: false
-  showMileStones: type: Types.Boolean, default: false
-  mileStoneText: type:Types.Text, default: "The test"
-
-  mileStones:
-    type: Types.Text
-    default: ""
- */
 
 
 
@@ -3404,21 +3385,14 @@ protocolPhase = Backbone.Model.extend({
   },
   initialize: function() {
     var continueCloneableSuite, setTestOrDefault, startCloneableSuite;
-    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
+    this.on('unlocked', function() {
+      return Pylon.trigger("systemEvent:lockdown:unlock");
+    });
+    Pylon.on('systemEvent:lockdown:lock', (function(_this) {
       return function() {
-        var p, sessionInfo;
-        intrologger("setting state true in count-up-down");
-        Pylon.state.set({
-          recording: true
-        });
-        _this.set('protocol', p = Pylon.theProtocol());
-        if (p.get('mileStonesAreProtocols')) {
-          _this.allMyProtocols = (p.get('mileStones')).slice(0);
-        } else {
-          _this.allMyProtocols = [p.get('name')];
-        }
+        var p;
         p = Pylon.theProtocol();
-        if (p.get('cloneable')) {
+        if (p.get('lockDown')) {
           if (localStorage['clientUnlockOK'] === 'true') {
             Pylon.saneTimeout(0, function() {
               return _this.trigger('continueCloneableSuite');
@@ -3428,7 +3402,17 @@ protocolPhase = Backbone.Model.extend({
               return _this.trigger('startCloneableSuite');
             });
           }
-          return;
+        }
+      };
+    })(this));
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
+      return function() {
+        var p, sessionInfo;
+        _this.set('protocol', p = Pylon.theProtocol());
+        if (p.get('mileStonesAreProtocols')) {
+          _this.allMyProtocols = (p.get('mileStones')).slice(0);
+        } else {
+          _this.allMyProtocols = [p.get('name')];
         }
         sessionInfo = Pylon.get('sessionInfo');
         if (sessionInfo.isNew()) {
@@ -3490,15 +3474,16 @@ protocolPhase = Backbone.Model.extend({
     };
     continueCloneableSuite = (function(_this) {
       return function() {
-        var paragraph;
+        var p, paragraph;
         paragraph = "Press the keys with your unlock code";
-        if (_this.attributes.protocol.attributes.demoOnly) {
+        p = Pylon.theProtocol();
+        if (p.get('demoOnly')) {
           paragraph += " DEMO ONLY code = " + localStorage['clientUnlock'];
         }
         pHT.setEnvironment({
           headline: "Enter the Unlock Code",
           paragraph: paragraph,
-          nextPhase: "leadIn",
+          nextPhase: "unlocked",
           clientcode: localStorage['clientUnlock'],
           start: 0,
           limit: 0
@@ -3639,7 +3624,7 @@ protocolPhase = Backbone.Model.extend({
       setTestOrDefault(newTest);
       this.trigger('practice');
     });
-    Pylon.on('systemEvent:stopCountDown:start', (function(_this) {
+    Pylon.on("systemEvent:action:stop", (function(_this) {
       return function() {
         return _this.trigger('countOut');
       };
@@ -3668,6 +3653,13 @@ protocolPhase = Backbone.Model.extend({
     })(this));
     return this.on('terminate', (function(_this) {
       return function() {
+        pHT.setEnvironment({
+          headline: "Get Ready",
+          paragraph: "Please wait",
+          start: 0,
+          limit: 0,
+          nextPhase: "terminate"
+        });
         pHT.stopCount();
         Pylon.state.set({
           recording: false
@@ -3692,8 +3684,17 @@ recorderViewTemplate = Backbone.View.extend({
   el: "#recorder",
   render: function() {},
   initialize: function() {
-    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
-      return function(time) {
+    Pylon.on('showRecorderWindow', (function(_this) {
+      return function() {
+        var p;
+        p = Pylon.theProtocol();
+        if (p.get('gestureCapture')) {
+          _this.$el.addClass('hide-top');
+          _this.$el.removeClass('show-top');
+        } else {
+          _this.$el.addClass('show-top');
+          _this.$el.removeClass('hide-top');
+        }
         return _this.$el.fadeIn();
       };
     })(this));
@@ -4145,6 +4146,9 @@ Pages = (function() {
         style: "background-color:lightcyan;font-size:265%"
       });
     });
+    div("#duration-report.modal", {
+      style: "top:50%;display:none;"
+    });
   });
 
   Pages.prototype.scanBody = renderable(function() {
@@ -4498,47 +4502,6 @@ shuffle = function(a) {
 
 
 /*
-#type: "touchstart"
-#touches: TouchList
-#0: Touch
- * altitudeAngle: 0
- *  azimuthAngle: 0
- *   clientX: 321
- *    clientY: 158
- *     force: 0
- *      identifier: 2043187604
- *       pageX: 321
- *        pageY: 158
- *         radiusX: 128.796875
- *          radiusY: 128.796875
- *           rotationAngle: 0
- *            screenX: 321
- *             screenY: 158
- *              target: <div class="three columns">
- *               touchType: "direct"
- *                Touch Prototype
- *                1: Touch
- *                 altitudeAngle: 0
- *                  azimuthAngle: 0
- *                   clientX: 562
- *                    clientY: 354
- *                     force: 0
- *                      identifier: 2043187605
- *                       pageX: 562
- *                        pageY: 354
- *                         radiusX: 154.5625
- *                          radiusY: 154.5625
- *                           rotationAngle: 0
- *                            screenX: 562
- *                             screenY: 354
- *                              target: <div class="row">
- *                               touchType: "direct"
- *                                Touch Prototype
- *                                length: 2
- */
-
-
-/*
  * touchEntries has a converter fn for each of the keys of the touch structure from the OS
  * used by logTouch fn to create uploadable event object from touch stuff from iOS
  */
@@ -4658,15 +4621,13 @@ ProtocolReportTemplate = Backbone.View.extend({
         var theTest;
         dontListenForTouch();
         theTest = Pylon.theProtocol();
-        _this.$el.attr({
-          style: 'display:none'
-        });
-        if (!theTest.get('showMileStones')) {
+        _this.$el.hide();
+        if (!theTest.get('gestureCapture')) {
+          _this.$el.show();
+          Pylon.trigger("systemEvent:externalTimer:show");
           return;
         }
-        _this.$el.attr({
-          style: 'display'
-        });
+        _this.$el.show();
         listenForTouch();
         _this.$el.fadeIn();
         _this.$el.addClass('active');
@@ -4742,7 +4703,7 @@ ProtocolReportTemplate = Backbone.View.extend({
   render: function() {
     var theTest;
     theTest = Pylon.theProtocol();
-    if (!theTest.get('showMileStones')) {
+    if (!theTest.get('gestureCapture')) {
       return;
     }
     this.renderBody.render();

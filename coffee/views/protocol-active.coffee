@@ -22,47 +22,6 @@ shuffle = (a) ->
     j = Math.floor Math.random() * (i)
     [a[i], a[j]] = [a[j], a[i]]
   a
-#
-
-###
-#type: "touchstart"
-#touches: TouchList
-#0: Touch
-# altitudeAngle: 0
-#  azimuthAngle: 0
-#   clientX: 321
-#    clientY: 158
-#     force: 0
-#      identifier: 2043187604
-#       pageX: 321
-#        pageY: 158
-#         radiusX: 128.796875
-#          radiusY: 128.796875
-#           rotationAngle: 0
-#            screenX: 321
-#             screenY: 158
-#              target: <div class="three columns">
-#               touchType: "direct"
-#                Touch Prototype
-#                1: Touch
-#                 altitudeAngle: 0
-#                  azimuthAngle: 0
-#                   clientX: 562
-#                    clientY: 354
-#                     force: 0
-#                      identifier: 2043187605
-#                       pageX: 562
-#                        pageY: 354
-#                         radiusX: 154.5625
-#                          radiusY: 154.5625
-#                           rotationAngle: 0
-#                            screenX: 562
-#                             screenY: 354
-#                              target: <div class="row">
-#                               touchType: "direct"
-#                                Touch Prototype
-#                                length: 2
-###
 
 ###
 # touchEntries has a converter fn for each of the keys of the touch structure from the OS
@@ -134,9 +93,12 @@ ProtocolReportTemplate = Backbone.View.extend
       Pylon.on 'systemEvent:protocol:active', ()=>
         dontListenForTouch()
         theTest = Pylon.theProtocol()
-        @$el.attr( style: 'display:none')
-        return unless theTest.get 'showMileStones'
-        @$el.attr( style: 'display')
+        @$el.hide()
+        if  !theTest.get 'gestureCapture'
+          @$el.show()
+          Pylon.trigger "systemEvent:externalTimer:show"
+          return
+        @$el.show()
         listenForTouch()
         @$el.fadeIn()
         @$el.addClass 'active'
@@ -180,7 +142,7 @@ ProtocolReportTemplate = Backbone.View.extend
     # show panel of action buttons
     render: ()->
       theTest = Pylon.theProtocol()
-      return unless theTest.get 'showMileStones'
+      return unless theTest.get 'gestureCapture'
       @renderBody.render()
       @
 
