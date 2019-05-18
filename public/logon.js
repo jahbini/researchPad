@@ -190,3 +190,4 @@ console.log('logon.js done');
 /*Retrotope App Version  "3.0.3-test" */
 /*Retrotope App Version  "3.0.4-test" */
 /*Retrotope App Version  "3.0.5-test" */
+/*Retrotope App Version  "3.0.6-test" */

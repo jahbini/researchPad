@@ -2923,7 +2923,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.5-test';
+module.exports = '3.0.6-test';
 
 
 
