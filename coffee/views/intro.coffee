@@ -33,6 +33,8 @@ protocolPhase = Backbone.Model.extend
     #  if the showLeadIn is active, then put it up, else be quiet
     Pylon.on 'systemEvent:recordCountDown:start', =>
       @set 'protocol', p= Pylon.theProtocol()
+      if !p.get 'gestureCapture'
+        Pylon.trigger "systemEvent:externalTimer:show"
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
       else

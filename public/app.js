@@ -2923,7 +2923,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.6-test';
+module.exports = '3.0.7-test';
 
 
 
@@ -3409,6 +3409,9 @@ protocolPhase = Backbone.Model.extend({
       return function() {
         var p, sessionInfo;
         _this.set('protocol', p = Pylon.theProtocol());
+        if (!p.get('gestureCapture')) {
+          Pylon.trigger("systemEvent:externalTimer:show");
+        }
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
         } else {
@@ -4623,8 +4626,6 @@ ProtocolReportTemplate = Backbone.View.extend({
         theTest = Pylon.theProtocol();
         _this.$el.hide();
         if (!theTest.get('gestureCapture')) {
-          _this.$el.show();
-          Pylon.trigger("systemEvent:externalTimer:show");
           return;
         }
         _this.$el.show();

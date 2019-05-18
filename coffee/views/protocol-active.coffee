@@ -94,10 +94,7 @@ ProtocolReportTemplate = Backbone.View.extend
         dontListenForTouch()
         theTest = Pylon.theProtocol()
         @$el.hide()
-        if  !theTest.get 'gestureCapture'
-          @$el.show()
-          Pylon.trigger "systemEvent:externalTimer:show"
-          return
+        return unless theTest.get 'gestureCapture'
         @$el.show()
         listenForTouch()
         @$el.fadeIn()
