@@ -1,20 +1,20 @@
 {
     "name": "stagApp",
     "description": "Retrotope acuire data for clinical mobility study",
-    "version": "3.0.5-test",
+    "version": "3.0.7-test",
     "author": "James A. Hinds",
     "dependencies": {
         "backbone": "^1.3.3",
         "backbone-forms": "latest",
         "case": "~1.4.1",
         "com.bamboocando.cordova.nslogger-cocoalumberjack-connector-plugin": "https://github.com/jahbini/lumberjack.git",
-        "cordova-ios": "^4.5.5",
+        "cordova-ios": "^5.0.0",
         "cordova-plugin-ble-central": "git+https://github.com/jahbini/cordova-plugin-ble-central.git",
         "cordova-plugin-ddjslog": "git+ssh://git@github.com/jahbini/cordova-plugin-ddjslog.git",
-        "cordova-plugin-device": "^1.1.7",
-        "cordova-plugin-file": "~4.3.2",
-        "cordova-plugin-nativestorage": "~2.0.2",
-        "cordova-plugin-network-information": "^1.3.4",
+        "cordova-plugin-device": "^2.0.2",
+        "cordova-plugin-file": "~6.0.1",
+        "cordova-plugin-nativestorage": "~2.3.2",
+        "cordova-plugin-network-information": "^2.0.1",
         "debug": "^2.6.9",
         "halvalla": "^1.8.4",
         "hbsfy": "~2.2.1",
@@ -24,7 +24,8 @@
         "seen-js": "^0.2.7",
         "teacup": "latest",
         "underscore": "^1.9.1",
-        "winston": "^3.1.0"
+        "winston": "^3.1.0",
+        "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": "../lumberjack"
     },
     "browser": {
         "Case": "./node_modules/case",

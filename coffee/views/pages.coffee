@@ -141,9 +141,10 @@ class Pages
     # the test activity portal -- populated in modalView.coffee
     div "#recorder.modal",style:"height:100%",->
       div "#count-down"
-      div "#example", style:"background-color:lightcyan;font-size:265%"
+      div "#example", style:"background-color:lightcyan;font-size:265%"       #example space for huntingtons tests
     div "#protocol-report.modal-test", style: "display:none;",->
-      div "#protocol-here", style:"background-color:lightcyan;font-size:265%"
+      div "#protocol-here", style:"background-color:lightcyan;font-size:265%" #protocol engines for Huntingtons
+    div "#duration-report.modal", style: "top:50%;display:none;"              #external start-stop modal
     return
 
   scanBody: renderable ()->

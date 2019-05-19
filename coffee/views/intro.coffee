@@ -18,24 +18,28 @@ protocolPhase = Backbone.Model.extend
     protocol: null
 
   initialize: ->
-    #start a session by waiting for the host with a 5 second count-in
-    #  if the showLeadIn is active, then put it up, else be quiet
-    Pylon.on 'systemEvent:recordCountDown:start', =>
-      intrologger "setting state true in count-up-down"
-      Pylon.state.set recording: true
-      @set 'protocol', p= Pylon.theProtocol()
-      if p.get 'mileStonesAreProtocols'
-        @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
-      else
-        @allMyProtocols = [p.get 'name' ]
-      
+    @on 'unlocked',()-> Pylon.trigger "systemEvent:lockdown:unlock"
+
+    Pylon.on 'systemEvent:lockdown:lock',=>
       p = Pylon.theProtocol()
-      if p.get 'cloneable'
+      if p.get 'lockDown'
         if localStorage['clientUnlockOK'] == 'true'
           Pylon.saneTimeout 0,()=>@trigger 'continueCloneableSuite'
         else
           Pylon.saneTimeout 0,()=>@trigger 'startCloneableSuite'
         return
+
+    #start a session by waiting for the host with a 5 second count-in
+    #  if the showLeadIn is active, then put it up, else be quiet
+    Pylon.on 'systemEvent:recordCountDown:start', =>
+      @set 'protocol', p= Pylon.theProtocol()
+      if !p.get 'gestureCapture'
+        Pylon.trigger "systemEvent:externalTimer:show"
+      if p.get 'mileStonesAreProtocols'
+        @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
+      else
+        @allMyProtocols = [p.get 'name' ]
+      
       sessionInfo=Pylon.get('sessionInfo')
       if sessionInfo.isNew()
         Pylon.saneTimeout 0,()=>@trigger 'start'
@@ -83,12 +87,13 @@ protocolPhase = Backbone.Model.extend
     continueCloneableSuite= ()=>  # put up unlock screen
       #code = prompt "Ready for next test. enter code to abort","proceed"
       paragraph = "Press the keys with your unlock code"
-      if @attributes.protocol.attributes.demoOnly
+      p= Pylon.theProtocol()
+      if p.get 'demoOnly'
         paragraph += " DEMO ONLY code = #{localStorage['clientUnlock']}"
       pHT.setEnvironment
         headline: "Enter the Unlock Code"
         paragraph: paragraph
-        nextPhase: "leadIn"
+        nextPhase: "unlocked"
         clientcode: localStorage['clientUnlock']
         start: 0
         limit: 0
@@ -209,8 +214,9 @@ protocolPhase = Backbone.Model.extend
       @.trigger 'practice'
       return
 
-    Pylon.on 'systemEvent:stopCountDown:start', =>
+    Pylon.on "systemEvent:action:stop", =>
       @trigger 'countOut'
+
     @on 'countOut', =>
       Pylon.state.set recording: 'stopping'
       Pylon.trigger 'systemEvent:protocol:terminate'
@@ -227,6 +233,12 @@ protocolPhase = Backbone.Model.extend
         nextPhase: "terminate" 
       return
     @on 'terminate',=>
+      pHT.setEnvironment
+        headline: "Get Ready"
+        paragraph: "Please wait"
+        start: 0
+        limit: 0
+        nextPhase: "terminate" 
       pHT.stopCount()
       Pylon.state.set recording: false
       Pylon.trigger 'systemEvent:stopCountDown:over'
@@ -244,9 +256,17 @@ This is intended to record five seconds of padding to the actual test
 recorderViewTemplate = Backbone.View.extend
   el: "#recorder"
   render: ->
+      
 
   initialize: ()->
-    Pylon.on 'systemEvent:recordCountDown:start', (time)=>
+    Pylon.on 'showRecorderWindow', ()=>
+      p = Pylon.theProtocol()
+      if p.get 'gestureCapture'
+        @$el.addClass 'hide-top'
+        @$el.removeClass 'show-top'
+      else
+        @$el.addClass 'show-top'
+        @$el.removeClass 'hide-top'
       @$el.fadeIn()
     Pylon.on 'removeRecorderWindow', (time=1000)=>
       @$el.fadeOut(time)
