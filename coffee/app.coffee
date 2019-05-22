@@ -317,7 +317,8 @@ enterUpload = ->
 enterCalibrate = ->
   return
   applogger 'enterCalibrate -- not used currently'
-  calibrating = true
+  Pylon.state.set
+    calibrating: false
   (Pylon.get 'button-action').set enabled: true, legend: "Record"
   (Pylon.get 'button-calibrate').set
     legend: "Exit Calibration"
@@ -325,7 +326,8 @@ enterCalibrate = ->
   return false
 
 exitCalibrate = ->
-  calibrating = false
+  Pylon.state.set
+    calibrating: false
   (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
   return false
 
@@ -362,7 +364,9 @@ enterRecording = ->
   (Pylon.get 'button-admin').set 'enabled',false
   # reject record request if we are already recording or stopping
   return if Pylon.state.get 'recording'
-  Pylon.state.set 'recording',true
+  Pylon.state.set 
+    recording:true
+    scanning: false
   applogger "Record state set scanning false, recording true"
 
   # start recording and show a lead in timer of 5 seconds
@@ -378,9 +382,10 @@ enterRecording = ->
     resolveLockdown Pylon.theProtocol()
     ]
     .then recordingIsActive
-  applogger 'Recording --- actively recording sensor info'
+  return
   
 recordingIsActive = ()->
+  applogger 'Recording --- actively recording sensor info'
   Pylon.trigger 'systemEvent:recordCountDown:start',5
 
   testID = sessionInfo.get 'testID'
