@@ -32,7 +32,7 @@ var minTimeout = 500   // seen any changes during this time frame?
 var deltaInc = 2      // assume clock must have drifted a bit
 var restartScan = 10*1000  // restart the scan every 10 seconds (why!?!?!)
 
-var timerMatch = /^retrotope-timer\(([01])\)(\d*)$/
+var timerMatch = /^retrotope-timer\(([01])\)(\d+)$/
 
 // assume that the two motion sensors were found and mounted....
 // check for two timer devices
