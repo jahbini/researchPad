@@ -162,8 +162,8 @@ protocolPhase = Backbone.Model.extend
       pHT.setEnvironment
         headline: "Test In Progress"
         paragraph:  (p.get "mileStoneText") || "go"
-        start: (p.get "testDuration") || 9999
-        limit: 0
+        start: 0
+        limit: (p.get "testDuration") || 9999
         nextPhase: 'selectTheNextTest'
         action: "underway/#{p.get 'testDuration'}"
       return

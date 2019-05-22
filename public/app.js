@@ -618,10 +618,11 @@ enterUpload = function() {
 };
 
 enterCalibrate = function() {
-  var calibrating;
   return;
   applogger('enterCalibrate -- not used currently');
-  calibrating = true;
+  Pylon.state.set({
+    calibrating: false
+  });
   (Pylon.get('button-action')).set({
     enabled: true,
     legend: "Record"
@@ -634,8 +635,9 @@ enterCalibrate = function() {
 };
 
 exitCalibrate = function() {
-  var calibrating;
-  calibrating = false;
+  Pylon.state.set({
+    calibrating: false
+  });
   (Pylon.get('button-calibrate')).set('legend', "Calibrate");
   return false;
 };
@@ -675,7 +677,10 @@ enterRecording = function() {
   if (Pylon.state.get('recording')) {
     return;
   }
-  Pylon.state.set('recording', true);
+  Pylon.state.set({
+    recording: true,
+    scanning: false
+  });
   applogger("Record state set scanning false, recording true");
   (Pylon.get('button-calibrate')).set('enabled', false);
   if ((ref3 = Pylon.get('Left')) != null) {
@@ -692,11 +697,11 @@ enterRecording = function() {
   applogger("Attempt to enter Record Phase -- awaiting promise resolution");
   Pylon.trigger("showRecorderWindow");
   Promise.all([resolveConnected('Left'), resolveConnected('Right'), resolveLockdown(Pylon.theProtocol())]).then(recordingIsActive);
-  return applogger('Recording --- actively recording sensor info');
 };
 
 recordingIsActive = function() {
   var lastSession, testID;
+  applogger('Recording --- actively recording sensor info');
   Pylon.trigger('systemEvent:recordCountDown:start', 5);
   testID = sessionInfo.get('testID');
   lastSession = sessionInfo.get(sessionInfo.idAttribute);
@@ -2923,7 +2928,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.7-test';
+module.exports = '3.0.8-test';
 
 
 
@@ -3567,8 +3572,8 @@ protocolPhase = Backbone.Model.extend({
         pHT.setEnvironment({
           headline: "Test In Progress",
           paragraph: (p.get("mileStoneText")) || "go",
-          start: (p.get("testDuration")) || 9999,
-          limit: 0,
+          start: 0,
+          limit: (p.get("testDuration")) || 9999,
           nextPhase: 'selectTheNextTest',
           action: "underway/" + (p.get('testDuration'))
         });
@@ -4931,7 +4936,7 @@ tappingBody = Backbone.View.extend({
             for (i = 0, len = mileStones.length; i < len; i++) {
               btn = mileStones[i];
               btnName = btn.replace(/ /g, '-').toLocaleLowerCase();
-              results.push(T.button(".primary.round-button" + extraClass + ".tapping-" + btnName, (
+              results.push(T.span(".gesture.round-button" + extraClass + ".tapping-" + btnName, (
                 obj = {
                   style: "font-size:5rem;margin-right:0.7in"
                 },

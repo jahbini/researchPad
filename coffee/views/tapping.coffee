@@ -27,7 +27,7 @@ tappingBody = Backbone.View.extend
         T.div "row",style:"text-align:center", =>
           for btn in mileStones
             btnName = btn.replace(/ /g,'-').toLocaleLowerCase()
-            T.button ".primary.round-button#{extraClass}.tapping-#{btnName}",
+            T.span ".gesture.round-button#{extraClass}.tapping-#{btnName}",
               {style:"font-size:5rem;margin-right:0.7in","#{Pylon.onWhat}": "Pylon.trigger('systemEvent:mileStone:#{btnName}');Pylon.trigger('quickClass',$(this),'reversed')"},
               -> T.span "#{btn}"
     return
