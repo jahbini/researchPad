@@ -48,6 +48,7 @@ exports.deviceModel = Backbone.Model.extend
     rate: 20
     subscribeState: false
     lastDisplay: Date.now()
+    numReadings: 0
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
@@ -72,21 +73,32 @@ exports.deviceModel = Backbone.Model.extend
       @set 'rowName', "sensor-#{role}"
       $("##{role}AssignedName").text @get 'name'
       return
+ 
     Pylon.state.on "change:recording change:subscribing#{@get 'role'} change:calibrating", ()=>
       role=@get 'role'
       #any of the state values that are truthy will turn on the subscription
-      devicelogger 'Change in connection request'
-      subscribeRequest = ['recording',"subscribing#{role}",'calibrating'].reduce(
-        (memo,v)=> return memo || Boolean Pylon.state.get v
-        false
-        )
+      devicelogger "device connetion manager"
+      for key, element of @.changedAttributes()
+        devicelogger "#{key} is #{element} was #{@.previous key}"
+
+      # legal values for recording state are 'recording' or 'stopping' or false
+      recordingState =  !! Pylon.state.get 'recording'
+      calibratingState =  !! Pylon.state.get 'calibrating'
+      sideState = !! Pylon.state.get "subscribing#{@get 'role'}"
+
+      #set the trigger -- the first packet recieved will signal connection
+      @set 'numReadings',0 if recordingState and !@get 'connected'
+      devicelogger 'numReadings now set as',@get 'numReadings'
+      connectPlease = recordingState | calibratingState | sideState
+
       #if we are in the desired state already, just go away
-      if subscribeRequest == @.get 'subscribeState'
+      if connectPlease  == @.get 'subscribeState'
         devicelogger 'Change in connection request: no change in subscribe status'
         return
-      @.set subscribeState: subscribeRequest
       
-      if subscribeRequest
+      @.set subscribeState: connectPlease
+      devicelogger "state of device now", 
+      if connectPlease
         devicelogger 'Change in connection request: (re) attachDevice'
         @sanity.clear()
         @.connectToDevice().then  @subscribe.bind @

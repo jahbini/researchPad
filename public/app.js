@@ -204,7 +204,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":4,"./lib/glib.coffee":5,"./models/device-model.coffee":15,"Case":33,"backbone":30,"jquery":37,"underscore":40}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":16,"Case":34,"backbone":31,"jquery":38,"underscore":41}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
@@ -215,8 +215,6 @@ _ = require('underscore');
 Backbone = require('backbone');
 
 localStorage = window.localStorage;
-
-localStorage.setItem('debug', "app,TIhandler,intro,hand,sensor,state");
 
 onHandheld = document.URL.match(/^file:/);
 
@@ -730,7 +728,7 @@ resolveLockdown = function(p) {
 resolveConnected = function(leftRight) {
   var device;
   device = Pylon.get(leftRight);
-  if (device && !device.connected) {
+  if (device && !device.get('connected')) {
     applogger("Device needed", leftRight);
     return new Promise(function(resolve) {
       return device.once('change:connected', function() {
@@ -1038,6 +1036,7 @@ Pylon.rate(10);
 $(document).on('deviceready', function() {
   var loadScript, ref3, ref4;
   applogger("device ready");
+  require('./lib/capture-log.coffee');
   sessionInfo.set('platformUUID', ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID");
   sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
@@ -1110,7 +1109,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/loadScript.coffee":6,"./lib/net-view.coffee":7,"./lib/upload.coffee":10,"./models/clients.coffee":11,"./models/clinicians.coffee":12,"./models/clinics.coffee":13,"./models/configurations.coffee":14,"./models/event-model.coffee":16,"./models/handheld.coffee":17,"./models/protocols.coffee":18,"./models/session.coffee":19,"./models/state.coffee":20,"./version.coffee":21,"./views/adminView.coffee":22,"./views/button-view.coffee":23,"./views/pages.coffee":25,"backbone":30,"jquery":37,"underscore":40}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/net-view.coffee":8,"./lib/upload.coffee":11,"./models/clients.coffee":12,"./models/clinicians.coffee":13,"./models/clinics.coffee":14,"./models/configurations.coffee":15,"./models/event-model.coffee":17,"./models/handheld.coffee":18,"./models/protocols.coffee":19,"./models/session.coffee":20,"./models/state.coffee":21,"./version.coffee":22,"./views/adminView.coffee":23,"./views/button-view.coffee":24,"./views/pages.coffee":26,"backbone":31,"jquery":38,"underscore":41}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1165,7 +1164,81 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":4,"debug":35,"json-stringify-safe":38}],4:[function(require,module,exports){
+},{"./console":5,"debug":36,"json-stringify-safe":39}],4:[function(require,module,exports){
+var Backbone, buglog, introlog, logItems, logPacket, logger;
+
+Backbone = require('backbone');
+
+logPacket = Backbone.Model.extend({
+  defaults: {
+    name: "logfile",
+    contents: ""
+  },
+  idAttribute: 'name',
+  initialize: function() {
+    this.set({
+      handheld: Pylon.handheldID
+    });
+    this.xhr = this.save();
+  }
+});
+
+logItems = Backbone.Collection.extend({
+  model: logPacket,
+  url: Pylon.get('hostUrl') + 'logfile'
+});
+
+buglog = require('../lib/buglog.coffee');
+
+logger = (introlog = new buglog("capture-log")).log;
+
+Pylon.accessFileSystem = function() {
+  var fail, logsForUpload, showFile, successDir;
+  logsForUpload = new logItems;
+  successDir = function(entries) {
+    var entry, i, len;
+    for (i = 0, len = entries.length; i < len; i++) {
+      entry = entries[i];
+      showFile(entry);
+    }
+  };
+  fail = function(error) {
+    logger('Failed to list directory contents: ', error);
+  };
+  window.resolveLocalFileSystemURL(cordova.file.documentsDirectory, function(dirEntry) {
+    var directoryReader;
+    directoryReader = dirEntry.createReader();
+    logger("resolved directory is", dirEntry);
+    directoryReader.readEntries(successDir, fail);
+  });
+  showFile = function(fileEntry) {
+    var successLoad;
+    successLoad = function(file) {
+      var reader;
+      reader = new FileReader();
+      reader.onloadend = function() {
+        if (this.result === '') {
+          return;
+        }
+        if (!file.name.match(/\.log$/)) {
+          return;
+        }
+        logsForUpload.push({
+          name: file.name,
+          contents: this.result
+        });
+      };
+      return reader.readAsText(file);
+    };
+    if (fileEntry.isFile) {
+      fileEntry.file(successLoad, fail);
+    }
+  };
+};
+
+
+
+},{"../lib/buglog.coffee":3,"backbone":31}],5:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1475,7 +1548,7 @@ THE SOFTWARE.
   window.Console = Console;
 })();
 
-},{}],5:[function(require,module,exports){
+},{}],6:[function(require,module,exports){
 var first, glib, hasher, namer, second, verbose;
 
 first = ["Red", "Green", "Blue", "Grey", "Happy", "Hungry", "Sleepy", "Healthy", "Easy", "Hard", "Quiet", "Loud", "Round", "Pointed", "Wavy", "Furry"];
@@ -1522,7 +1595,7 @@ exports.glib = new glib;
 
 
 
-},{}],6:[function(require,module,exports){
+},{}],7:[function(require,module,exports){
 var _, loadScript, loadedScripts;
 
 loadedScripts = {};
@@ -1583,7 +1656,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":40}],7:[function(require,module,exports){
+},{"underscore":41}],8:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
@@ -1687,7 +1760,7 @@ exports.netView = new netView;
 
 
 
-},{"./buglog.coffee":3,"backbone":30,"jquery":37,"teacup":39}],8:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":31,"jquery":38,"teacup":40}],9:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -1779,7 +1852,7 @@ module.exports = sanity = (function() {
 
 
 
-},{"./buglog.coffee":3,"./statistics.coffee":9}],9:[function(require,module,exports){
+},{"./buglog.coffee":3,"./statistics.coffee":10}],10:[function(require,module,exports){
 var buglog, pipelinelog, pipelinelogger, statistics;
 
 buglog = require('./buglog.coffee');
@@ -1914,7 +1987,7 @@ module.exports = statistics = (function() {
 
 
 
-},{"./buglog.coffee":3}],10:[function(require,module,exports){
+},{"./buglog.coffee":3}],11:[function(require,module,exports){
 var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
@@ -2143,7 +2216,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":30,"jquery":37,"underscore":40}],11:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":31,"jquery":38,"underscore":41}],12:[function(require,module,exports){
 var $, Backbone, _, clientCollection, clientModel, clients;
 
 window.$ = $ = require('jquery');
@@ -2167,7 +2240,7 @@ module.exports = clients = new clientCollection;
 
 
 
-},{"backbone":30,"jquery":37,"underscore":40}],12:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"underscore":41}],13:[function(require,module,exports){
 var Backbone, clinicianCollection, clinicianModel;
 
 Backbone = require('backbone');
@@ -2187,7 +2260,7 @@ module.exports = new clinicianCollection;
 
 
 
-},{"backbone":30}],13:[function(require,module,exports){
+},{"backbone":31}],14:[function(require,module,exports){
 var $, Backbone, _, clinicCollection, clinicModel;
 
 window.$ = $ = require('jquery');
@@ -2209,7 +2282,7 @@ module.exports = new clinicCollection;
 
 
 
-},{"backbone":30,"jquery":37,"underscore":40}],14:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"underscore":41}],15:[function(require,module,exports){
 var $, Backbone, ConfigurationCollection, ConfigurationModel, _;
 
 window.$ = $ = require('jquery');
@@ -2238,7 +2311,7 @@ module.exports = new ConfigurationCollection;
 
 
 
-},{"backbone":30,"jquery":37,"underscore":40}],15:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"underscore":41}],16:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('backbone');
@@ -2302,7 +2375,8 @@ exports.deviceModel = Backbone.Model.extend({
     connected: false,
     rate: 20,
     subscribeState: false,
-    lastDisplay: Date.now()
+    lastDisplay: Date.now(),
+    numReadings: 0
   },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
@@ -2336,27 +2410,30 @@ exports.deviceModel = Backbone.Model.extend({
     });
     Pylon.state.on("change:recording change:subscribing" + (this.get('role')) + " change:calibrating", (function(_this) {
       return function() {
-        var subscribeRequest;
+        var calibratingState, connectPlease, element, key, recordingState, ref, sideState;
         role = _this.get('role');
-        devicelogger('Change in connection request');
-        subscribeRequest = ['recording', "subscribing" + role, 'calibrating'].reduce(function(memo, v) {
-          return memo || Boolean(Pylon.state.get(v));
-        }, false);
-        if (subscribeRequest === _this.get('subscribeState')) {
+        devicelogger("device connetion manager");
+        ref = _this.changedAttributes();
+        for (key in ref) {
+          element = ref[key];
+          devicelogger(key + " is " + element + " was " + (_this.previous(key)));
+        }
+        recordingState = !!Pylon.state.get('recording');
+        calibratingState = !!Pylon.state.get('calibrating');
+        sideState = !!Pylon.state.get("subscribing" + (_this.get('role')));
+        if (recordingState && !_this.get('connected')) {
+          _this.set('numReadings', 0);
+        }
+        devicelogger('numReadings now set as', _this.get('numReadings'));
+        connectPlease = recordingState | calibratingState | sideState;
+        if (connectPlease === _this.get('subscribeState')) {
           devicelogger('Change in connection request: no change in subscribe status');
           return;
         }
         _this.set({
-          subscribeState: subscribeRequest
+          subscribeState: connectPlease
         });
-        if (subscribeRequest) {
-          devicelogger('Change in connection request: (re) attachDevice');
-          _this.sanity.clear();
-          _this.connectToDevice().then(_this.subscribe.bind(_this));
-        } else {
-          devicelogger('Change in connection request: detachDevice');
-          _this.disconnect();
-        }
+        devicelogger("state of device now", connectPlease ? (devicelogger('Change in connection request: (re) attachDevice'), _this.sanity.clear(), _this.connectToDevice().then(_this.subscribe.bind(_this))) : (devicelogger('Change in connection request: detachDevice'), _this.disconnect()));
       };
     })(this));
     this.on("change:serialNumber", function() {
@@ -2637,7 +2714,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":16,"backbone":30}],16:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":9,"./event-model.coffee":17,"backbone":31}],17:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2700,7 +2777,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":10,"backbone":30,"underscore":40}],17:[function(require,module,exports){
+},{"../lib/upload.coffee":11,"backbone":31,"underscore":41}],18:[function(require,module,exports){
 
 /*
  * set up information regarding the specific device
@@ -2719,6 +2796,7 @@ Handheld = Backbone.Model.extend({
   idAttribute: '_id',
   urlRoot: Pylon.get('hostUrl') + 'handheld',
   parse: function(incoming) {
+    Pylon.handheldID = incoming._id;
     delete incoming._id;
     delete incoming.__v;
     if (incoming.clientUnlock.match(/\./)) {
@@ -2744,6 +2822,10 @@ handheld.on('change', function() {
   var client, clientUnlock, clinic, clinician, p, password, testID;
   handlogger("handheld change", handheld.attributes);
   localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
+  localStorage['debug'] = handheld.get('debugString');
+  if (handheld.get('loadLogFiles')) {
+    Pylon.accessFileSystem();
+  }
   if (Pylon.state.get('recording')) {
     return;
   }
@@ -2783,7 +2865,7 @@ module.exports = handheld;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":30}],18:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":31}],19:[function(require,module,exports){
 var Backbone, _, protocol, protocolCollection, shuffle;
 
 _ = require('underscore');
@@ -2849,7 +2931,7 @@ module.exports = new protocolCollection;
 
 
 
-},{"backbone":30,"underscore":40}],19:[function(require,module,exports){
+},{"backbone":31,"underscore":41}],20:[function(require,module,exports){
 var Backbone, rawSession, sessionInfo;
 
 Backbone = require('backbone');
@@ -2877,7 +2959,7 @@ module.exports = sessionInfo;
 
 
 
-},{"backbone":30}],20:[function(require,module,exports){
+},{"backbone":31}],21:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -2927,12 +3009,12 @@ exports.state = new State;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":30,"underscore":40}],21:[function(require,module,exports){
-module.exports = '3.0.8-test';
+},{"../lib/buglog.coffee":3,"backbone":31,"underscore":41}],22:[function(require,module,exports){
+module.exports = '3.0.9-test';
 
 
 
-},{}],22:[function(require,module,exports){
+},{}],23:[function(require,module,exports){
 var $, Backbone, Teacup, adminView, adminlog, adminlogger, buglog, implementing,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3249,7 +3331,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":30,"jquery":37,"teacup":39}],23:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":31,"jquery":38,"teacup":40}],24:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -3354,7 +3436,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":30,"jquery":37,"teacup":39}],24:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"teacup":40}],25:[function(require,module,exports){
 var $, BV, Backbone, T, activeKey, buglog, implementing, introlog, intrologger, pHT, pP, protocolHeadTemplate, protocolPhase, recorderViewTemplate,
   slice = [].slice;
 
@@ -3914,7 +3996,7 @@ pHT = new protocolHeadTemplate();
 
 
 
-},{"../lib/buglog.coffee":3,"./button-view.coffee":23,"backbone":30,"jquery":37,"teacup":39}],25:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./button-view.coffee":24,"backbone":31,"jquery":38,"teacup":40}],26:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -4463,7 +4545,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./intro.coffee":24,"./protocol-active.coffee":26,"backbone":30,"jquery":37,"teacup":39}],26:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":23,"./intro.coffee":25,"./protocol-active.coffee":27,"backbone":31,"jquery":38,"teacup":40}],27:[function(require,module,exports){
 var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, ref, ref1, ref2, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
@@ -4721,7 +4803,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"./button-view.coffee":23,"./stroop.coffee":27,"./tapping.coffee":28,"./ten-icon.coffee":29,"backbone":30,"jquery":37,"teacup":39}],27:[function(require,module,exports){
+},{"./button-view.coffee":24,"./stroop.coffee":28,"./tapping.coffee":29,"./ten-icon.coffee":30,"backbone":31,"jquery":38,"teacup":40}],28:[function(require,module,exports){
 var $, Backbone, T, colorTextBody, colorTextExample, colorToHue, colorToName, implementing, shuffle,
   slice = [].slice;
 
@@ -4887,7 +4969,7 @@ exports.colorTextExample = colorTextExample;
 
 
 
-},{"backbone":30,"jquery":37,"teacup":39}],28:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"teacup":40}],29:[function(require,module,exports){
 var $, BV, Backbone, T, implementing, tappingBody, tappingExample,
   slice = [].slice;
 
@@ -4971,7 +5053,7 @@ exports.tappingExample = tappingExample;
 
 
 
-},{"./button-view.coffee":23,"backbone":30,"jquery":37,"teacup":39}],29:[function(require,module,exports){
+},{"./button-view.coffee":24,"backbone":31,"jquery":38,"teacup":40}],30:[function(require,module,exports){
 var $, Backbone, T, _, activeKey, implementing, keyPadWithIcon, rowWithIcon, shuffle, tenIconBody, tenIconExample,
   slice = [].slice;
 
@@ -5179,7 +5261,7 @@ exports.tenIconExample = tenIconExample;
 
 
 
-},{"backbone":30,"jquery":37,"teacup":39,"underscore":40}],30:[function(require,module,exports){
+},{"backbone":31,"jquery":38,"teacup":40,"underscore":41}],31:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -7103,7 +7185,7 @@ exports.tenIconExample = tenIconExample;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":37,"underscore":31}],31:[function(require,module,exports){
+},{"jquery":38,"underscore":32}],32:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8653,7 +8735,7 @@ exports.tenIconExample = tenIconExample;
   }
 }.call(this));
 
-},{}],32:[function(require,module,exports){
+},{}],33:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -8713,7 +8795,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],33:[function(require,module,exports){
+},{}],34:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -8867,7 +8949,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -9021,7 +9103,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -9210,7 +9292,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":36,"_process":32}],36:[function(require,module,exports){
+},{"./debug":37,"_process":33}],37:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -9414,7 +9496,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":34}],37:[function(require,module,exports){
+},{"ms":35}],38:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.3.1
  * https://jquery.com/
@@ -19780,7 +19862,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -19809,7 +19891,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],39:[function(require,module,exports){
+},{}],40:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -20244,7 +20326,7 @@ function serializer(replacer, cycleReplacer) {
 
 }).call(this);
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 (function (global){
 //     Underscore.js 1.9.1
 //     http://underscorejs.org
