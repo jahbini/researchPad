@@ -58,6 +58,7 @@ class Pages
     w=$("#LeftStatus")
     w.removeClass("led-dark led-green led-yellow led-red")
       .addClass("led-blue") unless w.hasClass "led-red"
+
   Pylon.on 'showVersion', ()->
     msg=$('#alerter').html render ->
       h3 "Thanks for being a part of the Retrotope Experience"
@@ -74,6 +75,7 @@ class Pages
     msg.fadeIn()
     Pylon.saneTimeout 5000,()->
       msg.fadeOut 1000
+
   theBody: renderable (buttons,contents1)=>
     div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
     div '#capture-display.container', ->

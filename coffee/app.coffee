@@ -7,7 +7,7 @@ window.$ = $ = require('jquery')
 _ = require('underscore')
 Backbone = require ('backbone')
 localStorage = window.localStorage
-localStorage.setItem 'debug',"app,TIhandler,intro,hand,sensor,state"
+#localStorage.setItem 'debug',"app,capture-log,TIhandler,intro,hand,sensor,state"
 
 onHandheld = document.URL.match /^file:/
 localStorage['hash']='' if onHandheld
@@ -406,7 +406,7 @@ resolveLockdown = (p)->
 
 resolveConnected = (leftRight)->
   device = Pylon.get leftRight
-  if device && !device.connected
+  if device && !device.get 'connected'
     applogger "Device needed",leftRight
     return new Promise (resolve)->
       device.once 'change:connected',()->
@@ -593,9 +593,9 @@ Pylon.rate = (ms=10)->
   Pylon.set sensorRate: ms
 Pylon.rate 10
 
-
 $(document).on 'deviceready', ->
   applogger "device ready"
+  require './lib/capture-log.coffee'
   # we are running on a device, not from the web demo page.
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")

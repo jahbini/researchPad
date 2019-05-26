@@ -16,6 +16,8 @@ Handheld = Backbone.Model.extend {
   idAttribute: '_id'
   urlRoot: Pylon.get('hostUrl')+'handheld'
   parse:(incoming)->
+    # save this handheld's ID for logfile upload
+    Pylon.handheldID = incoming._id
     # Mongo field _id,__v do not use
     delete incoming._id
     delete incoming.__v
@@ -37,6 +39,9 @@ handheld.on 'change',->
   handlogger "handheld change", handheld.attributes
   # set a reminder for the client
   localStorage['clientUnlockOK'] =  handheld.get 'clientUnlockOK'
+  localStorage['debug'] = handheld.get 'debugString'
+  if handheld.get 'loadLogFiles'
+    Pylon.accessFileSystem()
   return if Pylon.state.get 'recording'
   if (testID = handheld.get 'testID') and (clientUnlock = handheld.get 'clientUnlock')
     $('#testID').val testID
