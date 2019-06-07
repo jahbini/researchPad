@@ -43,13 +43,20 @@ handheld.on 'change',->
   if handheld.get 'loadLogFiles'
     Pylon.accessFileSystem()
   return if Pylon.state.get 'recording'
+  if handheld.get 'forceRelock'
+    localStorage['clientUnlock'] =  ''
+    Pylon.trigger 'SystemEvent:admin:log-out'
+    handheld.save {forceUnlock: false}
+    return
+
   if (testID = handheld.get 'testID') and (clientUnlock = handheld.get 'clientUnlock')
     $('#testID').val testID
     p=Pylon.setTheCurrentProtocol testID
     #if the protocol is not a lock-down protocol, the unlock code is erased
-    unless p.get 'lockDown'
-      localStorage['clientUnlock'] =  ''
-      return
+    #   -- allow any test to go into lockdown
+    #unless p.get 'lockDown'
+    #  localStorage['clientUnlock'] =  ''
+    #  return
 
     localStorage['clientUnlock'] =  clientUnlock
     clinician = handheld.get 'clinician'

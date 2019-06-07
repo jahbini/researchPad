@@ -159,11 +159,18 @@ protocolPhase = Backbone.Model.extend
     @on 'underway', =>
       Pylon.trigger 'protocol:proceed'
       p = Pylon.theProtocol()
+      limit = p.get 'testDuration'
+      if limit == 0
+        start = 0
+        limit = 9999
+      else
+        start = limit
+        limit = 0
       pHT.setEnvironment
         headline: "Test In Progress"
         paragraph:  (p.get "mileStoneText") || "go"
-        start: 0
-        limit: (p.get "testDuration") || 9999
+        start: start
+        limit: limit
         nextPhase: 'selectTheNextTest'
         action: "underway/#{p.get 'testDuration'}"
       return
@@ -334,7 +341,7 @@ protocolHeadTemplate = Backbone.View.extend
           T.div ".u-pull-left",=>
             T.h3  =>
               if @direction
-                if t
+                if t !=  @limit
                   T.text @headline  +  (if @direction < 0 then ": count down " else ": time ") 
                   T.span ".timer", t
                 else

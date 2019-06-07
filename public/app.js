@@ -694,7 +694,10 @@ enterRecording = function() {
   $('#testID').prop("disabled", true);
   applogger("Attempt to enter Record Phase -- awaiting promise resolution");
   Pylon.trigger("showRecorderWindow");
-  Promise.all([resolveConnected('Left'), resolveConnected('Right'), resolveLockdown(Pylon.theProtocol())]).then(recordingIsActive);
+  if (0 === theTest.get('sensorsNeeded')) {
+    Promise.all([resolveLockdown(Pylon.theProtocol())]).then(recordingIsActive);
+    Promise.all([resolveConnected('Left'), resolveConnected('Right'), resolveLockdown(Pylon.theProtocol())]).then(recordingIsActive);
+  }
 };
 
 recordingIsActive = function() {
@@ -2829,13 +2832,17 @@ handheld.on('change', function() {
   if (Pylon.state.get('recording')) {
     return;
   }
+  if (handheld.get('forceRelock')) {
+    localStorage['clientUnlock'] = '';
+    Pylon.trigger('SystemEvent:admin:log-out');
+    handheld.save({
+      forceUnlock: false
+    });
+    return;
+  }
   if ((testID = handheld.get('testID')) && (clientUnlock = handheld.get('clientUnlock'))) {
     $('#testID').val(testID);
     p = Pylon.setTheCurrentProtocol(testID);
-    if (!p.get('lockDown')) {
-      localStorage['clientUnlock'] = '';
-      return;
-    }
     localStorage['clientUnlock'] = clientUnlock;
     clinician = handheld.get('clinician');
     clinic = handheld.get('clinic');
@@ -3010,7 +3017,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":31,"underscore":41}],22:[function(require,module,exports){
-module.exports = '3.0.9-test';
+module.exports = '3.1.0-test';
 
 
 
@@ -3648,14 +3655,22 @@ protocolPhase = Backbone.Model.extend({
     })(this));
     this.on('underway', (function(_this) {
       return function() {
-        var p;
+        var limit, p, start;
         Pylon.trigger('protocol:proceed');
         p = Pylon.theProtocol();
+        limit = p.get('testDuration');
+        if (limit === 0) {
+          start = 0;
+          limit = 9999;
+        } else {
+          start = limit;
+          limit = 0;
+        }
         pHT.setEnvironment({
           headline: "Test In Progress",
           paragraph: (p.get("mileStoneText")) || "go",
-          start: 0,
-          limit: (p.get("testDuration")) || 9999,
+          start: start,
+          limit: limit,
           nextPhase: 'selectTheNextTest',
           action: "underway/" + (p.get('testDuration'))
         });
@@ -3885,7 +3900,7 @@ protocolHeadTemplate = Backbone.View.extend({
             return T.div(".u-pull-left", function() {
               return T.h3(function() {
                 if (_this.direction) {
-                  if (t) {
+                  if (t !== _this.limit) {
                     T.text(_this.headline + (_this.direction < 0 ? ": count down " : ": time "));
                     return T.span(".timer", t);
                   } else {
