@@ -376,12 +376,18 @@ enterRecording = ->
   $('#testID').prop("disabled",true)
   applogger "Attempt to enter Record Phase -- awaiting promise resolution"
   Pylon.trigger "showRecorderWindow"
-  Promise.all [
-    resolveConnected 'Left'
-    resolveConnected 'Right'
-    resolveLockdown Pylon.theProtocol()
-    ]
-    .then recordingIsActive
+  if 0 == theTest.get 'sensorsNeeded'
+    Promise.all [
+      # do not ask the sensortags to connect -- this does not affect the rest of the bluetooth timers.
+      resolveLockdown Pylon.theProtocol()
+      ]
+      .then recordingIsActive
+    Promise.all [
+      resolveConnected 'Left'
+      resolveConnected 'Right'
+      resolveLockdown Pylon.theProtocol()
+      ]
+      .then recordingIsActive
   return
   
 recordingIsActive = ()->
