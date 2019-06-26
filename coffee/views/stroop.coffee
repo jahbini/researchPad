@@ -5,6 +5,8 @@
 Backbone = require('backbone')
 $=require('jquery')
 T = require('teacup')
+buglog = require '../lib/buglog.coffee'
+enginelogger = (introlog= new buglog "engine").log
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -22,9 +24,11 @@ shuffle = (a) ->
 colorTextBody = Backbone.View.extend
   el: "#protocol-here"
   clear: ()->
+    enginelogger "stroop clear"
     @$el.html('')
     return
   initialize: ()->
+    enginelogger "stroop initialize"
     @text = @textColor = null
     Pylon.on "reRender:colorText",()=>
       @$el.fadeOut 100,()=>
@@ -37,6 +41,7 @@ colorTextBody = Backbone.View.extend
       T.div ".container"
     return
   render:()->
+    enginelogger "stroop render"
     examples= shuffle (@model.get 'currentTest')[..]
     names = shuffle examples[..]
     @$el.html T.render =>
@@ -79,13 +84,16 @@ colorToHue = (text)-> # also works if there is no : in the string
 colorTextExample = Backbone.View.extend
   el: "#example"
   clear: ()->
+    enginelogger "stroop example clear"
     @$el.html('')
     return
   response: (got,wanted)->
+    enginelogger "stroop example response"
     Pylon.trigger "systemEvent:stroop:got-#{got}/wanted-#{wanted}"
     Pylon.trigger "reRender:colorText"
     return
   initialize: ()->
+    enginelogger "stroop example initialize"
     @$el.html T.render =>
       T.div ".container", =>
         T.div ".row",style:"text-align:center", =>

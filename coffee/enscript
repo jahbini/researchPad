@@ -36,7 +36,7 @@ handheld.save
 
 
 handheld.on 'change',->
-  handlogger "handheld change: #{JSON.stringify handheld.attributes }"
+  handlogger "handheld change", handheld.attributes
   # set a reminder for the client
   localStorage['clientUnlockOK'] =  handheld.get 'clientUnlockOK'
   localStorage['debug'] = handheld.get 'debugString'
