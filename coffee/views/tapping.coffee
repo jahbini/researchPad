@@ -6,7 +6,8 @@
 Backbone = require('backbone')
 $=require('jquery')
 T = require('teacup')
-BV = require './button-view.coffee'
+buglog = require '../lib/buglog.coffee'
+enginelogger = (introlog= new buglog "engine").log
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -17,9 +18,11 @@ implementing = (mixins..., classReference) ->
 tappingBody = Backbone.View.extend
   el: "#protocol-here"
   clear: ()->
+    enginelogger "tapping clear"
     @$el.html('')
     return
   initialize: ()->
+    enginelogger "tapping initialize"
     mileStones = @model.get('mileStones')
     @$el.html T.render =>
       T.div ".container",style: "padding-top:25px;padding-bottom:25px", =>
@@ -35,12 +38,15 @@ tappingBody = Backbone.View.extend
 tappingExample = Backbone.View.extend
   el: "#example"
   response: (got,wanted)->
+    enginelogger "tapping example response"
     Pylon.trigger "systemEvent:tapping:got-#{got}"
     return
   clear: ()->
+    enginelogger "tapping example clear"
     @$el.html('')
     return
   initialize: ()->
+    enginelogger "tapping example initialize"
     return
 
 exports.tappingBody = tappingBody

@@ -52,7 +52,7 @@ Pylon.set 'vertmeterScale',
   hi: 56.875 
   
 # set the button MpdelView
-Pylon.set 'BV', BV = require './views/button-view.coffee'
+Pylon.BV= BV = require './views/button-view.coffee'
 if Pylon.onHandheld
   Pylon.onWhat = "ontouchstart"
 else
@@ -382,6 +382,7 @@ enterRecording = ->
       resolveLockdown Pylon.theProtocol()
       ]
       .then recordingIsActive
+  else
     Promise.all [
       resolveConnected 'Left'
       resolveConnected 'Right'
@@ -401,13 +402,14 @@ recordingIsActive = ()->
 
 resolveLockdown = (p)->
   # are we in lockdown mode?
-  if p.get 'lockDown'
+  if sessionInfo.get 'lockdownMode'
     Pylon.trigger 'systemEvent:lockdown:lock'
     applogger "Lockdown needed"
     return new Promise (resolve)->
       Pylon.on 'systemEvent:lockdown:unlock',()->
         applogger "Lockdown Resolved"
         resolve()
+      return
   return new Promise (resolve)->resolve()
 
 resolveConnected = (leftRight)->
@@ -442,6 +444,7 @@ exitRecording = -> # Stop Recording
   Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.get('button-action').set enabled: false
   (Pylon.get 'button-admin').set enabled: true
+  debugger
   return false
 
 Pylon.on 'systemEvent:stopCountDown:over', ->
@@ -485,20 +488,25 @@ Pylon.on 'sessionUploaded',enableRecordButtonOK
 
 Pylon.on 'adminDone', -> 
   #the clinician has just logged in via the app admin panel
+
   # send up a new client unlock code 
   # and all the login info from the admin panel to track
-  # the handheld's stateu
+  # the handheld's state
   #
-  clientUnlock=10000*Math.random()
-  clientUnlock +=  1000 if clientUnlock<1000  # make sure no leading zeroes
-  clientUnlock -= 10000 if clientUnlock>10000 #make sure only four digits
-  clientUnlock = localStorage['clientUnlock']="#{clientUnlock.toFixed()}"
-  localStorage['clientUnlockOK']='false'
-  {clinic,clinician,client,password} = sessionInfo.attributes
-  alert "session not NEW!" unless sessionInfo.isNew() 
+  if lockdownMode
+    clientUnlock=10000*Math.random()
+    clientUnlock +=  1000 if clientUnlock<1000  # make sure no leading zeroes
+    clientUnlock -= 10000 if clientUnlock>10000 #make sure only four digits
+    clientUnlock = "#{clientUnlock.toFixed()}"
+  else
+    clientUnlock = ''
+  localStorage['clientUnlock']=clientUnlock
   clientUnlockOK = false
+  localStorage['clientUnlockOK']='false'
+  {clinic,clinician,client,password,lockdownMode} = sessionInfo.attributes
+  applogger "session not NEW!" unless sessionInfo.isNew() 
   testID = ""
-  Pylon.handheld.save {testID,clinic,clinician,clientUnlock,clientUnlockOK,client,password},{silent: true}
+  Pylon.handheld.save {testID,clinic,clinician,clientUnlock,lockdownMode,clientUnlockOK,client,password},{silent: true}
 
   (Pylon.get 'button-admin').set 'legend',"Log Out"
   Pylon.state.set 'loggedIn',  true

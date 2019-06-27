@@ -71,7 +71,6 @@ dontListenForTouch = () ->
   b.removeEventListener "touchcancel", logTouch
   b.removeEventListener "touchmove", logTouch
 
-
 Pylon.on "quickClass",(who,domClass)->
   who.addClass domClass
   setTimeout (()->who.removeClass domClass ), 100
@@ -107,6 +106,7 @@ ProtocolReportTemplate = Backbone.View.extend
       Pylon.on 'systemEvent:protocol:terminate', (time=1000)=>
         @renderExample.clear() if @renderExample
         @renderExample=null
+        @renderBody.clear() if @renderBody
         @renderBody=null
         dontListenForTouch()
         @$('button').prop disabled: true

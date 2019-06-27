@@ -4,6 +4,8 @@ Backbone = require('backbone')
 $=require('jquery')
 _=require 'underscore'
 T = require('teacup')
+buglog = require '../lib/buglog.coffee'
+enginelogger = (introlog= new buglog "engine").log
 
 implementing = (mixins..., classReference) ->
   for mixin in mixins
@@ -55,9 +57,11 @@ keyPadWithIcon= ()->
 tenIconBody = Backbone.View.extend
   el: "#protocol-here"
   clear: ()->
+    enginelogger "SDMT clear"
     @$el.html('')
     return
   initialize: ()->
+    enginelogger "SDMT initialize"
     @icon=null
     Pylon.on "reRender:tenIcon",()=>
       @$('#icon-here').fadeOut 100,()=>
@@ -71,6 +75,7 @@ tenIconBody = Backbone.View.extend
       #keyPadWithIcon()
     return
   render:()->
+    enginelogger "SDMT render"
     @icon = @model.selectFromCurrentTest @icon
     @$('#icon-here').html  @icon
     # add oone because patient entries are 1..9
@@ -79,9 +84,11 @@ tenIconBody = Backbone.View.extend
 tenIconExample = Backbone.View.extend
   el: "#example"
   clear: ()->
+    enginelogger "SDMT example render"
     @$el.html('')
     return
   response: (got,wanted)->
+    enginelogger "SDMT example response"
     Pylon.trigger "systemEvent:tenIcon:got-#{got}/wanted-#{wanted}"
     switch @model.get 'entropy'
       when 'high'
@@ -94,9 +101,11 @@ tenIconExample = Backbone.View.extend
     @render()
 
   initialize: ()->
+    enginelogger "SDMT example initialize"
     @randomize()
   
   render: ()->
+    enginelogger "SDMT example render"
     @$el.html T.render =>
       T.div ".container",style:"width:100%", =>
         extraClass = ""
