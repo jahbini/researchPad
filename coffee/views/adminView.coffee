@@ -148,7 +148,6 @@ class adminView
     Pylon.get('clinics').trigger('change')
     return
 
-
   adminContents: =>
     render () ->
      div '#adminForm.modal', ->
@@ -156,9 +155,13 @@ class adminView
       hr()
       form ->
         div '.row', ->
-          div '.five.columns', ->
+          div '.four.columns', ->
             label 'Clinic'
             select '#desiredClinic.u-full-width', 'Clinic', ''
+          div '.one.column'
+          div '.four.columns',->
+            label '#lock-label', for: 'lock-down', 'Tests run unlocked'
+            button '#lock-down'
         div '.row', ->
           div '.four.columns', ->
             label for: 'desiredClinician','Clinician'
@@ -177,6 +180,21 @@ class adminView
 
   wireAdmin: =>
     model = Pylon.get('sessionInfo')
+
+    locker = new Pylon.BV 'lock-down',''
+    locker.set
+      legend: 'Lock For Home?'
+      enabled: true
+    Pylon.on 'systemEvent:lock-down:lock-for-home?',()->
+      model.set 'lockdownMode', true
+      locker.set legend: 'Unlock for Clinic?'
+      $('#lock-label').text "Tests run locked down" 
+
+    Pylon.on 'systemEvent:lock-down:unlock-for-clinic?',()->
+      model.set 'lockdownMode', false
+      locker.set legend: 'Lock For Home?'
+      $('#lock-label').text "Tests run unlocked"
+
     $('#password').keypress( (node)=>
         if (node.keyCode == 13 && !node.shiftKey)
           node.preventDefault(); #disallow page reload default

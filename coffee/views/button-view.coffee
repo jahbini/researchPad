@@ -54,6 +54,7 @@ V = Backbone.View.extend
   events:
     click: ->
       Pylon.trigger "systemEvent:"+@model.get 'trigger' if @model.get 'enabled'
+      return false
 
 module.exports = Backbone.Model.extend
   defaults:

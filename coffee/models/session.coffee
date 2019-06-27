@@ -16,6 +16,7 @@ rawSession = Backbone.Model.extend {
 sessionInfo = new rawSession
   clinic: ''
   testID: ''
+  lockdownMode: false
   leftSensorUUID: ''
   rightSensorUUID: ''
   platformIosVersion: ''
