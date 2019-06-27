@@ -33,7 +33,7 @@ recorderViewTemplate = Backbone.View.extend
         @$el.removeClass 'hide-top'
       @$el.fadeIn()
     Pylon.on 'removeRecorderWindow', (time=1000)=>
-      @$el.fadeOut(time).empty()
+      @$el.fadeOut(time)
 
     return
 exports.recorderViewTemplate = new recorderViewTemplate
