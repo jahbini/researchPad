@@ -104,7 +104,6 @@ applogger "Version:#{sessionInfo.get 'applicationVersion'}"
 
 pageGen = new pages.Pages sessionInfo
 Pylon.set 'pageGen', pageGen
-Pylon.set 'sessionInfo', sessionInfo
 
 {EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
@@ -256,7 +255,7 @@ enterLogin = (hash)->
 enterLogout = () ->
   Pylon.state.set loggedIn: false, recording: false
 
-  model = Pylon.get('sessionInfo')
+  model = Pylon.sessionInfo
   model.unset 'clinic', silent: true
   model.unset 'clinician', silent: true
   model.unset 'password', silent: true
@@ -293,9 +292,9 @@ enterClear = (accept=false)->
   $('#testID').prop("disabled",false)
   # on tests that have subtests, we need to regain the 
   # lockDown capability status of the parent suite
-  p=Pylon.setTheCurrentProtocol sessionInfo.attributes.testID
+  p=Pylon.setTheCurrentProtocol Pylon.sessionInfo.get 'testID'
   if Pylon.onHandheld
-    restart = p.get 'lockDown'
+    restart = Pylon.sessionInfo.get 'lockdownMode'
   else
     restart = localStorage['hash']
 
@@ -492,8 +491,7 @@ Pylon.on 'adminDone', ->
   # send up a new client unlock code 
   # and all the login info from the admin panel to track
   # the handheld's state
-  #
-  if lockdownMode
+  if lockdownMode =Pylon.sessionInfo.get 'lockdownMode'
     clientUnlock=10000*Math.random()
     clientUnlock +=  1000 if clientUnlock<1000  # make sure no leading zeroes
     clientUnlock -= 10000 if clientUnlock>10000 #make sure only four digits
@@ -527,7 +525,6 @@ configurations.on 'fetched',->
   Pylon.retroPW = configurations
   Pylon.userUnlock = configurations
   return
-
 
 getConfiguration = ->
   applogger "configurations request initiate"

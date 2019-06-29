@@ -57,5 +57,6 @@ protocolPhase = Backbone.Model.extend
         #buttonSpec:
         #  phaseButton: "Hi I am unlock"
       return
+lockDown=new protocolPhase
 #if window? then window.exports = Pages
 #if module?.exports? then module.exports = Pages

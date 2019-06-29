@@ -21,7 +21,7 @@ EventModel = Backbone.Model.extend {
     @flusher = setInterval _.bind(@flush,@), 10000
     Pylon.on 'systemEvent:endRecording', _.bind @close,@
 
-    sessionInfo = Pylon.get 'sessionInfo'
+    sessionInfo = Pylon.sessionInfo
     @.listenTo sessionInfo, 'change:_id',()->
       @set 'session',sessionInfo.get '_id'
     return

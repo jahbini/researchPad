@@ -18,7 +18,7 @@ Pylon.set 'adminView', require('./adminView.coffee').adminView
 
 class Pages
   T= tea = new Teacup.Teacup
-  {table,tr,th,thead,tbody,td,ul,li,ol,a,render
+  {table,tr,th,thead,tbody,td,ul,li,ol,a
     ,input,renderable,raw,div,img,h2,h3,h4,h5,label
     ,button,p,text,span,canvas,option,select,form
     ,body,head,doctype,hr,br,password,tag} = tea.tags()
@@ -60,7 +60,7 @@ class Pages
       .addClass("led-blue") unless w.hasClass "led-red"
 
   Pylon.on 'showVersion', ()->
-    msg=$('#alerter').html render ->
+    msg=$('#alerter').html T.render ->
       h3 "Thanks for being a part of the Retrotope Experience"
       h4 "All contents Copyright 2015-2019 Retrotope, Inc."
       div ".container" ,->
@@ -76,7 +76,7 @@ class Pages
     Pylon.saneTimeout 5000,()->
       msg.fadeOut 1000
 
-  theBody: renderable (buttons,contents1)=>
+  theBody: T.renderable (buttons,contents1)=>
     div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
     div '#capture-display.container', ->
       div '.row', ->
@@ -149,7 +149,7 @@ class Pages
     div "#duration-report.modal", style: "top:50%;display:none;"              #external start-stop modal
     return
 
-  scanBody: renderable ()->
+  scanBody: T.renderable ()->
     hr()
     table ".u-full-width", ->
       tr ->
@@ -195,7 +195,7 @@ class Pages
         return
     return new view device
 
-  topButtons: renderable ()->
+  topButtons: T.renderable ()->
       div '.row', ->
         button '#admin.three.columns.button-primary', 'Admin'
         button '#action.disabled.three.columns', ''
@@ -218,12 +218,12 @@ class Pages
   forceTest: (color = 'violet',txt='Must Select Test') =>
     $('#ProtocolSelect').text(txt).css('color',color)
     Pylon.trigger 'renderTest'
-    Pylon.get('sessionInfo').unset 'testID'
+    Pylon.sessionInfo.unset 'testID'
 
   wireButtons: =>
     # all buttons converted to button-view objects
     # only remaining widget is protocol ID selector
-    model = Pylon.get('sessionInfo')
+    model = Pylon.sessionInfo
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
       model.set 'testID',$('#testID option:selected').val()
@@ -256,9 +256,10 @@ class Pages
       el: '#testID'
       collection: Pylon.get('protocols')
       attributes:
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
+        @listenTo Pylon.sessionInfo, 'change:lockdownMode', @render
         Pylon.on "renderTest", =>
           @render()
         @render()
@@ -269,10 +270,13 @@ class Pages
           return false
       render: ->
         viewlogger "Rendering Tests"
-        @$el.html render =>
+        @$el.html T.render =>
+          lockWanted = Pylon.sessionInfo.get 'lockdownMode'
           option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models 
-              option value: protocol.get('name'), protocol.get('name') unless protocol.get 'suppressInDropDown'
+            continue if protocol.get 'suppressInDropDown'
+            continue if lockWanted && 0 != protocol.get 'sensorsNeeded'
+            option value: protocol.get('name'), protocol.get('name')
           return
         return this
     @protocolView = new protocolViewTemplate

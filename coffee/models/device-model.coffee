@@ -113,7 +113,7 @@ exports.deviceModel = Backbone.Model.extend
       role = @.get 'role'
       $("##{role}SerialNumber").html @.get 'serialNumber'
       #place serial number in sessionInfo
-      session = Pylon.get 'sessionInfo'
+      session = Pylon.sessionInfo
       if role == 'Right'
         session.set 'SerialNoR', data
       if role == 'Left'
@@ -124,7 +124,7 @@ exports.deviceModel = Backbone.Model.extend
       role = @.get 'role'
       $("##{role}Version").html data
       #place firmware app level in sessionInfo
-      session = Pylon.get 'sessionInfo'
+      session = Pylon.sessionInfo
       if role == 'Right'
         session.set 'FWLevelR', data
       if role == 'Left'

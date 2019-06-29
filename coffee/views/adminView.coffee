@@ -27,7 +27,7 @@ class adminView
       el: '#desiredClinic'
       collection: Pylon.get('clinics')
       attributes:
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
 
@@ -74,7 +74,7 @@ class adminView
       el: '#desiredClinician'
       collection: Pylon.get('clinicians')
       attributes:
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
       events:
@@ -99,7 +99,7 @@ class adminView
       el: '#desiredClient'
       collection: Pylon.get('clients')
       attributes:
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       initialize: ->
         @listenTo @collection, 'change', @render
       events:
@@ -120,7 +120,7 @@ class adminView
 
     doneViewTemplate = Backbone.View.extend
       el: '#done'
-      model: Pylon.get('sessionInfo')
+      model: Pylon.sessionInfo
       initialize: ->
         @listenTo @model, 'change', @render
         return @
@@ -179,7 +179,7 @@ class adminView
           button '#done.three.columns', disabled: true, "Done"
 
   wireAdmin: =>
-    model = Pylon.get('sessionInfo')
+    model = Pylon.sessionInfo
 
     locker = new Pylon.BV 'lock-down',''
     locker.set

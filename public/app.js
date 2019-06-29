@@ -350,8 +350,6 @@ pageGen = new pages.Pages(sessionInfo);
 
 Pylon.set('pageGen', pageGen);
 
-Pylon.set('sessionInfo', sessionInfo);
-
 EventModel = require("./models/event-model.coffee").EventModel;
 
 adminEvent = new EventModel("Action");
@@ -542,7 +540,7 @@ enterLogout = function() {
     loggedIn: false,
     recording: false
   });
-  model = Pylon.get('sessionInfo');
+  model = Pylon.sessionInfo;
   model.unset('clinic', {
     silent: true
   });
@@ -588,9 +586,9 @@ enterClear = function(accept) {
   }
   Pylon.trigger("removeRecorderWindow");
   $('#testID').prop("disabled", false);
-  p = Pylon.setTheCurrentProtocol(sessionInfo.attributes.testID);
+  p = Pylon.setTheCurrentProtocol(Pylon.sessionInfo.get('testID'));
   if (Pylon.onHandheld) {
-    restart = p.get('lockDown');
+    restart = Pylon.sessionInfo.get('lockdownMode');
   } else {
     restart = localStorage['hash'];
   }
@@ -855,7 +853,7 @@ Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('adminDone', function() {
   var client, clientUnlock, clientUnlockOK, clinic, clinician, lockdownMode, password, ref3, testID;
-  if (lockdownMode) {
+  if (lockdownMode = Pylon.sessionInfo.get('lockdownMode')) {
     clientUnlock = 10000 * Math.random();
     if (clientUnlock < 1000) {
       clientUnlock += 1000;
@@ -2452,7 +2450,7 @@ exports.deviceModel = Backbone.Model.extend({
       data = this.get('serialNumber');
       role = this.get('role');
       $("#" + role + "SerialNumber").html(this.get('serialNumber'));
-      session = Pylon.get('sessionInfo');
+      session = Pylon.sessionInfo;
       if (role === 'Right') {
         session.set('SerialNoR', data);
       }
@@ -2465,7 +2463,7 @@ exports.deviceModel = Backbone.Model.extend({
       data = this.get('firmwareVersion');
       role = this.get('role');
       $("#" + role + "Version").html(data);
-      session = Pylon.get('sessionInfo');
+      session = Pylon.sessionInfo;
       if (role === 'Right') {
         session.set('FWLevelR', data);
       }
@@ -2748,7 +2746,7 @@ EventModel = Backbone.Model.extend({
     this.set('role', role);
     this.flusher = setInterval(_.bind(this.flush, this), 10000);
     Pylon.on('systemEvent:endRecording', _.bind(this.close, this));
-    sessionInfo = Pylon.get('sessionInfo');
+    sessionInfo = Pylon.sessionInfo;
     this.listenTo(sessionInfo, 'change:_id', function() {
       return this.set('session', sessionInfo.get('_id'));
     });
@@ -2830,7 +2828,7 @@ handheld.save({
 });
 
 handheld.on('change', function() {
-  var client, clientUnlock, clinic, clinician, p, password, testID;
+  var client, clientUnlock, clinic, clinician, lockdownMode, p, password, testID;
   handlogger("handheld change: " + (JSON.stringify(handheld.attributes)));
   localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
   localStorage['debug'] = handheld.get('debugString');
@@ -2848,7 +2846,7 @@ handheld.on('change', function() {
     });
     return;
   }
-  if ((testID = handheld.get('testID')) && (handheld.get('lockedDown'))) {
+  if ((testID = handheld.get('testID')) && (lockdownMode = handheld.get('lockdownMode'))) {
     clientUnlock = handheld.get('clientUnlock');
     $('#testID').val(testID);
     p = Pylon.setTheCurrentProtocol(testID);
@@ -2867,7 +2865,8 @@ handheld.on('change', function() {
       clinician: clinician,
       password: password,
       client: client,
-      testID: testID
+      testID: testID,
+      lockdownMode: lockdownMode
     });
     handlogger("Setting recording state in handheld:change");
     Pylon.state.set('recording', false);
@@ -3027,7 +3026,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.1-test';
+module.exports = '3.1.2-test';
 
 
 
@@ -3078,7 +3077,7 @@ adminView = (function() {
       el: '#desiredClinic',
       collection: Pylon.get('clinics'),
       attributes: {
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -3149,7 +3148,7 @@ adminView = (function() {
       el: '#desiredClinician',
       collection: Pylon.get('clinicians'),
       attributes: {
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -3195,7 +3194,7 @@ adminView = (function() {
       el: '#desiredClient',
       collection: Pylon.get('clients'),
       attributes: {
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       },
       initialize: function() {
         return this.listenTo(this.collection, 'change', this.render);
@@ -3235,7 +3234,7 @@ adminView = (function() {
     });
     doneViewTemplate = Backbone.View.extend({
       el: '#done',
-      model: Pylon.get('sessionInfo'),
+      model: Pylon.sessionInfo,
       initialize: function() {
         this.listenTo(this.model, 'change', this.render);
         return this;
@@ -3324,7 +3323,7 @@ adminView = (function() {
 
   adminView.prototype.wireAdmin = function() {
     var locker, model;
-    model = Pylon.get('sessionInfo');
+    model = Pylon.sessionInfo;
     locker = new Pylon.BV('lock-down', '');
     locker.set({
       legend: 'Lock For Home?',
@@ -3481,7 +3480,7 @@ module.exports = Backbone.Model.extend({
 
 
 },{"backbone":33,"jquery":40,"teacup":42}],25:[function(require,module,exports){
-var $, Backbone, T, buglog, implementing, introlog, intrologger, pHT, protocolPhase,
+var $, Backbone, T, buglog, implementing, introlog, intrologger, lockDown, pHT, protocolPhase,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -3568,6 +3567,8 @@ protocolPhase = Backbone.Model.extend({
   }
 });
 
+lockDown = new protocolPhase;
+
 
 
 },{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":40,"teacup":42}],26:[function(require,module,exports){
@@ -3602,11 +3603,11 @@ implementing = function() {
 Pylon.set('adminView', require('./adminView.coffee').adminView);
 
 Pages = (function() {
-  var T, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, render, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   T = tea = new Teacup.Teacup;
 
-  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, render = ref.render, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
+  ref = tea.tags(), table = ref.table, tr = ref.tr, th = ref.th, thead = ref.thead, tbody = ref.tbody, td = ref.td, ul = ref.ul, li = ref.li, ol = ref.ol, a = ref.a, input = ref.input, renderable = ref.renderable, raw = ref.raw, div = ref.div, img = ref.img, h2 = ref.h2, h3 = ref.h3, h4 = ref.h4, h5 = ref.h5, label = ref.label, button = ref.button, p = ref.p, text = ref.text, span = ref.span, canvas = ref.canvas, option = ref.option, select = ref.select, form = ref.form, body = ref.body, head = ref.head, doctype = ref.doctype, hr = ref.hr, br = ref.br, password = ref.password, tag = ref.tag;
 
   function Pages() {
     this.renderPage = bind(this.renderPage, this);
@@ -3672,7 +3673,7 @@ Pages = (function() {
 
   Pylon.on('showVersion', function() {
     var msg;
-    msg = $('#alerter').html(render(function() {
+    msg = $('#alerter').html(T.render(function() {
       h3("Thanks for being a part of the Retrotope Experience");
       h4("All contents Copyright 2015-2019 Retrotope, Inc.");
       return div(".container", function() {
@@ -3694,7 +3695,7 @@ Pages = (function() {
     });
   });
 
-  Pages.prototype.theBody = renderable(function(buttons, contents1) {
+  Pages.prototype.theBody = T.renderable(function(buttons, contents1) {
     div("#alerter.modal", {
       style: "display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
     });
@@ -3815,7 +3816,7 @@ Pages = (function() {
     });
   });
 
-  Pages.prototype.scanBody = renderable(function() {
+  Pages.prototype.scanBody = T.renderable(function() {
     hr();
     return table(".u-full-width", function() {
       return tr(function() {
@@ -3870,7 +3871,7 @@ Pages = (function() {
     return new view(device);
   };
 
-  Pages.prototype.topButtons = renderable(function() {
+  Pages.prototype.topButtons = T.renderable(function() {
     div('.row', function() {
       button('#admin.three.columns.button-primary', 'Admin');
       button('#action.disabled.three.columns', '');
@@ -3914,12 +3915,12 @@ Pages = (function() {
     }
     $('#ProtocolSelect').text(txt).css('color', color);
     Pylon.trigger('renderTest');
-    return Pylon.get('sessionInfo').unset('testID');
+    return Pylon.sessionInfo.unset('testID');
   };
 
   Pages.prototype.wireButtons = function() {
     var model;
-    model = Pylon.get('sessionInfo');
+    model = Pylon.sessionInfo;
     return $('#testID').change((function(_this) {
       return function(node) {
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
@@ -3961,10 +3962,11 @@ Pages = (function() {
       el: '#testID',
       collection: Pylon.get('protocols'),
       attributes: {
-        session: Pylon.get('sessionInfo')
+        session: Pylon.sessionInfo
       },
       initialize: function() {
         this.listenTo(this.collection, 'change', this.render);
+        this.listenTo(Pylon.sessionInfo, 'change:lockdownMode', this.render);
         Pylon.on("renderTest", (function(_this) {
           return function() {
             return _this.render();
@@ -3981,9 +3983,10 @@ Pages = (function() {
       },
       render: function() {
         viewlogger("Rendering Tests");
-        this.$el.html(render((function(_this) {
+        this.$el.html(T.render((function(_this) {
           return function() {
-            var i, len, protocol, ref1;
+            var i, len, lockWanted, protocol, ref1;
+            lockWanted = Pylon.sessionInfo.get('lockdownMode');
             option('.selected', {
               selected: 'selected',
               value: ''
@@ -3991,11 +3994,15 @@ Pages = (function() {
             ref1 = _this.collection.models;
             for (i = 0, len = ref1.length; i < len; i++) {
               protocol = ref1[i];
-              if (!protocol.get('suppressInDropDown')) {
-                option({
-                  value: protocol.get('name')
-                }, protocol.get('name'));
+              if (protocol.get('suppressInDropDown')) {
+                continue;
               }
+              if (lockWanted && 0 !== protocol.get('sensorsNeeded')) {
+                continue;
+              }
+              option({
+                value: protocol.get('name')
+              }, protocol.get('name'));
             }
           };
         })(this)));
@@ -4704,7 +4711,7 @@ protocolPhase = Backbone.Model.extend({
         } else {
           _this.allMyProtocols = [p.get('name')];
         }
-        sessionInfo = Pylon.get('sessionInfo');
+        sessionInfo = Pylon.sessionInfo;
         if (sessionInfo.isNew()) {
           start();
         } else {
@@ -4725,9 +4732,9 @@ protocolPhase = Backbone.Model.extend({
         if (sessionInfo.isNew()) {
           sessionInfo.save();
         }
-        sessionID = Pylon.get('sessionInfo').get('_id');
+        sessionID = Pylon.sessionInfo.get('_id');
         if (!sessionID) {
-          _this.listenToOnce(Pylon.get('sessionInfo'), 'change:_id', function() {
+          _this.listenToOnce(Pylon.sessionInfo, 'change:_id', function() {
             intrologger("recieved sessionID, starting protocol with leadIn");
             return leadIn();
           });
