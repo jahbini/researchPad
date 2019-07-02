@@ -49,7 +49,7 @@ handheld.on 'change',->
     handheld.save {forceUnlock: false}
     return
 
-  if (testID = handheld.get 'testID') and (handheld.get 'lockedDown')
+  if (testID = handheld.get 'testID') and (lockdownMode = handheld.get 'lockdownMode')
     clientUnlock = handheld.get 'clientUnlock'
     $('#testID').val testID
     p=Pylon.setTheCurrentProtocol testID
@@ -69,7 +69,7 @@ handheld.on 'change',->
     $('#desiredClient').val client
     $('#password').val password
     sessionInfo.unset sessionInfo.idAttribute
-    sessionInfo.save {clinic,clinician,password,client,testID}
+    sessionInfo.save {clinic,clinician,password,client,testID,lockdownMode}
     handlogger "Setting recording state in handheld:change"
     Pylon.state.set 'recording',false
     Pylon.state.set 'loggedIn',true

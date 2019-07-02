@@ -30,7 +30,7 @@ protocolPhase = Backbone.Model.extend
       else
         @allMyProtocols = [p.get 'name' ]
       
-      sessionInfo=Pylon.get('sessionInfo')
+      sessionInfo=Pylon.sessionInfo
       if sessionInfo.isNew()
         start()
       else
@@ -46,9 +46,9 @@ protocolPhase = Backbone.Model.extend
     start= ()=>
       if sessionInfo.isNew()
         sessionInfo.save()
-      sessionID=Pylon.get('sessionInfo').get('_id')
+      sessionID=Pylon.sessionInfo.get('_id')
       unless sessionID
-        @listenToOnce Pylon.get('sessionInfo'), 'change:_id',()=>
+        @listenToOnce Pylon.sessionInfo, 'change:_id',()=>
           intrologger "recieved sessionID, starting protocol with leadIn"
           leadIn()
 
