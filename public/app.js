@@ -3026,7 +3026,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.2-test';
+module.exports = '3.1.3-test';
 
 
 
@@ -4775,13 +4775,6 @@ protocolPhase = Backbone.Model.extend({
         });
       };
     })(this);
-    this.on('close preamble', (function(_this) {
-      return function() {
-        alert("why are we here?");
-        Pylon.trigger('systemEvent:recordCountDown:over');
-        return selectTheFirstTest();
-      };
-    })(this));
     practice = (function(_this) {
       return function() {
         var duration, p;
@@ -4884,6 +4877,7 @@ protocolPhase = Backbone.Model.extend({
     selectTheFirstTest = (function(_this) {
       return function() {
         var newTest;
+        Pylon.trigger('systemEvent:recordCountDown:over');
         Pylon.trigger('protocol:pause');
         newTest = _this.allMyProtocols.shift();
         if (!newTest) {
