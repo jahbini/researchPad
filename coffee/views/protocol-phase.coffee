@@ -84,11 +84,6 @@ protocolPhase = Backbone.Model.extend
         limit: limit
       return
 
-    @on 'close preamble',()=>
-      alert "why are we here?"
-      Pylon.trigger 'systemEvent:recordCountDown:over'
-      selectTheFirstTest()
-
     practice= ()=>
       Pylon.trigger 'systemEvent:protocol:active'
       # this is the moment the protocol is selected for display
@@ -170,6 +165,7 @@ protocolPhase = Backbone.Model.extend
       return
   
     selectTheFirstTest= ()=>
+      Pylon.trigger 'systemEvent:recordCountDown:over'
       Pylon.trigger 'protocol:pause'
       newTest = @allMyProtocols.shift()
       if !newTest 
