@@ -5,16 +5,15 @@ buglog = require '../lib/buglog.coffee'
 devicelogger = (devicelog= new buglog "sensor").log
 Sanity = require '../lib/sanity.coffee'
 
-
 infoService =       "0000180a-0000-1000-8000-00805f9b34fb"
 infoService =       "180a"
-
 
 boilerplate =
 		firmwareVersion:    "2a26"
 		modelNumber:        "2a24"
 		serialNumber:       "2a25"
 		softwareVersion:    "2a28"
+
 accelerometer = 
     service:        "F000AA80-0451-4000-B000-000000000000"
     data:           "F000AA81-0451-4000-B000-000000000000" # read/notify 3 bytes X : Y : Z
@@ -77,7 +76,7 @@ exports.deviceModel = Backbone.Model.extend
     Pylon.state.on "change:recording change:subscribing#{@get 'role'} change:calibrating", ()=>
       role=@get 'role'
       #any of the state values that are truthy will turn on the subscription
-      devicelogger "device connetion manager"
+      devicelogger "BLE connection request for #{role}"
       for key, element of @.changedAttributes()
         devicelogger "#{key} is #{element} was #{@.previous key}"
 
@@ -138,7 +137,6 @@ exports.deviceModel = Backbone.Model.extend
     if @get 'hasBoilerPlate'
       return plates
     for attribute, uuid of boilerplate
-      #devicelogger "Device #{@.attributes.name}: getting #{attribute} at #{uuid}"
       plates.push new Promise (resolve,reject)=>
         # capture current value of attribute
         attr = attribute
@@ -147,13 +145,12 @@ exports.deviceModel = Backbone.Model.extend
           uuid
           (data)=>
             val = ab2str data
-            #devicelogger "Setting attribute for #{attr} to #{val}"
             @.set attr, val
             resolve()
           (err)=>
             devicelogger "unable to obtain #{attr} from #{@.attributes.name}"
             reject()
-        #devicelogger "Promised attribute for #{attr}"
+        return
     return plates
     
   startNotification: ()->
@@ -171,8 +168,8 @@ exports.deviceModel = Backbone.Model.extend
             if @.attributes.numReadings == 0
               setTimeout (()-> resolve()), 0,@ 
             @processMovement new Int16Array(data)
-          (xxx)=>
-            devicelogger "startNotification failure for device #{@get 'name'}: #{xxx}"
+          (err)=>
+            devicelogger "startNotification failure for device #{@get 'name'}: #{err}"
             reject()
     
   stopNotification: ()->
@@ -193,28 +190,25 @@ exports.deviceModel = Backbone.Model.extend
           
   idlePromise: ()->
     return new Promise (resolve,reject)->
-      #devicelogger "idlePromise entry"
       setTimeout resolve,100
+      return
     
   setPeriod: ()->
-    #devicelogger "setPeriod entry"
     return new Promise (resolve,reject)=>
       periodData = new Uint8Array(1);
       periodData[0] = @.attributes.rate;
-      #devicelogger "Timing parameter for sensor rate = #{@.attributes.rate}"
       ble.write @.attributes.id,
         accelerometer.service
         accelerometer.period
         periodData.buffer
         ()=>
-          #devicelogger "setPeriod Configured movement #{@.attributes.rate}ms period device #{@.attributes.name}."
           resolve()
         (e)=>
           devicelogger "setPeriod error starting movement monitor #{e}"
           reject()
+      return
     
   activateMovement: ()->    
-    #devicelogger "activateMovement entry. device #{@get 'name'}"
     configData = new Uint16Array(1);
     configData[0] = 0x017F;
     # turn accelerometer on
@@ -224,7 +218,6 @@ exports.deviceModel = Backbone.Model.extend
         accelerometer.configuration
         configData.buffer
         (whatnot)=> 
-          #devicelogger "activateMovement Started movement monitor. device #{@get 'name'}"
           resolve()
         (e)=>
           devicelogger "activateMovement error starting movement device #{@get 'name'} monitor #{e}"
@@ -247,8 +240,6 @@ exports.deviceModel = Backbone.Model.extend
       # No resulting.then clause -- device triggers active on first packet recieved 
       resulting.catch ()=>
         Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
-      #devicelogger "resubscribe promise has been built"
-      #devicelogger resulting
         
     catch e
       Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
@@ -259,7 +250,6 @@ exports.deviceModel = Backbone.Model.extend
    
           
   subscribe: ()-> 
-    devicelogger "SUBSCRIBE"
     Pylon.trigger "systemEvent:sanity:warn"+ @.attributes.role
     try
     #set some attributes
@@ -326,7 +316,6 @@ exports.deviceModel = Backbone.Model.extend
     accel= data[3..5].map (a)->return a
     mag= data[6..8].map (a)-> return a
     sequence = data[9]
-    #devicelogger "#{@get 'role'}Vertmeter "+100*(accel[0]+2**15)/(2**16)
     Pylon.trigger "#{@get 'role'}Vertmeter",100*(accel[0]+2**15)/(2**16)
     
     @sanity.observe gyro, accel, mag, sequence, timeval

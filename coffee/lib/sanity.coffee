@@ -48,21 +48,6 @@ module.exports = class sanity
     }
     Pylon.trigger 'sanityReport',report
     sanitylogger "sequence number of #{@role} is #{@sequence}"
-    
-    sanitylogger JSON.stringify report.rate
-    sanitylogger JSON.stringify report.sequence
-
-
-    #sanitylogger @accel[0].allValues()
-    #sanitylogger @accel[1].allValues()
-    sanitylogger JSON.stringify report.accel[0]
-    #sanitylogger @mag[0].allValues()
-    #sanitylogger @mag[1].allValues()
-    #sanitylogger @mag[2].allValues()
-    
-    #sanitylogger @gyro[0].allValues()
-    #sanitylogger @gyro[1].allValues()
-    #sanitylogger @gyro[2].allValues()
     @clear()
     return
 
@@ -70,7 +55,6 @@ module.exports = class sanity
     @sequence = 10000000
     @timer = new stats "timer"
     @sequencer = new stats "upCount"
-
     
     @accel =[
       new stats "#{@role} accel x"
