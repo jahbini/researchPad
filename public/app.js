@@ -1836,9 +1836,6 @@ module.exports = sanity = (function() {
     };
     Pylon.trigger('sanityReport', report);
     sanitylogger("sequence number of " + this.role + " is " + this.sequence);
-    sanitylogger(JSON.stringify(report.rate));
-    sanitylogger(JSON.stringify(report.sequence));
-    sanitylogger(JSON.stringify(report.accel[0]));
     this.clear();
   };
 
@@ -2421,7 +2418,7 @@ exports.deviceModel = Backbone.Model.extend({
       return function() {
         var calibratingState, connectPlease, element, key, recordingState, ref, sideState;
         role = _this.get('role');
-        devicelogger("device connetion manager");
+        devicelogger("BLE connection request for " + role);
         ref = _this.changedAttributes();
         for (key in ref) {
           element = ref[key];
@@ -2489,7 +2486,7 @@ exports.deviceModel = Backbone.Model.extend({
         return function(resolve, reject) {
           var attr;
           attr = attribute;
-          return ble.read(_this.id, infoService, uuid, function(data) {
+          ble.read(_this.id, infoService, uuid, function(data) {
             var val;
             val = ab2str(data);
             _this.set(attr, val);
@@ -2516,8 +2513,8 @@ exports.deviceModel = Backbone.Model.extend({
             }), 0, _this);
           }
           return _this.processMovement(new Int16Array(data));
-        }, function(xxx) {
-          devicelogger("startNotification failure for device " + (_this.get('name')) + ": " + xxx);
+        }, function(err) {
+          devicelogger("startNotification failure for device " + (_this.get('name')) + ": " + err);
           return reject();
         });
       };
@@ -2543,7 +2540,7 @@ exports.deviceModel = Backbone.Model.extend({
   },
   idlePromise: function() {
     return new Promise(function(resolve, reject) {
-      return setTimeout(resolve, 100);
+      setTimeout(resolve, 100);
     });
   },
   setPeriod: function() {
@@ -2552,7 +2549,7 @@ exports.deviceModel = Backbone.Model.extend({
         var periodData;
         periodData = new Uint8Array(1);
         periodData[0] = _this.attributes.rate;
-        return ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
+        ble.write(_this.attributes.id, accelerometer.service, accelerometer.period, periodData.buffer, function() {
           return resolve();
         }, function(e) {
           devicelogger("setPeriod error starting movement monitor " + e);
@@ -2608,7 +2605,6 @@ exports.deviceModel = Backbone.Model.extend({
   },
   subscribe: function() {
     var e, thePromise;
-    devicelogger("SUBSCRIBE");
     Pylon.trigger("systemEvent:sanity:warn" + this.attributes.role);
     try {
       devicelogger(" subscribe attempt " + this.attributes.name);
@@ -3026,7 +3022,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.3-test';
+module.exports = '3.1.4-test';
 
 
 
