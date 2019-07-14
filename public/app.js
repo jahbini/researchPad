@@ -2804,7 +2804,7 @@ Handheld = Backbone.Model.extend({
     Pylon.handheldID = incoming._id;
     delete incoming._id;
     delete incoming.__v;
-    if (incoming.clientUnlock.match(/\./)) {
+    if (incoming.clientUnlock.match(/^dddd$/)) {
       incoming.clientUnlock = parseInt(incoming.clientUnlock, 10);
     }
     return incoming;
@@ -3022,7 +3022,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.4-test';
+module.exports = '3.1.5-test';
 
 
 
@@ -4748,29 +4748,31 @@ protocolPhase = Backbone.Model.extend({
     })(this);
     leadIn = (function(_this) {
       return function() {
-        var duration, limit, p;
-        p = Pylon.theProtocol();
-        if (!p.get('showLeadIn')) {
-          selectTheFirstTest();
-          return;
-        }
-        duration = p.get('leadInDuration');
-        if (duration === 0) {
-          start = 5;
-          limit = 0;
-        } else {
-          start = duration;
-          limit = 0;
-        }
-        pHT.setEnvironment({
-          headline: "LeadIn",
-          paragraph: "Get Ready",
-          nextPhase: selectTheFirstTest,
-          start: start,
-          limit: limit
-        });
+        selectTheFirstTest();
       };
     })(this);
+
+    /*    /// WAS   we have no more requirement for lead-in
+      p = Pylon.theProtocol()
+    
+      unless  p.get 'showLeadIn'
+        selectTheFirstTest()
+        return
+      duration = p.get 'leadInDuration'
+      if duration == 0
+        start=5
+        limit=0
+      else
+        start = duration
+        limit = 0
+      pHT.setEnvironment
+        headline: "LeadIn"
+        paragraph: "Get Ready"
+        nextPhase: selectTheFirstTest
+        start: start
+        limit: limit
+      return
+     */
     practice = (function(_this) {
       return function() {
         var duration, p;
@@ -4886,26 +4888,29 @@ protocolPhase = Backbone.Model.extend({
     })(this);
     Pylon.on("systemEvent:action:stop", countOut = (function(_this) {
       return function() {
-        var p;
         Pylon.state.set({
           recording: 'stopping'
         });
         Pylon.trigger('systemEvent:protocol:terminate');
-        p = _this.attributes.protocol;
-        if (!p.get('showLeadIn')) {
-          pHT.stopCount();
-          terminate();
-          return;
-        }
-        pHT.setEnvironment({
-          headline: "LeadOut",
-          paragraph: "Good Job",
-          start: p.get("leadInDuration"),
-          limit: 0,
-          nextPhase: terminate
-        });
+        pHT.stopCount();
+        terminate();
       };
     })(this));
+
+    /*   /// was removed -- no leadIn leadOut ref Harry July 2019
+      p = @attributes.protocol
+      unless  p.get 'showLeadIn'
+        pHT.stopCount()
+        terminate()
+        return
+      pHT.setEnvironment
+        headline: "LeadOut"
+        paragraph: "Good Job"
+        start: p.get "leadInDuration"
+        limit: 0
+        nextPhase: terminate
+      return
+     */
     terminate = (function(_this) {
       return function() {
         pHT.setEnvironment({
