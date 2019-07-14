@@ -21,7 +21,8 @@ Handheld = Backbone.Model.extend {
     # Mongo field _id,__v do not use
     delete incoming._id
     delete incoming.__v
-    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /\./
+    # ignore unlock code unless it is all decimal digits ref: Harry July 2019 release requests
+    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /^dddd$/
     return incoming
 
 }

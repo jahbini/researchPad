@@ -64,6 +64,9 @@ protocolPhase = Backbone.Model.extend
 
     # leadIn means the sessionID for this test run exists
     leadIn= ()=>
+      selectTheFirstTest()
+      return
+    ###    /// WAS   we have no more requirement for lead-in
       p = Pylon.theProtocol()
 
       unless  p.get 'showLeadIn'
@@ -83,6 +86,7 @@ protocolPhase = Backbone.Model.extend
         start: start
         limit: limit
       return
+    ###
 
     practice= ()=>
       Pylon.trigger 'systemEvent:protocol:active'
@@ -178,6 +182,11 @@ protocolPhase = Backbone.Model.extend
     Pylon.on "systemEvent:action:stop", countOut=  ()=>
       Pylon.state.set recording: 'stopping'
       Pylon.trigger 'systemEvent:protocol:terminate'
+      pHT.stopCount()
+      terminate()
+      return
+
+    ###   /// was removed -- no leadIn leadOut ref Harry July 2019
       p = @attributes.protocol
       unless  p.get 'showLeadIn'
         pHT.stopCount()
@@ -190,6 +199,8 @@ protocolPhase = Backbone.Model.extend
         limit: 0
         nextPhase: terminate
       return
+    ### 
+
     terminate= ()=>
       pHT.setEnvironment
         headline: "All Done"
