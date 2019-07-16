@@ -22,7 +22,7 @@ Handheld = Backbone.Model.extend {
     delete incoming._id
     delete incoming.__v
     # ignore unlock code unless it is all decimal digits ref: Harry July 2019 release requests
-    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /^dddd$/
+    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /^[1-9]ddd$/
     return incoming
 
 }
@@ -31,9 +31,9 @@ handlogger "creating handheld structure"
 sessionInfo = Pylon.sessionInfo
 
 handheld.save
-  platformUUID: sessionInfo.get 'platformUUID'
-  platformIosVersion: sessionInfo.get 'platformIosVersion'
-  applicationVersion: sessionInfo.get 'applicationVersion'
+  platformUUID: Pylon.get 'platformUUID'
+  platformIosVersion: Pylon.get "platformIosVersion"
+  applicationVersion: Pylon.get "applicationVersion"
 
 
 handheld.on 'change',->

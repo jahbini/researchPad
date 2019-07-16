@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":16,"Case":36,"backbone":33,"jquery":40,"underscore":43}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, ref3, ref4, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -338,9 +338,15 @@ Pylon.sessionInfo = sessionInfo = require('./models/session.coffee');
 
 applicationVersion = require('./version.coffee');
 
-sessionInfo.set({
+Pylon.set({
   platformUUID: ((ref1 = window.device) != null ? ref1.uuid : void 0) || "No ID",
   platformIosVersion: ((ref2 = window.device) != null ? ref2.version : void 0) || "noPlatform",
+  applicationVersion: applicationVersion
+});
+
+sessionInfo.set({
+  platformUUID: ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID",
+  platformIosVersion: ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform",
   applicationVersion: applicationVersion
 });
 
@@ -503,7 +509,7 @@ enterLogin = function(hash) {
   });
   model = new sessionLoad;
   model.on('sync', function() {
-    var m, mHash, ref3, ref4;
+    var m, mHash, ref5, ref6;
     mHash = model.get(model.idAttribute);
 
     /*
@@ -520,8 +526,8 @@ enterLogin = function(hash) {
       clinician: m.clinician,
       password: m.password,
       testID: m.testID,
-      platformUUID: ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID",
-      platformIosVersion: ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform",
+      platformUUID: ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID",
+      platformIosVersion: ((ref6 = window.device) != null ? ref6.version : void 0) || "noPlatform",
       applicationVersion: applicationVersion,
       captureDate: Date(),
       timeStamp: Date.now()
@@ -639,7 +645,7 @@ exitCalibrate = function() {
 };
 
 enterRecording = function() {
-  var numSensors, ref3, ref4, testID, theTest;
+  var numSensors, ref5, ref6, testID, theTest;
   applogger("Attempt to enter Record Phase");
   testID = sessionInfo.get('testID');
   if (!testID) {
@@ -679,13 +685,13 @@ enterRecording = function() {
   });
   applogger("Record state set scanning false, recording true");
   (Pylon.get('button-calibrate')).set('enabled', false);
-  if ((ref3 = Pylon.get('Left')) != null) {
-    ref3.set({
+  if ((ref5 = Pylon.get('Left')) != null) {
+    ref5.set({
       numReadings: 0
     });
   }
-  if ((ref4 = Pylon.get('Right')) != null) {
-    ref4.set({
+  if ((ref6 = Pylon.get('Right')) != null) {
+    ref6.set({
       numReadings: 0
     });
   }
@@ -820,14 +826,14 @@ setSensor = function() {
 };
 
 enableRecordButtonOK = function() {
-  var canRecord, ref3, ref4;
-  if ((ref3 = Pylon.get('Left')) != null) {
-    ref3.set({
+  var canRecord, ref5, ref6;
+  if ((ref5 = Pylon.get('Left')) != null) {
+    ref5.set({
       numReadings: 0
     });
   }
-  if ((ref4 = Pylon.get('Right')) != null) {
-    ref4.set({
+  if ((ref6 = Pylon.get('Right')) != null) {
+    ref6.set({
       numReadings: 0
     });
   }
@@ -852,7 +858,7 @@ enableRecordButtonOK = function() {
 Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('adminDone', function() {
-  var client, clientUnlock, clientUnlockOK, clinic, clinician, lockdownMode, password, ref3, testID;
+  var client, clientUnlock, clientUnlockOK, clinic, clinician, lockdownMode, password, ref5, testID;
   if (lockdownMode = Pylon.sessionInfo.get('lockdownMode')) {
     clientUnlock = 10000 * Math.random();
     if (clientUnlock < 1000) {
@@ -868,7 +874,7 @@ Pylon.on('adminDone', function() {
   localStorage['clientUnlock'] = clientUnlock;
   clientUnlockOK = false;
   localStorage['clientUnlockOK'] = 'false';
-  ref3 = sessionInfo.attributes, clinic = ref3.clinic, clinician = ref3.clinician, client = ref3.client, password = ref3.password, lockdownMode = ref3.lockdownMode;
+  ref5 = sessionInfo.attributes, clinic = ref5.clinic, clinician = ref5.clinician, client = ref5.client, password = ref5.password, lockdownMode = ref5.lockdownMode;
   if (!sessionInfo.isNew()) {
     applogger("session not NEW!");
   }
@@ -1043,11 +1049,11 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var loadScript, ref3, ref4;
+  var loadScript, ref5, ref6;
   applogger("device ready");
   require('./lib/capture-log.coffee');
-  sessionInfo.set('platformUUID', ((ref3 = window.device) != null ? ref3.uuid : void 0) || "No ID");
-  sessionInfo.set('platformIosVersion', ((ref4 = window.device) != null ? ref4.version : void 0) || "noPlatform");
+  sessionInfo.set('platformUUID', ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID");
+  sessionInfo.set('platformIosVersion', ((ref6 = window.device) != null ? ref6.version : void 0) || "noPlatform");
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
   Pylon.deviceReady = true;
@@ -2804,7 +2810,7 @@ Handheld = Backbone.Model.extend({
     Pylon.handheldID = incoming._id;
     delete incoming._id;
     delete incoming.__v;
-    if (incoming.clientUnlock.match(/^dddd$/)) {
+    if (incoming.clientUnlock.match(/^[1-9]ddd$/)) {
       incoming.clientUnlock = parseInt(incoming.clientUnlock, 10);
     }
     return incoming;
@@ -2818,9 +2824,9 @@ handlogger("creating handheld structure");
 sessionInfo = Pylon.sessionInfo;
 
 handheld.save({
-  platformUUID: sessionInfo.get('platformUUID'),
-  platformIosVersion: sessionInfo.get('platformIosVersion'),
-  applicationVersion: sessionInfo.get('applicationVersion')
+  platformUUID: Pylon.get('platformUUID'),
+  platformIosVersion: Pylon.get("platformIosVersion"),
+  applicationVersion: Pylon.get("applicationVersion")
 });
 
 handheld.on('change', function() {
@@ -3022,7 +3028,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.5-test';
+module.exports = '3.1.6-test';
 
 
 
