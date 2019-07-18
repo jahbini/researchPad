@@ -1049,11 +1049,21 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var loadScript, ref5, ref6;
+  var loadScript, ref10, ref5, ref6, ref7, ref8, ref9;
   applogger("device ready");
   require('./lib/capture-log.coffee');
   sessionInfo.set('platformUUID', ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID");
   sessionInfo.set('platformIosVersion', ((ref6 = window.device) != null ? ref6.version : void 0) || "noPlatform");
+  Pylon.set({
+    platformUUID: ((ref7 = window.device) != null ? ref7.uuid : void 0) || "No ID",
+    platformIosVersion: ((ref8 = window.device) != null ? ref8.version : void 0) || "noPlatform",
+    applicationVersion: applicationVersion
+  });
+  sessionInfo.set({
+    platformUUID: ((ref9 = window.device) != null ? ref9.uuid : void 0) || "No ID",
+    platformIosVersion: ((ref10 = window.device) != null ? ref10.version : void 0) || "noPlatform",
+    applicationVersion: applicationVersion
+  });
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
   Pylon.deviceReady = true;
@@ -3028,7 +3038,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.6';
+module.exports = '3.1.7';
 
 
 

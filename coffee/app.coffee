@@ -95,6 +95,7 @@ admin = new adminData
 #get the session model
 Pylon.sessionInfo = sessionInfo = require './models/session.coffee'
 applicationVersion = require './version.coffee'
+
 Pylon.set 
   platformUUID: window.device?.uuid || "No ID"
   platformIosVersion: window.device?.version|| "noPlatform"
@@ -615,6 +616,17 @@ $(document).on 'deviceready', ->
   # we are running on a device, not from the web demo page.
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
+
+  Pylon.set 
+    platformUUID: window.device?.uuid || "No ID"
+    platformIosVersion: window.device?.version|| "noPlatform"
+    applicationVersion: applicationVersion
+
+  sessionInfo.set 
+    platformUUID: window.device?.uuid || "No ID"
+    platformIosVersion: window.device?.version|| "noPlatform"
+    applicationVersion: applicationVersion
+
 
   $("#platformUUID").text sessionInfo.attributes.platformUUID
   $("#platformIosVersion").text "iOS Ver:"+sessionInfo.attributes.platformIosVersion
