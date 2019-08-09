@@ -14,6 +14,11 @@ State = Backbone.Model.extend
     loggedIn:  false
     connectingLeft: false
     connectingRight: false
+  all: (list)->
+    for element in list
+      return false unless @get element
+    return true
+
   initialize: ()->
     @on 'change',->
       statelogger JSON.stringify @.changedAttributes()

@@ -205,7 +205,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 },{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":16,"Case":36,"backbone":33,"jquery":40,"underscore":43}],2:[function(require,module,exports){
-var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, ref3, ref4, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
+var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getHandheld, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, ref3, ref4, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
 window.$ = $ = require('jquery');
@@ -392,8 +392,8 @@ activateNewButtons = function() {
   var ActionButton, AdminButton, CalibrateButton, ClearButton, DebugButton, UploadButton, stopNotify;
   DebugButton = new BV('debug');
   DebugButton.set({
-    legend: "Show Log",
-    enabled: true
+    legend: "----",
+    enabled: false
   });
   Pylon.on("systemEvent:debug:show-log", function() {
     DebugButton.set({
@@ -419,11 +419,6 @@ activateNewButtons = function() {
   Pylon.deviceReady = false;
   Pylon.on('canLogIn', function() {
     Pylon.canLogIn = true;
-    if (Pylon.deviceReady) {
-      applogger("Getting handheld from canLogIn");
-      applogger("device info is", window.device.uuid);
-      Pylon.handheld = require('./models/handheld.coffee');
-    }
     return AdminButton.set({
       enabled: true,
       legend: "Log In"
@@ -901,14 +896,14 @@ protocolsShowedErrors = 1;
 
 protocols.on('fetched', function() {
   Pylon.state.set('protocols', true);
-  if (Pylon.state.get('clinics')) {
+  if (Pylon.state.all(['clinics', 'handheld'])) {
     return Pylon.trigger('canLogIn');
   }
 });
 
 clinics.on('fetched', function() {
   Pylon.state.set('clinics', true);
-  if (Pylon.state.get('protocols')) {
+  if (Pylon.state.all(['protocols', 'handheld'])) {
     return Pylon.trigger('canLogIn');
   }
 });
@@ -944,6 +939,29 @@ configurationTimer = setInterval(getConfiguration, 11000);
 configurations.on('fetched', function() {
   return clearInterval(configurationTimer);
 });
+
+getHandheld = function() {
+  applogger("Handheld request initiate");
+  return Pylon.handheld.save({
+    platformUUID: Pylon.get('platformUUID'),
+    platformIosVersion: Pylon.get("platformIosVersion"),
+    applicationVersion: Pylon.get("applicationVersion")
+  }, {
+    success: function(collection, response, options) {
+      applogger("Handheld request success");
+      return collection.trigger('fetched');
+    },
+    error: function(collection, response, options) {
+      var handheldShowedErrors;
+      handheldShowedErrors--;
+      if (handheldShowedErrors) {
+        return;
+      }
+      handheldShowedErrors = 15;
+      return applogger(Pylon.get('hostUrl') + 'handheld', "handheld fetch error - response:", response.statusText);
+    }
+  });
+};
 
 getProtocol = function() {
   applogger("protocol request initiate");
@@ -1049,7 +1067,7 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var loadScript, ref10, ref5, ref6, ref7, ref8, ref9;
+  var handheld, handheldTimer, loadScript, ref10, ref5, ref6, ref7, ref8, ref9;
   applogger("device ready");
   require('./lib/capture-log.coffee');
   sessionInfo.set('platformUUID', ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID");
@@ -1067,11 +1085,20 @@ $(document).on('deviceready', function() {
   $("#platformUUID").text(sessionInfo.attributes.platformUUID);
   $("#platformIosVersion").text("iOS Ver:" + sessionInfo.attributes.platformIosVersion);
   Pylon.deviceReady = true;
-  if (Pylon.canLogIn) {
-    applogger("Getting handheld from deviceready");
-    applogger("device info is", window.device.uuid);
-    Pylon.handheld = require('./models/handheld.coffee');
-  }
+  applogger("Getting handheld from canLogIn");
+  handheld = Pylon.handheld = require('./models/handheld.coffee');
+  handheld.on('fetched', function() {
+    Pylon.state.set('handheld', true);
+    if (Pylon.state.all(['protocols', 'clinics'])) {
+      return Pylon.trigger('canLogIn');
+    }
+  });
+  applogger("device info is", window.device.uuid);
+  getHandheld();
+  handheldTimer = setInterval(getHandheld, 11000);
+  handheld.on('fetched', function() {
+    return clearInterval(handheldTimer);
+  });
   Pylon.on("UploadCount", function(count) {
     return $("#UploadCount").html("Queued:" + count);
   });
@@ -1088,7 +1115,6 @@ onPause = function() {
   devices.map(function(d) {
     return TiHandler.detachDevice(d.cid);
   });
-  return applogger("exit did not exit!!");
 };
 
 detectHash = function() {
@@ -3009,6 +3035,16 @@ State = Backbone.Model.extend({
     connectingLeft: false,
     connectingRight: false
   },
+  all: function(list) {
+    var element, i, len;
+    for (i = 0, len = list.length; i < len; i++) {
+      element = list[i];
+      if (!this.get(element)) {
+        return false;
+      }
+    }
+    return true;
+  },
   initialize: function() {
     this.on('change', function() {
       return statelogger(JSON.stringify(this.changedAttributes()));
@@ -3615,7 +3651,7 @@ implementing = function() {
 Pylon.set('adminView', require('./adminView.coffee').adminView);
 
 Pages = (function() {
-  var T, a, body, br, button, canvas, div, doctype, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, raw, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   T = tea = new Teacup.Teacup;
 
@@ -3707,12 +3743,9 @@ Pages = (function() {
     });
   });
 
-  Pages.prototype.theBody = T.renderable(function(buttons, contents1) {
-    div("#alerter.modal", {
-      style: "display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
-    });
-    div('#capture-display.container', function() {
-      div('.row', function() {
+  banner = function() {
+    div(".container", function() {
+      return div('.row', function() {
         a('.five.columns', {
           href: "itms-services://?action=download-manifest&url=" + hostUrl + "app/manifest.plist"
         }, function() {
@@ -3730,84 +3763,16 @@ Pages = (function() {
           onClick: "Pylon.trigger('showVersion');"
         });
       });
-      div('#net-info.row', function() {
-        div('#net-wifi.six.columns');
-        return div('#net-ble.six.columns');
-      });
-      buttons();
-      div('.row', function() {
-        div('#sensor-Left', function() {
-          div('#leftVertmeter.one.columns.vertmeter', function() {
-            return div('.bar', {
-              style: 'height:0'
-            });
-          });
-          return div('.sensorElement.five.columns', function() {
-            div('.va-mid', function() {
-              span('#LeftStatus.led-box.led-dark');
-              return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
-            });
-            div('.status', '---');
-            div('#LeftVersion', 'Version');
-            return div('#LeftAssignedName', 'Name');
-
-            /*
-            div '#sensor-Left',->
-              button '.connect.needsclick'
-                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-                , "Connect"
-              button '.disconnect.needsclick'
-                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-                , "Disconnect"
-             */
-          });
-        });
-        return div('#sensor-Right', function() {
-          div('#rightVertmeter.one.columns.vertmeter', function() {
-            return div('.bar', {
-              style: 'height:0'
-            });
-          });
-          return div('.sensorElement.five.columns', function() {
-            div('.va-mid', function() {
-              span('#RightStatus.led-box.led-dark');
-              return span('#RightSerialNumber.mr-rt-10', 'Serial number');
-            });
-            div('.status', '---');
-            div('#RightVersion', 'Version');
-            return div('#RightAssignedName', 'Name');
-
-            /*
-            div '#sensor-Right',->
-              button '.connect.needsclick'
-                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-                , "Connect"
-              button '.disconnect.needsclick'
-                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-                , "Disconnect"
-             */
-          });
-        });
-      });
-      div('.row', function() {
-        div('.three.columns', "Platform UUID");
-        div('#platformUUID.five.columns', function() {
-          return raw('&nbsp;');
-        });
-        div('#platformIosVersion.two.columns', function() {
-          return raw('&nbsp;');
-        });
-        return div('#UploadCount.two.columns', "Queued:0");
-      });
-      raw(contents1());
-      div("#scanningReport");
-      return div('#footer', {
-        style: "display:none;"
-      }, function() {
-        hr();
-        return div('#console-log.container');
-      });
     });
+  };
+
+  alerter = function() {
+    div("#alerter.modal", {
+      style: "display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    });
+  };
+
+  recorder = function() {
     div("#recorder.modal", {
       style: "height:100%"
     }, function() {
@@ -3816,6 +3781,9 @@ Pages = (function() {
         style: "background-color:lightcyan;font-size:265%"
       });
     });
+  };
+
+  protocolReport = function() {
     div("#protocol-report.modal-test", {
       style: "display:none;"
     }, function() {
@@ -3823,8 +3791,104 @@ Pages = (function() {
         style: "background-color:lightcyan;font-size:265%"
       });
     });
+  };
+
+  durationReport = function() {
     div("#duration-report.modal", {
       style: "top:50%;display:none;"
+    });
+  };
+
+  Pages.prototype.theBody = T.renderable(function(buttons, contents1) {
+    div(function() {
+      banner();
+      div('.row', function() {
+        alerter();
+        recorder();
+        protocolReport();
+        return durationReport();
+      });
+      return div('.row', function() {
+        return div('#capture-display.container', function() {
+          div('#net-info.row', function() {
+            div('#net-wifi.six.columns');
+            return div('#net-ble.six.columns');
+          });
+          buttons();
+          div('.row', function() {
+            div('#sensor-Left', function() {
+              div('#leftVertmeter.one.columns.vertmeter', function() {
+                return div('.bar', {
+                  style: 'height:0'
+                });
+              });
+              return div('.sensorElement.five.columns', function() {
+                div('.va-mid', function() {
+                  span('#LeftStatus.led-box.led-dark');
+                  return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
+                });
+                div('.status', '---');
+                div('#LeftVersion', 'Version');
+                return div('#LeftAssignedName', 'Name');
+
+                /*
+                div '#sensor-Left',->
+                  button '.connect.needsclick'
+                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
+                    , "Connect"
+                  button '.disconnect.needsclick'
+                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
+                    , "Disconnect"
+                 */
+              });
+            });
+            return div('#sensor-Right', function() {
+              div('#rightVertmeter.one.columns.vertmeter', function() {
+                return div('.bar', {
+                  style: 'height:0'
+                });
+              });
+              return div('.sensorElement.five.columns', function() {
+                div('.va-mid', function() {
+                  span('#RightStatus.led-box.led-dark');
+                  return span('#RightSerialNumber.mr-rt-10', 'Serial number');
+                });
+                div('.status', '---');
+                div('#RightVersion', 'Version');
+                return div('#RightAssignedName', 'Name');
+
+                /*
+                div '#sensor-Right',->
+                  button '.connect.needsclick'
+                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
+                    , "Connect"
+                  button '.disconnect.needsclick'
+                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
+                    , "Disconnect"
+                 */
+              });
+            });
+          });
+          div('.row', function() {
+            div('.three.columns', "Platform UUID");
+            div('#platformUUID.five.columns', function() {
+              return raw('&nbsp;');
+            });
+            div('#platformIosVersion.two.columns', function() {
+              return raw('&nbsp;');
+            });
+            return div('#UploadCount.two.columns', "Queued:0");
+          });
+          raw(contents1());
+          div("#scanningReport");
+          return div('#footer', {
+            style: "display:none;"
+          }, function() {
+            hr();
+            return div('#console-log.container');
+          });
+        });
+      });
     });
   });
 
@@ -3887,7 +3951,7 @@ Pages = (function() {
     div('.row', function() {
       button('#admin.three.columns.button-primary', 'Admin');
       button('#action.disabled.three.columns', '');
-      button('#calibrate.three.columns.disabled.grayonly', 'Calibrate');
+      button('#calibrate.three.columns.disabled', 'Calibrate');
       return button('#debug.three.columns.disabled', '');
     });
     return div('.row', function() {

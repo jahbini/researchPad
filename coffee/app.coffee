@@ -129,8 +129,8 @@ Pylon.on 'externalEvent', (what="unknown")->
 activateNewButtons = ->
   DebugButton = new BV 'debug'
   DebugButton.set
-    legend: "Show Log"
-    enabled: true
+    legend: "----"
+    enabled: false
 
   Pylon.on "systemEvent:debug:show-log",() ->
     DebugButton.set legend: "Hide Log"
@@ -154,13 +154,10 @@ activateNewButtons = ->
   #  When it returns, it may have started everything
   Pylon.on 'canLogIn', ->
     Pylon.canLogIn = true
-    if Pylon.deviceReady
-      applogger "Getting handheld from canLogIn"
-      applogger "device info is", window.device.uuid
-      Pylon.handheld = require './models/handheld.coffee'
     AdminButton.set 
       enabled:true
       legend: "Log In"
+
   Pylon.on "systemEvent:admin:log-in", enterAdmin
   Pylon.on "systemEvent:admin:log-out", exitAdmin
 
@@ -518,15 +515,18 @@ Pylon.on 'adminDone', ->
   enableRecordButtonOK()
   return 
 
+
 protocolsShowedErrors=1
 protocols.on 'fetched', ->
   Pylon.state.set 'protocols',true
-  if Pylon.state.get 'clinics'
+  if Pylon.state.all ['clinics','handheld']
     Pylon.trigger 'canLogIn'
+
 clinics.on 'fetched', ->
   Pylon.state.set 'clinics',true
-  if Pylon.state.get 'protocols'
+  if Pylon.state.all ['protocols','handheld']
     Pylon.trigger 'canLogIn'
+
 configurations.on 'fetched',->
   Pylon.retroPW = configurations
   Pylon.userUnlock = configurations
@@ -549,7 +549,22 @@ configurationTimer = setInterval getConfiguration, 11000
 configurations.on 'fetched' , ->
   clearInterval configurationTimer
 
-
+getHandheld = ->
+  applogger "Handheld request initiate"
+  Pylon.handheld.save {
+    platformUUID: Pylon.get 'platformUUID'
+    platformIosVersion: Pylon.get "platformIosVersion"
+    applicationVersion: Pylon.get "applicationVersion"
+    },
+    success: (collection,response,options)->
+      applogger "Handheld request success"
+      collection.trigger 'fetched'
+    error: (collection,response,options)->
+      handheldShowedErrors--
+      if handheldShowedErrors
+        return
+      handheldShowedErrors=15
+      applogger (Pylon.get('hostUrl')+'handheld'), "handheld fetch error - response:", response.statusText
 
 getProtocol = ->
   applogger "protocol request initiate"
@@ -633,11 +648,19 @@ $(document).on 'deviceready', ->
 
   # the sessionInfo stuff is loaded, and can be transferred to the handheld object
   Pylon.deviceReady = true
-  if Pylon.canLogIn
-    applogger "Getting handheld from deviceready"
-    applogger "device info is", window.device.uuid
-    Pylon.handheld = require './models/handheld.coffee'
+  # we have the UUID, so we can ask the ost for the handheld record
+  applogger "Getting handheld from canLogIn"
+  handheld = Pylon.handheld = require './models/handheld.coffee'
+  handheld.on 'fetched',->
+    Pylon.state.set 'handheld',true
+    if Pylon.state.all ['protocols','clinics']
+      Pylon.trigger 'canLogIn'
 
+  applogger "device info is", window.device.uuid
+  getHandheld()
+  handheldTimer = setInterval getHandheld, 11000
+  handheld.on 'fetched' , ->
+    clearInterval handheldTimer
   Pylon.on "UploadCount", (count)->
     $("#UploadCount").html "Queued:#{count}"
   startBlueTooth()
@@ -652,7 +675,7 @@ onPause= ()->
   devices = Pylon.get 'devices'
   devices.map (d)->
     TiHandler.detachDevice d.cid
-  applogger "exit did not exit!!"
+  return
 
 detectHash= ()-> #if there is a hash, it is a session to be cloned
   return if Pylon.onHandheld
@@ -670,7 +693,6 @@ $ ->
     window.location.reload()
   document.addEventListener 'pause', onPause, false
 
-    
   document.addEventListener 'online', ()->
     return
     require './lib/net-view.coffee'

@@ -75,78 +75,100 @@ class Pages
     msg.fadeIn()
     Pylon.saneTimeout 5000,()->
       msg.fadeOut 1000
-
-  theBody: T.renderable (buttons,contents1)=>
-    div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
-    div '#capture-display.container', ->
+  banner = ()->
+    div ".container",->
       div '.row', ->
         a  '.five.columns',href: "itms-services://?action=download-manifest&url=#{hostUrl}app/manifest.plist",->
           img "#logo", src: './ui/images/logo-final.png', width: '100%'
         div '#dud.one.columns', ->
           raw '&nbsp;'
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%', onClick: "Pylon.trigger('showVersion');"
-      div '#net-info.row', ->
-        div '#net-wifi.six.columns'
-        div '#net-ble.six.columns'
-      buttons()
-      div '.row',->
-        div '#sensor-Left',->
-          div '#leftVertmeter.one.columns.vertmeter', ->
-            div '.bar',style: 'height:0'
-          div '.sensorElement.five.columns', ->
-            div '.va-mid',->
-              span '#LeftStatus.led-box.led-dark'
-              span '#LeftSerialNumber.mr-rt-10', 'Serial number'
-            div '.status', '---'
-            div '#LeftVersion',  'Version'
-            div '#LeftAssignedName', 'Name'
-            ###
-            div '#sensor-Left',->
-              button '.connect.needsclick'
-                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-                , "Connect"
-              button '.disconnect.needsclick'
-                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-                , "Disconnect"
-            ###
-        div '#sensor-Right',->
-          div '#rightVertmeter.one.columns.vertmeter', ->
-            div '.bar',style: 'height:0'
-          div '.sensorElement.five.columns', ->
-            div '.va-mid',->
-              span '#RightStatus.led-box.led-dark'
-              span '#RightSerialNumber.mr-rt-10' , 'Serial number'
-            div '.status', '---'
-            div '#RightVersion', 'Version'
-            div '#RightAssignedName', 'Name'
-            ###
-            div '#sensor-Right',->
-              button '.connect.needsclick'
-                ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-                , "Connect"
-              button '.disconnect.needsclick'
-                ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-                , "Disconnect"
-            ###
-      div '.row', ->
-        div '.three.columns',"Platform UUID"
-        div '#platformUUID.five.columns', ->
-          raw '&nbsp;'
-        div '#platformIosVersion.two.columns', ->
-          raw '&nbsp;'
-        div '#UploadCount.two.columns',"Queued:0"
-      raw contents1()
-      div "#scanningReport"
-      div '#footer', style: "display:none;", ->
-        hr()
-        div '#console-log.container'
+    return
+  alerter = ()->
+    div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    return
+
+  recorder = ()->
     # the test activity portal -- populated in modalView.coffee
     div "#recorder.modal",style:"height:100%",->
       div "#count-down"
       div "#example", style:"background-color:lightcyan;font-size:265%"       #example space for huntingtons tests
+    return
+
+  protocolReport= ()->
     div "#protocol-report.modal-test", style: "display:none;",->
       div "#protocol-here", style:"background-color:lightcyan;font-size:265%" #protocol engines for Huntingtons
+    return
+
+  durationReport = ()->
     div "#duration-report.modal", style: "top:50%;display:none;"              #external start-stop modal
+    return
+
+  theBody: T.renderable (buttons,contents1)=>
+    div ->
+      banner()
+      div '.row', ()->
+        alerter()
+        recorder()
+        protocolReport()
+        durationReport()
+      div '.row', ()->
+        div '#capture-display.container', ->
+          div '#net-info.row', ->
+            div '#net-wifi.six.columns'
+            div '#net-ble.six.columns'
+          buttons()
+          div '.row',->
+            div '#sensor-Left',->
+              div '#leftVertmeter.one.columns.vertmeter', ->
+                div '.bar',style: 'height:0'
+              div '.sensorElement.five.columns', ->
+                div '.va-mid',->
+                  span '#LeftStatus.led-box.led-dark'
+                  span '#LeftSerialNumber.mr-rt-10', 'Serial number'
+                div '.status', '---'
+                div '#LeftVersion',  'Version'
+                div '#LeftAssignedName', 'Name'
+                ###
+                div '#sensor-Left',->
+                  button '.connect.needsclick'
+                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
+                    , "Connect"
+                  button '.disconnect.needsclick'
+                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
+                    , "Disconnect"
+                ###
+            div '#sensor-Right',->
+              div '#rightVertmeter.one.columns.vertmeter', ->
+                div '.bar',style: 'height:0'
+              div '.sensorElement.five.columns', ->
+                div '.va-mid',->
+                  span '#RightStatus.led-box.led-dark'
+                  span '#RightSerialNumber.mr-rt-10' , 'Serial number'
+                div '.status', '---'
+                div '#RightVersion', 'Version'
+                div '#RightAssignedName', 'Name'
+                ###
+                div '#sensor-Right',->
+                  button '.connect.needsclick'
+                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
+                    , "Connect"
+                  button '.disconnect.needsclick'
+                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
+                    , "Disconnect"
+                ###
+          div '.row', ->
+            div '.three.columns',"Platform UUID"
+            div '#platformUUID.five.columns', ->
+              raw '&nbsp;'
+            div '#platformIosVersion.two.columns', ->
+              raw '&nbsp;'
+            div '#UploadCount.two.columns',"Queued:0"
+          raw contents1()
+          div "#scanningReport"
+          div '#footer', style: "display:none;", ->
+            hr()
+            div '#console-log.container'
     return
 
   scanBody: T.renderable ()->
@@ -199,7 +221,7 @@ class Pages
       div '.row', ->
         button '#admin.three.columns.button-primary', 'Admin'
         button '#action.disabled.three.columns', ''
-        button '#calibrate.three.columns.disabled.grayonly', 'Calibrate'
+        button '#calibrate.three.columns.disabled', 'Calibrate'
         button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
