@@ -84,6 +84,19 @@ class Pages
           raw '&nbsp;'
         img ".five.columns", src: './ui/images/movdatcap.png', width: '100%', onClick: "Pylon.trigger('showVersion');"
     return
+
+  acceptReject = ()->
+    div "#acceptreject.modal",()->
+      div ".container",()->
+        div ".row",()->
+          h2 "Press Accept or Reject to finish"
+        div ".row",()->
+          div ".three.columns",()->raw "&nbsp;"
+          button "#acceptor.two.columns"
+          div ".two.columns",()->raw "&nbsp;"
+          button "#rejector.two.columns"
+    return
+
   alerter = ()->
     div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
     return
@@ -108,16 +121,22 @@ class Pages
     div ->
       banner()
       div '.row', ()->
+        acceptReject()
         alerter()
         recorder()
         protocolReport()
         durationReport()
+        raw contents1()
       div '.row', ()->
         div '#capture-display.container', ->
           div '#net-info.row', ->
             div '#net-wifi.six.columns'
             div '#net-ble.six.columns'
           buttons()
+          div '.row', ->
+            div '.eight.columns', ->
+              raw '&nbsp;'
+            div '#UploadCount.two.columns',"Queued:0"
           div '.row',->
             div '#sensor-Left',->
               div '#leftVertmeter.one.columns.vertmeter', ->
@@ -157,14 +176,6 @@ class Pages
                     ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
                     , "Disconnect"
                 ###
-          div '.row', ->
-            div '.three.columns',"Platform UUID"
-            div '#platformUUID.five.columns', ->
-              raw '&nbsp;'
-            div '#platformIosVersion.two.columns', ->
-              raw '&nbsp;'
-            div '#UploadCount.two.columns',"Queued:0"
-          raw contents1()
           div "#scanningReport"
           div '#footer', style: "display:none;", ->
             hr()
@@ -222,10 +233,11 @@ class Pages
         button '#admin.three.columns.button-primary', 'Admin'
         button '#action.disabled.three.columns', ''
         button '#calibrate.three.columns.disabled', 'Calibrate'
-        button '#debug.three.columns.disabled', ''
+        div '#UploadCount.three.columns',"Queued:0"
+        #button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
-          button '#scanDevices.u-full-width.button-primary', 'Scan Devices'
+          button '#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices'
           label '#StatusData',for: "upload", 'No connection'
         div '.three.columns', ->
           label '#ProtocolSelect', for: "testID", 'Which Test?'

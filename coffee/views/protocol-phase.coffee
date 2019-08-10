@@ -212,7 +212,20 @@ protocolPhase = Backbone.Model.extend
       pHT.stopCount()
       Pylon.state.set recording: false
       Pylon.trigger 'systemEvent:stopCountDown:over'
+      #JAH -- put up accept or reject buttons
       Pylon.trigger 'removeRecorderWindow',2000
+      return unless Pylon.sessionInfo.get "lockdownMode"
+      $("#acceptreject").fadeIn()
+      acceptButton = new Pylon.BV 'acceptor'
+      acceptButton.set
+        legend: "accept"
+        enabled: true
+
+      rejectButton = new Pylon.BV 'rejector'
+      rejectButton.set
+        legend: "reject"
+        enabled: true
+
       return
     return
 

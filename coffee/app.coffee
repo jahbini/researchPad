@@ -154,6 +154,8 @@ activateNewButtons = ->
   #  When it returns, it may have started everything
   Pylon.on 'canLogIn', ->
     Pylon.canLogIn = true
+    CalibrateButton.set enabled:true
+    $('scanDevices').removeClass('disabled').prop('disabled',false)
     AdminButton.set 
       enabled:true
       legend: "Log In"
@@ -171,17 +173,19 @@ activateNewButtons = ->
     legend: "Reject"
     enabled: false
   Pylon.on "systemEvent:clear:reject", enterClear
+  Pylon.on "systemEvent:rejector:reject", enterClear
 
   UploadButton = new BV 'upload',"u-full-width"
   UploadButton.set
     legend: "Accept"
     enabled: false
   Pylon.on "systemEvent:upload:accept", enterUpload
+  Pylon.on "systemEvent:acceptor:accept", enterUpload
 
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
     legend: "notify" # the legend generates the SystemEvent triggers below
-    enabled: true
+    enabled: false
 
   stopNotify = ()->
     CalibrateButton.set legend: "notify",enabled: true
