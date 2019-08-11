@@ -25,7 +25,8 @@ recorderViewTemplate = Backbone.View.extend
   initialize: ()->
     Pylon.on 'showRecorderWindow', ()=>
       p = Pylon.theProtocol()
-      if p.get 'gestureCapture'
+      hideTop = Pylon.sessionInfo.get 'lockdownMode'
+      if hideTop or p.get 'gestureCapture'
         @$el.addClass 'hide-top'
         @$el.removeClass 'show-top'
       else

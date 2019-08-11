@@ -775,10 +775,6 @@ exitRecording = function() {
   if ('stopping' === Pylon.state.get('recording')) {
     return;
   }
-  Pylon.state.set({
-    recording: 'stopping'
-  });
-  Pylon.trigger('systemEvent:stopCountDown:start', 5);
   Pylon.get('button-action').set({
     enabled: false
   });
@@ -3080,7 +3076,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.8';
+module.exports = '3.1.9';
 
 
 
@@ -4267,9 +4263,10 @@ recorderViewTemplate = Backbone.View.extend({
   initialize: function() {
     Pylon.on('showRecorderWindow', (function(_this) {
       return function() {
-        var p;
+        var hideTop, p;
         p = Pylon.theProtocol();
-        if (p.get('gestureCapture')) {
+        hideTop = Pylon.sessionInfo.get('lockdownMode');
+        if (hideTop || p.get('gestureCapture')) {
           _this.$el.addClass('hide-top');
           _this.$el.removeClass('show-top');
         } else {
@@ -4796,7 +4793,7 @@ protocolPhase = Backbone.Model.extend({
     protocol: null
   },
   initialize: function() {
-    var abort, countOut, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, start, terminate, underway;
+    var abort, countOut, exitThisTest, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, start, terminate, underway;
     intrologger("initialize");
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
@@ -4854,28 +4851,6 @@ protocolPhase = Backbone.Model.extend({
         selectTheFirstTest();
       };
     })(this);
-
-    /*    /// WAS   we have no more requirement for lead-in
-      p = Pylon.theProtocol()
-    
-      unless  p.get 'showLeadIn'
-        selectTheFirstTest()
-        return
-      duration = p.get 'leadInDuration'
-      if duration == 0
-        start=5
-        limit=0
-      else
-        start = duration
-        limit = 0
-      pHT.setEnvironment
-        headline: "LeadIn"
-        paragraph: "Get Ready"
-        nextPhase: selectTheFirstTest
-        start: start
-        limit: limit
-      return
-     */
     practice = (function(_this) {
       return function() {
         var duration, p;
@@ -4919,16 +4894,38 @@ protocolPhase = Backbone.Model.extend({
           start = limit;
           limit = 0;
         }
-        pHT.setEnvironment({
-          headline: "Test In Progress",
-          paragraph: (p.get("mileStoneText")) || "go",
-          start: start,
-          limit: limit,
-          nextPhase: selectTheNextTest,
-          action: "underway/" + (p.get('testDuration'))
-        });
+        if (!p.get('gestureCapture')) {
+          pHT.setEnvironment({
+            buttonSpec: {
+              phaseButton: "Stop",
+              buttonPhaseNext: exitThisTest
+            },
+            headline: "Test In Progress",
+            paragraph: (p.get("mileStoneText")) || "go",
+            start: start,
+            limit: limit,
+            nextPhase: selectTheNextTest,
+            action: "underway/" + (p.get('testDuration'))
+          });
+        } else {
+          pHT.setEnvironment({
+            headline: "Test In Progress",
+            paragraph: (p.get("mileStoneText")) || "go",
+            start: start,
+            limit: limit,
+            nextPhase: selectTheNextTest,
+            action: "underway/" + (p.get('testDuration'))
+          });
+        }
       };
     })(this);
+
+    /*
+    #fake clicking the stop button
+     */
+    exitThisTest = function() {
+      $("#action").click();
+    };
     selectTheNextTest = (function(_this) {
       return function() {
         var newTest;
@@ -4967,6 +4964,16 @@ protocolPhase = Backbone.Model.extend({
       }
       return test;
     };
+    Pylon.on("systemEvent:action:stop", countOut = (function(_this) {
+      return function() {
+        Pylon.state.set({
+          recording: false
+        });
+        Pylon.trigger('systemEvent:protocol:terminate');
+        pHT.stopCount();
+        terminate();
+      };
+    })(this));
     proceedWithNextTest = (function(_this) {
       return function() {
         var newTest;
@@ -4989,31 +4996,6 @@ protocolPhase = Backbone.Model.extend({
         return practice();
       };
     })(this);
-    Pylon.on("systemEvent:action:stop", countOut = (function(_this) {
-      return function() {
-        Pylon.state.set({
-          recording: 'stopping'
-        });
-        Pylon.trigger('systemEvent:protocol:terminate');
-        pHT.stopCount();
-        terminate();
-      };
-    })(this));
-
-    /*   /// was removed -- no leadIn leadOut ref Harry July 2019
-      p = @attributes.protocol
-      unless  p.get 'showLeadIn'
-        pHT.stopCount()
-        terminate()
-        return
-      pHT.setEnvironment
-        headline: "LeadOut"
-        paragraph: "Good Job"
-        start: p.get "leadInDuration"
-        limit: 0
-        nextPhase: terminate
-      return
-     */
     terminate = (function(_this) {
       return function() {
         var acceptButton, rejectButton;

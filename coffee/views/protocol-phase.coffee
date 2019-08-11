@@ -66,27 +66,6 @@ protocolPhase = Backbone.Model.extend
     leadIn= ()=>
       selectTheFirstTest()
       return
-    ###    /// WAS   we have no more requirement for lead-in
-      p = Pylon.theProtocol()
-
-      unless  p.get 'showLeadIn'
-        selectTheFirstTest()
-        return
-      duration = p.get 'leadInDuration'
-      if duration == 0
-        start=5
-        limit=0
-      else
-        start = duration
-        limit = 0
-      pHT.setEnvironment
-        headline: "LeadIn"
-        paragraph: "Get Ready"
-        nextPhase: selectTheFirstTest
-        start: start
-        limit: limit
-      return
-    ###
 
     practice= ()=>
       Pylon.trigger 'systemEvent:protocol:active'
@@ -123,13 +102,33 @@ protocolPhase = Backbone.Model.extend
       else
         start = limit
         limit = 0
-      pHT.setEnvironment
-        headline: "Test In Progress"
-        paragraph:  (p.get "mileStoneText") || "go"
-        start: start
-        limit: limit
-        nextPhase: selectTheNextTest
-        action: "underway/#{p.get 'testDuration'}"
+      if !p.get 'gestureCapture'
+        pHT.setEnvironment
+          buttonSpec:
+            phaseButton: "Stop"
+            buttonPhaseNext: exitThisTest
+          headline: "Test In Progress"
+          paragraph:  (p.get "mileStoneText") || "go"
+          start: start
+          limit: limit
+          nextPhase: selectTheNextTest
+          action: "underway/#{p.get 'testDuration'}"
+      else
+        pHT.setEnvironment
+          headline: "Test In Progress"
+          paragraph:  (p.get "mileStoneText") || "go"
+          start: start
+          limit: limit
+          nextPhase: selectTheNextTest
+          action: "underway/#{p.get 'testDuration'}"
+      return
+
+    ###
+    #fake clicking the stop button
+    ###
+
+    exitThisTest = ()->
+      $("#action").click()
       return
 
     selectTheNextTest= ()=>
@@ -149,7 +148,7 @@ protocolPhase = Backbone.Model.extend
           phaseButton: "Proceed"
           buttonPhaseNext: proceedWithNextTest
       return
-    
+
     setTestOrDefault = (name)->
       test = Pylon.setTheCurrentProtocol name
       if !test
@@ -161,6 +160,14 @@ protocolPhase = Backbone.Model.extend
           m += " '" + name + "'"
           test.set 'mileStoneText' ,m
       test
+
+    Pylon.on "systemEvent:action:stop", countOut=  ()=>
+      # was -- Pylon.state.set recording: 'stopping' # lead-out phase of test is gone
+      Pylon.state.set recording: false
+      Pylon.trigger 'systemEvent:protocol:terminate'
+      pHT.stopCount()
+      terminate()
+      return
 
     proceedWithNextTest = ()=>
       newTest = @allMyProtocols.shift()
@@ -178,28 +185,6 @@ protocolPhase = Backbone.Model.extend
 
       setTestOrDefault newTest
       practice()
-
-    Pylon.on "systemEvent:action:stop", countOut=  ()=>
-      Pylon.state.set recording: 'stopping'
-      Pylon.trigger 'systemEvent:protocol:terminate'
-      pHT.stopCount()
-      terminate()
-      return
-
-    ###   /// was removed -- no leadIn leadOut ref Harry July 2019
-      p = @attributes.protocol
-      unless  p.get 'showLeadIn'
-        pHT.stopCount()
-        terminate()
-        return
-      pHT.setEnvironment
-        headline: "LeadOut"
-        paragraph: "Good Job"
-        start: p.get "leadInDuration"
-        limit: 0
-        nextPhase: terminate
-      return
-    ### 
 
     terminate= ()=>
       pHT.setEnvironment

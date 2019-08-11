@@ -446,8 +446,8 @@ Pylon.on 'systemEvent:recordCountDown:start', ->
 # Pylon.on "systemEvent:action:stop", exitRecording
 exitRecording = -> # Stop Recording
   return if 'stopping' == Pylon.state.get 'recording'
-  Pylon.state.set recording: 'stopping'
-  Pylon.trigger 'systemEvent:stopCountDown:start', 5
+  #Pylon.state.set recording: 'stopping'
+  #Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.get('button-action').set enabled: false
   (Pylon.get 'button-admin').set enabled: true
   debugger
