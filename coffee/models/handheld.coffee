@@ -22,7 +22,10 @@ Handheld = Backbone.Model.extend {
     delete incoming._id
     delete incoming.__v
     # ignore unlock code unless it is all decimal digits ref: Harry July 2019 release requests
-    incoming.clientUnlock = parseInt incoming.clientUnlock,10 if incoming.clientUnlock.match /^[1-9]ddd$/
+    if incoming.clientUnlock?.match /^[1-9]ddd$/
+      incoming.clientUnlock = parseInt incoming.clientUnlock,10
+    else
+      delete incoming.clientunlock
     return incoming
 
 }

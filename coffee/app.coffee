@@ -337,7 +337,6 @@ exitCalibrate = ->
   (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
   return false
 
-
 enterRecording = ->
   applogger "Attempt to enter Record Phase"
   # reject record request if no protocol is selected
@@ -518,7 +517,6 @@ Pylon.on 'adminDone', ->
   pageGen.activateSensorPage()
   enableRecordButtonOK()
   return 
-
 
 protocolsShowedErrors=1
 protocols.on 'fetched', ->

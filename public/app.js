@@ -2845,11 +2845,14 @@ Handheld = Backbone.Model.extend({
   idAttribute: '_id',
   urlRoot: Pylon.get('hostUrl') + 'handheld',
   parse: function(incoming) {
+    var ref;
     Pylon.handheldID = incoming._id;
     delete incoming._id;
     delete incoming.__v;
-    if (incoming.clientUnlock.match(/^[1-9]ddd$/)) {
+    if ((ref = incoming.clientUnlock) != null ? ref.match(/^[1-9]ddd$/) : void 0) {
       incoming.clientUnlock = parseInt(incoming.clientUnlock, 10);
+    } else {
+      delete incoming.clientunlock;
     }
     return incoming;
   }
@@ -3076,7 +3079,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.9';
+module.exports = '3.1.10';
 
 
 
@@ -3726,21 +3729,26 @@ Pages = (function() {
     msg = $('#alerter').html(T.render(function() {
       h3("Thanks for being a part of the Retrotope Experience");
       h4("All contents Copyright 2015-2019 Retrotope, Inc.");
-      return div(".container", function() {
+      div(".container", function() {
         div(".row", function() {
           div(".five.columns", 'platformUDID');
           div(".two.columns", ' ');
           return div(".five.columns", 'applicationVersion');
         });
-        return div(".row", function() {
+        div(".row", function() {
           div(".five.columns", Pylon.sessionInfo.get('platformUUID'));
           div(".two.columns", ' ');
           return div(".five.columns", Pylon.sessionInfo.get('applicationVersion'));
         });
+        return div(".row", function() {
+          return button("#uploader.three.columns", {
+            onClick: "Pylon.accessFileSystem()"
+          }, "upload log");
+        });
       });
     }));
     msg.fadeIn();
-    return Pylon.saneTimeout(5000, function() {
+    Pylon.saneTimeout(5000, function() {
       return msg.fadeOut(1000);
     });
   });
@@ -3769,7 +3777,9 @@ Pages = (function() {
   };
 
   acceptReject = function() {
-    div("#acceptreject.modal", function() {
+    div("#acceptreject.modal", {
+      style: "height:100%"
+    }, function() {
       return div(".container", function() {
         div(".row", function() {
           return h2("Press Accept or Reject to finish");

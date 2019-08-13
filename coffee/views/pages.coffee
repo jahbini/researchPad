@@ -72,9 +72,15 @@ class Pages
           div ".five.columns", Pylon.sessionInfo.get 'platformUUID'
           div ".two.columns", ' '
           div ".five.columns", Pylon.sessionInfo.get 'applicationVersion'
+        div ".row", ->
+          button "#uploader.three.columns",onClick: "Pylon.accessFileSystem()","upload log"
+      return
+
     msg.fadeIn()
     Pylon.saneTimeout 5000,()->
       msg.fadeOut 1000
+    return
+
   banner = ()->
     div ".container",->
       div '.row', ->
@@ -86,7 +92,7 @@ class Pages
     return
 
   acceptReject = ()->
-    div "#acceptreject.modal",()->
+    div "#acceptreject.modal",style:"height:100%",()->
       div ".container",()->
         div ".row",()->
           h2 "Press Accept or Reject to finish"

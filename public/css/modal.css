@@ -19,7 +19,7 @@ body {
   padding: 25px;
   border-radius: 5px;
   z-index: 10;
-  box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 199px rgba(0, 0, 0, 0.5);
 }
 .modal.active {
   display: block;
