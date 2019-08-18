@@ -389,7 +389,7 @@ Pylon.on('externalEvent', function(what) {
 });
 
 activateNewButtons = function() {
-  var ActionButton, AdminButton, CalibrateButton, ClearButton, DebugButton, UploadButton, stopNotify;
+  var AcceptButton, ActionButton, AdminButton, CalibrateButton, ClearButton, DebugButton, RejectButton, UploadButton, stopNotify;
   DebugButton = new BV('debug');
   DebugButton.set({
     legend: "----",
@@ -450,6 +450,19 @@ activateNewButtons = function() {
   });
   Pylon.on("systemEvent:upload:accept", enterUpload);
   Pylon.on("systemEvent:acceptor:accept", enterUpload);
+  AcceptButton = new Pylon.BV('acceptor');
+  AcceptButton.set({
+    legend: "accept",
+    enabled: true
+  });
+  RejectButton = new Pylon.BV('rejector');
+  RejectButton.set({
+    legend: "reject",
+    enabled: true
+  });
+  Pylon.on("systemEvent:upload:accept", enterUpload);
+  Pylon.on("systemEvent:acceptor:accept", enterUpload);
+  Pylon.on("systemEvent:rejector:reject", enterClear);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
     legend: "notify",
@@ -592,6 +605,7 @@ enterClear = function(accept) {
     accept = false;
   }
   Pylon.trigger("removeRecorderWindow");
+  Pylon.trigger("removeAcceptReject");
   $('#testID').prop("disabled", false);
   p = Pylon.setTheCurrentProtocol(Pylon.sessionInfo.get('testID'));
   if (Pylon.onHandheld) {
@@ -3079,7 +3093,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.10';
+module.exports = '3.1.11';
 
 
 
@@ -3322,7 +3336,7 @@ adminView = (function() {
 
   adminView.prototype.adminContents = function() {
     return render(function() {
-      return div('#adminForm.modal', function() {
+      return div('#adminForm.modal-test', function() {
         tea.h1("Enter Session Information");
         hr();
         return form(function() {
@@ -3731,16 +3745,22 @@ Pages = (function() {
       h4("All contents Copyright 2015-2019 Retrotope, Inc.");
       div(".container", function() {
         div(".row", function() {
-          div(".five.columns", 'platformUDID');
-          div(".two.columns", ' ');
-          return div(".five.columns", 'applicationVersion');
+          div(".seven.columns", 'platformUDID');
+          div(".one.columns", ' ');
+          return div(".four.columns", 'applicationVersion');
         });
         div(".row", function() {
-          div(".five.columns", Pylon.sessionInfo.get('platformUUID'));
-          div(".two.columns", ' ');
-          return div(".five.columns", Pylon.sessionInfo.get('applicationVersion'));
+          div(".seven.columns", Pylon.sessionInfo.get('platformUUID'));
+          div(".one.columns", ' ');
+          return div(".four.columns", Pylon.sessionInfo.get('applicationVersion'));
+        });
+        T.hr();
+        div(".row", function() {
+          return div(".five.columns", 'iOS Version');
         });
         return div(".row", function() {
+          div(".five.columns", Pylon.sessionInfo.get('platformIosVersion'));
+          div(".two.columns", ' ');
           return button("#uploader.three.columns", {
             onClick: "Pylon.accessFileSystem()"
           }, "upload log");
@@ -3826,7 +3846,7 @@ Pages = (function() {
   };
 
   durationReport = function() {
-    div("#duration-report.modal", {
+    div("#duration-report.modal-test", {
       style: "top:50%;display:none;"
     });
   };
@@ -3979,35 +3999,31 @@ Pages = (function() {
   Pages.prototype.topButtons = T.renderable(function() {
     div('.row', function() {
       button('#admin.three.columns.button-primary', 'Admin');
-      button('#action.disabled.three.columns', '');
-      button('#calibrate.three.columns.disabled', 'Calibrate');
-      return div('#UploadCount.three.columns', "Queued:0");
+      div('#UploadCount.three.columns', "To Upload:0");
+      div('#LeftStat.three.columns', 'Left Sensor:0');
+      return div('#RightStat.three.columns', 'Right Sensor:0');
     });
     return div('.row', function() {
       div('.three.columns', function() {
-        button('#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices');
-        return label('#StatusData', {
-          "for": "upload"
-        }, 'No connection');
+        return button('#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices');
       });
+      button('#calibrate.three.columns.disabled', 'Calibrate');
       div('.three.columns', function() {
         label('#ProtocolSelect', {
           "for": "testID"
         }, 'Which Test?');
         return select("#testID.u-full-width");
       });
-      div('.three.columns', function() {
-        button('#upload.disabled.u-full-width', 'Upload');
-        return label('#LeftStat', {
-          "for": "clear"
-        }, 'Items:0');
-      });
-      return div('.three.columns', function() {
-        button('#clear.u-full-width.disabled', 'Reset');
-        return label('#RightStat', {
-          "for": "upload"
-        }, 'Items:0');
-      });
+      return button('#action.disabled.three.columns', '');
+
+      /*
+      div '.three.columns', ->
+        button '#upload.disabled.u-full-width', 'Upload'
+        label '#LeftStat', for: "clear", 'Items:0'
+      div '.three.columns', ->
+        button '#clear.u-full-width.disabled', 'Reset'
+        label '#RightStat', for: "upload", 'Items:0'
+       */
     });
   });
 
@@ -4279,9 +4295,13 @@ recorderViewTemplate = Backbone.View.extend({
         if (hideTop || p.get('gestureCapture')) {
           _this.$el.addClass('hide-top');
           _this.$el.removeClass('show-top');
+          _this.$el.addClass('modal');
+          _this.$el.removeClass('modal-test');
         } else {
           _this.$el.addClass('show-top');
           _this.$el.removeClass('hide-top');
+          _this.$el.addClass('modal-test');
+          _this.$el.removeClass('modal');
         }
         return _this.$el.fadeIn();
       };
@@ -5008,7 +5028,6 @@ protocolPhase = Backbone.Model.extend({
     })(this);
     terminate = (function(_this) {
       return function() {
-        var acceptButton, rejectButton;
         pHT.setEnvironment({
           headline: "All Done",
           paragraph: "Please wait",
@@ -5022,23 +5041,14 @@ protocolPhase = Backbone.Model.extend({
         });
         Pylon.trigger('systemEvent:stopCountDown:over');
         Pylon.trigger('removeRecorderWindow', 2000);
-        if (!Pylon.sessionInfo.get("lockdownMode")) {
-          return;
-        }
-        $("#acceptreject").fadeIn();
-        acceptButton = new Pylon.BV('acceptor');
-        acceptButton.set({
-          legend: "accept",
-          enabled: true
-        });
-        rejectButton = new Pylon.BV('rejector');
-        rejectButton.set({
-          legend: "reject",
-          enabled: true
-        });
+        return $("#acceptreject").fadeIn();
       };
     })(this);
   }
+});
+
+Pylon.on("removeAcceptReject", function() {
+  $("#acceptreject").fadeOut();
 });
 
 pP = new protocolPhase;

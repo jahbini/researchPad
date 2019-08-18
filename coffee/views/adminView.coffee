@@ -150,7 +150,7 @@ class adminView
 
   adminContents: =>
     render () ->
-     div '#adminForm.modal', ->
+     div '#adminForm.modal-test', ->
       tea.h1 "Enter Session Information"
       hr()
       form ->

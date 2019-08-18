@@ -29,9 +29,13 @@ recorderViewTemplate = Backbone.View.extend
       if hideTop or p.get 'gestureCapture'
         @$el.addClass 'hide-top'
         @$el.removeClass 'show-top'
+        @$el.addClass 'modal'
+        @$el.removeClass 'modal-test'
       else
         @$el.addClass 'show-top'
         @$el.removeClass 'hide-top'
+        @$el.addClass 'modal-test'
+        @$el.removeClass 'modal'
       @$el.fadeIn()
     Pylon.on 'removeRecorderWindow', (time=1000)=>
       #JAH

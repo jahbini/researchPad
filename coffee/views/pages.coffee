@@ -65,14 +65,19 @@ class Pages
       h4 "All contents Copyright 2015-2019 Retrotope, Inc."
       div ".container" ,->
         div ".row", ->
-          div ".five.columns", 'platformUDID'
-          div ".two.columns", ' '
-          div ".five.columns", 'applicationVersion'
+          div ".seven.columns", 'platformUDID'
+          div ".one.columns", ' '
+          div ".four.columns", 'applicationVersion'
         div ".row", ->
-          div ".five.columns", Pylon.sessionInfo.get 'platformUUID'
-          div ".two.columns", ' '
-          div ".five.columns", Pylon.sessionInfo.get 'applicationVersion'
+          div ".seven.columns", Pylon.sessionInfo.get 'platformUUID'
+          div ".one.columns", ' '
+          div ".four.columns", Pylon.sessionInfo.get 'applicationVersion'
+        T.hr()
         div ".row", ->
+          div ".five.columns", 'iOS Version'
+        div ".row", ->
+          div ".five.columns", Pylon.sessionInfo.get 'platformIosVersion'
+          div ".two.columns", ' '
           button "#uploader.three.columns",onClick: "Pylon.accessFileSystem()","upload log"
       return
 
@@ -120,7 +125,7 @@ class Pages
     return
 
   durationReport = ()->
-    div "#duration-report.modal", style: "top:50%;display:none;"              #external start-stop modal
+    div "#duration-report.modal-test", style: "top:50%;display:none;"              #external start-stop modal
     return
 
   theBody: T.renderable (buttons,contents1)=>
@@ -237,23 +242,31 @@ class Pages
   topButtons: T.renderable ()->
       div '.row', ->
         button '#admin.three.columns.button-primary', 'Admin'
-        button '#action.disabled.three.columns', ''
-        button '#calibrate.three.columns.disabled', 'Calibrate'
-        div '#UploadCount.three.columns',"Queued:0"
+        div '#UploadCount.three.columns',"To Upload:0"
+        div '#LeftStat.three.columns',  'Left Sensor:0'
+        div '#RightStat.three.columns', 'Right Sensor:0'
         #button '#debug.three.columns.disabled', ''
       div '.row', ->
         div '.three.columns', ->
           button '#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices'
-          label '#StatusData',for: "upload", 'No connection'
+          #label '#StatusData',for: "upload", 'No connection'
+
+        button '#calibrate.three.columns.disabled', 'Calibrate'
+
         div '.three.columns', ->
           label '#ProtocolSelect', for: "testID", 'Which Test?'
           select "#testID.u-full-width"
+
+        button '#action.disabled.three.columns', ''
+
+        ###
         div '.three.columns', ->
           button '#upload.disabled.u-full-width', 'Upload'
           label '#LeftStat', for: "clear", 'Items:0'
         div '.three.columns', ->
           button '#clear.u-full-width.disabled', 'Reset'
           label '#RightStat', for: "upload", 'Items:0'
+        ###
 
   forceTest: (color = 'violet',txt='Must Select Test') =>
     $('#ProtocolSelect').text(txt).css('color',color)

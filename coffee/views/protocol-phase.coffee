@@ -199,21 +199,13 @@ protocolPhase = Backbone.Model.extend
       Pylon.trigger 'systemEvent:stopCountDown:over'
       #JAH -- put up accept or reject buttons
       Pylon.trigger 'removeRecorderWindow',2000
-      return unless Pylon.sessionInfo.get "lockdownMode"
       $("#acceptreject").fadeIn()
-      acceptButton = new Pylon.BV 'acceptor'
-      acceptButton.set
-        legend: "accept"
-        enabled: true
 
-      rejectButton = new Pylon.BV 'rejector'
-      rejectButton.set
-        legend: "reject"
-        enabled: true
-
-      return
     return
 
+Pylon.on "removeAcceptReject",->
+  $("#acceptreject").fadeOut()
+  return
 pP = new protocolPhase
 #if window? then window.exports = Pages
 #if module?.exports? then module.exports = Pages

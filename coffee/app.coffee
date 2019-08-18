@@ -182,6 +182,21 @@ activateNewButtons = ->
   Pylon.on "systemEvent:upload:accept", enterUpload
   Pylon.on "systemEvent:acceptor:accept", enterUpload
 
+  AcceptButton = new Pylon.BV 'acceptor'
+  AcceptButton.set
+    legend: "accept"
+    enabled: true
+
+  RejectButton = new Pylon.BV 'rejector'
+  RejectButton.set
+    legend: "reject"
+    enabled: true
+
+  Pylon.on "systemEvent:upload:accept", enterUpload
+  Pylon.on "systemEvent:acceptor:accept", enterUpload
+  Pylon.on "systemEvent:rejector:reject", enterClear
+
+
   CalibrateButton = new BV 'calibrate'
   CalibrateButton.set
     legend: "notify" # the legend generates the SystemEvent triggers below
@@ -296,6 +311,7 @@ initAll = ->
 enterClear = (accept=false)->
   # Clear only clears the data -- does NOT disconnedt
   Pylon.trigger "removeRecorderWindow"
+  Pylon.trigger "removeAcceptReject"
   $('#testID').prop("disabled",false)
   # on tests that have subtests, we need to regain the 
   # lockDown capability status of the parent suite
