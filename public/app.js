@@ -3093,7 +3093,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.11';
+module.exports = '3.1.12';
 
 
 
@@ -3869,12 +3869,6 @@ Pages = (function() {
             return div('#net-ble.six.columns');
           });
           buttons();
-          div('.row', function() {
-            div('.eight.columns', function() {
-              return raw('&nbsp;');
-            });
-            return div('#UploadCount.two.columns', "Queued:0");
-          });
           div('.row', function() {
             div('#sensor-Left', function() {
               div('#leftVertmeter.one.columns.vertmeter', function() {

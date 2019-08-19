@@ -144,10 +144,6 @@ class Pages
             div '#net-wifi.six.columns'
             div '#net-ble.six.columns'
           buttons()
-          div '.row', ->
-            div '.eight.columns', ->
-              raw '&nbsp;'
-            div '#UploadCount.two.columns',"Queued:0"
           div '.row',->
             div '#sensor-Left',->
               div '#leftVertmeter.one.columns.vertmeter', ->
