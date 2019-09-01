@@ -326,6 +326,7 @@ enterClear = (accept=false)->
   eventModelLoader sessionInfo
   (Pylon.get 'button-clear').set 'enabled',false
   (Pylon.get 'button-upload').set 'enabled',false
+  (Pylon.get 'button-action').set enabled: true, legend: "Record"
   Pylon.saneTimeout 200,()->
     sessionInfo.unset sessionInfo.idAttribute, silent:true
     if restart
@@ -455,7 +456,8 @@ Pylon.on ('systemEvent:recordCountDown:fail'), ->
 
 Pylon.on 'systemEvent:recordCountDown:start', ->
   # change the record button into the stop button
-  (Pylon.get 'button-action').set enabled: true, legend: "Stop"
+  #(Pylon.get 'button-action').set enabled: true, legend: "Stop"
+  (Pylon.get 'button-action').set enabled: false  # retain legend 'Record'
   return false
 
 # Pylon.on "systemEvent:action:stop", exitRecording

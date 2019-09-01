@@ -128,7 +128,7 @@ protocolPhase = Backbone.Model.extend
     ###
 
     exitThisTest = ()->
-      $("#action").click()
+      Pylon.trigger "systemEvent:action:stop"
       return
 
     selectTheNextTest= ()=>

@@ -96,7 +96,7 @@ exports.deviceModel = Backbone.Model.extend
         return
       
       @.set subscribeState: connectPlease
-      devicelogger "state of device now", 
+      devicelogger "state of device now",@
       if connectPlease
         devicelogger 'Change in connection request: (re) attachDevice'
         @sanity.clear()

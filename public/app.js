@@ -620,6 +620,10 @@ enterClear = function(accept) {
   eventModelLoader(sessionInfo);
   (Pylon.get('button-clear')).set('enabled', false);
   (Pylon.get('button-upload')).set('enabled', false);
+  (Pylon.get('button-action')).set({
+    enabled: true,
+    legend: "Record"
+  });
   Pylon.saneTimeout(200, function() {
     sessionInfo.unset(sessionInfo.idAttribute, {
       silent: true
@@ -779,8 +783,7 @@ Pylon.on('systemEvent:recordCountDown:fail', function() {
 
 Pylon.on('systemEvent:recordCountDown:start', function() {
   (Pylon.get('button-action')).set({
-    enabled: true,
-    legend: "Stop"
+    enabled: false
   });
   return false;
 });
@@ -2497,7 +2500,15 @@ exports.deviceModel = Backbone.Model.extend({
         _this.set({
           subscribeState: connectPlease
         });
-        devicelogger("state of device now", connectPlease ? (devicelogger('Change in connection request: (re) attachDevice'), _this.sanity.clear(), _this.connectToDevice().then(_this.subscribe.bind(_this))) : (devicelogger('Change in connection request: detachDevice'), _this.disconnect()));
+        devicelogger("state of device now", _this);
+        if (connectPlease) {
+          devicelogger('Change in connection request: (re) attachDevice');
+          _this.sanity.clear();
+          _this.connectToDevice().then(_this.subscribe.bind(_this));
+        } else {
+          devicelogger('Change in connection request: detachDevice');
+          _this.disconnect();
+        }
       };
     })(this));
     this.on("change:serialNumber", function() {
@@ -3093,7 +3104,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.12';
+module.exports = '3.1.13';
 
 
 
@@ -4948,7 +4959,7 @@ protocolPhase = Backbone.Model.extend({
     #fake clicking the stop button
      */
     exitThisTest = function() {
-      $("#action").click();
+      Pylon.trigger("systemEvent:action:stop");
     };
     selectTheNextTest = (function(_this) {
       return function() {
