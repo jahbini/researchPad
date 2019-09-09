@@ -307,6 +307,7 @@ exports.deviceModel = Backbone.Model.extend
     if @attributes.numReadings == 0
       @set deviceStatus: 'Receiving', connected: true
       Pylon.trigger 'systemEvent:sanity:active'+@get 'role'
+      @nreadings= 0
       
     @attributes.numReadings += 1
     if recording
@@ -324,6 +325,23 @@ exports.deviceModel = Backbone.Model.extend
           return
     @lastDisplay = Date.now()
     setTimeout @sanity.judge,0
+    faboo = ()=>
+      return if 'Receiving' != @get 'deviceStatus'
+      readings= @attributes.numReadings - @nreadings
+      @nreadings = @attributes.numReadings
+      fails = 50 - readings
+      serialNum = @.get 'serialNumber'
+      if fails > 4
+        debugger
+        Pylon.trigger 'sanitizer:fail',serialNum
+        return
+      setTimeout faboo, 1000
+      if fails > 2
+        debugger
+        Pylon.trigger 'sanitizer:warn',serialNum
+
+    setTimeout faboo, 1500  #set this time extra high to allow for at least 50 samples
+
     return
 
 deviceCollection = Backbone.Collection.extend

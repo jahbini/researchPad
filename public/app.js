@@ -1,5 +1,5 @@
 (function e(t,n,r){function s(o,u){if(!n[o]){if(!t[o]){var a=typeof require=="function"&&require;if(!u&&a)return a(o,!0);if(i)return i(o,!0);var f=new Error("Cannot find module '"+o+"'");throw f.code="MODULE_NOT_FOUND",f}var l=n[o]={exports:{}};t[o][0].call(l.exports,function(e){var n=t[o][1][e];return s(n?n:e)},l,l.exports,e,t,n,r)}return n[o].exports}var i=typeof require=="function"&&require;for(var o=0;o<r.length;o++)s(r[o]);return s})({1:[function(require,module,exports){
-var $, Backbone, Case, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, lastDisplay, pView, reading;
+var $, Backbone, Case, Sanitizer, TIlog, TIlogger, TiHandler, _, buglog, deviceIdToModel, deviceModel, deviceNameToModel, glib, lastDisplay, pView, reading;
 
 Backbone = require('backbone');
 
@@ -18,6 +18,8 @@ deviceModel = require('./models/device-model.coffee').deviceModel;
 buglog = require('./lib/buglog.coffee');
 
 TIlogger = (TIlog = new buglog("TIhandler")).log;
+
+Sanitizer = require('./views/sanitizer.coffee');
 
 lastDisplay = 0;
 
@@ -204,7 +206,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":16,"Case":36,"backbone":33,"jquery":40,"underscore":43}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":16,"./views/sanitizer.coffee":30,"Case":37,"backbone":34,"jquery":41,"underscore":44}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getHandheld, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, ref3, ref4, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
@@ -1179,7 +1181,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/net-view.coffee":8,"./lib/upload.coffee":11,"./models/clients.coffee":12,"./models/clinicians.coffee":13,"./models/clinics.coffee":14,"./models/configurations.coffee":15,"./models/event-model.coffee":17,"./models/handheld.coffee":18,"./models/protocols.coffee":19,"./models/session.coffee":20,"./models/state.coffee":21,"./version.coffee":22,"./views/adminView.coffee":23,"./views/button-view.coffee":24,"./views/pages.coffee":26,"backbone":33,"jquery":40,"underscore":43}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/net-view.coffee":8,"./lib/upload.coffee":11,"./models/clients.coffee":12,"./models/clinicians.coffee":13,"./models/clinics.coffee":14,"./models/configurations.coffee":15,"./models/event-model.coffee":17,"./models/handheld.coffee":18,"./models/protocols.coffee":19,"./models/session.coffee":20,"./models/state.coffee":21,"./version.coffee":22,"./views/adminView.coffee":23,"./views/button-view.coffee":24,"./views/pages.coffee":26,"backbone":34,"jquery":41,"underscore":44}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1234,7 +1236,7 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":5,"debug":38,"json-stringify-safe":41}],4:[function(require,module,exports){
+},{"./console":5,"debug":39,"json-stringify-safe":42}],4:[function(require,module,exports){
 var Backbone, buglog, introlog, logItems, logPacket, logger;
 
 Backbone = require('backbone');
@@ -1308,7 +1310,7 @@ Pylon.accessFileSystem = function() {
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33}],5:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34}],5:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1726,7 +1728,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":43}],8:[function(require,module,exports){
+},{"underscore":44}],8:[function(require,module,exports){
 var $, Backbone, CommoState, Teacup, buglog, commoState, implementing, netView, networklog, networklogger,
   slice = [].slice;
 
@@ -1830,7 +1832,7 @@ exports.netView = new netView;
 
 
 
-},{"./buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],9:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],9:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -2283,7 +2285,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":33,"jquery":40,"underscore":43}],12:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":34,"jquery":41,"underscore":44}],12:[function(require,module,exports){
 var $, Backbone, _, clientCollection, clientModel, clients;
 
 window.$ = $ = require('jquery');
@@ -2307,7 +2309,7 @@ module.exports = clients = new clientCollection;
 
 
 
-},{"backbone":33,"jquery":40,"underscore":43}],13:[function(require,module,exports){
+},{"backbone":34,"jquery":41,"underscore":44}],13:[function(require,module,exports){
 var Backbone, clinicianCollection, clinicianModel;
 
 Backbone = require('backbone');
@@ -2327,7 +2329,7 @@ module.exports = new clinicianCollection;
 
 
 
-},{"backbone":33}],14:[function(require,module,exports){
+},{"backbone":34}],14:[function(require,module,exports){
 var $, Backbone, _, clinicCollection, clinicModel;
 
 window.$ = $ = require('jquery');
@@ -2349,7 +2351,7 @@ module.exports = new clinicCollection;
 
 
 
-},{"backbone":33,"jquery":40,"underscore":43}],15:[function(require,module,exports){
+},{"backbone":34,"jquery":41,"underscore":44}],15:[function(require,module,exports){
 var $, Backbone, ConfigurationCollection, ConfigurationModel, _;
 
 window.$ = $ = require('jquery');
@@ -2378,7 +2380,7 @@ module.exports = new ConfigurationCollection;
 
 
 
-},{"backbone":33,"jquery":40,"underscore":43}],16:[function(require,module,exports){
+},{"backbone":34,"jquery":41,"underscore":44}],16:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('backbone');
@@ -2746,7 +2748,7 @@ exports.deviceModel = Backbone.Model.extend({
     return data / (32768 / 16);
   },
   processMovement: function(data) {
-    var accel, gyro, mag, recording, sequence, timeval;
+    var accel, faboo, gyro, mag, recording, sequence, timeval;
     timeval = Date.now();
     recording = Pylon.state.get('recording');
     if (this.attributes.numReadings === 0) {
@@ -2755,6 +2757,7 @@ exports.deviceModel = Backbone.Model.extend({
         connected: true
       });
       Pylon.trigger('systemEvent:sanity:active' + this.get('role'));
+      this.nreadings = 0;
     }
     this.attributes.numReadings += 1;
     if (recording) {
@@ -2777,6 +2780,29 @@ exports.deviceModel = Backbone.Model.extend({
     }
     this.lastDisplay = Date.now();
     setTimeout(this.sanity.judge, 0);
+    faboo = (function(_this) {
+      return function() {
+        var fails, readings, serialNum;
+        if ('Receiving' !== _this.get('deviceStatus')) {
+          return;
+        }
+        readings = _this.attributes.numReadings - _this.nreadings;
+        _this.nreadings = _this.attributes.numReadings;
+        fails = 50 - readings;
+        serialNum = _this.get('serialNumber');
+        if (fails > 4) {
+          debugger;
+          Pylon.trigger('sanitizer:fail', serialNum);
+          return;
+        }
+        setTimeout(faboo, 1000);
+        if (fails > 2) {
+          debugger;
+          return Pylon.trigger('sanitizer:warn', serialNum);
+        }
+      };
+    })(this);
+    setTimeout(faboo, 1500);
   }
 });
 
@@ -2788,7 +2814,7 @@ Pylon.set('devices', new deviceCollection);
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":9,"./event-model.coffee":17,"backbone":33}],17:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":9,"./event-model.coffee":17,"backbone":34}],17:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2851,7 +2877,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":11,"backbone":33,"underscore":43}],18:[function(require,module,exports){
+},{"../lib/upload.coffee":11,"backbone":34,"underscore":44}],18:[function(require,module,exports){
 
 /*
  * set up information regarding the specific device
@@ -2948,7 +2974,7 @@ module.exports = handheld;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33}],19:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34}],19:[function(require,module,exports){
 var Backbone, _, protocol, protocolCollection, shuffle;
 
 _ = require('underscore');
@@ -3014,7 +3040,7 @@ module.exports = new protocolCollection;
 
 
 
-},{"backbone":33,"underscore":43}],20:[function(require,module,exports){
+},{"backbone":34,"underscore":44}],20:[function(require,module,exports){
 var Backbone, rawSession, sessionInfo;
 
 Backbone = require('backbone');
@@ -3043,7 +3069,7 @@ module.exports = sessionInfo;
 
 
 
-},{"backbone":33}],21:[function(require,module,exports){
+},{"backbone":34}],21:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -3103,8 +3129,8 @@ exports.state = new State;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.13';
+},{"../lib/buglog.coffee":3,"backbone":34,"underscore":44}],22:[function(require,module,exports){
+module.exports = '3.1.14-test';
 
 
 
@@ -3451,7 +3477,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],24:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],24:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -3557,7 +3583,7 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":33,"jquery":40,"teacup":42}],25:[function(require,module,exports){
+},{"backbone":34,"jquery":41,"teacup":43}],25:[function(require,module,exports){
 var $, Backbone, T, buglog, implementing, introlog, intrologger, lockDown, pHT, protocolPhase,
   slice = [].slice;
 
@@ -3649,7 +3675,7 @@ lockDown = new protocolPhase;
 
 
 
-},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":40,"teacup":42}],26:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":34,"jquery":41,"teacup":43}],26:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3681,7 +3707,7 @@ implementing = function() {
 Pylon.set('adminView', require('./adminView.coffee').adminView);
 
 Pages = (function() {
-  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, sanitizer, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   T = tea = new Teacup.Teacup;
 
@@ -3830,8 +3856,14 @@ Pages = (function() {
   };
 
   alerter = function() {
-    div("#alerter.modal", {
-      style: "display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    div("#alerter.modal.container", {
+      style: "background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    });
+  };
+
+  sanitizer = function() {
+    div("#sanitizer.modal.container", {
+      style: "background: tan; z-index:2000;top: 30%;font-size: 1.5em;"
     });
   };
 
@@ -3868,6 +3900,7 @@ Pages = (function() {
       div('.row', function() {
         acceptReject();
         alerter();
+        sanitizer();
         recorder();
         protocolReport();
         durationReport();
@@ -4253,7 +4286,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":23,"./lock-down.coffee":25,"./protocol-active.coffee":28,"./protocol-phase.coffee":29,"backbone":33,"jquery":40,"teacup":42}],27:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":23,"./lock-down.coffee":25,"./protocol-active.coffee":28,"./protocol-phase.coffee":29,"backbone":34,"jquery":41,"teacup":43}],27:[function(require,module,exports){
 var $, Backbone, T, activeKey, buglog, implementing, introlog, intrologger, pHT, protocolHeadTemplate, recorderViewTemplate,
   slice = [].slice;
 
@@ -4532,7 +4565,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],28:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],28:[function(require,module,exports){
 var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, ref, ref1, ref2, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
@@ -4793,7 +4826,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"./button-view.coffee":24,"./stroop.coffee":30,"./tapping.coffee":31,"./ten-icon.coffee":32,"backbone":33,"jquery":40,"teacup":42}],29:[function(require,module,exports){
+},{"./button-view.coffee":24,"./stroop.coffee":31,"./tapping.coffee":32,"./ten-icon.coffee":33,"backbone":34,"jquery":41,"teacup":43}],29:[function(require,module,exports){
 var $, Backbone, T, buglog, implementing, introlog, intrologger, pHT, pP, protocolPhase,
   slice = [].slice;
 
@@ -5060,7 +5093,96 @@ pP = new protocolPhase;
 
 
 
-},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":40,"teacup":42}],30:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":34,"jquery":41,"teacup":43}],30:[function(require,module,exports){
+var $, Backbone, T, buglog, implementing, introlog, logger, sanitizer,
+  slice = [].slice;
+
+Backbone = require('backbone');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+buglog = require('../lib/buglog.coffee');
+
+logger = (introlog = new buglog("sanitizer")).log;
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+sanitizer = Backbone.View.extend({
+  el: "#sanitizer",
+  render: function(head, button) {
+    return this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div('row', function() {
+          T.h5(".seven.columns", head + ": Contact Retrotope");
+          button();
+        });
+      };
+    })(this)));
+  },
+  initialize: function() {
+    Pylon.on("sanitizer:close", (function(_this) {
+      return function() {
+        _this.$el.hide();
+      };
+    })(this));
+    Pylon.on("sanitizer:kill", (function(_this) {
+      return function() {
+        _this.$el.hide();
+        Pylon.trigger("systemEvent:stopCountDown:over");
+        Pylon.trigger("systemEvent:rejector:reject");
+      };
+    })(this));
+    Pylon.on("sanitizer:warn", (function(_this) {
+      return function(side) {
+        _this.$el.show();
+        _this.render("Warning: Data Loss Sensor " + side, function() {
+          return T.button(".three.columns.button-primary", {
+            onclick: "Pylon.trigger('sanitizer:close');"
+          }, "Close");
+        });
+      };
+    })(this));
+    Pylon.on("sanitizer:fail", (function(_this) {
+      return function(side) {
+        var d;
+        _this.$el.show();
+        d = Pylon.get("Left");
+        if (d) {
+          Pylon.trigger("disableDevice", d.cid);
+        }
+        d = Pylon.get("Right");
+        if (d) {
+          Pylon.trigger("disableDevice", d.cid);
+        }
+        _this.render("Error: Data Collection Failure sensor " + side, function() {
+          return T.button(".three.columns.button-primary", {
+            onclick: "Pylon.trigger('sanitizer:kill');"
+          }, "End Session");
+        });
+      };
+    })(this));
+  }
+});
+
+exports.sanitizer = new sanitizer;
+
+
+
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],31:[function(require,module,exports){
 var $, Backbone, T, buglog, colorTextBody, colorTextExample, colorToHue, colorToName, enginelogger, implementing, introlog, shuffle,
   slice = [].slice;
 
@@ -5236,7 +5358,7 @@ exports.colorTextExample = colorTextExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],31:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],32:[function(require,module,exports){
 var $, Backbone, T, buglog, enginelogger, implementing, introlog, tappingBody, tappingExample,
   slice = [].slice;
 
@@ -5328,7 +5450,7 @@ exports.tappingExample = tappingExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],32:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43}],33:[function(require,module,exports){
 var $, Backbone, T, _, activeKey, buglog, enginelogger, implementing, introlog, keyPadWithIcon, rowWithIcon, shuffle, tenIconBody, tenIconExample,
   slice = [].slice;
 
@@ -5547,7 +5669,7 @@ exports.tenIconExample = tenIconExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42,"underscore":43}],33:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":34,"jquery":41,"teacup":43,"underscore":44}],34:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -7471,7 +7593,7 @@ exports.tenIconExample = tenIconExample;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":40,"underscore":34}],34:[function(require,module,exports){
+},{"jquery":41,"underscore":35}],35:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -9021,7 +9143,7 @@ exports.tenIconExample = tenIconExample;
   }
 }.call(this));
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -9081,7 +9203,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -9235,7 +9357,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -9389,7 +9511,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],38:[function(require,module,exports){
+},{}],39:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -9578,7 +9700,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":39,"_process":35}],39:[function(require,module,exports){
+},{"./debug":40,"_process":36}],40:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -9782,7 +9904,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":37}],40:[function(require,module,exports){
+},{"ms":38}],41:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.3.1
  * https://jquery.com/
@@ -20148,7 +20270,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -20177,7 +20299,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -20612,7 +20734,7 @@ function serializer(replacer, cycleReplacer) {
 
 }).call(this);
 
-},{}],43:[function(require,module,exports){
+},{}],44:[function(require,module,exports){
 (function (global){
 //     Underscore.js 1.9.1
 //     http://underscorejs.org

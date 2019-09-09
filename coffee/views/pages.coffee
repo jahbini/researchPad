@@ -108,8 +108,12 @@ class Pages
           button "#rejector.two.columns"
     return
 
-  alerter = ()->
-    div "#alerter.modal", style:"display:none; background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+  alerter  = ()->
+    div "#alerter.modal.container", style:"background: tan; z-index:2000;top: 0;font-size: 1.5em;"
+    return
+
+  sanitizer = ()->
+    div "#sanitizer.modal.container", style:"background: tan; z-index:2000;top: 30%;font-size: 1.5em;"
     return
 
   recorder = ()->
@@ -134,6 +138,7 @@ class Pages
       div '.row', ()->
         acceptReject()
         alerter()
+        sanitizer()
         recorder()
         protocolReport()
         durationReport()

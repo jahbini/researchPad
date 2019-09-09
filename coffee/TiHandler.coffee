@@ -12,6 +12,7 @@ Case = require 'Case'
 {deviceModel} = require './models/device-model.coffee'
 buglog = require './lib/buglog.coffee'
 TIlogger = (TIlog= new buglog "TIhandler").log
+Sanitizer = require './views/sanitizer.coffee'
 lastDisplay = 0
 
 deviceNameToModel= (name)->
