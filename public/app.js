@@ -2748,7 +2748,7 @@ exports.deviceModel = Backbone.Model.extend({
     return data / (32768 / 16);
   },
   processMovement: function(data) {
-    var accel, faboo, gyro, mag, recording, sequence, timeval;
+    var accel, gyro, mag, recording, sequence, timeval;
     timeval = Date.now();
     recording = Pylon.state.get('recording');
     if (this.attributes.numReadings === 0) {
@@ -2780,29 +2780,26 @@ exports.deviceModel = Backbone.Model.extend({
     }
     this.lastDisplay = Date.now();
     setTimeout(this.sanity.judge, 0);
-    faboo = (function(_this) {
-      return function() {
-        var fails, readings, serialNum;
-        if ('Receiving' !== _this.get('deviceStatus')) {
-          return;
-        }
-        readings = _this.attributes.numReadings - _this.nreadings;
-        _this.nreadings = _this.attributes.numReadings;
-        fails = 50 - readings;
-        serialNum = _this.get('serialNumber');
-        if (fails > 4) {
-          debugger;
-          Pylon.trigger('sanitizer:fail', serialNum);
-          return;
-        }
-        setTimeout(faboo, 1000);
-        if (fails > 2) {
-          debugger;
-          return Pylon.trigger('sanitizer:warn', serialNum);
-        }
-      };
-    })(this);
-    setTimeout(faboo, 1500);
+
+    /*
+    faboo = ()=>
+      return if 'Receiving' != @get 'deviceStatus'
+      readings= @attributes.numReadings - @nreadings
+      @nreadings = @attributes.numReadings
+      fails = 50 - readings
+      serialNum = @.get 'serialNumber'
+      if fails > 4
+        debugger
+        Pylon.trigger 'sanitizer:fail',serialNum
+        return
+      setTimeout faboo, 1000
+      if fails > 2
+        debugger
+        Pylon.trigger 'sanitizer:warn',serialNum
+    
+    #do NOT activate data loss panes
+    setTimeout faboo, 1500  #set this time extra high to allow for at least 50 samples
+     */
   }
 });
 
@@ -3130,7 +3127,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":34,"underscore":44}],22:[function(require,module,exports){
-module.exports = '3.1.15';
+module.exports = '3.1.16';
 
 
 
@@ -4144,7 +4141,12 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(T.render((function(_this) {
           return function() {
-            var i, len, lockWanted, protocol, ref1;
+            var clinician, clinicianID, i, len, lockWanted, protocol, ref1, z;
+            clinicianID = Pylon.sessionInfo.get('clinician');
+            z = Pylon.get('clinicians');
+            clinician = z.findWhere({
+              _id: clinicianID
+            });
             lockWanted = Pylon.sessionInfo.get('lockdownMode');
             option('.selected', {
               selected: 'selected',
@@ -4153,11 +4155,13 @@ Pages = (function() {
             ref1 = _this.collection.models;
             for (i = 0, len = ref1.length; i < len; i++) {
               protocol = ref1[i];
-              if (protocol.get('suppressInDropDown')) {
-                continue;
-              }
-              if (lockWanted && 0 !== protocol.get('sensorsNeeded')) {
-                continue;
+              if (!clinician.get('canAccessKeystone')) {
+                if (protocol.get('suppressInDropDown')) {
+                  continue;
+                }
+                if (lockWanted && 0 !== protocol.get('sensorsNeeded')) {
+                  continue;
+                }
               }
               option({
                 value: protocol.get('name')

@@ -325,6 +325,7 @@ exports.deviceModel = Backbone.Model.extend
           return
     @lastDisplay = Date.now()
     setTimeout @sanity.judge,0
+    ###
     faboo = ()=>
       return if 'Receiving' != @get 'deviceStatus'
       readings= @attributes.numReadings - @nreadings
@@ -340,7 +341,9 @@ exports.deviceModel = Backbone.Model.extend
         debugger
         Pylon.trigger 'sanitizer:warn',serialNum
 
+    #do NOT activate data loss panes
     setTimeout faboo, 1500  #set this time extra high to allow for at least 50 samples
+    ###
 
     return
 
