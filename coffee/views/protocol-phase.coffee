@@ -105,7 +105,7 @@ protocolPhase = Backbone.Model.extend
       if !p.get 'gestureCapture'
         pHT.setEnvironment
           buttonSpec:
-            phaseButton: "Stop"
+            phaseButton: ()-> T.h4 "Stop"
             buttonPhaseNext: exitThisTest
           headline: "Test In Progress"
           paragraph:  (p.get "mileStoneText") || "go"
