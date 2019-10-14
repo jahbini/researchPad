@@ -713,9 +713,7 @@ $ ->
     window.location.reload()
   document.addEventListener 'pause', onPause, false
 
-  document.addEventListener 'online', ()->
-    return
-    require './lib/net-view.coffee'
+  # document.addEventListener 'online', ()-> require './lib/net-view.coffee'
 
   pageGen.renderPage()
   activateNewButtons()

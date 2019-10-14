@@ -147,6 +147,13 @@ class adminView
     @clinicianView = new clinicianViewTemplate
     Pylon.get('clinics').trigger('change')
     return
+  Pylon.on "reveal",()->
+    $("#password").attr("type","text")
+    Pylon.saneTimeout 3000,()->
+      $("#password").attr("type","password")
+      return
+    return
+
 
   adminContents: =>
     render () ->
@@ -172,7 +179,9 @@ class adminView
           div '.four.columns', ->
             label for: 'desiredClient', 'Client'
             select '#desiredClient.u-full-width'
-
+            label for: 'reveal', '-----------'
+            button "reveal",onClick: 'Pylon.trigger("reveal"); event.preventDefault(); event.stopPropagation();'
+            return
         div '.row', ->
           div '.nine.columns', ->
             raw "&nbsp;"
