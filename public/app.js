@@ -3104,7 +3104,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],22:[function(require,module,exports){
-module.exports = '3.1.15-test';
+module.exports = '3.1.16-test';
 
 
 
@@ -4111,7 +4111,12 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(T.render((function(_this) {
           return function() {
-            var i, len, lockWanted, protocol, ref1;
+            var clinician, clinicianID, i, len, lockWanted, protocol, ref1, z;
+            clinicianID = Pylon.sessionInfo.get('clinician');
+            z = Pylon.get('clinicians');
+            clinician = z.findWhere({
+              _id: clinicianID
+            });
             lockWanted = Pylon.sessionInfo.get('lockdownMode');
             option('.selected', {
               selected: 'selected',
@@ -4120,11 +4125,13 @@ Pages = (function() {
             ref1 = _this.collection.models;
             for (i = 0, len = ref1.length; i < len; i++) {
               protocol = ref1[i];
-              if (protocol.get('suppressInDropDown')) {
-                continue;
-              }
-              if (lockWanted && 0 !== protocol.get('sensorsNeeded')) {
-                continue;
+              if (!(clinician != null ? clinician.get('canAccessKeystone') : void 0)) {
+                if (protocol.get('suppressInDropDown')) {
+                  continue;
+                }
+                if (lockWanted && 0 !== protocol.get('sensorsNeeded')) {
+                  continue;
+                }
               }
               option({
                 value: protocol.get('name')

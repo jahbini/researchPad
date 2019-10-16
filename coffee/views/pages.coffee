@@ -320,11 +320,15 @@ class Pages
       render: ->
         viewlogger "Rendering Tests"
         @$el.html T.render =>
+          clinicianID = Pylon.sessionInfo.get 'clinician'
+          z= Pylon.get 'clinicians'
+          clinician= z.findWhere _id: clinicianID
           lockWanted = Pylon.sessionInfo.get 'lockdownMode'
           option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models 
-            continue if protocol.get 'suppressInDropDown'
-            continue if lockWanted && 0 != protocol.get 'sensorsNeeded'
+            unless clinician?.get 'canAccessKeystone'
+              continue if protocol.get 'suppressInDropDown'
+              continue if lockWanted && 0 != protocol.get 'sensorsNeeded'
             option value: protocol.get('name'), protocol.get('name')
           return
         return this
