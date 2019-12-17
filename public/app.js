@@ -117,6 +117,9 @@ TiHandler = (function() {
     if (!device.name) {
       return;
     }
+    if (device.name.match('etrotope-mot')) {
+      return;
+    }
     pd = Pylon.get('devices');
     if (d = pd.findWhere({
       name: device.name
@@ -2996,7 +2999,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":32,"underscore":42}],21:[function(require,module,exports){
-module.exports = '3.1.20';
+module.exports = '3.1.209-test';
 
 
 

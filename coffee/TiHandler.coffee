@@ -97,6 +97,7 @@ class TiHandler
     # are recieved by iOS.  We ignore them until the manufacturer
     # name is present (and matches harry's naming convention)
     return unless device.name
+    return if device.name.match 'etrotope-mot'   # JAH
     pd =Pylon.get('devices')
     # have we found this device before?
     if d=pd.findWhere(name: device.name)

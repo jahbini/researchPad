@@ -1,5 +1,4 @@
-console.log('my new logon.js loaded - live system with events');
-console.log('entering timer logon.js of 11-2018')
+console.log('entering timer logon.js as of 12-13-2019')
 
 /*global Pylon*/
 /*global evothings*/
@@ -32,7 +31,7 @@ var minTimeout = 500   // seen any changes during this time frame?
 var deltaInc = 2      // assume clock must have drifted a bit
 var restartScan = 10*1000  // restart the scan every 10 seconds (why!?!?!)
 
-var timerMatch = /^retrotope-timer\(([01])\)(\d+)$/
+var timerMatch = /^retrotope-timer\(([01])\)(\d*)$/
 
 // assume that the two motion sensors were found and mounted....
 // check for two timer devices
@@ -47,13 +46,14 @@ var walkTimer = function() {
 	walking += timeRes
 	var walkString = "Walk time: " + (walking/1000).toFixed(2) + "  sec."
 	//console.log(walkString)
-	$('#duration-report').show().html("<h3>"+walkString+"<h3>");  
+	$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"<h3>");  
 };
 
 var walkNow = function() {          // call me each tinme at the beginning of each walk
 	shutDown()     // make sure all's quiet on the western front
 	timerIDs = {}      // start looking at sensor advertisers
 	nTimers = 0
+	Itimer = -1	// permit setting of Itimer only once
 	timer = ["NotSeen","NotSeen"]
 	lastName = "NotSeen"
 	movingTime = [99999999,99999999]
@@ -68,16 +68,32 @@ var walkNow = function() {          // call me each tinme at the beginning of ea
 	movingUp = [false, false]
 	increasing = false
 	console.log('Looking for timers.....')
-	$('#duration-report').show().html("<h3>Looking for timers...<h3>")
+	$('#protocol-report').attr("style",'display:block').html("<h3>Looking for timers...<h3>")
 	evothings.ble.startScan([],findSensors,BLEerror);  // this finds the sensors and does the timing
 };
 
 var shutDown = function() {
-  $('#duration-report').hide()
 	evothings.ble.stopScan() // stop scanning
 	clearInterval(Iscan)
-	clearInterval(Itimer)
+	if (walking != 0) {clearInterval(Itimer)}  // stop the timer if it is running
 	
+};
+
+var allDone = function(){
+	shutDown()
+	if (!done) {
+		if (nTimers != 2){ console.log("Stopped without finding both timers")
+			alert("ERROR: Stopped without finding both timers")
+			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without finding both timers"+"<h3>")
+			}
+		else {
+			console.log("Stopped without both timer interruptions")
+			alert("ERROR: Stopped without both timer interruptions")
+			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without both timer interruptions"+"<h3>")
+		}
+		//alert("Timer data not valid. Please try again.")
+	}
+
 };
 
 var reScan = function () {
@@ -101,13 +117,15 @@ var findSensors =  function (device) {   // this function makes sure we have two
 		else {timerIDs[device.id] = 1; return}
 		if (timerIDs[device.id] < minIDs) {return}
 		if (nTimers == 0) {timer[0] = device.id; nTimers = 1
-			 console.log("Found one timer....")
-			$('#duration-report').html("<h3>Found one timer...<h3>")
+			console.log("Found one timer....")
+			Pylon.trigger("systemEvent:TimerFound:0")
+			$('#protocol-report').attr("style",'display:block').html("<h3>Found one timer...<h3>")
 			}
 		else if ((nTimers == 1) && (device.id != timer[0]))
 			{timer[1] = device.id; nTimers = 2
 			console.log("Found both timers....")
-			$('#duration-report').html("<h3>Found both timers<h3>")
+			Pylon.trigger("systemEvent:TimerFound:1")
+			$('#protocol-report').attr("style",'display:block').html("<h3>Found both timers<h3>")
 			// console.log(timerIDs)
 			evothings.ble.stopScan()
 			evothings.ble.startScan([],timeIncreasing,BLEerror)}  // found them both, now wait for times increasing
@@ -157,7 +175,7 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
 			}
                 }
 	   else if (result[1] == "1")  {		// beam is broken
-			if (!beamBroken[timerNo])  {    // the first transition to broken!!! Ignore all the rest
+			if (!beamBroken[timerNo] && !beamBlocked[timerNo])  {    // the first transition to broken!!! Ignore all the rest
 				beamBroken[timerNo] = true
 				beamBlocked[timerNo] = true
       				breakTime[timerNo] = deltaT[timerNo] + sensorTime   // that's it!!! Send an ActionEvent to server with breakTime and the timerNo
@@ -165,7 +183,7 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
       				console.log("beam break: "+breakStr)
       				Pylon.trigger("systemEvent:beamBreak:" + timerNo + "," + breakTime[timerNo])
 				if (beamBlocked[0] != beamBlocked[1]) {walkStart = breakTime[timerNo]
-				  Itimer = setInterval(walkTimer,timeRes)  // start timer on first beam block
+				  if (Itimer == -1) {Itimer = setInterval(walkTimer,timeRes)}  // start timer on first beam block
 				  }
 				else {walkEnd = breakTime[timerNo]         // stop timer on second beam block
 				done = true
@@ -173,45 +191,14 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
 				clearInterval(Itimer)  // stop timer
 				var walkString = "Walk time: " + ((walkEnd-walkStart)/1000).toFixed(2) + " sec."
 				console.log(walkString)
-				$('#duration-report').html("<h3>"+walkString+"<h3>");  // this value is shown on the screen for recording, until Accept or Reject is pressed.	
+				$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"<h3>");  // this value is shown on the screen for recording, until STOP is pressed.	
 				}
   		   }
  	    }
       }
 };
 // app triggers on begin and end of protocol
-Pylon.on("systemEvent:externalTimer:show",walkNow);
-Pylon.on("systemEvent:stopCountDown:over",shutDown);
+Pylon.on("systemEvent:recordCountDown:start",walkNow);
+Pylon.on("systemEvent:stopCountDown:over",allDone);
 console.log('logon.js done');
-/*Retrotope App Version  "2.9.8-test" */
-/*Retrotope App Version  "3.0.1-test" */
-/*Retrotope App Version  "3.0.1-test" */
-/*Retrotope App Version  "3.0.2-test" */
-/*Retrotope App Version  "3.0.3-test" */
-/*Retrotope App Version  "3.0.4-test" */
-/*Retrotope App Version  "3.0.5-test" */
-/*Retrotope App Version  "3.0.6-test" */
-/*Retrotope App Version  "3.0.7-test" */
-/*Retrotope App Version  "3.0.8-test" */
-/*Retrotope App Version  "3.0.9-test" */
-/*Retrotope App Version  "3.1.0-test" */
-/*Retrotope App Version  "3.1.1-test" */
-/*Retrotope App Version  "3.1.2-test" */
-/*Retrotope App Version  "3.1.3-test" */
-/*Retrotope App Version  "3.1.4-test" */
-/*Retrotope App Version  "3.1.4-test" */
-/*Retrotope App Version  "3.1.4-test" */
-/*Retrotope App Version  "3.1.4-test" */
-/*Retrotope App Version  "3.1.5-test" */
-/*Retrotope App Version  "3.1.6-test" */
-/*Retrotope App Version  "3.1.6" */
-/*Retrotope App Version  "3.1.7" */
-/*Retrotope App Version  "3.1.7" */
-/*Retrotope App Version  "3.1.7" */
-/*Retrotope App Version  "3.1.7" */
-/*Retrotope App Version  "3.1.8" */
-/*Retrotope App Version  "3.1.9" */
-/*Retrotope App Version  "3.1.10" */
-/*Retrotope App Version  "3.1.11" */
-/*Retrotope App Version  "3.1.12" */
-/*Retrotope App Version  "3.1.13" */
+/*Retrotope App Version  "13.1.20" */
