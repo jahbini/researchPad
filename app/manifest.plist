@@ -11,19 +11,19 @@
 					<key>kind</key>
 					<string>software-package</string>
 					<key>url</key>
-					<string>https://huntingtest.retrotope.com/app/Retrotope%20Client.ipa</string>
+					<string>https://huntington.retrotope.com/app/Retrotope%20Client.ipa</string>
 				</dict>
 				<dict>
 					<key>kind</key>
 					<string>display-image</string>
 					<key>url</key>
-					<string>https://huntingtest.retrotope.com/app/Icon-App-57x57@1x.png</string>
+					<string>https://huntington.retrotope.com/app/Icon-App-57x57@1x.png</string>
 				</dict>
 				<dict>
 					<key>kind</key>
 					<string>full-size-image</string>
 					<key>url</key>
-					<string>https://huntingtest.retrotope.com/app/Icon-Input.png</string>
+					<string>https://huntington.retrotope.com/app/Icon-Input.png</string>
 				</dict>
 			</array>
 			<key>metadata</key>
@@ -31,7 +31,7 @@
 				<key>bundle-identifier</key>
 				<string>com.bamboocando.retroclient</string>
 				<key>bundle-version</key>
-				<string>3.1.209-test</string>
+				<string>3.1.21</string>
 				<key>kind</key>
 				<string>software</string>
 				<key>title</key>

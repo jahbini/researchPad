@@ -1,4 +1,4 @@
-console.log('entering timer logon.js as of 12-13-2019')
+console.log('entering timer logon.js as of 12-17-2019')
 
 /*global Pylon*/
 /*global evothings*/
@@ -46,7 +46,7 @@ var walkTimer = function() {
 	walking += timeRes
 	var walkString = "Walk time: " + (walking/1000).toFixed(2) + "  sec."
 	//console.log(walkString)
-	$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"<h3>");  
+	$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"</h3>");  
 };
 
 var walkNow = function() {          // call me each tinme at the beginning of each walk
@@ -68,7 +68,7 @@ var walkNow = function() {          // call me each tinme at the beginning of ea
 	movingUp = [false, false]
 	increasing = false
 	console.log('Looking for timers.....')
-	$('#protocol-report').attr("style",'display:block').html("<h3>Looking for timers...<h3>")
+	$('#protocol-report').attr("style",'display:block').html("<h1>Looking for both timers...</h1>")
 	evothings.ble.startScan([],findSensors,BLEerror);  // this finds the sensors and does the timing
 };
 
@@ -83,13 +83,13 @@ var allDone = function(){
 	shutDown()
 	if (!done) {
 		if (nTimers != 2){ console.log("Stopped without finding both timers")
+			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without finding both timers"+"</h3>")
 			alert("ERROR: Stopped without finding both timers")
-			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without finding both timers"+"<h3>")
 			}
 		else {
 			console.log("Stopped without both timer interruptions")
+			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without both timer interruptions"+"</h3>")
 			alert("ERROR: Stopped without both timer interruptions")
-			$('#protocol-report').attr("style",'display:block').html("<h3>"+"ERROR: Stopped without both timer interruptions"+"<h3>")
 		}
 		//alert("Timer data not valid. Please try again.")
 	}
@@ -119,13 +119,13 @@ var findSensors =  function (device) {   // this function makes sure we have two
 		if (nTimers == 0) {timer[0] = device.id; nTimers = 1
 			console.log("Found one timer....")
 			Pylon.trigger("systemEvent:TimerFound:0")
-			$('#protocol-report').attr("style",'display:block').html("<h3>Found one timer...<h3>")
+			$('#protocol-report').attr("style",'display:block').html("<h1>Found one timer...</h1>")
 			}
 		else if ((nTimers == 1) && (device.id != timer[0]))
 			{timer[1] = device.id; nTimers = 2
 			console.log("Found both timers....")
 			Pylon.trigger("systemEvent:TimerFound:1")
-			$('#protocol-report').attr("style",'display:block').html("<h3>Found both timers<h3>")
+			$('#protocol-report').attr("style",'display:block').html("<h1>Found both timers. Begin walk now.</h1>")
 			// console.log(timerIDs)
 			evothings.ble.stopScan()
 			evothings.ble.startScan([],timeIncreasing,BLEerror)}  // found them both, now wait for times increasing
@@ -191,7 +191,7 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
 				clearInterval(Itimer)  // stop timer
 				var walkString = "Walk time: " + ((walkEnd-walkStart)/1000).toFixed(2) + " sec."
 				console.log(walkString)
-				$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"<h3>");  // this value is shown on the screen for recording, until STOP is pressed.	
+				$('#protocol-report').attr("style",'display:block').html("<h3>"+walkString+"</h3>");  // this value is shown on the screen for recording, until STOP is pressed.	
 				}
   		   }
  	    }
