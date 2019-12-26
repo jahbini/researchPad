@@ -198,7 +198,7 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
       }
 };
 // app triggers on begin and end of protocol
-Pylon.on("systemEvent:recordCountDown:start",walkNow);
+Pylon.on("systemEvent:externalTimer:show",walkNow);
 Pylon.on("systemEvent:stopCountDown:over",allDone);
 console.log('logon.js done');
 /*Retrotope App Version  "13.1.20" */
