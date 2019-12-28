@@ -1,4 +1,4 @@
-console.log('entering timer logon.js as of 12-17-2019')
+console.log('entering timer logon.js as of 12-27-2019')
 
 /*global Pylon*/
 /*global evothings*/
@@ -10,9 +10,10 @@ var nTimers
 var timerNo
 var beamBroken   // current beam state
 var beamBlocked  // set on first block for each timer
-var done		// turns true after both beams have been blocked
+var done			// turns true after both beams have been blocked
 var walking                    // approximate amount of walk time, shown on screen
 var walkStart, walkEnd
+var looking = false		// this will be set only if we are using timers for this protocol
 var Itimer			// ID of onscreen timer function
 var Iscan			// ID of rescan function
 var movingUp
@@ -67,7 +68,7 @@ var walkNow = function() {          // call me each tinme at the beginning of ea
 	beamBroken = [false, false] 
 	movingUp = [false, false]
 	increasing = false
-	console.log('Looking for timers.....')
+	console.log('Looking for timers.....'); looking = true	// we are using the timers in this protocol
 	$('#protocol-report').attr("style",'display:block').html("<h1>Looking for both timers...</h1>")
 	evothings.ble.startScan([],findSensors,BLEerror);  // this finds the sensors and does the timing
 };
@@ -80,6 +81,7 @@ var shutDown = function() {
 };
 
 var allDone = function(){
+	if (!looking) {return}  // nothing to do if not using the timers for this protocol
 	shutDown()
 	if (!done) {
 		if (nTimers != 2){ console.log("Stopped without finding both timers")
@@ -198,7 +200,7 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
       }
 };
 // app triggers on begin and end of protocol
-Pylon.on("systemEvent:recordCountDown:start",walkNow);
+Pylon.on("systemEvent:externalTimer:show",walkNow);
 Pylon.on("systemEvent:stopCountDown:over",allDone);
 console.log('logon.js done');
-/*Retrotope App Version  "13.1.20" */
+/*Retrotope App Version  "13.1.21" */
