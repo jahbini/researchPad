@@ -2347,6 +2347,9 @@ exports.deviceModel = Backbone.Model.extend({
     var error, name, role;
     role = 'Guess';
     name = this.get('name');
+    if (0 < name.search('etrotope-mot')) {
+      return;
+    }
     if (0 < name.search(/\(([Ll]).*\)/)) {
       role = 'Left';
     }
@@ -2999,7 +3002,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":32,"underscore":42}],21:[function(require,module,exports){
-module.exports = '3.1.21';
+module.exports = '3.1.22-test';
 
 
 
