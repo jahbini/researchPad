@@ -94,6 +94,9 @@ ProtocolReportTemplate = Backbone.View.extend
         theTest = Pylon.theProtocol()
         @$el.hide()
         return unless theTest.get 'gestureCapture'
+        # make display area for protocol engines for Huntingtons
+        @$el.html T.render ()->
+          T.div "#protocol-here", style:"background-color:lightcyan;font-size:265%"
         @$el.show()
         listenForTouch()
         @$el.fadeIn()

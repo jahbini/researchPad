@@ -2347,9 +2347,6 @@ exports.deviceModel = Backbone.Model.extend({
     var error, name, role;
     role = 'Guess';
     name = this.get('name');
-    if (0 < name.search('etrotope-mot')) {
-      return;
-    }
     if (0 < name.search(/\(([Ll]).*\)/)) {
       role = 'Left';
     }
@@ -3002,7 +2999,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":32,"underscore":42}],21:[function(require,module,exports){
-module.exports = '3.1.22-test';
+module.exports = '3.1.23-test';
 
 
 
@@ -3592,7 +3589,7 @@ implementing = function() {
 Pylon.set('adminView', require('./adminView.coffee').adminView);
 
 Pages = (function() {
-  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, mongoObjectId, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   T = tea = new Teacup.Teacup;
 
@@ -3955,6 +3952,14 @@ Pages = (function() {
     return Pylon.sessionInfo.unset('testID');
   };
 
+  mongoObjectId = function() {
+    var timestamp;
+    timestamp = (new Date().getTime() / 1000 | 0).toString(16);
+    return (timestamp + 'deadbeefxxxxxxxx').replace(/[x]/g, function() {
+      return (Math.random() * 16 | 0).toString(16);
+    }).toLowerCase();
+  };
+
   Pages.prototype.wireButtons = function() {
     var model;
     model = Pylon.sessionInfo;
@@ -3962,24 +3967,17 @@ Pages = (function() {
       return function(node) {
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
         model.set('testID', $('#testID option:selected').val());
+        model.set(model.idAttribute, mongoObjectId());
         (Pylon.get('button-admin')).set({
-          legend: "Session?",
-          enable: false
+          legend: "Log Out",
+          enable: true
         });
         model.save(null, {
           success: function(model, response, options) {
             viewlogger("session logged with host");
-            return (Pylon.get('button-admin')).set({
-              legend: "Log Out",
-              enable: true
-            });
           },
           error: function(model, response, options) {
             viewlogger("Session save Fail: " + response.statusText);
-            return (Pylon.get('button-admin')).set({
-              legend: "Log Out",
-              enable: true
-            });
           }
         });
         return false;
@@ -4620,6 +4618,11 @@ ProtocolReportTemplate = Backbone.View.extend({
         if (!theTest.get('gestureCapture')) {
           return;
         }
+        _this.$el.html(T.render(function() {
+          return T.div("#protocol-here", {
+            style: "background-color:lightcyan;font-size:265%"
+          });
+        }));
         _this.$el.show();
         listenForTouch();
         _this.$el.fadeIn();

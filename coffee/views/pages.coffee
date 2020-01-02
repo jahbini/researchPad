@@ -269,6 +269,11 @@ class Pages
     Pylon.trigger 'renderTest'
     Pylon.sessionInfo.unset 'testID'
 
+
+  mongoObjectId = ()->
+    timestamp = (new Date().getTime() / 1000 | 0).toString(16);
+    return (timestamp + 'deadbeefxxxxxxxx').replace(/[x]/g, ()-> (Math.random() * 16 | 0).toString(16); ).toLowerCase();
+
   wireButtons: =>
     # all buttons converted to button-view objects
     # only remaining widget is protocol ID selector
@@ -276,20 +281,17 @@ class Pages
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
       model.set 'testID',$('#testID option:selected').val()
+      model.set model.idAttribute,mongoObjectId()
       (Pylon.get 'button-admin').set
-        legend: "Session?"
-        enable: false
+        legend: "Log Out"
+        enable: true
       model.save null,{
         success: (model,response,options)->
           viewlogger "session logged with host"
-          (Pylon.get 'button-admin').set
-            legend: "Log Out"
-            enable: true
+          return
         error: (model,response,options)->
           viewlogger "Session save Fail: #{response.statusText}"
-          (Pylon.get 'button-admin').set
-            legend: "Log Out"
-            enable: true
+          return
         }
       return false
 

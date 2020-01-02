@@ -54,7 +54,8 @@ exports.deviceModel = Backbone.Model.extend
   initialize: ->
     role= 'Guess'
     name = @get 'name'
-    return if 0<name.search 'etrotope-mot'
+    # remove -- assuming all new flashes are programmed fully
+    #  return if 0<name.search 'etrotope-mot'
     role= 'Left' if 0< name.search /\(([Ll]).*\)/
     role= 'Right' if 0< name.search /\(([Rr]).*\)/
     @.attributes.role = role
