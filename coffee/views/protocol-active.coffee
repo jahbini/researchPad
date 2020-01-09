@@ -7,6 +7,7 @@ BV = require './button-view.coffee'
 {colorTextBody,colorTextExample} = require './stroop.coffee'
 {tappingBody,tappingExample} = require './tapping.coffee'
 {tenIconBody,tenIconExample} = require './ten-icon.coffee'
+{fullscanBody,fullscanExample} = require './fullscan.coffee'
 
 saneTimeout = (time,f) ->
   setTimeout f,time
@@ -94,6 +95,9 @@ ProtocolReportTemplate = Backbone.View.extend
         theTest = Pylon.theProtocol()
         @$el.hide()
         return unless theTest.get 'gestureCapture'
+        # make display area for protocol engines for Huntingtons
+        @$el.html T.render ()->
+          T.div "#protocol-here", style:"background-color:lightcyan;font-size:265%"
         @$el.show()
         listenForTouch()
         @$el.fadeIn()
@@ -124,6 +128,9 @@ ProtocolReportTemplate = Backbone.View.extend
     showProtocol: (name,theTest)->
       engine=theTest.get 'engine'
       switch engine
+        when 'fullscan'
+          @renderExample =  new fullscanExample model: theTest
+          @renderBody = new fullscanBody model: theTest
         when 'stroop'
           @renderExample =  new colorTextExample model: theTest
           @renderBody = new colorTextBody model: theTest
