@@ -1,5 +1,3 @@
-console.log('entering timer logon.js as of 12-17-2019')
-
 /*global Pylon*/
 /*global evothings*/
 /*global $*/
@@ -10,9 +8,10 @@ var nTimers
 var timerNo
 var beamBroken   // current beam state
 var beamBlocked  // set on first block for each timer
-var done		// turns true after both beams have been blocked
+var done			// turns true after both beams have been blocked
 var walking                    // approximate amount of walk time, shown on screen
 var walkStart, walkEnd
+var looking = false		// this will be set only if we are using timers for this protocol
 var Itimer			// ID of onscreen timer function
 var Iscan			// ID of rescan function
 var movingUp
@@ -31,7 +30,7 @@ var minTimeout = 500   // seen any changes during this time frame?
 var deltaInc = 2      // assume clock must have drifted a bit
 var restartScan = 10*1000  // restart the scan every 10 seconds (why!?!?!)
 
-var timerMatch = /^retrotope-timer\(([01])\)(\d*)$/
+var timerMatch = /^retrotope-timer\(([01])\)(\d+)$/
 
 // assume that the two motion sensors were found and mounted....
 // check for two timer devices
@@ -67,7 +66,7 @@ var walkNow = function() {          // call me each tinme at the beginning of ea
 	beamBroken = [false, false] 
 	movingUp = [false, false]
 	increasing = false
-	console.log('Looking for timers.....')
+	console.log('Looking for timers.....'); looking = true	// we are using the timers in this protocol
 	$('#protocol-report').attr("style",'display:block').html("<h1>Looking for both timers...</h1>")
 	evothings.ble.startScan([],findSensors,BLEerror);  // this finds the sensors and does the timing
 };
@@ -80,6 +79,7 @@ var shutDown = function() {
 };
 
 var allDone = function(){
+	if (!looking) {return}  // nothing to do if not using the timers for this protocol
 	shutDown()
 	if (!done) {
 		if (nTimers != 2){ console.log("Stopped without finding both timers")
@@ -198,7 +198,9 @@ var timeSensors =  function (device) {       // here we actually monitor the bea
       }
 };
 // app triggers on begin and end of protocol
-Pylon.on("systemEvent:externalTimer:show",walkNow);
-Pylon.on("systemEvent:stopCountDown:over",allDone);
-console.log('logon.js done');
-/*Retrotope App Version  "13.1.30" */
+console.log('entering timer logon.js as of 1-9-2020')
+Pylon.trigger("systemEvent:LogonVersion:1-9-2020")
+Pylon.on("systemEvent:externalTimer:show",walkNow)
+Pylon.on("systemEvent:stopCountDown:over",allDone)
+console.log('logon.js done')
+/*Retrotope App Version  "13.1.21" */
