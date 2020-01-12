@@ -83,7 +83,7 @@ LibraryView = Backbone.View.extend
         deviceLibrary.each (node)->
           T.div '.row', ()->
             a=node.attributes
-            return unless a.name?.match /etrotop|sensorta/i
+            return unless a.name?.match /etrotop-m|sensorta/i
             T.div '.two.columns',a.id[-4..]
             T.div '.four.columns',a.name
             T.div '.four.columns',a.advertising?.CBAdvDataLocalName if a.advertising
