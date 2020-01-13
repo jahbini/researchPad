@@ -1,7 +1,7 @@
 node_modules
 *.log
 .all.js
-.app.js
+public/logon.js
 temp/
 x.*
 *.swp
