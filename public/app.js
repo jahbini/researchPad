@@ -2996,7 +2996,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.30';
+module.exports = '3.1.32-test';
 
 
 
@@ -3577,7 +3577,7 @@ LibraryView = Backbone.View.extend({
           return T.div('.row', function() {
             var a, obj, ref, ref1, ref2;
             a = node.attributes;
-            if (!((ref = a.name) != null ? ref.match(/etrotop|sensorta/i) : void 0)) {
+            if (!((ref = a.name) != null ? ref.match(/etrotop-m|sensorta/i) : void 0)) {
               return;
             }
             T.div('.two.columns', a.id.slice(-4));
