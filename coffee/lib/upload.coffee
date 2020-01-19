@@ -154,6 +154,9 @@ sendToHost = (uDM)->
       setTimeout getNextItem, 0
       return
     error: (a,b,c)->
+      # rotate error item to end of the upload stuff
+      removeItem id
+      setNewItem item
       setTimeout getNextItem, 5000
       uDM= a.attributes
       if uDM.session

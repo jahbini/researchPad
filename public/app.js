@@ -2136,6 +2136,8 @@ sendToHost = function(uDM) {
     },
     error: function(a, b, c) {
       var failCode, fails;
+      removeItem(id);
+      setNewItem(item);
       setTimeout(getNextItem, 5000);
       uDM = a.attributes;
       if (uDM.session) {
@@ -2996,7 +2998,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.32';
+module.exports = '3.1.33-test';
 
 
 
