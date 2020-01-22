@@ -2005,8 +2005,11 @@ records = function() {
   return all;
 };
 
-setNewItem = function(backboneAttributes) {
+setNewItem = function(backboneAttributes, time) {
   var events;
+  if (time == null) {
+    time = 50;
+  }
   events = records();
   uplogger("keys = " + (events.join(',')));
   localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
@@ -2015,7 +2018,7 @@ setNewItem = function(backboneAttributes) {
     localStorage.setItem('all_events', events.join(','));
   }
   timeOutScheduled = true;
-  setTimeout(getNextItem, 50);
+  setTimeout(getNextItem, time);
 };
 
 accessItem = function(lsid) {
@@ -2137,9 +2140,8 @@ sendToHost = function(uDM) {
     error: function(a, b, c) {
       var failCode, fails;
       removeItem(id);
-      setNewItem(item);
-      setTimeout(getNextItem, 5000);
       uDM = a.attributes;
+      setNewItem(uDM, 5000);
       if (uDM.session) {
         uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
       } else {

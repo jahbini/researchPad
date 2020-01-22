@@ -42,7 +42,7 @@ records = ()->
   return all
 
 #store prepared backbone object.attributes into localStorage, based on upload ticket.
-setNewItem = (backboneAttributes)->
+setNewItem = (backboneAttributes,time=50)->
   #must have an LSid
   events =records()
   uplogger "keys = #{events.join ','}"
@@ -52,7 +52,7 @@ setNewItem = (backboneAttributes)->
     events.push backboneAttributes.LSid
     localStorage.setItem 'all_events', events.join ','
   timeOutScheduled = true
-  setTimeout getNextItem, 50
+  setTimeout getNextItem, time
   return
   
 accessItem = (lsid)->
@@ -156,9 +156,8 @@ sendToHost = (uDM)->
     error: (a,b,c)->
       # rotate error item to end of the upload stuff
       removeItem id
-      setNewItem item
-      setTimeout getNextItem, 5000
       uDM= a.attributes
+      setNewItem uDM, 5000
       if uDM.session
         uplogger "failure #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
       else
