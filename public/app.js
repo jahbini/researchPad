@@ -3000,7 +3000,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.33';
+module.exports = '3.1.34';
 
 
 
