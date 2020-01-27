@@ -44,6 +44,7 @@ fullscanBody = Backbone.View.extend
     @$el.html('')
     return
   initialize: ()->
+    Pylon.trigger "disconnectSensorTags"
     enginelogger "fullscan initialize"
     @$el.html T.render =>
       T.div ".container",style: "padding-top:25px;padding-bottom:25px", =>
@@ -132,6 +133,7 @@ fullscanExample = Backbone.View.extend
     @refreshDeviceList()
     return
   refreshDeviceList: ->
+    Pylon.trigger "disconnectSensorTags"
     deviceLibrary.reset()
     # empties the list
     # scan for all devices

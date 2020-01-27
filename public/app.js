@@ -1191,11 +1191,16 @@ localConsole = window.Console;
 window.Console = c;
 
 module.exports = buglog = (function() {
+  buglog.prototype.enable = function(names) {
+    return logger.enable(names);
+  };
+
   function buglog(nameSpace) {
-    this.log = bind(this.log, this);
     var queue;
+    this.nameSpace = nameSpace;
+    this.log = bind(this.log, this);
     queue = [];
-    this.yourLogger = new logger(nameSpace);
+    this.yourLogger = new logger(this.nameSpace);
     logger.formatters.j = require('json-stringify-safe');
     this.yourLogger.useColors = false;
     this.yourLogger.log = function() {
@@ -1947,7 +1952,7 @@ module.exports = statistics = (function() {
 
 
 },{"./buglog.coffee":3}],10:[function(require,module,exports){
-var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
+var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setBadItem, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
 
@@ -1959,7 +1964,7 @@ buglog = require('./buglog.coffee');
 
 uplogger = (uplog = new buglog("uploader")).log;
 
-uplogger("initializing");
+uplog.enable('uploader');
 
 localStorage = window.localStorage;
 
@@ -1992,6 +1997,17 @@ hiWater = function() {
   return high;
 };
 
+setBadItem = function(backboneAttributes) {
+  var bad;
+  bad = localStorage.getItem('trash_can');
+  bad = (bad && bad.split(",")) || [];
+  localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
+  if (needs(bad, backboneAttributes.LSid)) {
+    bad.push(backboneAttributes.LSid);
+    localStorage.setItem('trash_can', bad.join(','));
+  }
+};
+
 oldAll = -1;
 
 records = function() {
@@ -2011,7 +2027,6 @@ setNewItem = function(backboneAttributes, time) {
     time = 50;
   }
   events = records();
-  uplogger("keys = " + (events.join(',')));
   localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
   if (needs(events, backboneAttributes.LSid)) {
     events.push(backboneAttributes.LSid);
@@ -2022,13 +2037,11 @@ setNewItem = function(backboneAttributes, time) {
 };
 
 accessItem = function(lsid) {
-  uplogger("accessing item " + lsid);
   return localStorage.getItem(lsid);
 };
 
 removeItem = function(lsid) {
   var events, i, id, key, len;
-  uplogger("removing item " + lsid);
   events = records();
 
   /*
@@ -2048,20 +2061,16 @@ removeItem = function(lsid) {
   }
   localStorage.removeItem(lsid);
   localStorage.setItem('all_events', events.join(','));
-  uplogger("removeItem set all_events " + (events.join(',')));
 };
 
 getNextItem = function() {
   var e, events, item, key, uploadDataObject;
-  uplogger("Uploader Activated");
   events = records();
   if (!events.length) {
-    uplogger("Nothing  to Upload");
     timeOutScheduled = false;
     return null;
   }
   if (!events.length || uploading) {
-    uplogger("Busy -- ");
     return null;
   }
   key = events.shift();
@@ -2071,7 +2080,7 @@ getNextItem = function() {
   } catch (error) {
     e = error;
     uplogger("Error in localStorage retrieval- key==" + key);
-    uplogger("item discarded -- invalid JSON");
+    uplogger("item discarded -- invalid JSON", item);
     return null;
   }
   return sendToHost(uploadDataObject);
@@ -2095,12 +2104,11 @@ eventModelLoader = function(uploadDataModel) {
   item.LSid = MyId();
   item.url = uploadDataModel.url;
   item.hostFails = 0;
-  uplogger("adding " + item.LSid + " to localStorage");
   setNewItem(item);
 };
 
 sendToHost = function(uDM) {
-  var hopper, stress, uploadDataObject, url;
+  var hopper, uploadDataObject, url;
   uploading = uDM.LSid;
   url = uDM.url;
   if (!url.match('http[s]?://')) {
@@ -2110,17 +2118,12 @@ sendToHost = function(uDM) {
     url: url
   });
   uploadDataObject = new hopper(uDM);
-  stress = Pylon.get('stress');
-  if (stress > Math.random()) {
-    uplogger("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
-    return;
-  }
-  uDM = uploadDataObject.attributes;
-  if (uDM.session) {
-    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
-  } else {
-    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM._id);
-  }
+
+  /*
+   *  uncomment to force failures in testing
+  if .2 > Math.random()
+    uploadDataObject.url = "silly"
+   */
   uploadDataObject.save(null, {
     success: function(a, b, code) {
       var id;
@@ -2134,24 +2137,30 @@ sendToHost = function(uDM) {
         uplogger("success " + id + " (session) ");
         Pylon.trigger('sessionUploaded');
       }
-      uplogger("upload of " + id + " complete");
       setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
-      var failCode, fails;
-      removeItem(id);
-      uDM = a.attributes;
-      setNewItem(uDM, 5000);
-      if (uDM.session) {
-        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
-      } else {
-        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.id);
-      }
+      var code, id, stophere;
       uploading = false;
-      failCode = b.status;
-      fails = a.get('hostFails');
-      fails += 1;
-      uplogger(fails + " failures (" + failCode + ") on " + (a.get('LSid')));
+      stophere = "error";
+      uDM = a.attributes;
+      code = b.statusText;
+      if (uDM.session) {
+        uplogger("failure " + uDM.LSid + " " + code + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+      } else {
+        uplogger("failure (session) " + code + " " + uDM.LSid + " ", uDM.url, uDM.id);
+      }
+      id = uDM.LSid;
+      removeItem(id);
+      uDM.hostFails += 1;
+      if (uDM.hostFails > 10) {
+        uplogger("item " + id + " removed from upload queue");
+        setBadItem(uDM);
+        timeOutScheduled = true;
+        setTimeout(getNextItem, 0);
+        return;
+      }
+      setNewItem(uDM, 100);
     }
   });
 };
@@ -3000,7 +3009,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.34';
+module.exports = '3.1.35';
 
 
 
@@ -3528,6 +3537,7 @@ fullscanBody = Backbone.View.extend({
     this.$el.html('');
   },
   initialize: function() {
+    Pylon.trigger("disconnectSensorTags");
     enginelogger("fullscan initialize");
     this.$el.html(T.render((function(_this) {
       return function() {
@@ -3661,6 +3671,7 @@ fullscanExample = Backbone.View.extend({
     this.refreshDeviceList();
   },
   refreshDeviceList: function() {
+    Pylon.trigger("disconnectSensorTags");
     deviceLibrary.reset();
     ble.scan([], 10, this.onDiscoverDevice.bind(this), this.onError.bind());
     $("#detailPage").hide();

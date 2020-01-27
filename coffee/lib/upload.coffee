@@ -8,8 +8,9 @@ _ = require('underscore')
 Backbone = require ('backbone')
 buglog = require './buglog.coffee'
 uplogger = (uplog= new buglog "uploader").log
+uplog.enable 'uploader'
 
-uplogger "initializing"
+#uplogger "initializing"
 localStorage = window.localStorage
 Pylon = window.Pylon
 
@@ -30,6 +31,20 @@ hiWater = ()->
   localStorage.setItem 'hiWater', high
   return high
       
+#store prepared backbone object.attributes into localStorage, based on upload ticket.
+setBadItem = (backboneAttributes)->
+  #must have an LSid
+  #trash_can is a string of comma separated LSid's of objects to upload
+  bad = localStorage.getItem('trash_can')
+  bad =  (bad && bad.split(",")) || []
+  #put the bad object back in the localStorage at it's old name
+  localStorage.setItem backboneAttributes.LSid, JSON.stringify backboneAttributes
+  if needs bad, backboneAttributes.LSid
+    bad.push backboneAttributes.LSid
+    localStorage.setItem 'trash_can', bad.join ','
+  return
+  
+      
 oldAll = -1  
 records = ()->
   #all_events is a string of comma separated LSid's of objects to upload
@@ -45,7 +60,7 @@ records = ()->
 setNewItem = (backboneAttributes,time=50)->
   #must have an LSid
   events =records()
-  uplogger "keys = #{events.join ','}"
+  #uplogger "keys = #{events.join ','}"
   
   localStorage.setItem backboneAttributes.LSid, JSON.stringify backboneAttributes
   if needs events, backboneAttributes.LSid
@@ -56,12 +71,12 @@ setNewItem = (backboneAttributes,time=50)->
   return
   
 accessItem = (lsid)->
-  uplogger "accessing item #{lsid}"
+  #uplogger "accessing item #{lsid}"
   return localStorage.getItem lsid
   
 
 removeItem = (lsid)->
-  uplogger "removing item #{lsid}"
+  #uplogger "removing item #{lsid}"
   events = records()
   ###
   remove item from event array 
@@ -75,20 +90,20 @@ removeItem = (lsid)->
   events.splice(key,1) for id,key in events when id is lsid
   localStorage.removeItem lsid
   localStorage.setItem 'all_events', events.join ','
-  uplogger "removeItem set all_events #{events.join ',' }"
+  #uplogger "removeItem set all_events #{events.join ',' }"
   return
   
 # get next item gets and removes a model from local storage,
 # converts it to object form (attributes)
 getNextItem = ()->
-  uplogger "Uploader Activated"
+  #uplogger "Uploader Activated"
   events = records()
   if !events.length
-    uplogger "Nothing  to Upload"
+    #uplogger "Nothing  to Upload"
     timeOutScheduled = false
     return null
   if !events.length || uploading
-    uplogger "Busy -- "
+    #uplogger "Busy -- "
     return null
   
   key = events.shift()
@@ -97,7 +112,7 @@ getNextItem = ()->
     uploadDataObject = JSON.parse item
   catch e
     uplogger "Error in localStorage retrieval- key==#{key}"
-    uplogger "item discarded -- invalid JSON"
+    uplogger "item discarded -- invalid JSON",item
     return null
   sendToHost uploadDataObject
 
@@ -117,7 +132,7 @@ eventModelLoader = (uploadDataModel)->
   item.url = uploadDataModel.url
   item.hostFails = 0
   
-  uplogger "adding #{item.LSid} to localStorage"
+  #uplogger "adding #{item.LSid} to localStorage"
   setNewItem item
   return
 
@@ -129,16 +144,12 @@ sendToHost = (uDM)->
     url: url
   }
   uploadDataObject = new hopper uDM
-  stress = Pylon.get 'stress'
-  if stress> Math.random()
-    #pretend to fail
-    uplogger "stress test upload failure, item #{uploadDataObject.get 'LSid'}, retry in 5 seconds"
-    return
-  uDM=uploadDataObject.attributes
-  if uDM.session
-    uplogger "attempt #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
-  else
-    uplogger "attempt #{uDM.LSid} ",uDM.url, uDM._id
+  ###
+  #  uncomment to force failures in testing
+  if .2 > Math.random()
+    uploadDataObject.url = "silly"
+  ###
+
   uploadDataObject.save null,{
     success: (a,b,code)->
       uDM= a.attributes
@@ -150,23 +161,31 @@ sendToHost = (uDM)->
       else
         uplogger "success #{id} (session) "
         Pylon.trigger 'sessionUploaded'
-      uplogger "upload of #{id} complete"
+      #uplogger "upload of #{id} complete"
       setTimeout getNextItem, 0
       return
     error: (a,b,c)->
-      # rotate error item to end of the upload stuff
-      removeItem id
-      uDM= a.attributes
-      setNewItem uDM, 5000
-      if uDM.session
-        uplogger "failure #{uDM.LSid} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
-      else
-        uplogger "failure #{uDM.LSid} ",uDM.url, uDM.id
       uploading = false
-      failCode = b.status
-      fails = a.get 'hostFails'
-      fails +=1
-      uplogger "#{fails} failures (#{failCode}) on #{a.get 'LSid'}"
+      # rotate error item to end of the upload stuff
+      stophere = "error"
+      uDM= a.attributes
+      code=b.statusText
+      if uDM.session
+        uplogger "failure #{uDM.LSid} #{code} ",uDM.url, uDM.readings.substring(0,30),uDM.role, uDM.session
+      else
+        uplogger "failure (session) #{code} #{uDM.LSid} ",uDM.url, uDM.id
+      id = uDM.LSid
+      removeItem id
+      uDM.hostFails += 1
+      if uDM.hostFails >10
+        uplogger "item #{id} removed from upload queue"
+        setBadItem uDM
+        timeOutScheduled = true
+        setTimeout getNextItem, 0
+        return
+
+      #otherwise, put it at the end of the upload queue
+      setNewItem uDM, 100
       return
     }
   return
