@@ -158,9 +158,10 @@ TiHandler = (function() {
   Pylon.on("disconnectSensorTags", function() {
     var collection;
     collection = Pylon.get('devices');
-    return collection.each(function(m) {
+    collection.each(function(m) {
       return Pylon.get('TiHandler').detachDevice(m.cid);
     });
+    collection.reset();
   });
 
   TiHandler.prototype.initialize = function(sessionInfo) {
@@ -168,7 +169,7 @@ TiHandler = (function() {
   };
 
   TiHandler.prototype.detachDevice = function(cid) {
-    var d, e, name, role;
+    var d, name, role;
     d = Pylon.get('devices').get(cid);
     if (!d) {
       return;
@@ -178,9 +179,6 @@ TiHandler = (function() {
     Pylon.unset(role);
     TIlogger("detach " + cid + " -- " + name);
     d.disconnect();
-    d.demote("guess");
-    e = Pylon.get('devices');
-    e.reset();
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
@@ -3041,7 +3039,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.35';
+module.exports = '3.1.36-test';
 
 
 
@@ -3658,7 +3656,9 @@ fullscanExample = Backbone.View.extend({
   initialize: function() {
     this.$el.html(T.render((function(_this) {
       return function() {
-        T.div(".row", function() {
+        T.div(".row", {
+          style: "margin-top:1rem"
+        }, function() {
           var obj, obj1;
           T.div('.one.column');
           T.button("#disconnectButton.three.columns.button-primary", (
@@ -3703,6 +3703,7 @@ fullscanExample = Backbone.View.extend({
     this.refreshDeviceList();
   },
   refreshDeviceList: function() {
+    Pylon.trigger('disconnecttag');
     Pylon.trigger("disconnectSensorTags");
     deviceLibrary.reset();
     ble.scan([], 10, this.onDiscoverDevice.bind(this), this.onError.bind());

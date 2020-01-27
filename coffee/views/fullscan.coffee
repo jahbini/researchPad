@@ -102,7 +102,7 @@ fullscanExample = Backbone.View.extend
     return
   initialize: ()->
     @$el.html T.render =>
-      T.div ".row",->
+      T.div ".row",style: "margin-top:1rem",->
         T.div '.one.column'
         T.button "#disconnectButton.three.columns.button-primary","#{Pylon.onWhat}":"Pylon.trigger('disconnection')","STOP"
         T.div ".five.columns","Register sensorTag"
@@ -133,6 +133,7 @@ fullscanExample = Backbone.View.extend
     @refreshDeviceList()
     return
   refreshDeviceList: ->
+    Pylon.trigger 'disconnecttag'
     Pylon.trigger "disconnectSensorTags"
     deviceLibrary.reset()
     # empties the list

@@ -138,7 +138,9 @@ class TiHandler
     collection.each (m)->
       Pylon.get 'TiHandler'
         .detachDevice m.cid
-
+    collection.reset()
+    return
+    
   initialize: (@sessionInfo) ->
     
 # detachDevice
@@ -151,9 +153,7 @@ class TiHandler
     Pylon.unset role
     TIlogger "detach #{cid} -- #{name}"
     d.disconnect()
-    d.demote "guess"
-    e=Pylon.get 'devices'
-    e.reset()
+    #d.demote "guess"
     return
 
     
