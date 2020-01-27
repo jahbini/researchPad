@@ -69,6 +69,7 @@ pView = Backbone.View.extend({
   },
   changer: function() {
     TIlogger("Start Scan button activated");
+    Pylon.trigger('disconnectSensorTags');
     Pylon.state.set({
       scanning: true
     });
@@ -154,12 +155,20 @@ TiHandler = (function() {
     return Pylon.get('TiHandler').detachDevice(cid);
   });
 
+  Pylon.on("disconnectSensorTags", function() {
+    var collection;
+    collection = Pylon.get('devices');
+    return collection.each(function(m) {
+      return Pylon.get('TiHandler').detachDevice(m.cid);
+    });
+  });
+
   TiHandler.prototype.initialize = function(sessionInfo) {
     this.sessionInfo = sessionInfo;
   };
 
   TiHandler.prototype.detachDevice = function(cid) {
-    var d, name, role;
+    var d, e, name, role;
     d = Pylon.get('devices').get(cid);
     if (!d) {
       return;
@@ -169,6 +178,9 @@ TiHandler = (function() {
     Pylon.unset(role);
     TIlogger("detach " + cid + " -- " + name);
     d.disconnect();
+    d.demote("guess");
+    e = Pylon.get('devices');
+    e.reset();
   };
 
   TiHandler.prototype.attachDevice = function(cid) {
@@ -2352,6 +2364,26 @@ exports.deviceModel = Backbone.Model.extend({
   },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
+  },
+  demote: function() {
+    this.set({
+      firmwareVersion: "sensorTag",
+      modelNumber: "modelNumber",
+      rowname: "",
+      role: "",
+      serialNumber: "serialnumber",
+      softwareVersion: "softwareVersion",
+      name: "none",
+      hasBoilerPlate: false,
+      buttonText: 'connect',
+      buttonClass: 'button-primary',
+      deviceStatus: '--',
+      connected: false,
+      rate: 20,
+      subscribeState: false,
+      lastDisplay: Date.now(),
+      numReadings: 0
+    });
   },
   initialize: function() {
     var error, name, role;

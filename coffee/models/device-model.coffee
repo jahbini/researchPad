@@ -51,6 +51,26 @@ exports.deviceModel = Backbone.Model.extend
   urlRoot: ->
     Pylon.get('hostUrl')+'sensor-tag'
   #idAttribute: "name"
+  demote: ->
+    @set
+      firmwareVersion: "sensorTag"
+      modelNumber: "modelNumber"
+      rowname: ""
+      role: ""
+      serialNumber: "serialnumber"
+      softwareVersion: "softwareVersion"
+      name:"none"
+      hasBoilerPlate: false
+      buttonText: 'connect'
+      buttonClass: 'button-primary'
+      deviceStatus: '--'
+      connected: false
+      rate: 20
+      subscribeState: false
+      lastDisplay: Date.now()
+      numReadings: 0
+    return
+
   initialize: ->
     role= 'Guess'
     name = @get 'name'
@@ -208,9 +228,9 @@ exports.deviceModel = Backbone.Model.extend
           reject()
       return
     
-  activateMovement: ()->    
-    configData = new Uint16Array(1);
-    configData[0] = 0x017F;
+  activateMovement: ()->
+    configData = new Uint16Array(1)
+    configData[0] = 0x017F
     # turn accelerometer on
     #Turn on gyro, accel, and mag, 2G range, Disable wake on motion
     return ble.withPromises.write @attributes.id,

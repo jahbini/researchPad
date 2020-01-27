@@ -55,6 +55,7 @@ pView=Backbone.View.extend
     "click": "changer"
   changer: ->
       TIlogger "Start Scan button activated"
+      Pylon.trigger 'disconnectSensorTags'
       Pylon.state.set scanning: true
       @render()
       setTimeout(
@@ -132,6 +133,12 @@ class TiHandler
     Pylon.get 'TiHandler'
       .detachDevice cid
 
+  Pylon.on "disconnectSensorTags", ()->
+    collection=Pylon.get 'devices'
+    collection.each (m)->
+      Pylon.get 'TiHandler'
+        .detachDevice m.cid
+
   initialize: (@sessionInfo) ->
     
 # detachDevice
@@ -144,6 +151,9 @@ class TiHandler
     Pylon.unset role
     TIlogger "detach #{cid} -- #{name}"
     d.disconnect()
+    d.demote "guess"
+    e=Pylon.get 'devices'
+    e.reset()
     return
 
     
