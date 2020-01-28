@@ -44,6 +44,7 @@ handheld.on 'change',->
   # set a reminder for the client
   localStorage['clientUnlockOK'] =  handheld.get 'clientUnlockOK'
   localStorage['debug'] = handheld.get 'debugString'
+  introlog.enable localStorage['debug']
   if handheld.get 'loadLogFiles'
     Pylon.accessFileSystem()
   return if Pylon.state.get 'recording'

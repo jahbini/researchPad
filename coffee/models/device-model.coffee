@@ -267,7 +267,37 @@ exports.deviceModel = Backbone.Model.extend
       devicelogger e
       device.set deviceStatus: 'Failed re-subscribe'
     return 
-   
+
+  getBoil: (count=0)-> 
+    if count >5
+      Pylon.trigger "systemEvent:sanity:badBoilerplate"+ @get 'role'
+      return
+    thePromise = Promise.all @getBoilerplate()
+    thePromise.then ()=>
+      try
+        unless @attributes.firmwareVersion.match /\(.*\)/
+          boilerBad = true
+        unless @attributes.modelNumber.match /CC2650 SensorTag/
+          boilerBad = true
+        unless @attributes.serialNumber.match /\([LlRr]\)/
+          boilerBad = true
+        unless @attributes.softwareVersion.match /Retrotope/
+          boilerBad = true
+      catch e
+        boilerBad = true
+      c1= (@attributes.serialNumber.match /\(([LlRr])\)/)[1].toUpperCase()
+      c2= (@attributes.name.match /\(([LlRr])\)/)[1].toUpperCase()
+      if c1!= c1
+        boilerBad = true
+      if boilerBad
+        @getBoil count+1
+      else
+        Pylon.trigger "systemEvent:sanity:goodBoilerplate" + @get 'role'
+        @set 'hasBoilerPlate',true  # do not get these values again
+        @resubscribe()
+      thePromise.catch  ()=>
+        Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
+      return
           
   subscribe: ()-> 
     Pylon.trigger "systemEvent:sanity:warn"+ @.attributes.role
@@ -275,11 +305,7 @@ exports.deviceModel = Backbone.Model.extend
     #set some attributes
       devicelogger " subscribe attempt #{@.attributes.name}"
   # turn accelerometer off, then set movement  parameters
-      thePromise = Promise.all @getBoilerplate()
-      thePromise.then ()=>@set 'hasBoilerPlate',true  # do not get these values again
-      thePromise.then @resubscribe.bind @
-      thePromise.catch ()=>
-        Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
+      @getBoil()
         
     catch e
       Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'

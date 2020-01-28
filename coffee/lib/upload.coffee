@@ -8,7 +8,7 @@ _ = require('underscore')
 Backbone = require ('backbone')
 buglog = require './buglog.coffee'
 uplogger = (uplog= new buglog "uploader").log
-uplog.enable 'uploader'
+#uplog.enable 'uploader'
 
 #uplogger "initializing"
 localStorage = window.localStorage

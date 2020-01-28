@@ -1974,8 +1974,6 @@ buglog = require('./buglog.coffee');
 
 uplogger = (uplog = new buglog("uploader")).log;
 
-uplog.enable('uploader');
-
 localStorage = window.localStorage;
 
 Pylon = window.Pylon;
@@ -2607,23 +2605,60 @@ exports.deviceModel = Backbone.Model.extend({
       });
     }
   },
+  getBoil: function(count) {
+    var thePromise;
+    if (count == null) {
+      count = 0;
+    }
+    if (count > 5) {
+      Pylon.trigger("systemEvent:sanity:badBoilerplate" + this.get('role'));
+      return;
+    }
+    thePromise = Promise.all(this.getBoilerplate());
+    return thePromise.then((function(_this) {
+      return function() {
+        var boilerBad, c1, c2, e;
+        try {
+          if (!_this.attributes.firmwareVersion.match(/\(.*\)/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.modelNumber.match(/CC2650 SensorTag/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.serialNumber.match(/\([LlRr]\)/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.softwareVersion.match(/Retrotope/)) {
+            boilerBad = true;
+          }
+        } catch (error1) {
+          e = error1;
+          boilerBad = true;
+        }
+        c1 = (_this.attributes.serialNumber.match(/\(([LlRr])\)/))[1].toUpperCase();
+        c2 = (_this.attributes.name.match(/\(([LlRr])\)/))[1].toUpperCase();
+        if (c1 !== c1) {
+          boilerBad = true;
+        }
+        if (boilerBad) {
+          _this.getBoil(count + 1);
+        } else {
+          Pylon.trigger("systemEvent:sanity:goodBoilerplate" + _this.get('role'));
+          _this.set('hasBoilerPlate', true);
+          _this.resubscribe();
+        }
+        thePromise["catch"](function() {
+          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
+        });
+      };
+    })(this));
+  },
   subscribe: function() {
-    var e, thePromise;
+    var e;
     Pylon.trigger("systemEvent:sanity:warn" + this.attributes.role);
     try {
       devicelogger(" subscribe attempt " + this.attributes.name);
-      thePromise = Promise.all(this.getBoilerplate());
-      thePromise.then((function(_this) {
-        return function() {
-          return _this.set('hasBoilerPlate', true);
-        };
-      })(this));
-      thePromise.then(this.resubscribe.bind(this));
-      thePromise["catch"]((function(_this) {
-        return function() {
-          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
-        };
-      })(this));
+      this.getBoil();
     } catch (error1) {
       e = error1;
       Pylon.trigger("systemEvent:sanity:fail" + this.get('role'));
@@ -2835,6 +2870,7 @@ handheld.on('change', function() {
   handlogger("handheld change: " + (JSON.stringify(handheld.attributes)));
   localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
   localStorage['debug'] = handheld.get('debugString');
+  introlog.enable(localStorage['debug']);
   if (handheld.get('loadLogFiles')) {
     Pylon.accessFileSystem();
   }
