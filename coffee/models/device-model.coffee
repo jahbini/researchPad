@@ -271,6 +271,8 @@ exports.deviceModel = Backbone.Model.extend
   getBoil: (count=0)-> 
     if count >5
       Pylon.trigger "systemEvent:sanity:badBoilerplate"+ @get 'role'
+      devices= Pylon.get 'devices'
+      devices.remove @
       return
     thePromise = Promise.all @getBoilerplate()
     thePromise.then ()=>
@@ -298,7 +300,9 @@ exports.deviceModel = Backbone.Model.extend
         @set 'hasBoilerPlate',true  # do not get these values again
         @resubscribe()
       thePromise.catch  ()=>
-        Pylon.trigger "systemEvent:sanity:fail"+ @get 'role'
+        Pylon.trigger "systemEvent:sanity:badBoilerplate"+ @get 'role'
+        devices= Pylon.get 'devices'
+        devices.remove @
       return
           
   subscribe: ()-> 

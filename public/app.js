@@ -2606,12 +2606,14 @@ exports.deviceModel = Backbone.Model.extend({
     }
   },
   getBoil: function(count) {
-    var thePromise;
+    var devices, thePromise;
     if (count == null) {
       count = 0;
     }
     if (count > 5) {
       Pylon.trigger("systemEvent:sanity:badBoilerplate" + this.get('role'));
+      devices = Pylon.get('devices');
+      devices.remove(this);
       return;
     }
     thePromise = Promise.all(this.getBoilerplate());
@@ -2651,7 +2653,9 @@ exports.deviceModel = Backbone.Model.extend({
           _this.resubscribe();
         }
         thePromise["catch"](function() {
-          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
+          Pylon.trigger("systemEvent:sanity:badBoilerplate" + _this.get('role'));
+          devices = Pylon.get('devices');
+          return devices.remove(_this);
         });
       };
     })(this));
@@ -3078,7 +3082,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.37-test';
+module.exports = '3.1.38-test';
 
 
 
