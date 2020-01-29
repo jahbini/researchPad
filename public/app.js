@@ -2631,6 +2631,9 @@ exports.deviceModel = Backbone.Model.extend({
           if (!_this.attributes.softwareVersion.match(/Retrotope/)) {
             boilerBad = true;
           }
+          if (_this.attributes.name.match(/retrotope-mot/i)) {
+            boilerBad = true;
+          }
         } catch (error1) {
           e = error1;
           boilerBad = true;
@@ -3075,7 +3078,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.36-test';
+module.exports = '3.1.37-test';
 
 
 
@@ -3692,6 +3695,7 @@ fullscanExample = Backbone.View.extend({
   initialize: function() {
     this.$el.html(T.render((function(_this) {
       return function() {
+        T.div(".row", "press scan to search for tags");
         T.div(".row", {
           style: "margin-top:1rem"
         }, function() {

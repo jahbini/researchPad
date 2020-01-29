@@ -283,6 +283,8 @@ exports.deviceModel = Backbone.Model.extend
           boilerBad = true
         unless @attributes.softwareVersion.match /Retrotope/
           boilerBad = true
+        if @attributes.name.match /retrotope-mot/i
+          boilerBad = true
       catch e
         boilerBad = true
       c1= (@attributes.serialNumber.match /\(([LlRr])\)/)[1].toUpperCase()

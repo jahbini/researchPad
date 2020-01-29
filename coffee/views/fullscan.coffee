@@ -102,6 +102,7 @@ fullscanExample = Backbone.View.extend
     return
   initialize: ()->
     @$el.html T.render =>
+      T.div ".row","press scan to search for tags"
       T.div ".row",style: "margin-top:1rem",->
         T.div '.one.column'
         T.button "#disconnectButton.three.columns.button-primary","#{Pylon.onWhat}":"Pylon.trigger('disconnection')","STOP"
