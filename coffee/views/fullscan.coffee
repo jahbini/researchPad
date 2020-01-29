@@ -76,7 +76,6 @@ LibraryView = Backbone.View.extend
   initialize: ()->
     @listenTo deviceLibrary,'update',@render,@
   render: ()->
-    enginelogger "rendering deviceList"
     return unless @$el
     @$el.show()
     @$el.html T.render ()->
@@ -84,7 +83,8 @@ LibraryView = Backbone.View.extend
         deviceLibrary.each (node)->
           T.div '.row', ()->
             a=node.attributes
-            return unless a.name?.match /etrotop-m|sensorta/i
+            enginelogger "rendering deviceList",a.name || "bad Name"
+            return unless a.name?.match /etrotope-m|sensorta/i
             T.div '.two.columns',a.id[-4..]
             T.div '.four.columns',a.name
             T.div '.four.columns',a.advertising?.CBAdvDataLocalName if a.advertising

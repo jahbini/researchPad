@@ -3082,7 +3082,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.38-test';
+module.exports = '3.1.39-test';
 
 
 
@@ -3653,7 +3653,6 @@ LibraryView = Backbone.View.extend({
     return this.listenTo(deviceLibrary, 'update', this.render, this);
   },
   render: function() {
-    enginelogger("rendering deviceList");
     if (!this.$el) {
       return;
     }
@@ -3664,7 +3663,8 @@ LibraryView = Backbone.View.extend({
           return T.div('.row', function() {
             var a, obj, ref, ref1, ref2;
             a = node.attributes;
-            if (!((ref = a.name) != null ? ref.match(/etrotop-m|sensorta/i) : void 0)) {
+            enginelogger("rendering deviceList", a.name || "bad Name");
+            if (!((ref = a.name) != null ? ref.match(/etrotope-m|sensorta/i) : void 0)) {
               return;
             }
             T.div('.two.columns', a.id.slice(-4));

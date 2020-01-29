@@ -31,7 +31,7 @@
 				<key>bundle-identifier</key>
 				<string>com.bamboocando.retroclient</string>
 				<key>bundle-version</key>
-				<string>3.1.38-test</string>
+				<string>3.1.39-test</string>
 				<key>kind</key>
 				<string>software</string>
 				<key>title</key>
