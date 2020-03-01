@@ -231,6 +231,8 @@ enterAdmin = ->
 
 exitAdmin = () ->
   enterLogout()
+  # force app reload on logout -- clear all vars
+  window.location.reload()
   return false
 
 enterLogin = (hash)->

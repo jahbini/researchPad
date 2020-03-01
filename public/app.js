@@ -521,6 +521,7 @@ enterAdmin = function() {
 
 exitAdmin = function() {
   enterLogout();
+  window.location.reload();
   return false;
 };
 
@@ -2613,6 +2614,10 @@ exports.deviceModel = Backbone.Model.extend({
     if (count > 5) {
       Pylon.trigger("systemEvent:sanity:badBoilerplate" + this.get('role'));
       devices = Pylon.get('devices');
+      this.set({
+        connected: false,
+        deviceStatus: 'Rejected'
+      });
       devices.remove(this);
       return;
     }
@@ -2655,7 +2660,11 @@ exports.deviceModel = Backbone.Model.extend({
         thePromise["catch"](function() {
           Pylon.trigger("systemEvent:sanity:badBoilerplate" + _this.get('role'));
           devices = Pylon.get('devices');
-          return devices.remove(_this);
+          devices.remove(_this);
+          return _this.set({
+            connected: false,
+            deviceStatus: 'Rejected'
+          });
         });
       };
     })(this));
@@ -2790,7 +2799,7 @@ EventModel = Backbone.Model.extend({
     Pylon.on('systemEvent:endRecording', _.bind(this.close, this));
     sessionInfo = Pylon.sessionInfo;
     this.listenTo(sessionInfo, 'change:_id', function() {
-      return this.set('session', sessionInfo.get('_id'));
+      this.set('session', sessionInfo.get('_id'));
     });
   },
   flush: function() {
@@ -2800,6 +2809,7 @@ EventModel = Backbone.Model.extend({
     }
     flushTime = Date.now();
     if ((this.has('session')) && (this.has('readings'))) {
+      this.set('path', Pylon.sessionInfo.getEventPath());
       eventModelLoader(this);
     }
     this.unset('readings');
@@ -3000,9 +3010,29 @@ Backbone = require('backbone');
 rawSession = Backbone.Model.extend({
   idAttribute: '_id',
   url: Pylon.get('hostUrl') + 'session',
+  getEventPath: function() {
+    return this.rawPath + "/event" + (this.eventCounter++) + ".json";
+  },
+  rawPath: "",
   initialize: function() {
     return this.on('change:testID', function() {
-      return Pylon.setTheCurrentProtocol(null);
+      var client, clientName, clinicName, clinician, clinicianName;
+      Pylon.setTheCurrentProtocol(null);
+      if (this.attributes.testID) {
+        debugger;
+        this.eventCounter = 0;
+        clinicName = sessionInfo.get('clinic').get('name');
+        clinician = sessionInfo.get('clinician');
+        clinicianName = Pylon.get('clinicians').findWhere({
+          _id: clinician
+        }).get('name');
+        client = sessionInfo.get('client');
+        clientName = Pylon.get('clients').findWhere({
+          _id: client
+        }).get('name');
+        this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (Date.now())).replace(/ +/g, '_').toLowerCase();
+        this.set('path', this.rawPath + "/session.json");
+      }
     });
   }
 });
@@ -3082,7 +3112,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.39-test';
+module.exports = '3.1.40-test';
 
 
 
@@ -4299,17 +4329,17 @@ Pages = (function() {
   };
 
   Pages.prototype.wireButtons = function() {
-    var model;
-    model = Pylon.sessionInfo;
+    var sessionInfo;
+    sessionInfo = Pylon.sessionInfo;
     return $('#testID').change((function(_this) {
       return function(node) {
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
-        model.set('testID', $('#testID option:selected').val());
+        sessionInfo.set('testID', $('#testID option:selected').val());
         (Pylon.get('button-admin')).set({
           legend: "Session?",
           enable: false
         });
-        model.save(null, {
+        sessionInfo.save(null, {
           success: function(model, response, options) {
             viewlogger("session logged with host");
             return (Pylon.get('button-admin')).set({

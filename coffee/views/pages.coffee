@@ -272,14 +272,14 @@ class Pages
   wireButtons: =>
     # all buttons converted to button-view objects
     # only remaining widget is protocol ID selector
-    model = Pylon.sessionInfo
+    sessionInfo = Pylon.sessionInfo
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
-      model.set 'testID',$('#testID option:selected').val()
+      sessionInfo.set 'testID',$('#testID option:selected').val()
       (Pylon.get 'button-admin').set
         legend: "Session?"
         enable: false
-      model.save null,{
+      sessionInfo.save null,{
         success: (model,response,options)->
           viewlogger "session logged with host"
           (Pylon.get 'button-admin').set

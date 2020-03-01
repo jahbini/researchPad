@@ -272,6 +272,7 @@ exports.deviceModel = Backbone.Model.extend
     if count >5
       Pylon.trigger "systemEvent:sanity:badBoilerplate"+ @get 'role'
       devices= Pylon.get 'devices'
+      @.set connected:false, deviceStatus: 'Rejected'
       devices.remove @
       return
     thePromise = Promise.all @getBoilerplate()
@@ -303,6 +304,7 @@ exports.deviceModel = Backbone.Model.extend
         Pylon.trigger "systemEvent:sanity:badBoilerplate"+ @get 'role'
         devices= Pylon.get 'devices'
         devices.remove @
+        @.set connected:false, deviceStatus: 'Rejected'
       return
           
   subscribe: ()-> 
