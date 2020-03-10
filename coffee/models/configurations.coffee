@@ -1,7 +1,6 @@
 # # stagapp
 # vim: et:ts=2:sw=2:sts=2
 # ## data handler for clinical recording of SensorTag data
-# clinic model and clinics collection
 
 window.$ = $ = require('jquery')
 _ = require('underscore')

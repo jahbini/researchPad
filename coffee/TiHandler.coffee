@@ -15,14 +15,12 @@ TIlogger = (TIlog= new buglog "TIhandler").log
 lastDisplay = 0
 
 deviceNameToModel= (name)->
-    pd =Pylon.get('devices')
     # have we found this device before?
-    return pd.findWhere(name: name)
+    return Pylon.devices.findWhere(name: name)
     
 deviceIdToModel= (id)->
-    pd =Pylon.get('devices')
     # have we found this device before?
-    return pd.get(id)
+    return Pylon.devices.get(id)
 
 # ## Sensor Data
 # ### a single sensor reading
@@ -38,18 +36,18 @@ reading = Backbone.Model.extend
 # View logic to watch and update the "start scanning" button and enable BLE device scan
 pView=Backbone.View.extend
   el: '#scanDevices'
-  model: Pylon.get 'devices'
+  model: Pylon.devices
   initialize: ->
     $('#StatusData').html 'Ready to connect'
     $('#FirmwareData').html '?'
-    $('#scanningReport').html Pylon.get('pageGen').scanBody()
+    $('#scanningReport').html Pylon.pageGen.scanBody()
     Pylon.state.set 'scanning', false
     @listenTo @model, 'add', (device)->
       # what we should lookf is not changes to Pylon, but Pylon's devices (a collection)
       # on devices add, create row #
       ordinal = @model.length
       device.set "rowName", "sensor-#{ordinal}" unless device.get "rowName"
-      element = (Pylon.get 'pageGen').sensorView device
+      element = Pylon.pageGen.sensorView device
       return @
   events:
     "click": "changer"
@@ -78,7 +76,8 @@ pView=Backbone.View.extend
           .text 'Scan Devices'
       return
 
-Pylon.set 'tagViewer', new pView
+#Pylon.tagViewer never yet referenced in other modules
+Pylon.tagViewer =  new pView
 
 class TiHandler
 
@@ -98,9 +97,8 @@ class TiHandler
     # are recieved by iOS.  We ignore them until the manufacturer
     # name is present (and matches harry's naming convention)
     return unless device.name
-    pd =Pylon.get('devices')
     # have we found this device before?
-    if d=pd.findWhere(name: device.name)
+    if d=Pylon.devices.findWhere(name: device.name)
       d.set device
       return
     TIlogger "got new device"
@@ -126,18 +124,15 @@ class TiHandler
     return
 
   Pylon.on "enableDevice", (cid)->
-    Pylon.get 'TiHandler'
-      .attachDevice cid
+    Pylon.TiHandler.attachDevice cid
     
   Pylon.on "disableDevice", (cid)->
-    Pylon.get 'TiHandler'
-      .detachDevice cid
+    Pylon.TiHandler.detachDevice cid
 
   Pylon.on "disconnectSensorTags", ()->
-    collection=Pylon.get 'devices'
+    collection=Pylon.devices
     collection.each (m)->
-      Pylon.get 'TiHandler'
-        .detachDevice m.cid
+      Pylon.TiHandler.detachDevice m.cid
     collection.reset()
     return
     
@@ -146,7 +141,7 @@ class TiHandler
 # detachDevice
 # if we know anything about it, we erase it from our system
   detachDevice: (cid) ->
-    d = Pylon.get('devices').get  cid
+    d = Pylon.devices.get  cid
     return unless d
     name = d.get 'name'
     role = d.get 'role'
@@ -163,7 +158,7 @@ class TiHandler
   attachDevice: (cid) ->
     # reject attachDevice request if we are already recording
     return if Pylon.state.get 'recording'
-    d = Pylon.get('devices').get  cid
+    d = Pylon.devices.get  cid
     name = d.get 'name'
     if !name
       name = 'No Name -- HELP'

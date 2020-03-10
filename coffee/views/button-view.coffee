@@ -9,7 +9,7 @@ T = require('teacup')
 ###
 DebugButton = new BV 'debug'
 # initialize with legend and enabled boolean
-# BV sets Pylon with the attribute 'button-name'
+# BV sets Pylon with the attribute 'button_name'
 #  NB. BV sets Pylon with event triggers like 'systemEvent:name:legend'
 DebugButton.set
   legend: "Show Log"
@@ -64,7 +64,7 @@ module.exports = Backbone.Model.extend
     trigger = @get 'legend'
     @set 'trigger', "#{@name}:#{ trigger.replace(/ /g,'-').toLocaleLowerCase() }"
   initialize: (@name,classes="three.columns")->
-    Pylon.set "button-#{@name}",@
+    Pylon["button_#{@name}"] = @
     @setTrigger()
     @on "change:legend", @setTrigger, @
     @view = new V @, @name, classes
