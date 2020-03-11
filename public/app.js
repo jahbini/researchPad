@@ -22,17 +22,13 @@ TIlogger = (TIlog = new buglog("TIhandler")).log;
 lastDisplay = 0;
 
 deviceNameToModel = function(name) {
-  var pd;
-  pd = Pylon.get('devices');
-  return pd.findWhere({
+  return Pylon.devices.findWhere({
     name: name
   });
 };
 
 deviceIdToModel = function(id) {
-  var pd;
-  pd = Pylon.get('devices');
-  return pd.get(id);
+  return Pylon.devices.get(id);
 };
 
 reading = Backbone.Model.extend({
@@ -48,11 +44,11 @@ reading = Backbone.Model.extend({
 
 pView = Backbone.View.extend({
   el: '#scanDevices',
-  model: Pylon.get('devices'),
+  model: Pylon.devices,
   initialize: function() {
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
-    $('#scanningReport').html(Pylon.get('pageGen').scanBody());
+    $('#scanningReport').html(Pylon.pageGen.scanBody());
     Pylon.state.set('scanning', false);
     return this.listenTo(this.model, 'add', function(device) {
       var element, ordinal;
@@ -60,7 +56,7 @@ pView = Backbone.View.extend({
       if (!device.get("rowName")) {
         device.set("rowName", "sensor-" + ordinal);
       }
-      element = (Pylon.get('pageGen')).sensorView(device);
+      element = Pylon.pageGen.sensorView(device);
       return this;
     });
   },
@@ -92,7 +88,7 @@ pView = Backbone.View.extend({
   }
 });
 
-Pylon.set('tagViewer', new pView);
+Pylon.tagViewer = new pView;
 
 TiHandler = (function() {
   var ble_found, queryHostDevice;
@@ -114,12 +110,11 @@ TiHandler = (function() {
   };
 
   ble_found = function(device) {
-    var d, eeee, pd;
+    var d, eeee;
     if (!device.name) {
       return;
     }
-    pd = Pylon.get('devices');
-    if (d = pd.findWhere({
+    if (d = Pylon.devices.findWhere({
       name: device.name
     })) {
       d.set(device);
@@ -148,18 +143,18 @@ TiHandler = (function() {
   });
 
   Pylon.on("enableDevice", function(cid) {
-    return Pylon.get('TiHandler').attachDevice(cid);
+    return Pylon.TiHandler.attachDevice(cid);
   });
 
   Pylon.on("disableDevice", function(cid) {
-    return Pylon.get('TiHandler').detachDevice(cid);
+    return Pylon.TiHandler.detachDevice(cid);
   });
 
   Pylon.on("disconnectSensorTags", function() {
     var collection;
-    collection = Pylon.get('devices');
+    collection = Pylon.devices;
     collection.each(function(m) {
-      return Pylon.get('TiHandler').detachDevice(m.cid);
+      return Pylon.TiHandler.detachDevice(m.cid);
     });
     collection.reset();
   });
@@ -170,7 +165,7 @@ TiHandler = (function() {
 
   TiHandler.prototype.detachDevice = function(cid) {
     var d, name, role;
-    d = Pylon.get('devices').get(cid);
+    d = Pylon.devices.get(cid);
     if (!d) {
       return;
     }
@@ -186,7 +181,7 @@ TiHandler = (function() {
     if (Pylon.state.get('recording')) {
       return;
     }
-    d = Pylon.get('devices').get(cid);
+    d = Pylon.devices.get(cid);
     name = d.get('name');
     if (!name) {
       name = 'No Name -- HELP';
@@ -248,21 +243,19 @@ PylonTemplate = Backbone.Model.extend({
         return this.currentProtocol = p;
       }
     } else {
-      return this.currentProtocol = protocols.findWhere({
+      return this.currentProtocol = this.protocols.findWhere({
         name: p
       });
     }
   },
   theProtocol: function() {
-    var protocols;
     if (this.currentProtocol) {
       return this.currentProtocol;
     }
-    protocols = this.attributes.protocols;
-    if (!protocols || !sessionInfo.attributes.testID) {
+    if (!this.protocols || !sessionInfo.attributes.testID) {
       return {};
     }
-    return this.currentProtocol = protocols.findWhere({
+    return this.currentProtocol = this.protocols.findWhere({
       name: sessionInfo.attributes.testID
     });
   },
@@ -305,8 +298,6 @@ if (Pylon.onHandheld) {
 
 pages = require('./views/pages.coffee');
 
-Pylon.set('adminView', require('./views/adminView.coffee').adminView);
-
 ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader = ref.eventModelLoader;
 
 
@@ -315,25 +306,15 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
  */
 
-configurations = require('./models/configurations.coffee');
+Pylon.configurations = configurations = require('./models/configurations.coffee');
 
-Pylon.set('configurations', configurations);
+Pylon.clinics = clinics = require('./models/clinics.coffee');
 
-clinics = require('./models/clinics.coffee');
+Pylon.clinicians = clinicians = require('./models/clinicians.coffee');
 
-Pylon.set('clinics', clinics);
+Pylon.clients = clients = require('./models/clients.coffee');
 
-clinicians = require('./models/clinicians.coffee');
-
-Pylon.set('clinicians', clinicians);
-
-clients = require('./models/clients.coffee');
-
-Pylon.set('clients', clients);
-
-protocols = require('./models/protocols.coffee');
-
-Pylon.set('protocols', protocols);
+Pylon.protocols = protocols = require('./models/protocols.coffee');
 
 adminData = Backbone.Model.extend();
 
@@ -362,9 +343,7 @@ sessionInfo.set({
 
 applogger("Version:" + (sessionInfo.get('applicationVersion')));
 
-pageGen = new pages.Pages(sessionInfo);
-
-Pylon.set('pageGen', pageGen);
+Pylon.pageGen = pageGen = new pages.Pages(sessionInfo);
 
 EventModel = require("./models/event-model.coffee").EventModel;
 
@@ -451,15 +430,11 @@ activateNewButtons = function() {
     legend: "Reject",
     enabled: false
   });
-  Pylon.on("systemEvent:clear:reject", enterClear);
-  Pylon.on("systemEvent:rejector:reject", enterClear);
   UploadButton = new BV('upload', "u-full-width");
   UploadButton.set({
     legend: "Accept",
     enabled: false
   });
-  Pylon.on("systemEvent:upload:accept", enterUpload);
-  Pylon.on("systemEvent:acceptor:accept", enterUpload);
   AcceptButton = new Pylon.BV('acceptor');
   AcceptButton.set({
     legend: "accept",
@@ -473,6 +448,7 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:upload:accept", enterUpload);
   Pylon.on("systemEvent:acceptor:accept", enterUpload);
   Pylon.on("systemEvent:rejector:reject", enterClear);
+  Pylon.on("systemEvent:clear:reject", enterClear);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
     legend: "notify",
@@ -540,7 +516,7 @@ enterLogin = function(hash) {
     /*
     if mHash == hash
       alert "hash not changed"
-    if !mHash 
+    if !mHash
       alert "No Hash"
      */
     sessionInfo.set(sessionInfo.idAttribute, model.get(model.idAttribute));
@@ -589,16 +565,16 @@ enterLogout = function() {
   $('option:selected').prop('selected', false);
   $('option.forceSelect').prop('selected', true);
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
   Pylon.trigger('admin:enable');
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     legend: "Log In",
     enabled: true
   });
-  (Pylon.get('button-upload')).set('enabled', false);
-  (Pylon.get('button-clear')).set('enabled', false);
+  Pylon.button_upload.set('enabled', false);
+  Pylon.button_clear.set('enabled', false);
   return false;
 };
 
@@ -618,27 +594,21 @@ enterClear = function(accept) {
   Pylon.trigger("removeRecorderWindow");
   Pylon.trigger("removeAcceptReject");
   $('#testID').prop("disabled", false);
+  Pylon.button_clear.set('enabled', false);
+  Pylon.button_upload.set('enabled', false);
+  Pylon.button_action.set({
+    enabled: true,
+    legend: "Record"
+  });
   p = Pylon.setTheCurrentProtocol(Pylon.sessionInfo.get('testID'));
   if (Pylon.onHandheld) {
     restart = Pylon.sessionInfo.get('lockdownMode');
   } else {
     restart = localStorage['hash'];
   }
+  sessionInfo.close(accept);
   pageGen.forceTest();
-  sessionInfo.set({
-    accepted: accept
-  });
-  eventModelLoader(sessionInfo);
-  (Pylon.get('button-clear')).set('enabled', false);
-  (Pylon.get('button-upload')).set('enabled', false);
-  (Pylon.get('button-action')).set({
-    enabled: true,
-    legend: "Record"
-  });
   Pylon.saneTimeout(200, function() {
-    sessionInfo.unset(sessionInfo.idAttribute, {
-      silent: true
-    });
     if (restart) {
       return window.location.reload();
     }
@@ -655,11 +625,11 @@ enterCalibrate = function() {
   Pylon.state.set({
     calibrating: false
   });
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: true,
     legend: "Record"
   });
-  (Pylon.get('button-calibrate')).set({
+  Pylon.button_calibrate.set({
     legend: "Exit Calibration",
     enabled: false
   });
@@ -670,7 +640,7 @@ exitCalibrate = function() {
   Pylon.state.set({
     calibrating: false
   });
-  (Pylon.get('button-calibrate')).set('legend', "Calibrate");
+  Pylon.button_calibrate.set('legend', "Calibrate");
   return false;
 };
 
@@ -705,7 +675,7 @@ enterRecording = function() {
   Pylon.state.set({
     scanning: false
   });
-  (Pylon.get('button-admin')).set('enabled', false);
+  Pylon.button_admin.set('enabled', false);
   if (Pylon.state.get('recording')) {
     return;
   }
@@ -714,7 +684,7 @@ enterRecording = function() {
     scanning: false
   });
   applogger("Record state set scanning false, recording true");
-  (Pylon.get('button-calibrate')).set('enabled', false);
+  Pylon.button_calibrate.set('enabled', false);
   if ((ref5 = Pylon.get('Left')) != null) {
     ref5.set({
       numReadings: 0
@@ -787,13 +757,13 @@ Pylon.on('systemEvent:recordCountDown:fail', function() {
   Pylon.state.set({
     recording: false
   });
-  (Pylon.get('button-calibrate')).set('enabled', true);
+  Pylon.button_calibrate.set('enabled', true);
   pageGen.forceTest('orange');
   $('#testID').prop("disabled", true);
 });
 
 Pylon.on('systemEvent:recordCountDown:start', function() {
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
   return false;
@@ -803,10 +773,10 @@ exitRecording = function() {
   if ('stopping' === Pylon.state.get('recording')) {
     return;
   }
-  Pylon.get('button-action').set({
+  Pylon.button_action.set({
     enabled: false
   });
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     enabled: true
   });
   debugger;
@@ -819,19 +789,19 @@ Pylon.on('systemEvent:stopCountDown:over', function() {
     recording: false
   });
   Pylon.trigger('systemEvent:endRecording');
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
-  (Pylon.get('button-upload')).set({
+  Pylon.button_upload.set({
     enabled: true
   });
-  (Pylon.get('button-calibrate')).set({
+  Pylon.button_calibrate.set({
     enabled: true
   });
-  (Pylon.get('button-clear')).set({
+  Pylon.button_clear.set({
     enabled: true
   });
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     enabled: true
   });
   return false;
@@ -842,7 +812,7 @@ startBlueTooth = function() {
   TiHandlerDef = require('./TiHandler.coffee');
   TiHandler = new TiHandlerDef(sessionInfo);
   window.TiHandler = TiHandler;
-  return Pylon.set('TiHandler', TiHandler);
+  return Pylon.TiHandler = TiHandler;
 };
 
 setSensor = function() {
@@ -865,13 +835,13 @@ enableRecordButtonOK = function() {
   canRecord = true;
   if (!Pylon.state.get('loggedIn')) {
     canRecord = false;
-    (Pylon.get("button-admin")).set({
+    Pylon.button_admin.set({
       enabled: true,
       legend: "log in"
     });
   }
   if (canRecord) {
-    (Pylon.get('button-action')).set({
+    Pylon.button_action.set({
       enabled: true,
       legend: "Record"
     });
@@ -916,7 +886,7 @@ Pylon.on('adminDone', function() {
   }, {
     silent: true
   });
-  (Pylon.get('button-admin')).set('legend', "Log Out");
+  Pylon.button_admin.set('legend', "Log Out");
   Pylon.state.set('loggedIn', true);
   pageGen.activateSensorPage();
   enableRecordButtonOK();
@@ -1140,9 +1110,7 @@ $(document).on('deviceready', function() {
 });
 
 onPause = function() {
-  var devices;
-  devices = Pylon.get('devices');
-  devices.map(function(d) {
+  Pylon.devices.map(function(d) {
     return TiHandler.detachDevice(d.cid);
   });
 };
@@ -1186,7 +1154,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/upload.coffee":10,"./models/clients.coffee":11,"./models/clinicians.coffee":12,"./models/clinics.coffee":13,"./models/configurations.coffee":14,"./models/event-model.coffee":16,"./models/handheld.coffee":17,"./models/protocols.coffee":18,"./models/session.coffee":19,"./models/state.coffee":20,"./version.coffee":21,"./views/adminView.coffee":22,"./views/button-view.coffee":23,"./views/pages.coffee":26,"backbone":33,"jquery":40,"underscore":43}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/upload.coffee":10,"./models/clients.coffee":11,"./models/clinicians.coffee":12,"./models/clinics.coffee":13,"./models/configurations.coffee":14,"./models/event-model.coffee":16,"./models/handheld.coffee":17,"./models/protocols.coffee":18,"./models/session.coffee":19,"./models/state.coffee":20,"./version.coffee":21,"./views/button-view.coffee":23,"./views/pages.coffee":26,"backbone":33,"jquery":40,"underscore":43}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -2607,18 +2575,17 @@ exports.deviceModel = Backbone.Model.extend({
     }
   },
   getBoil: function(count) {
-    var devices, thePromise;
+    var thePromise;
     if (count == null) {
       count = 0;
     }
     if (count > 5) {
       Pylon.trigger("systemEvent:sanity:badBoilerplate" + this.get('role'));
-      devices = Pylon.get('devices');
       this.set({
         connected: false,
         deviceStatus: 'Rejected'
       });
-      devices.remove(this);
+      Pylon.devices.remove(this);
       return;
     }
     thePromise = Promise.all(this.getBoilerplate());
@@ -2659,8 +2626,7 @@ exports.deviceModel = Backbone.Model.extend({
         }
         thePromise["catch"](function() {
           Pylon.trigger("systemEvent:sanity:badBoilerplate" + _this.get('role'));
-          devices = Pylon.get('devices');
-          devices.remove(_this);
+          Pylon.devices.remove(_this);
           return _this.set({
             connected: false,
             deviceStatus: 'Rejected'
@@ -2770,7 +2736,7 @@ deviceCollection = Backbone.Collection.extend({
   model: exports.deviceModel
 });
 
-Pylon.set('devices', new deviceCollection);
+Pylon.devices = new deviceCollection;
 
 
 
@@ -3003,9 +2969,11 @@ module.exports = new protocolCollection;
 
 
 },{"backbone":33,"underscore":43}],19:[function(require,module,exports){
-var Backbone, rawSession, sessionInfo;
+var Backbone, eventModelLoader, rawSession, sessionInfo;
 
 Backbone = require('backbone');
+
+eventModelLoader = require('../lib/upload.coffee').eventModelLoader;
 
 rawSession = Backbone.Model.extend({
   idAttribute: '_id',
@@ -3014,24 +2982,75 @@ rawSession = Backbone.Model.extend({
     return this.rawPath + "/event" + (this.eventCounter++) + ".json";
   },
   rawPath: "",
+  eventCounter: 0,
+  setPath: function() {
+    var client, clientName, clinic, clinicName, clinician, clinicianName;
+    clinic = this.get('clinic');
+    clinicName = Pylon.clinics.findWhere({
+      _id: clinic
+    }).get('name');
+    clinician = this.get('clinician');
+    clinicianName = Pylon.clinicians.findWhere({
+      _id: clinician
+    }).get('name');
+    client = this.get('client');
+    clientName = Pylon.clients.findWhere({
+      _id: client
+    }).get('name');
+    this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
+    this.set({
+      path: this.rawPath + "/session.json",
+      clinicName: clinicName,
+      clinicianName: clinicianName,
+      clinicianEmail: Pylon.clinicians.findWhere({
+        _id: clinician
+      }).get('email'),
+      clientName: clientName
+    });
+  },
+  close: function(accepted) {
+    this.set({
+      accepted: accepted,
+      endTime: Date.now()
+    });
+    debugger;
+    eventModelLoader(this);
+    this.unset('beginTime', {
+      silent: true
+    });
+    this.unset('path', {
+      silent: true
+    });
+    this.unset('_id', {
+      silent: true
+    });
+    this.eventCounter = 0;
+  },
   initialize: function() {
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
+      return function() {
+        _this.set({
+          beginTime: Date.now()
+        });
+        _this.setPath();
+      };
+    })(this));
     return this.on('change:testID', function() {
-      var client, clientName, clinicName, clinician, clinicianName;
+      this.eventCounter = 0;
       Pylon.setTheCurrentProtocol(null);
       if (this.attributes.testID) {
-        debugger;
+        this.attributes.protocolName = this.attributes.testID;
+      } else {
+        this.unset('beginTime', {
+          silent: true
+        });
+        this.unset('path', {
+          silent: true
+        });
+        this.unset('_id', {
+          silent: true
+        });
         this.eventCounter = 0;
-        clinicName = sessionInfo.get('clinic').get('name');
-        clinician = sessionInfo.get('clinician');
-        clinicianName = Pylon.get('clinicians').findWhere({
-          _id: clinician
-        }).get('name');
-        client = sessionInfo.get('client');
-        clientName = Pylon.get('clients').findWhere({
-          _id: client
-        }).get('name');
-        this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (Date.now())).replace(/ +/g, '_').toLowerCase();
-        this.set('path', this.rawPath + "/session.json");
       }
     });
   }
@@ -3051,7 +3070,7 @@ module.exports = sessionInfo;
 
 
 
-},{"backbone":33}],20:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":33}],20:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -3112,7 +3131,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.1.40-test';
+module.exports = '3.3.0-test';
 
 
 
@@ -3161,7 +3180,7 @@ adminView = (function() {
     var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
     clinicViewTemplate = Backbone.View.extend({
       el: '#desiredClinic',
-      collection: Pylon.get('clinics'),
+      collection: Pylon.clinics,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3175,7 +3194,7 @@ adminView = (function() {
           if (theOptionCid) {
             theClinic = this.collection.get(theOptionCid);
             try {
-              this.attributes.session.set('clinic', theClinic);
+              this.attributes.session.set('clinic', theClinic.id);
             } catch (error1) {
               error = error1;
               adminlogger("Error from setting clinic", error);
@@ -3186,13 +3205,13 @@ adminView = (function() {
           }
           this.attributes.session.unset('clinician');
           this.attributes.session.unset('client');
-          temp = Pylon.get('clinicians');
+          temp = Pylon.clinicians;
           temp.reset();
           if (theClinic) {
             temp.add(theClinic.get('clinicians'));
           }
           temp.trigger('change');
-          temp = Pylon.get('clients');
+          temp = Pylon.clients;
           temp.reset();
           if (theClinic) {
             temp.add(theClinic.get('clients'));
@@ -3232,7 +3251,7 @@ adminView = (function() {
     });
     clinicianViewTemplate = Backbone.View.extend({
       el: '#desiredClinician',
-      collection: Pylon.get('clinicians'),
+      collection: Pylon.clinicians,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3278,7 +3297,7 @@ adminView = (function() {
     });
     clientViewTemplate = Backbone.View.extend({
       el: '#desiredClient',
-      collection: Pylon.get('clients'),
+      collection: Pylon.clients,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3350,7 +3369,7 @@ adminView = (function() {
     this.clientView = new clientViewTemplate;
     this.clinicView = new clinicViewTemplate;
     this.clinicianView = new clinicianViewTemplate;
-    Pylon.get('clinics').trigger('change');
+    Pylon.clinics.trigger('change');
   };
 
   Pylon.on("reveal", function() {
@@ -3485,7 +3504,7 @@ T = require('teacup');
 /*
 DebugButton = new BV 'debug'
  * initialize with legend and enabled boolean
- * BV sets Pylon with the attribute 'button-name'
+ * BV sets Pylon with the attribute 'button_name'
  *  NB. BV sets Pylon with event triggers like 'systemEvent:name:legend'
 DebugButton.set
   legend: "Show Log"
@@ -3566,7 +3585,7 @@ module.exports = Backbone.Model.extend({
     if (classes == null) {
       classes = "three.columns";
     }
-    Pylon.set("button-" + this.name, this);
+    Pylon["button_" + this.name] = this;
     this.setTrigger();
     this.on("change:legend", this.setTrigger, this);
     this.view = new V(this, this.name, classes);
@@ -3962,7 +3981,7 @@ implementing = function() {
   return classReference;
 };
 
-Pylon.set('adminView', require('./adminView.coffee').adminView);
+Pylon.adminView = require('./adminView.coffee').adminView;
 
 Pages = (function() {
   var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
@@ -4335,21 +4354,21 @@ Pages = (function() {
       return function(node) {
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
         sessionInfo.set('testID', $('#testID option:selected').val());
-        (Pylon.get('button-admin')).set({
+        Pylon.button_admin.set({
           legend: "Session?",
           enable: false
         });
         sessionInfo.save(null, {
           success: function(model, response, options) {
             viewlogger("session logged with host");
-            return (Pylon.get('button-admin')).set({
+            return Pylon.button_admin.set({
               legend: "Log Out",
               enable: true
             });
           },
           error: function(model, response, options) {
             viewlogger("Session save Fail: " + response.statusText);
-            return (Pylon.get('button-admin')).set({
+            return Pylon.button_admin.set({
               legend: "Log Out",
               enable: true
             });
@@ -4362,7 +4381,7 @@ Pages = (function() {
 
   Pages.prototype.renderPage = function() {
     var bodyHtml, protocolViewTemplate, scaleSweetSpot, setVertmeter;
-    bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
+    bodyHtml = this.theBody(this.topButtons, Pylon.adminView.adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
     require('./lock-down.coffee');
@@ -4370,7 +4389,7 @@ Pages = (function() {
     require('./protocol-active.coffee');
     protocolViewTemplate = Backbone.View.extend({
       el: '#testID',
-      collection: Pylon.get('protocols'),
+      collection: Pylon.protocols,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -4395,10 +4414,9 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(T.render((function(_this) {
           return function() {
-            var clinician, clinicianID, i, len, lockWanted, protocol, ref1, z;
+            var clinician, clinicianID, i, len, lockWanted, protocol, ref1;
             clinicianID = Pylon.sessionInfo.get('clinician');
-            z = Pylon.get('clinicians');
-            clinician = z.findWhere({
+            clinician = Pylon.clinicians.findWhere({
               _id: clinicianID
             });
             lockWanted = Pylon.sessionInfo.get('lockdownMode');
@@ -4475,7 +4493,7 @@ Pages = (function() {
           return;
         }
         viewlogger("activating Right");
-        if (old = Pylon.get('RightView')) {
+        if (old = Pylon.RightView) {
           old.clearTimer();
         }
         statusRightViewTemplate = Backbone.View.extend({
@@ -4493,7 +4511,7 @@ Pages = (function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
-        Pylon.set("RightView", new statusRightViewTemplate);
+        Pylon.RightView = new statusRightViewTemplate;
       };
     })(this));
     Pylon.on('change:Left', (function(_this) {
@@ -4519,16 +4537,16 @@ Pages = (function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
-        Pylon.set("LeftView", new statusLeftViewTemplate);
+        Pylon.LeftView = new statusLeftViewTemplate;
       };
     })(this));
-    Pylon.get('adminView').wireAdmin();
+    Pylon.adminView.wireAdmin();
   };
 
   Pages.prototype.activateAdminPage = function(buttonSpec) {
     $('#adminForm').addClass('active');
     $('#sensorPage').removeClass('active');
-    return Pylon.get('adminView').inspectAdminPage();
+    return Pylon.adminView.inspectAdminPage();
   };
 
   Pages.prototype.activateSensorPage = function(buttonSpec) {
