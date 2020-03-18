@@ -12,6 +12,7 @@ ConfigurationModel = Backbone.Model.extend
   initialize:()->
     Pylon.unlock = @.attributes.unlock
     Pylon.loginPassword = @.attributes.loginPassword
+    Pylon.eMailCarbon = @.attributes.eMailCarbon
     return
 
 ConfigurationCollection = Backbone.Collection.extend

@@ -232,8 +232,20 @@ buglog = require('./lib/buglog.coffee');
 applogger = (applog = new buglog("app")).log;
 
 PylonTemplate = Backbone.Model.extend({
+  defaults: {
+    hostUrl: hostUrl
+  },
   state: (require('./models/state.coffee')).state,
   onHandheld: onHandheld,
+  setLogonVersion: function(version) {
+    this.set({
+      logonVersion: version
+    });
+    this.sessionInfo.set({
+      logonVersion: version
+    });
+    this.trigger("systemEvent:LogonVersion:" + version);
+  },
   theSession: function() {
     return this.attributes.sessionInfo;
   },
@@ -266,6 +278,20 @@ PylonTemplate = Backbone.Model.extend({
 
 window.Pylon = Pylon = new PylonTemplate;
 
+Pylon.configurations = require('./models/configurations.coffee');
+
+Pylon.clinics = require('./models/clinics.coffee');
+
+Pylon.clinicians = require('./models/clinicians.coffee');
+
+Pylon.clients = require('./models/clients.coffee');
+
+Pylon.protocols = require('./models/protocols.coffee');
+
+Pylon.sessionInfo = require('./models/session.coffee');
+
+clinics = Pylon.clinics, configurations = Pylon.configurations, clinicians = Pylon.clinicians, clients = Pylon.clients, protocols = Pylon.protocols, sessionInfo = Pylon.sessionInfo;
+
 Pylon.on('all', function() {
   var event, mim, rest;
   event = arguments[0], rest = 2 <= arguments.length ? slice.call(arguments, 1) : [];
@@ -280,8 +306,6 @@ Pylon.on('all', function() {
 });
 
 Pylon.set('spearCount', 1);
-
-Pylon.set('hostUrl', hostUrl);
 
 Pylon.set('vertmeterScale', {
   lo: 55.625,
@@ -306,16 +330,6 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
  */
 
-Pylon.configurations = configurations = require('./models/configurations.coffee');
-
-Pylon.clinics = clinics = require('./models/clinics.coffee');
-
-Pylon.clinicians = clinicians = require('./models/clinicians.coffee');
-
-Pylon.clients = clients = require('./models/clients.coffee');
-
-Pylon.protocols = protocols = require('./models/protocols.coffee');
-
 adminData = Backbone.Model.extend();
 
 admin = new adminData({
@@ -324,8 +338,6 @@ admin = new adminData({
   clients: clients,
   protocol: protocols
 });
-
-Pylon.sessionInfo = sessionInfo = require('./models/session.coffee');
 
 applicationVersion = require('./version.coffee');
 
@@ -779,7 +791,6 @@ exitRecording = function() {
   Pylon.button_admin.set({
     enabled: true
   });
-  debugger;
   return false;
 };
 
@@ -906,11 +917,6 @@ clinics.on('fetched', function() {
   if (Pylon.state.all(['protocols', 'handheld'])) {
     return Pylon.trigger('canLogIn');
   }
-});
-
-configurations.on('fetched', function() {
-  Pylon.retroPW = configurations;
-  Pylon.userUnlock = configurations;
 });
 
 getConfiguration = function() {
@@ -1067,7 +1073,7 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var handheld, handheldTimer, loadScript, ref10, ref5, ref6, ref7, ref8, ref9;
+  var getLogon, handheld, handheldTimer, loadScript, logonTimer, ref10, ref5, ref6, ref7, ref8, ref9;
   applogger("device ready");
   require('./lib/capture-log.coffee');
   sessionInfo.set('platformUUID', ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID");
@@ -1104,9 +1110,16 @@ $(document).on('deviceready', function() {
   });
   startBlueTooth();
   loadScript = require("./lib/loadScript.coffee").loadScript;
-  loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
-    return applogger("logon.js returns status of " + status);
-  });
+  getLogon = function() {
+    return loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
+      if (status === 'loaded') {
+        clearInterval(logonTimer);
+      }
+      return applogger("logon.js returns status of " + status);
+    });
+  };
+  getLogon();
+  logonTimer = setInterval(getLogon, 12000);
 });
 
 onPause = function() {
@@ -2244,6 +2257,7 @@ ConfigurationModel = Backbone.Model.extend({
   initialize: function() {
     Pylon.unlock = this.attributes.unlock;
     Pylon.loginPassword = this.attributes.loginPassword;
+    Pylon.eMailCarbon = this.attributes.eMailCarbon;
   }
 });
 
@@ -3000,12 +3014,14 @@ rawSession = Backbone.Model.extend({
     this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
     this.set({
       path: this.rawPath + "/session.json",
+      eMailCarbon: Pylon.eMailCarbon,
       clinicName: clinicName,
       clinicianName: clinicianName,
       clinicianEmail: Pylon.clinicians.findWhere({
         _id: clinician
       }).get('email'),
-      clientName: clientName
+      clientName: clientName,
+      logonVersion: Pylon.get('logonVersion')
     });
   },
   close: function(accepted) {
@@ -3131,7 +3147,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.3.0-test';
+module.exports = '3.3.1-test';
 
 
 
@@ -5159,7 +5175,13 @@ protocolPhase = Backbone.Model.extend({
         var p, sessionInfo;
         _this.set('protocol', p = Pylon.theProtocol());
         if (!p.get('gestureCapture')) {
+          Pylon.set('logonVersion', "Not Active");
           Pylon.trigger("systemEvent:externalTimer:show");
+          if ("Not Active" === Pylon.get("logonVersion")) {
+            alert("Initialization Failure, press OK to reload");
+            window.location.reload();
+            return;
+          }
         }
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);

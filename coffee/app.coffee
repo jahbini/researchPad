@@ -17,8 +17,16 @@ applogger = (applog= new buglog "app").log
 #window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
+  defaults:
+    hostUrl: hostUrl
   state: (require './models/state.coffee').state
   onHandheld: onHandheld
+  #get the session model
+  setLogonVersion: (version)->
+    @.set logonVersion: version
+    @.sessionInfo.set logonVersion: version
+    @.trigger "systemEvent:LogonVersion:#{version}"
+    return
   theSession: ()->
     return @.attributes.sessionInfo
   setTheCurrentProtocol: (p)->
@@ -36,6 +44,14 @@ PylonTemplate = Backbone.Model.extend
     return setTimeout f,t
 
 window.Pylon = Pylon = new PylonTemplate
+# configurations needs Pylon as global for it's initialization
+Pylon.configurations = require './models/configurations.coffee'
+Pylon.clinics= require './models/clinics.coffee'
+Pylon.clinicians= require './models/clinicians.coffee'
+Pylon.clients= require './models/clients.coffee'
+Pylon.protocols= require './models/protocols.coffee'
+Pylon.sessionInfo= require './models/session.coffee'
+{clinics,configurations,clinicians,clients,protocols,sessionInfo}=Pylon
 Pylon.on 'all', (event,rest...)->
   mim = event.match /((.*):.*):/
   return null if !mim || mim[2] != 'systemEvent'
@@ -45,7 +61,6 @@ Pylon.on 'all', (event,rest...)->
   return null
 
 Pylon.set 'spearCount', 1
-Pylon.set 'hostUrl', hostUrl
 Pylon.set 'vertmeterScale',
   lo: 55.625
   hi: 56.875
@@ -66,17 +81,6 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
 ###
 
-Pylon.configurations = configurations = require './models/configurations.coffee'
-
-Pylon.clinics = clinics = require './models/clinics.coffee'
-
-# Clinicians --
-Pylon.clinicians = clinicians = require './models/clinicians.coffee'
-
-Pylon.clients = clients = require './models/clients.coffee'
-
-# #Test Protocols
-Pylon.protocols = protocols = require './models/protocols.coffee'
 
 adminData = Backbone.Model.extend()
 admin = new adminData
@@ -85,8 +89,6 @@ admin = new adminData
     clients: clients
     protocol: protocols
 
-#get the session model
-Pylon.sessionInfo = sessionInfo = require './models/session.coffee'
 applicationVersion = require './version.coffee'
 
 Pylon.set
@@ -455,7 +457,6 @@ exitRecording = -> # Stop Recording
   #Pylon.trigger 'systemEvent:stopCountDown:start', 5
   Pylon.button_action.set enabled: false
   Pylon.button_admin.set enabled: true
-  debugger
   return false
 
 Pylon.on 'systemEvent:stopCountDown:over', ->
@@ -534,11 +535,6 @@ clinics.on 'fetched', ->
   Pylon.state.set 'clinics',true
   if Pylon.state.all ['protocols','handheld']
     Pylon.trigger 'canLogIn'
-
-configurations.on 'fetched',->
-  Pylon.retroPW = configurations
-  Pylon.userUnlock = configurations
-  return
 
 getConfiguration = ->
   applogger "configurations request initiate"
@@ -674,8 +670,13 @@ $(document).on 'deviceready', ->
   startBlueTooth()
   #delay loading harry's code until all is quiet on the UIO front
   loadScript = require("./lib/loadScript.coffee").loadScript
-  loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
-    applogger "logon.js returns status of "+status
+  getLogon = ()-> 
+    loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
+      if status == 'loaded'
+        clearInterval logonTimer
+      applogger "logon.js returns status of "+status
+  getLogon()
+  logonTimer = setInterval  getLogon, 12000
   return
 
 onPause= ()->

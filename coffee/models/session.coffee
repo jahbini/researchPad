@@ -23,10 +23,12 @@ rawSession = Backbone.Model.extend {
     @rawPath= "#{clinicName}/#{clinicianName.first} #{clinicianName.last}/#{clientName.first} #{clientName.last}/#{@.get 'beginTime'}".replace(/ +/g,'_').toLowerCase()
     @set 
       path: "#{@rawPath}/session.json",
+      eMailCarbon: Pylon.eMailCarbon
       clinicName: clinicName
       clinicianName: clinicianName
       clinicianEmail: Pylon.clinicians.findWhere({ _id: clinician }).get('email'),
       clientName: clientName
+      logonVersion: Pylon.get 'logonVersion'
     return
 
   close: (accepted)->

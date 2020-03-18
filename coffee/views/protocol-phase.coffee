@@ -24,7 +24,12 @@ protocolPhase = Backbone.Model.extend
     Pylon.on 'systemEvent:recordCountDown:start', =>
       @set 'protocol', p= Pylon.theProtocol()
       if !p.get 'gestureCapture'
+        Pylon.set 'logonVersion',"Not Active"
         Pylon.trigger "systemEvent:externalTimer:show"
+        if "Not Active" == Pylon.get "logonVersion"
+          alert "Initialization Failure, press OK to reload"
+          window.location.reload()
+          return
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
       else
