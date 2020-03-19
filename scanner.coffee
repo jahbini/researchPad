@@ -1,6 +1,7 @@
 jsondir = require 'jsondir'
 Backbone=require 'backbone'
 Mailer= require 'nodemailer'
+YAML = require 'yamljs'
 
 transporter = Mailer.createTransport
   host: "box.cambodianbamboostudies.com"
@@ -12,7 +13,7 @@ transporter = Mailer.createTransport
     pass: "Tqbfj0tlD"
 
 
-csvOrder = 'clinicName,clientName,beginTime,protocolName,walkTime,accepted,endTime'
+csvOrder = 'clinicName,clientName,beginTimeLocal,protocolName,walkTime,accepted,endTimeLocal'
 
 name2str = (struct)->
   return struct.first.trim()+" "+struct.last.trim()
@@ -24,14 +25,14 @@ humanizeTime=(theTime)->
 
 Session = Backbone.Model.extend
   initialize:()->
-    @on 'change:beginTime',(theTime)->
-      sessionLocalTime = new Date()
-      sessionLocalTime.setTime theTime
-      @set startTime: sessionLocalTime.toLocaleString()
-      return 
+    sessionLocalTime = new Date()
+    sessionLocalTime.setTime @.attributes.endTime
+    @set endTimeLocal: sessionLocalTime.toLocaleString()
+    sessionLocalTime.setTime @.attributes.beginTime
+    @set beginTimeLocal: sessionLocalTime.toLocaleString()
     return @
   EmailContent:(length)->
-    salutation: "Greetings #{@.get 'clinicianName'} at #{@.get 'clinicName'},"
+    salutation: "Greetings #{@.get 'clinicianName'} at #{@.get 'clinicName'}, TEST ONLY - times are Phnom Penh local, please forward with desired edits to jahbini@icloud.com"
     toAddress: @.get 'clinicianEmail'
     ccAddresses: @.get 'eMailCarbon'
     subject: "You have run #{length}  protocols. Please check enclosure contents."
@@ -39,10 +40,10 @@ Session = Backbone.Model.extend
     body: []
 
 
-Letters = Backbone.Collection.extend
+Sessions = Backbone.Collection.extend
   model: Session
 
-letters = new Letters()
+sessions = new Sessions()
 
 makeEmails = (err,allSessions)->
   if err
@@ -52,19 +53,18 @@ makeEmails = (err,allSessions)->
     continue if clinicName[0]=='-'
     for clinicianName, clients of clinicians
       continue if clinicianName[0]=='-'
-      for clientName,sessions of clients
+      for clientName,sessionsData of clients
         continue if clientName[0]=='-'
-        for sessionDate, boilerPlate of sessions
+        for sessionDate, boilerPlate of sessionsData
           continue if sessionDate[0]=='-'
-          console.log boilerPlate
           try
             content = JSON.parse boilerPlate['session.json']['-content']
           catch e
             continue
+          console.log YAML.stringify content
           {accepted,beginTime,endTime,clinicianEmail,protocolName,clinicianName,clientName,clinicName,eMailCarbon} = content
-          console.log content
           continue unless beginTime
-          letters.add 
+          sessions.add 
             clinicianName: name2str clinicianName
             clinicianEmail: clinicianEmail
             eMailCarbon: eMailCarbon
@@ -76,25 +76,28 @@ makeEmails = (err,allSessions)->
             beginTime: beginTime
             endTime: endTime
             accepted: accepted
-
-  for clinician, sessions of letters.groupBy 'clinicianName'
+  console.log "READY TO MAIL"
+  for clinician, sessionsData of sessions.groupBy 'clinicianName'
     console.log clinician
     emailContent=null
-    for session in sessions
-      emailContent=session.EmailContent(sessions.length) unless emailContent
-      s = session.pick 'beginTime','walkTime','clinicName','clientName','protocolName','accepted'
-      body = "On #{humanizeTime s.beginTime} you #{if s.accepted then 'accepted' else 'rejected'} when #{s.clientName} did #{s.protocolName} #{if s.walkTime != '---' then ' in '+s.walkTime+ ' seconds' else if s.protocolName.match /nosensors/i then ' walktime not recorded' else ''}"
+    for session in sessionsData
+      continue unless session
+      console.log YAML.stringify clinician: clinician, data:session.toJSON()
+      emailContent=session.EmailContent(sessionsData.length) unless emailContent
+      s = session.pick 'beginTimeLocal,endTimeLocal,beginTime','walkTime','clinicName','clientName','protocolName','accepted'
+      body = "On #{s.beginTimeLocal} you #{if s.accepted then 'accepted' else 'rejected'} when #{s.clientName} did #{s.protocolName} #{if s.walkTime != '---' then ' in '+s.walkTime+ ' seconds' else if s.protocolName.match /nosensors/i then ' walktime not recorded' else ''}"
       emailContent.body.push body
       emailContent.csvContents.push (for key in csvOrder.split ','
         session.get key).join ','
     emailSpec = 
       from: "jim@cambodianbamboostudies.com"
-      to: emailContent.toAddress
-      cc: emailContent.ccAddresses
+      to: "jimhinds@nia.edu.kh"
+      #to: emailContent.toAddress
+      #cc: emailContent.ccAddresses
       subject: emailContent.subject
       text: """#{emailContent.salutation}
 #{emailContent.body.join "\n"}
-That's all
+That's all\n
 """
       attachments:
         filename: "session.csv"
@@ -109,4 +112,4 @@ That's all
 
   #console.log "Thats' all"
   #return
-sessions= jsondir.dir2json 'sessions',makeEmails
+jsondir.dir2json 'sessions',makeEmails
