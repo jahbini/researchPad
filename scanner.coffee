@@ -13,24 +13,12 @@ transporter = Mailer.createTransport
     pass: "Tqbfj0tlD"
 
 
-csvOrder = 'clinicName,clientName,beginTimeLocal,protocolName,walkTime,accepted,endTimeLocal'
+csvOrder = 'clinicName,clientName,beginDateLocal,beginTimeLocal,protocolName,walkTime,accepted,endTimeLocal'
 
 name2str = (struct)->
   return struct.first.trim()+" "+struct.last.trim()
 
-humanizeTime=(theTime)->
-  sessionLocalTime = new Date()
-  sessionLocalTime.setTime theTime
-  return sessionLocalTime.toLocaleString()
-
 Session = Backbone.Model.extend
-  initialize:()->
-    sessionLocalTime = new Date()
-    sessionLocalTime.setTime @.attributes.endTime
-    @set endTimeLocal: sessionLocalTime.toLocaleString()
-    sessionLocalTime.setTime @.attributes.beginTime
-    @set beginTimeLocal: sessionLocalTime.toLocaleString()
-    return @
   EmailContent:(length)->
     salutation: "Greetings #{@.get 'clinicianName'} at #{@.get 'clinicName'}, TEST ONLY - times are Phnom Penh local, please forward with desired edits to jahbini@icloud.com"
     toAddress: @.get 'clinicianEmail'
@@ -62,20 +50,29 @@ makeEmails = (err,allSessions)->
           catch e
             continue
           console.log YAML.stringify content
-          {accepted,beginTime,endTime,clinicianEmail,protocolName,clinicianName,clientName,clinicName,eMailCarbon} = content
-          continue unless beginTime
+          continue unless content.beginTime
+          if content.duration == -1
+            walkTime = 'NA'
+          else
+            if content.duration == 0
+              walkTime = '---'
+            else
+              walktime = (0.001*content.duration).toFixed 3
           sessions.add 
-            clinicianName: name2str clinicianName
-            clinicianEmail: clinicianEmail
-            eMailCarbon: eMailCarbon
-            clinicName: clinicName
-            clientName: name2str clientName
-            sessionDate: sessionDate
-            walkTime: if content.duration then (0.001*content.duration).toFixed 3 else '---'
-            protocolName: protocolName
-            beginTime: beginTime
-            endTime: endTime
-            accepted: accepted
+            clinicianName: name2str content.clinicianName
+            clinicianEmail: content.clinicianEmail
+            eMailCarbon: content.eMailCarbon
+            clinicName: content.clinicName
+            clientName: name2str content.clientName
+            sessionDate: content.sessionDate
+            walkTime: walkTime
+            protocolName: content.protocolName
+            beginTime: content.beginTime
+            beginTimeLocal:content.beginTimeLocal
+            beginDateLocal:content.beginDateLocal
+            endTime: content.endTime
+            endTimeLocal: content.endTimeLocal
+            accepted: content.accepted
   console.log "READY TO MAIL"
   for clinician, sessionsData of sessions.groupBy 'clinicianName'
     console.log clinician
@@ -84,8 +81,9 @@ makeEmails = (err,allSessions)->
       continue unless session
       console.log YAML.stringify clinician: clinician, data:session.toJSON()
       emailContent=session.EmailContent(sessionsData.length) unless emailContent
-      s = session.pick 'beginTimeLocal,endTimeLocal,beginTime','walkTime','clinicName','clientName','protocolName','accepted'
-      body = "On #{s.beginTimeLocal} you #{if s.accepted then 'accepted' else 'rejected'} when #{s.clientName} did #{s.protocolName} #{if s.walkTime != '---' then ' in '+s.walkTime+ ' seconds' else if s.protocolName.match /nosensors/i then ' walktime not recorded' else ''}"
+      s = session.pick 'beginDateLocal','beginTimeLocal','endTimeLocal','beginTime','walkTime','clinicName','clientName','protocolName','accepted'
+      console.log s
+      body = "At #{s.beginTimeLocal} you #{if s.accepted then 'accepted' else 'rejected'} when #{s.clientName} did #{s.protocolName} #{if s.walkTime != 'NA' then ' in '+s.walkTime+ ' seconds' else ''}"
       emailContent.body.push body
       emailContent.csvContents.push (for key in csvOrder.split ','
         session.get key).join ','

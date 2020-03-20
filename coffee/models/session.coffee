@@ -32,9 +32,14 @@ rawSession = Backbone.Model.extend {
     return
 
   close: (accepted)->
+    endTime = Date.now()
+    endTimeHuman = new Date()
+    endTimeHuman.setTime endTime
     @.set 
       accepted: accepted
-      endTime: Date.now()
+      endTime: endTime
+      endTimeLocal: endTimeHuman.toLocaleTimeString()
+      endDateLocal: endTimeHuman.toLocaleDateString()
     debugger
     eventModelLoader @
     @unset 'beginTime',silent:true
@@ -45,7 +50,10 @@ rawSession = Backbone.Model.extend {
 
   initialize: ()->
     Pylon.on 'systemEvent:recordCountDown:start',()=>
-      @set beginTime:Date.now()
+      beginTime = Date.now()
+      beginTimeLocal = new Date()
+      beginTimeLocal.setTime beginTime
+      @set beginTime:beginTime, beginTimeLocal: beginTimeLocal.toLocaleTimeString() ,beginDateLocal: beginTimeLocal.toLocaleDateString()
       @.setPath()
       return
     # clear out the subprotocol of a suite of tests

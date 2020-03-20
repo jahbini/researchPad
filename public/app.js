@@ -3025,9 +3025,15 @@ rawSession = Backbone.Model.extend({
     });
   },
   close: function(accepted) {
+    var endTime, endTimeHuman;
+    endTime = Date.now();
+    endTimeHuman = new Date();
+    endTimeHuman.setTime(endTime);
     this.set({
       accepted: accepted,
-      endTime: Date.now()
+      endTime: endTime,
+      endTimeLocal: endTimeHuman.toLocaleTimeString(),
+      endDateLocal: endTimeHuman.toLocaleDateString()
     });
     debugger;
     eventModelLoader(this);
@@ -3045,8 +3051,14 @@ rawSession = Backbone.Model.extend({
   initialize: function() {
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
+        var beginTime, beginTimeLocal;
+        beginTime = Date.now();
+        beginTimeLocal = new Date();
+        beginTimeLocal.setTime(beginTime);
         _this.set({
-          beginTime: Date.now()
+          beginTime: beginTime,
+          beginTimeLocal: beginTimeLocal.toLocaleTimeString(),
+          beginDateLocal: beginTimeLocal.toLocaleDateString()
         });
         _this.setPath();
       };
@@ -3147,7 +3159,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.3.1-test';
+module.exports = '3.3.2-test';
 
 
 
@@ -5168,14 +5180,16 @@ protocolPhase = Backbone.Model.extend({
     protocol: null
   },
   initialize: function() {
-    var abort, countOut, exitThisTest, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, start, terminate, underway;
+    var abort, countOut, exitThisTest, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, startProtocol, terminate, underway;
     intrologger("initialize");
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
         var p, sessionInfo;
         _this.set('protocol', p = Pylon.theProtocol());
+        Pylon.sessionInfo.set('duration', -1);
         if (!p.get('gestureCapture')) {
           Pylon.set('logonVersion', "Not Active");
+          Pylon.sessionInfo.set('duration', 0);
           Pylon.trigger("systemEvent:externalTimer:show");
           if ("Not Active" === Pylon.get("logonVersion")) {
             alert("Initialization Failure, press OK to reload");
@@ -5190,7 +5204,7 @@ protocolPhase = Backbone.Model.extend({
         }
         sessionInfo = Pylon.sessionInfo;
         if (sessionInfo.isNew()) {
-          start();
+          startProtocol();
         } else {
           leadIn();
         }
@@ -5203,7 +5217,7 @@ protocolPhase = Backbone.Model.extend({
         Pylon.trigger('removeRecorderWindow');
       };
     })(this);
-    start = (function(_this) {
+    startProtocol = (function(_this) {
       return function() {
         var sessionID;
         if (sessionInfo.isNew()) {
@@ -5264,7 +5278,7 @@ protocolPhase = Backbone.Model.extend({
     })(this);
     underway = (function(_this) {
       return function() {
-        var limit, p;
+        var limit, p, start;
         Pylon.trigger('protocol:proceed');
         p = Pylon.theProtocol();
         limit = p.get('testDuration');
