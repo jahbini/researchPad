@@ -2,16 +2,25 @@ jsondir = require 'jsondir'
 Backbone=require 'backbone'
 Mailer= require 'nodemailer'
 YAML = require 'yamljs'
+fs = require 'fs'
 
 transporter = Mailer.createTransport
-  host: "box.cambodianbamboostudies.com"
+  host: "smtp.office365.com"
   port: 587
+  debug:true
+  logger:true
   #secure: "STARTTLS"
+  secureConnection: false
+  #requireTLS: true
+  tls:
+    ciphers:'SSLv3'
   secure: false
+  #secure: "TLS"
   auth:
-    user: "jim@cambodianbamboostudies.com"
-    pass: "Tqbfj0tlD"
-
+    user: "FRDA-Trial@retrotope.com"
+    pass: "Retro94022"
+    #user: "jim@cambodianbamboostudies.com"
+    #pass: "Tqbfj0tlD"
 
 csvOrder = 'clinicName,clientName,beginDateLocal,beginTimeLocal,protocolName,walkTime,accepted,endTimeLocal'
 
@@ -20,13 +29,21 @@ name2str = (struct)->
 
 Session = Backbone.Model.extend
   EmailContent:(length)->
-    salutation: "Greetings #{@.get 'clinicianName'} at #{@.get 'clinicName'}, TEST ONLY - times are Phnom Penh local, please forward with desired edits to jahbini@icloud.com"
+    salutation: "Greetings #{@.get 'clinicianName'} at #{@.get 'clinicName'}"
     toAddress: @.get 'clinicianEmail'
     ccAddresses: @.get 'eMailCarbon'
-    subject: "You have run #{length}  protocols. Please check enclosure contents."
+    subject: "You have run #{length}  protocols. Please check email From address"
     csvContents: [csvOrder]
     body: []
 
+try
+  lastRun = (fs.readFileSync 'sessions/lastRun.txt').toString()
+catch 
+  lastRun = 0
+console.log lastRun
+thisRun = Date.now().toString()
+fs.writeFileSync 'sessions/lastRun.txt' , thisRun
+console.log thisRun
 
 Sessions = Backbone.Collection.extend
   model: Session
@@ -45,6 +62,7 @@ makeEmails = (err,allSessions)->
         continue if clientName[0]=='-'
         for sessionDate, boilerPlate of sessionsData
           continue if sessionDate[0]=='-'
+          continue if sessionDate < lastRun
           try
             content = JSON.parse boilerPlate['session.json']['-content']
           catch e
@@ -57,7 +75,7 @@ makeEmails = (err,allSessions)->
             if content.duration == 0
               walkTime = '---'
             else
-              walktime = (0.001*content.duration).toFixed 3
+              walkTime = (0.001*content.duration).toFixed 3
           sessions.add 
             clinicianName: name2str content.clinicianName
             clinicianEmail: content.clinicianEmail
@@ -88,14 +106,15 @@ makeEmails = (err,allSessions)->
       emailContent.csvContents.push (for key in csvOrder.split ','
         session.get key).join ','
     emailSpec = 
-      from: "jim@cambodianbamboostudies.com"
+      #from: "jim@cambodianbamboostudies.com"
+      from: "FRDA-Trial@retrotope.com"
       to: "jimhinds@nia.edu.kh"
       #to: emailContent.toAddress
-      #cc: emailContent.ccAddresses
+      cc: emailContent.ccAddresses
       subject: emailContent.subject
-      text: """#{emailContent.salutation}
-#{emailContent.body.join "\n"}
-That's all\n
+      text: """#{emailContent.salutation}\n
+#{emailContent.body.join "\n \n"}
+That's all\n\n
 """
       attachments:
         filename: "session.csv"
