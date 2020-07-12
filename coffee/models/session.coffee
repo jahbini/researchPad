@@ -14,12 +14,15 @@ rawSession = Backbone.Model.extend {
   rawPath:""
   eventCounter: 0
   setPath: ()->
-    clinic = @.get('clinic')
-    clinicName = Pylon.clinics.findWhere( {_id: clinic}).get 'name'
-    clinician = @.get('clinician')
-    clinicianName= Pylon.clinicians.findWhere({ _id: clinician }).get('name');
-    client = @.get('client')
-    clientName= Pylon.clients.findWhere({ _id: client }).get('name');
+    try
+      clinic = @.get('clinic')
+      clinicName = Pylon.clinics.findWhere( {_id: clinic}).get 'name'
+      clinician = @.get('clinician')
+      clinicianName= Pylon.clinicians.findWhere({ _id: clinician }).get('name');
+      client = @.get('client')
+      clientName= Pylon.clients.findWhere({ _id: client }).get('name');
+    catch err
+      return
     @rawPath= "#{clinicName}/#{clinicianName.first} #{clinicianName.last}/#{clientName.first} #{clientName.last}/#{@.get 'beginTime'}".replace(/ +/g,'_').toLowerCase()
     @set 
       path: "#{@rawPath}/session.json",

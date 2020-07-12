@@ -2998,19 +2998,24 @@ rawSession = Backbone.Model.extend({
   rawPath: "",
   eventCounter: 0,
   setPath: function() {
-    var client, clientName, clinic, clinicName, clinician, clinicianName;
-    clinic = this.get('clinic');
-    clinicName = Pylon.clinics.findWhere({
-      _id: clinic
-    }).get('name');
-    clinician = this.get('clinician');
-    clinicianName = Pylon.clinicians.findWhere({
-      _id: clinician
-    }).get('name');
-    client = this.get('client');
-    clientName = Pylon.clients.findWhere({
-      _id: client
-    }).get('name');
+    var client, clientName, clinic, clinicName, clinician, clinicianName, err;
+    try {
+      clinic = this.get('clinic');
+      clinicName = Pylon.clinics.findWhere({
+        _id: clinic
+      }).get('name');
+      clinician = this.get('clinician');
+      clinicianName = Pylon.clinicians.findWhere({
+        _id: clinician
+      }).get('name');
+      client = this.get('client');
+      clientName = Pylon.clients.findWhere({
+        _id: client
+      }).get('name');
+    } catch (error) {
+      err = error;
+      return;
+    }
     this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
     this.set({
       path: this.rawPath + "/session.json",
@@ -3159,7 +3164,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.3.4';
+module.exports = '3.3.5-test';
 
 
 
