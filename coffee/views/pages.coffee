@@ -144,45 +144,6 @@ class Pages
             div '#net-wifi.six.columns'
             div '#net-ble.six.columns'
           buttons()
-          div '.row',->
-            div '#sensor-Left',->
-              div '#leftVertmeter.one.columns.vertmeter', ->
-                div '.bar',style: 'height:0'
-              div '.sensorElement.five.columns', ->
-                div '.va-mid',->
-                  span '#LeftStatus.led-box.led-dark'
-                  span '#LeftSerialNumber.mr-rt-10', 'Serial number'
-                div '.status', '---'
-                div '#LeftVersion',  'Version'
-                div '#LeftAssignedName', 'Name'
-                ###
-                div '#sensor-Left',->
-                  button '.connect.needsclick'
-                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-                    , "Connect"
-                  button '.disconnect.needsclick'
-                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-                    , "Disconnect"
-                ###
-            div '#sensor-Right',->
-              div '#rightVertmeter.one.columns.vertmeter', ->
-                div '.bar',style: 'height:0'
-              div '.sensorElement.five.columns', ->
-                div '.va-mid',->
-                  span '#RightStatus.led-box.led-dark'
-                  span '#RightSerialNumber.mr-rt-10' , 'Serial number'
-                div '.status', '---'
-                div '#RightVersion', 'Version'
-                div '#RightAssignedName', 'Name'
-                ###
-                div '#sensor-Right',->
-                  button '.connect.needsclick'
-                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-                    , "Connect"
-                  button '.disconnect.needsclick'
-                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-                    , "Disconnect"
-                ###
           div "#scanningReport"
           div '#footer', style: "display:none;", ->
             hr()
@@ -237,22 +198,11 @@ class Pages
 
   topButtons: T.renderable ()->
       div '.row', ->
-        button '#admin.three.columns.button-primary', 'Admin'
         div '#UploadCount.three.columns',"To Upload:0"
-        div '#LeftStat.three.columns',  'Left Sensor:0'
-        div '#RightStat.three.columns', 'Right Sensor:0'
-        #button '#debug.three.columns.disabled', ''
-      div '.row', ->
-        div '.three.columns', ->
-          button '#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices'
-          #label '#StatusData',for: "upload", 'No connection'
-
-        button '#calibrate.three.columns.disabled', 'Calibrate'
-
+        button '#admin.three.columns.button-primary', 'Admin'
         div '.three.columns', ->
           label '#ProtocolSelect', for: "testID", 'Which Test?'
           select "#testID.u-full-width"
-
         button '#action.disabled.three.columns', ''
 
         ###

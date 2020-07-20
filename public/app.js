@@ -3164,7 +3164,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '3.3.5';
+module.exports = '4.0.0-test';
 
 
 
@@ -4216,60 +4216,6 @@ Pages = (function() {
             return div('#net-ble.six.columns');
           });
           buttons();
-          div('.row', function() {
-            div('#sensor-Left', function() {
-              div('#leftVertmeter.one.columns.vertmeter', function() {
-                return div('.bar', {
-                  style: 'height:0'
-                });
-              });
-              return div('.sensorElement.five.columns', function() {
-                div('.va-mid', function() {
-                  span('#LeftStatus.led-box.led-dark');
-                  return span('#LeftSerialNumber.mr-rt-10', 'Serial number');
-                });
-                div('.status', '---');
-                div('#LeftVersion', 'Version');
-                return div('#LeftAssignedName', 'Name');
-
-                /*
-                div '#sensor-Left',->
-                  button '.connect.needsclick'
-                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Left').cid )"
-                    , "Connect"
-                  button '.disconnect.needsclick'
-                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Left').cid )"
-                    , "Disconnect"
-                 */
-              });
-            });
-            return div('#sensor-Right', function() {
-              div('#rightVertmeter.one.columns.vertmeter', function() {
-                return div('.bar', {
-                  style: 'height:0'
-                });
-              });
-              return div('.sensorElement.five.columns', function() {
-                div('.va-mid', function() {
-                  span('#RightStatus.led-box.led-dark');
-                  return span('#RightSerialNumber.mr-rt-10', 'Serial number');
-                });
-                div('.status', '---');
-                div('#RightVersion', 'Version');
-                return div('#RightAssignedName', 'Name');
-
-                /*
-                div '#sensor-Right',->
-                  button '.connect.needsclick'
-                    ,onClick: "Pylon.trigger('enableDevice', Pylon.get('Right').cid )"
-                    , "Connect"
-                  button '.disconnect.needsclick'
-                    ,onClick: "Pylon.trigger('disableDevice', Pylon.get('Right').cid )"
-                    , "Disconnect"
-                 */
-              });
-            });
-          });
           div("#scanningReport");
           return div('#footer', {
             style: "display:none;"
@@ -4338,17 +4284,9 @@ Pages = (function() {
   };
 
   Pages.prototype.topButtons = T.renderable(function() {
-    div('.row', function() {
-      button('#admin.three.columns.button-primary', 'Admin');
-      div('#UploadCount.three.columns', "To Upload:0");
-      div('#LeftStat.three.columns', 'Left Sensor:0');
-      return div('#RightStat.three.columns', 'Right Sensor:0');
-    });
     return div('.row', function() {
-      div('.three.columns', function() {
-        return button('#scanDevices.u-full-width.button-primary.disabled', 'Scan Devices');
-      });
-      button('#calibrate.three.columns.disabled', 'Calibrate');
+      div('#UploadCount.three.columns', "To Upload:0");
+      button('#admin.three.columns.button-primary', 'Admin');
       div('.three.columns', function() {
         label('#ProtocolSelect', {
           "for": "testID"
