@@ -116,8 +116,8 @@ protocolPhase = Backbone.Model.extend
             buttonPhaseNext: exitThisTest
           headline: "Test In Progress"
           paragraph:  (p.get "mileStoneText") || "go"
-          start: start
-          limit: limit
+          start: 0  # since we are using the walkcourse ssensors not the sensorTags
+          limit: 0  # do not show any time duration on walking tests
           nextPhase: selectTheNextTest
           action: "underway/#{p.get 'testDuration'}"
       else

@@ -3164,7 +3164,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '4.0.0-test';
+module.exports = '4.0.1-test';
 
 
 
@@ -5242,8 +5242,8 @@ protocolPhase = Backbone.Model.extend({
             },
             headline: "Test In Progress",
             paragraph: (p.get("mileStoneText")) || "go",
-            start: start,
-            limit: limit,
+            start: 0,
+            limit: 0,
             nextPhase: selectTheNextTest,
             action: "underway/" + (p.get('testDuration'))
           });
