@@ -2,7 +2,7 @@ FROM mhart/alpine-node-auto:latest
 MAINTAINER jim@bamboocando.com
 
 RUN mkdir /Stagapp-master && apk update
-RUN apk add curl
+RUN apk add curl git openssh
 ADD package.json /Stagapp-master
 WORKDIR /Stagapp-master
 RUN npm install
