@@ -864,7 +864,24 @@ enableRecordButtonOK = function() {
 Pylon.on('sessionUploaded', enableRecordButtonOK);
 
 Pylon.on('adminDone', function() {
-  var client, clientUnlock, clientUnlockOK, clinic, clinician, lockdownMode, password, ref5, testID;
+  var client, clientName, clientUnlock, clientUnlockOK, clinic, clinician, clinicianName, lockdownMode, password, ref5, testID;
+  clinic = sessionInfo.get('clinic');
+  localStorage['clinicName'] = Pylon.clinics.findWhere({
+    _id: clinic
+  }).get('name');
+  clinician = sessionInfo.get('clinician');
+  clinicianName = Pylon.clinicians.findWhere({
+    _id: clinician
+  }).get('name');
+  localStorage['clinicianName'] = clinicianName.first + ' ' + clinicianName.last;
+  localStorage['clinicianEmail'] = Pylon.clinicians.findWhere({
+    _id: clinician
+  }).get('email');
+  client = sessionInfo.get('client');
+  clientName = Pylon.clients.findWhere({
+    _id: client
+  }).get('name');
+  localStorage['clientName'] = clientName.first + ' ' + clientName.last;
   if (lockdownMode = Pylon.sessionInfo.get('lockdownMode')) {
     clientUnlock = 10000 * Math.random();
     if (clientUnlock < 1000) {
@@ -2998,33 +3015,22 @@ rawSession = Backbone.Model.extend({
   rawPath: "",
   eventCounter: 0,
   setPath: function() {
-    var client, clientName, clinic, clinicName, clinician, clinicianName, err;
+    var clientName, clinicName, clinicianName, err;
     try {
-      clinic = this.get('clinic');
-      clinicName = Pylon.clinics.findWhere({
-        _id: clinic
-      }).get('name');
-      clinician = this.get('clinician');
-      clinicianName = Pylon.clinicians.findWhere({
-        _id: clinician
-      }).get('name');
-      client = this.get('client');
-      clientName = Pylon.clients.findWhere({
-        _id: client
-      }).get('name');
+      clinicName = localStorage['clinicName'];
+      clinicianName = localStorage['clinicianName'];
+      clientName = localStorage['clientName'];
     } catch (error) {
       err = error;
       return;
     }
-    this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
-    this.set({
+    this.rawPath = (clinicName + "/" + clinicianName + "/" + clientName + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
+    this.save({
       path: this.rawPath + "/session.json",
       eMailCarbon: Pylon.eMailCarbon,
       clinicName: clinicName,
       clinicianName: clinicianName,
-      clinicianEmail: Pylon.clinicians.findWhere({
-        _id: clinician
-      }).get('email'),
+      clinicianEmail: localStorage['clinicianEmail'],
       clientName: clientName,
       logonVersion: Pylon.get('logonVersion')
     });
@@ -3164,7 +3170,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
-module.exports = '4.0.1-test';
+module.exports = '4.0.2-test';
 
 
 

@@ -15,21 +15,18 @@ rawSession = Backbone.Model.extend {
   eventCounter: 0
   setPath: ()->
     try
-      clinic = @.get('clinic')
-      clinicName = Pylon.clinics.findWhere( {_id: clinic}).get 'name'
-      clinician = @.get('clinician')
-      clinicianName= Pylon.clinicians.findWhere({ _id: clinician }).get('name');
-      client = @.get('client')
-      clientName= Pylon.clients.findWhere({ _id: client }).get('name');
+      clinicName = localStorage['clinicName']
+      clinicianName= localStorage['clinicianName']
+      clientName= localStorage['clientName']
     catch err
       return
-    @rawPath= "#{clinicName}/#{clinicianName.first} #{clinicianName.last}/#{clientName.first} #{clientName.last}/#{@.get 'beginTime'}".replace(/ +/g,'_').toLowerCase()
-    @set 
+    @rawPath= "#{clinicName}/#{clinicianName}/#{clientName}/#{@.get 'beginTime'}".replace(/ +/g,'_').toLowerCase()
+    @save 
       path: "#{@rawPath}/session.json",
       eMailCarbon: Pylon.eMailCarbon
       clinicName: clinicName
       clinicianName: clinicianName
-      clinicianEmail: Pylon.clinicians.findWhere({ _id: clinician }).get('email'),
+      clinicianEmail: localStorage['clinicianEmail'] 
       clientName: clientName
       logonVersion: Pylon.get 'logonVersion'
     return

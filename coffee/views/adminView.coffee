@@ -1,4 +1,4 @@
-# vim: et:ts=2:sw=2:sts=2:nowrap
+# vim: et:ts=2:sw=2:sts=2:nowrapget 'clientName'
 
 $=require('jquery')
 Backbone = require('backbone')

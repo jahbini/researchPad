@@ -500,6 +500,16 @@ Pylon.on 'sessionUploaded',enableRecordButtonOK
 
 Pylon.on 'adminDone', ->
   #the clinician has just logged in via the app admin panel
+  # Save these in non-volitile storage for user-lockdown protocols
+  clinic = sessionInfo.get('clinic')
+  localStorage['clinicName']=  Pylon.clinics.findWhere( {_id: clinic}).get 'name'
+  clinician = sessionInfo.get('clinician')
+  clinicianName = Pylon.clinicians.findWhere({ _id: clinician }).get('name')
+  localStorage['clinicianName']=  clinicianName.first+' '+clinicianName.last
+  localStorage['clinicianEmail']= Pylon.clinicians.findWhere({ _id: clinician }).get('email')
+  client = sessionInfo.get('client')
+  clientName =  Pylon.clients.findWhere({ _id: client }).get('name');
+  localStorage['clientName']= clientName.first+' '+clientName.last
 
   # send up a new client unlock code
   # and all the login info from the admin panel to track
