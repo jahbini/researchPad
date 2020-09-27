@@ -3992,7 +3992,7 @@ lockDown = new protocolPhase;
 
 
 },{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":38,"teacup":41}],26:[function(require,module,exports){
-var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
+var $, Backbone, Pages, Teacup, _, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -4001,6 +4001,8 @@ Backbone = require('backbone');
 $ = require('jquery');
 
 Teacup = require('teacup');
+
+_ = require('underscore');
 
 buglog = require('../lib/buglog.coffee');
 
@@ -4391,7 +4393,7 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(T.render((function(_this) {
           return function() {
-            var clinician, clinicianID, i, len, lockWanted, protocol, ref1;
+            var clinician, clinicianID, i, len, lockWanted, pName, pp, protocol, ref1;
             clinicianID = Pylon.sessionInfo.get('clinician');
             clinician = Pylon.clinicians.findWhere({
               _id: clinicianID
@@ -4404,7 +4406,12 @@ Pages = (function() {
             ref1 = _this.collection.models;
             for (i = 0, len = ref1.length; i < len; i++) {
               protocol = ref1[i];
+              pName = protocol.get('name');
               if (!(clinician != null ? clinician.get('canAccessKeystone') : void 0)) {
+                console.log("ProtoCOLS", pp = clinician.get('protocols'));
+                if (-1 === _.indexOf(pp, protocol.get('_id'))) {
+                  continue;
+                }
                 if (protocol.get('suppressInDropDown')) {
                   continue;
                 }
@@ -4539,7 +4546,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./lock-down.coffee":25,"./protocol-active.coffee":28,"./protocol-phase.coffee":29,"backbone":33,"jquery":38,"teacup":41}],27:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./lock-down.coffee":25,"./protocol-active.coffee":28,"./protocol-phase.coffee":29,"backbone":33,"jquery":38,"teacup":41,"underscore":42}],27:[function(require,module,exports){
 var $, Backbone, T, activeKey, buglog, implementing, introlog, intrologger, pHT, protocolHeadTemplate, recorderViewTemplate,
   slice = [].slice;
 

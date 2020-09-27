@@ -3,6 +3,7 @@
 Backbone = require('backbone')
 $=require('jquery')
 Teacup = require('teacup')
+_=require 'underscore'
 
 buglog = require '../lib/buglog.coffee'
 viewlogger = (viewlog= new buglog "view").log
@@ -275,7 +276,11 @@ class Pages
           lockWanted = Pylon.sessionInfo.get 'lockdownMode'
           option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models 
+            pName = protocol.get 'name'
             unless clinician?.get 'canAccessKeystone'
+              ## get protocols per clinician and only use those
+              console.log "ProtoCOLS",pp=clinician.get 'protocols'
+              continue if -1 == _.indexOf pp, protocol.get '_id'
               continue if protocol.get 'suppressInDropDown'
               continue if lockWanted && 0 != protocol.get 'sensorsNeeded'
             option value: protocol.get('name'), protocol.get('name')
