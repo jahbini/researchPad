@@ -358,6 +358,7 @@ enterRecording = ->
   numSensors++ if Pylon.get "Right"
   try
     theTest = Pylon.theProtocol()
+    theTest.set 'sensorsNeeded',0
     if numSensors < theTest.get 'sensorsNeeded'
       pageGen.forceTest 'red',"need sensor"
       return false

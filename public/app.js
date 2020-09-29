@@ -674,6 +674,7 @@ enterRecording = function() {
   }
   try {
     theTest = Pylon.theProtocol();
+    theTest.set('sensorsNeeded', 0);
     if (numSensors < theTest.get('sensorsNeeded')) {
       pageGen.forceTest('red', "need sensor");
       return false;
@@ -3170,7 +3171,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":42}],21:[function(require,module,exports){
-module.exports = '4.0.2-test';
+module.exports = '4.0.3-test';
 
 
 

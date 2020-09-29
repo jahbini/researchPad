@@ -13,9 +13,9 @@
 			<key>certificate</key>
 			<dict>
 				<key>SHA1</key>
-				<string>445379E3B269C64D5438A84499CEB4AA16A66F0D</string>
+				<string>CAA98F3C53F5AD88971C6A34C1D00A5838B82F4D</string>
 				<key>dateExpires</key>
-				<string>9/25/20</string>
+				<string>9/29/21</string>
 				<key>type</key>
 				<string>Apple Distribution</string>
 			</dict>
@@ -33,7 +33,7 @@
 			<key>profile</key>
 			<dict>
 				<key>UUID</key>
-				<string>5408da15-f408-48b1-a261-ac4cc25644ce</string>
+				<string>db5fd920-a978-431c-936a-e2be24e2bcb2</string>
 				<key>name</key>
 				<string>iOS Team Ad Hoc Provisioning Profile: com.bamboocando.retroclient</string>
 			</dict>
