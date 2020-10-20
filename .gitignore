@@ -1,4 +1,5 @@
 node_modules
+.theia/
 *.log
 .all.js
 public/logon.js

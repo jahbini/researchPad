@@ -351,7 +351,7 @@ enterRecording = ->
   if !testID
     pageGen.forceTest 'red'
     return false
-
+  Pylon.setTheCurrentProtocol testID
   applogger "Attempt to enter Record Phase -- testID ok"
   numSensors=0
   numSensors++ if Pylon.get "Left"

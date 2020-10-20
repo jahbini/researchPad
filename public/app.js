@@ -664,6 +664,7 @@ enterRecording = function() {
     pageGen.forceTest('red');
     return false;
   }
+  Pylon.setTheCurrentProtocol(testID);
   applogger("Attempt to enter Record Phase -- testID ok");
   numSensors = 0;
   if (Pylon.get("Left")) {
@@ -3171,7 +3172,7 @@ exports.state = new State;
 
 
 },{"../lib/buglog.coffee":3,"backbone":33,"underscore":42}],21:[function(require,module,exports){
-module.exports = '4.0.3-test';
+module.exports = '4.0.4-test';
 
 
 
@@ -5424,6 +5425,10 @@ colorTextBody = Backbone.View.extend({
   },
   initialize: function() {
     enginelogger("stroop initialize");
+    if (3 > (this.model.get('mileStones')).length) {
+      alert("Stroop Test needs at least three colors as mileStones");
+      window.location.reload();
+    }
     this.text = this.textColor = null;
     Pylon.on("reRender:colorText", (function(_this) {
       return function() {

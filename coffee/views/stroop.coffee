@@ -29,6 +29,9 @@ colorTextBody = Backbone.View.extend
     return
   initialize: ()->
     enginelogger "stroop initialize"
+    if 3>(@model.get 'mileStones').length
+      alert "Stroop Test needs at least three colors as mileStones"
+      window.location.reload()
     @text = @textColor = null
     Pylon.on "reRender:colorText",()=>
       @$el.fadeOut 100,()=>
