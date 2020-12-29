@@ -25,7 +25,7 @@ class adminView
   inspectAdminPage: ()->
     clinicViewTemplate = Backbone.View.extend
       el: '#desiredClinic'
-      collection: Pylon.get('clinics')
+      collection: Pylon.clinics
       attributes:
         session: Pylon.sessionInfo
       initialize: ->
@@ -39,7 +39,7 @@ class adminView
           if theOptionCid
             theClinic = @collection.get( theOptionCid )
             try
-              @attributes.session.set 'clinic',theClinic
+              @attributes.session.set 'clinic',theClinic.id
             catch error
               adminlogger "Error from setting clinic",error
           else
@@ -47,11 +47,11 @@ class adminView
             @attributes.session.unset 'clinic'
           @attributes.session.unset 'clinician'
           @attributes.session.unset 'client'
-          temp = Pylon.get('clinicians')
+          temp = Pylon.clinicians
           temp.reset()
           temp.add theClinic.get('clinicians') if theClinic
           temp.trigger('change')
-          temp = Pylon.get('clients')
+          temp = Pylon.clients
           temp.reset()
           temp.add theClinic.get('clients') if theClinic
           temp.trigger('change')
@@ -72,7 +72,7 @@ class adminView
 
     clinicianViewTemplate = Backbone.View.extend
       el: '#desiredClinician'
-      collection: Pylon.get('clinicians')
+      collection: Pylon.clinicians
       attributes:
         session: Pylon.sessionInfo
       initialize: ->
@@ -97,7 +97,7 @@ class adminView
 
     clientViewTemplate = Backbone.View.extend
       el: '#desiredClient'
-      collection: Pylon.get('clients')
+      collection: Pylon.clients
       attributes:
         session: Pylon.sessionInfo
       initialize: ->
@@ -145,7 +145,7 @@ class adminView
     @clientView = new clientViewTemplate
     @clinicView = new clinicViewTemplate
     @clinicianView = new clinicianViewTemplate
-    Pylon.get('clinics').trigger('change')
+    Pylon.clinics.trigger('change')
     return
   Pylon.on "reveal",()->
     $("#password").attr("type","text")

@@ -8,9 +8,12 @@ window.Console = c
 
 module.exports = class buglog
 
-  constructor: (nameSpace) ->
+  enable: (names)->
+    logger.enable names
+
+  constructor: (@nameSpace) ->
     queue = []
-    @yourLogger = new logger(nameSpace)
+    @yourLogger = new logger(@nameSpace)
     #   @yourLogger.enabled = true
     logger.formatters.j = require  'json-stringify-safe'
     @yourLogger.useColors = false

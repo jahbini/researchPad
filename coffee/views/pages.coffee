@@ -14,7 +14,7 @@ implementing = (mixins..., classReference) ->
       classReference::[key] = value
   classReference
 
-Pylon.set 'adminView', require('./adminView.coffee').adminView
+Pylon.adminView = require('./adminView.coffee').adminView
 
 class Pages
   T= tea = new Teacup.Teacup
@@ -269,34 +269,32 @@ class Pages
     Pylon.trigger 'renderTest'
     Pylon.sessionInfo.unset 'testID'
 
-
-  mongoObjectId = ()->
-    timestamp = (new Date().getTime() / 1000 | 0).toString(16);
-    return (timestamp + 'deadbeefxxxxxxxx').replace(/[x]/g, ()-> (Math.random() * 16 | 0).toString(16); ).toLowerCase();
-
   wireButtons: =>
-    # all buttons converted to button-view objects
+    # all buttons converted to button_view objects
     # only remaining widget is protocol ID selector
-    model = Pylon.sessionInfo
+    sessionInfo = Pylon.sessionInfo
     $('#testID').change (node)=>
       $('#ProtocolSelect').text('Which Protocol?').css('color','')
-      model.set 'testID',$('#testID option:selected').val()
-      model.set model.idAttribute,mongoObjectId()
-      (Pylon.get 'button-admin').set
-        legend: "Log Out"
-        enable: true
-      model.save null,{
+      sessionInfo.set 'testID',$('#testID option:selected').val()
+      Pylon.button_admin.set
+        legend: "Session?"
+        enable: false
+      sessionInfo.save null,{
         success: (model,response,options)->
           viewlogger "session logged with host"
-          return
+          Pylon.button_admin.set
+            legend: "Log Out"
+            enable: true
         error: (model,response,options)->
           viewlogger "Session save Fail: #{response.statusText}"
-          return
+          Pylon.button_admin.set
+            legend: "Log Out"
+            enable: true
         }
       return false
 
   renderPage: ()=>
-    bodyHtml = @theBody @topButtons , Pylon.get('adminView').adminContents
+    bodyHtml = @theBody @topButtons , Pylon.adminView.adminContents
     $('body').html bodyHtml
     @wireButtons()
     require './lock-down.coffee'
@@ -305,7 +303,7 @@ class Pages
 
     protocolViewTemplate = Backbone.View.extend
       el: '#testID'
-      collection: Pylon.get('protocols')
+      collection: Pylon.protocols
       attributes:
         session: Pylon.sessionInfo
       initialize: ->
@@ -323,8 +321,7 @@ class Pages
         viewlogger "Rendering Tests"
         @$el.html T.render =>
           clinicianID = Pylon.sessionInfo.get 'clinician'
-          z= Pylon.get 'clinicians'
-          clinician= z.findWhere _id: clinicianID
+          clinician = Pylon.clinicians.findWhere _id: clinicianID
           lockWanted = Pylon.sessionInfo.get 'lockdownMode'
           option '.selected', selected: 'selected', value: '', "Select ---"
           for protocol in @collection.models 
@@ -368,7 +365,7 @@ class Pages
       dev = Pylon.get 'Right'
       return unless dev
       viewlogger "activating Right"
-      if old = Pylon.get 'RightView'
+      if old = Pylon.RightView
         old.clearTimer()
       statusRightViewTemplate = Backbone.View.extend
         model: dev
@@ -381,7 +378,7 @@ class Pages
           @listenTo @model, 'change:numReadings', @render
         render: ->
           @$el.html "Items: "+ @model.get 'numReadings'
-      Pylon.set("RightView", new statusRightViewTemplate)
+      Pylon.RightView= new statusRightViewTemplate
       return
 
     Pylon.on 'change:Left', ()=>
@@ -399,15 +396,15 @@ class Pages
           @listenTo @model, 'change', @render
         render: ->
           @$el.html "Items: "+ @model.get 'numReadings'
-      Pylon.set("LeftView", new statusLeftViewTemplate)
+      Pylon.LeftView= new statusLeftViewTemplate
       return
-    Pylon.get('adminView').wireAdmin()
+    Pylon.adminView.wireAdmin()
     return
 
   activateAdminPage: (buttonSpec)->
     $('#adminForm').addClass 'active'
     $('#sensorPage').removeClass 'active'
-    Pylon.get('adminView').inspectAdminPage()
+    Pylon.adminView.inspectAdminPage()
 
   activateSensorPage: (buttonSpec)->
     $('#adminForm').removeClass 'active'

@@ -7,6 +7,7 @@ BV = require './button-view.coffee'
 {colorTextBody,colorTextExample} = require './stroop.coffee'
 {tappingBody,tappingExample} = require './tapping.coffee'
 {tenIconBody,tenIconExample} = require './ten-icon.coffee'
+{fullscanBody,fullscanExample} = require './fullscan.coffee'
 
 saneTimeout = (time,f) ->
   setTimeout f,time
@@ -127,6 +128,9 @@ ProtocolReportTemplate = Backbone.View.extend
     showProtocol: (name,theTest)->
       engine=theTest.get 'engine'
       switch engine
+        when 'fullscan'
+          @renderExample =  new fullscanExample model: theTest
+          @renderBody = new fullscanBody model: theTest
         when 'stroop'
           @renderExample =  new colorTextExample model: theTest
           @renderBody = new colorTextBody model: theTest

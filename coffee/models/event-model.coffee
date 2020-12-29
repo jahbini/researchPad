@@ -24,6 +24,7 @@ EventModel = Backbone.Model.extend {
     sessionInfo = Pylon.sessionInfo
     @.listenTo sessionInfo, 'change:_id',()->
       @set 'session',sessionInfo.get '_id'
+      return
     return
 
   flush: ()->
@@ -31,6 +32,7 @@ EventModel = Backbone.Model.extend {
       @set 'UUID', @device.id
     flushTime = Date.now()
     if (@.has 'session') && (@.has 'readings')
+      @.set 'path',Pylon.sessionInfo.getEventPath()
       eventModelLoader @
     @.unset 'readings'
     @.set 'captureDate',flushTime   #new time for next auto flush

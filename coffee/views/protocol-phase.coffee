@@ -23,8 +23,15 @@ protocolPhase = Backbone.Model.extend
     #  if the showLeadIn is active, then put it up, else be quiet
     Pylon.on 'systemEvent:recordCountDown:start', =>
       @set 'protocol', p= Pylon.theProtocol()
+      Pylon.sessionInfo.set 'duration',-1
       if !p.get 'gestureCapture'
+        Pylon.set 'logonVersion',"Not Active"
+        Pylon.sessionInfo.set 'duration',0
         Pylon.trigger "systemEvent:externalTimer:show"
+        if "Not Active" == Pylon.get "logonVersion"
+          alert "Initialization Failure, press OK to reload"
+          window.location.reload()
+          return
       if p.get 'mileStonesAreProtocols'
         @allMyProtocols = (p.get 'mileStones')[..]  #copy mileStones as an array
       else
@@ -32,7 +39,7 @@ protocolPhase = Backbone.Model.extend
       
       sessionInfo=Pylon.sessionInfo
       if sessionInfo.isNew()
-        start()
+        startProtocol()
       else
         leadIn()
       return 
@@ -43,7 +50,7 @@ protocolPhase = Backbone.Model.extend
       Pylon.trigger 'removeRecorderWindow'
       return
 
-    start= ()=>
+    startProtocol= ()=>
       if sessionInfo.isNew()
         sessionInfo.save()
       sessionID=Pylon.sessionInfo.get('_id')

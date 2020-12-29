@@ -1,7 +1,6 @@
 # # stagapp
 # vim: et:ts=2:sw=2:sts=2
 # ## data handler for clinical recording of SensorTag data
-# clinic model and clinics collection
 
 window.$ = $ = require('jquery')
 _ = require('underscore')
@@ -13,6 +12,7 @@ ConfigurationModel = Backbone.Model.extend
   initialize:()->
     Pylon.unlock = @.attributes.unlock
     Pylon.loginPassword = @.attributes.loginPassword
+    Pylon.eMailCarbon = @.attributes.eMailCarbon
     return
 
 ConfigurationCollection = Backbone.Collection.extend

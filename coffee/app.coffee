@@ -17,26 +17,41 @@ applogger = (applog= new buglog "app").log
 #window.console = new buglog "logon"
 
 PylonTemplate = Backbone.Model.extend
+  defaults:
+    hostUrl: hostUrl
   state: (require './models/state.coffee').state
   onHandheld: onHandheld
+  #get the session model
+  setLogonVersion: (version)->
+    @.set logonVersion: version
+    @.sessionInfo.set logonVersion: version
+    @.trigger "systemEvent:LogonVersion:#{version}"
+    return
   theSession: ()->
     return @.attributes.sessionInfo
   setTheCurrentProtocol: (p)->
     if !p
       @currentProtocol = p if p == null
     else
-      @currentProtocol =  protocols.findWhere
+      @currentProtocol =  @protocols.findWhere
         name: p
   theProtocol: ()->
     return @currentProtocol if @currentProtocol
-    protocols= @.attributes.protocols
-    return {} if !protocols || !sessionInfo.attributes.testID
-    return @currentProtocol = protocols.findWhere
+    return {} if !@protocols || !sessionInfo.attributes.testID
+    return @currentProtocol = @protocols.findWhere
       name: sessionInfo.attributes.testID
   saneTimeout: (t,f)->
     return setTimeout f,t
 
 window.Pylon = Pylon = new PylonTemplate
+# configurations needs Pylon as global for it's initialization
+Pylon.configurations = require './models/configurations.coffee'
+Pylon.clinics= require './models/clinics.coffee'
+Pylon.clinicians= require './models/clinicians.coffee'
+Pylon.clients= require './models/clients.coffee'
+Pylon.protocols= require './models/protocols.coffee'
+Pylon.sessionInfo= require './models/session.coffee'
+{clinics,configurations,clinicians,clients,protocols,sessionInfo}=Pylon
 Pylon.on 'all', (event,rest...)->
   mim = event.match /((.*):.*):/
   return null if !mim || mim[2] != 'systemEvent'
@@ -46,11 +61,10 @@ Pylon.on 'all', (event,rest...)->
   return null
 
 Pylon.set 'spearCount', 1
-Pylon.set 'hostUrl', hostUrl
-Pylon.set 'vertmeterScale', 
+Pylon.set 'vertmeterScale',
   lo: 55.625
-  hi: 56.875 
-  
+  hi: 56.875
+
 # set the button MpdelView
 Pylon.BV= BV = require './views/button-view.coffee'
 if Pylon.onHandheld
@@ -59,7 +73,6 @@ else
   Pylon.onWhat = "onclick"
 
 pages = require './views/pages.coffee'
-Pylon.set 'adminView', require('./views/adminView.coffee').adminView
 
 {uploader,eventModelLoader} = require "./lib/upload.coffee"
 
@@ -68,22 +81,6 @@ Section: Data Structures
  Routines to create and handle data structures and interfaces to them
 ###
 
-configurations = require './models/configurations.coffee'
-Pylon.set('configurations',configurations)
-
-clinics = require './models/clinics.coffee'
-Pylon.set('clinics',clinics)
-
-# Clinicians --
-clinicians = require './models/clinicians.coffee'
-Pylon.set('clinicians',clinicians)
-
-clients = require './models/clients.coffee'
-Pylon.set 'clients',clients
-
-# #Test Protocols
-protocols = require './models/protocols.coffee'
-Pylon.set('protocols',protocols)
 
 adminData = Backbone.Model.extend()
 admin = new adminData
@@ -92,24 +89,21 @@ admin = new adminData
     clients: clients
     protocol: protocols
 
-#get the session model
-Pylon.sessionInfo = sessionInfo = require './models/session.coffee'
 applicationVersion = require './version.coffee'
 
-Pylon.set 
+Pylon.set
   platformUUID: window.device?.uuid || "No ID"
   platformIosVersion: window.device?.version|| "noPlatform"
   applicationVersion: applicationVersion
 
-sessionInfo.set 
+sessionInfo.set
   platformUUID: window.device?.uuid || "No ID"
   platformIosVersion: window.device?.version|| "noPlatform"
   applicationVersion: applicationVersion
 
 applogger "Version:#{sessionInfo.get 'applicationVersion'}"
 
-pageGen = new pages.Pages sessionInfo
-Pylon.set 'pageGen', pageGen
+Pylon.pageGen = pageGen = new pages.Pages sessionInfo
 
 {EventModel} = require "./models/event-model.coffee"
 adminEvent = new EventModel "Action"
@@ -117,7 +111,7 @@ externalEvent = new EventModel "External"
 Pylon.on 'systemEvent', (what="unknown")->
   if sessionInfo.id
     adminEvent.addSample what
-Pylon.on 'externalEvent', (what="unknown")->  
+Pylon.on 'externalEvent', (what="unknown")->
   applogger 'externalEvent', what
   if sessionInfo.id
     try
@@ -156,7 +150,7 @@ activateNewButtons = ->
     Pylon.canLogIn = true
     CalibrateButton.set enabled:true
     $('scanDevices').removeClass('disabled').prop('disabled',false)
-    AdminButton.set 
+    AdminButton.set
       enabled:true
       legend: "Log In"
 
@@ -172,15 +166,11 @@ activateNewButtons = ->
   ClearButton.set
     legend: "Reject"
     enabled: false
-  Pylon.on "systemEvent:clear:reject", enterClear
-  Pylon.on "systemEvent:rejector:reject", enterClear
 
   UploadButton = new BV 'upload',"u-full-width"
   UploadButton.set
     legend: "Accept"
     enabled: false
-  Pylon.on "systemEvent:upload:accept", enterUpload
-  Pylon.on "systemEvent:acceptor:accept", enterUpload
 
   AcceptButton = new Pylon.BV 'acceptor'
   AcceptButton.set
@@ -195,6 +185,7 @@ activateNewButtons = ->
   Pylon.on "systemEvent:upload:accept", enterUpload
   Pylon.on "systemEvent:acceptor:accept", enterUpload
   Pylon.on "systemEvent:rejector:reject", enterClear
+  Pylon.on "systemEvent:clear:reject", enterClear
 
 
   CalibrateButton = new BV 'calibrate'
@@ -207,14 +198,14 @@ activateNewButtons = ->
     Pylon.state.set
       calibrating: false
     return false
-  
+
   Pylon.on "systemEvent:calibrate:notify",() ->
-    Pylon.state.set 
+    Pylon.state.set
       calibrating: true
     CalibrateButton.set legend: "burst mode", enabled: false
     setTimeout stopNotify,10000
     return false
-    
+
   ActionButton = new BV 'action'
   ActionButton.set
     legend: "Record"
@@ -231,6 +222,8 @@ enterAdmin = ->
 
 exitAdmin = () ->
   enterLogout()
+  # force app reload on logout -- clear all vars
+  window.location.reload()
   return false
 
 enterLogin = (hash)->
@@ -245,14 +238,14 @@ enterLogin = (hash)->
     ###
     if mHash == hash
       alert "hash not changed"
-    if !mHash 
+    if !mHash
       alert "No Hash"
     ###
     #
 
     sessionInfo.set  sessionInfo.idAttribute, (model.get model.idAttribute)
     m= model.attributes
-    sessionInfo.set 
+    sessionInfo.set
       client: m.client
       clinic: m.clinic
       clinician: m.clinician
@@ -289,12 +282,12 @@ enterLogout = () ->
   $('option.forceSelect').prop('selected',true)
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled','disabled').off('click')
 
-  (Pylon.get 'button-action').set enabled: false
+  Pylon.button_action.set enabled: false
   Pylon.trigger 'admin:enable'
-  (Pylon.get 'button-admin').set legend:"Log In" , enabled: true
+  Pylon.button_admin.set legend:"Log In" , enabled: true
 
-  (Pylon.get 'button-upload').set 'enabled',false
-  (Pylon.get 'button-clear').set 'enabled',false
+  Pylon.button_upload.set 'enabled',false
+  Pylon.button_clear.set 'enabled',false
   return false
 
 # ## Section State Handlers
@@ -305,7 +298,7 @@ initAll = ->
   $('#uuid').html("Must connect to sensor").css('color',"violet")
   enterAdmin()
   return
-  
+
 {eventModelLoader}  = require './lib/upload.coffee'
 ## subsection State handlers that depend on the View
 enterClear = (accept=false)->
@@ -313,22 +306,19 @@ enterClear = (accept=false)->
   Pylon.trigger "removeRecorderWindow"
   Pylon.trigger "removeAcceptReject"
   $('#testID').prop("disabled",false)
-  # on tests that have subtests, we need to regain the 
+  Pylon.button_clear.set 'enabled',false
+  Pylon.button_upload.set 'enabled',false
+  Pylon.button_action.set enabled: true, legend: "Record"
+  # on tests that have subtests, we need to regain the
   # lockDown capability status of the parent suite
   p=Pylon.setTheCurrentProtocol Pylon.sessionInfo.get 'testID'
   if Pylon.onHandheld
     restart = Pylon.sessionInfo.get 'lockdownMode'
   else
     restart = localStorage['hash']
-
+  sessionInfo.close accept
   pageGen.forceTest()
-  sessionInfo.set accepted: accept
-  eventModelLoader sessionInfo
-  (Pylon.get 'button-clear').set 'enabled',false
-  (Pylon.get 'button-upload').set 'enabled',false
-  (Pylon.get 'button-action').set enabled: true, legend: "Record"
   Pylon.saneTimeout 200,()->
-    sessionInfo.unset sessionInfo.idAttribute, silent:true
     if restart
       window.location.reload()
   return
@@ -342,8 +332,8 @@ enterCalibrate = ->
   applogger 'enterCalibrate -- not used currently'
   Pylon.state.set
     calibrating: false
-  (Pylon.get 'button-action').set enabled: true, legend: "Record"
-  (Pylon.get 'button-calibrate').set
+  Pylon.button_action.set enabled: true, legend: "Record"
+  Pylon.button_calibrate.set
     legend: "Exit Calibration"
     enabled: false
   return false
@@ -351,7 +341,7 @@ enterCalibrate = ->
 exitCalibrate = ->
   Pylon.state.set
     calibrating: false
-  (Pylon.get 'button-calibrate').set 'legend',"Calibrate"
+  Pylon.button_calibrate.set 'legend',"Calibrate"
   return false
 
 enterRecording = ->
@@ -371,7 +361,7 @@ enterRecording = ->
     if numSensors < theTest.get 'sensorsNeeded'
       pageGen.forceTest 'red',"need sensor"
       return false
-  catch 
+  catch
     applogger "theTest is not initialized"
     Pylon.saneTimeout 500, enterRecording
     return
@@ -382,17 +372,17 @@ enterRecording = ->
 
   # signal for logon.js that we are not scanning
   Pylon.state.set scanning: false
-    
-  (Pylon.get 'button-admin').set 'enabled',false
+
+  Pylon.button_admin.set 'enabled',false
   # reject record request if we are already recording or stopping
   return if Pylon.state.get 'recording'
-  Pylon.state.set 
+  Pylon.state.set
     recording:true
     scanning: false
   applogger "Record state set scanning false, recording true"
 
   # start recording and show a lead in timer of 5 seconds
-  (Pylon.get 'button-calibrate').set 'enabled',false
+  Pylon.button_calibrate.set 'enabled',false
   (Pylon.get 'Left')?.set numReadings: 0
   (Pylon.get 'Right')?.set numReadings: 0
   $('#testID').prop("disabled",true)
@@ -412,7 +402,7 @@ enterRecording = ->
       ]
       .then recordingIsActive
   return
-  
+
 recordingIsActive = ()->
   applogger 'Recording --- actively recording sensor info'
   Pylon.trigger 'systemEvent:recordCountDown:start',5
@@ -449,15 +439,15 @@ resolveConnected = (leftRight)->
 Pylon.on ('systemEvent:recordCountDown:fail'), ->
     applog "Failure to obtain host session credentials"
     Pylon.state.set recording:  false
-    (Pylon.get 'button-calibrate').set 'enabled',true
+    Pylon.button_calibrate.set 'enabled',true
     pageGen.forceTest 'orange'
     $('#testID').prop("disabled",true)
     return
 
 Pylon.on 'systemEvent:recordCountDown:start', ->
   # change the record button into the stop button
-  #(Pylon.get 'button-action').set enabled: true, legend: "Stop"
-  (Pylon.get 'button-action').set enabled: false  # retain legend 'Record'
+  #Pylon.button_action.set enabled: true, legend: "Stop"
+  Pylon.button_action.set enabled: false  # retain legend 'Record'
   return false
 
 # Pylon.on "systemEvent:action:stop", exitRecording
@@ -465,9 +455,8 @@ exitRecording = -> # Stop Recording
   return if 'stopping' == Pylon.state.get 'recording'
   #Pylon.state.set recording: 'stopping'
   #Pylon.trigger 'systemEvent:stopCountDown:start', 5
-  Pylon.get('button-action').set enabled: false
-  (Pylon.get 'button-admin').set enabled: true
-  debugger
+  Pylon.button_action.set enabled: false
+  Pylon.button_admin.set enabled: true
   return false
 
 Pylon.on 'systemEvent:stopCountDown:over', ->
@@ -475,11 +464,11 @@ Pylon.on 'systemEvent:stopCountDown:over', ->
   # shut down the notifications
   Pylon.state.set recording: false
   Pylon.trigger 'systemEvent:endRecording'
-  (Pylon.get 'button-action').set enabled: false
-  (Pylon.get 'button-upload').set enabled: true
-  (Pylon.get 'button-calibrate').set enabled: true
-  (Pylon.get 'button-clear').set enabled: true
-  (Pylon.get 'button-admin').set enabled: true
+  Pylon.button_action.set enabled: false
+  Pylon.button_upload.set enabled: true
+  Pylon.button_calibrate.set enabled: true
+  Pylon.button_clear.set enabled: true
+  Pylon.button_admin.set enabled: true
   return false
 
 #
@@ -488,7 +477,7 @@ startBlueTooth = ->
   TiHandlerDef = require('./TiHandler.coffee')
   TiHandler = new TiHandlerDef sessionInfo
   window.TiHandler = TiHandler
-  Pylon.set 'TiHandler', TiHandler
+  Pylon.TiHandler = TiHandler
 
 setSensor = ->
   pageGen.activateSensorPage()
@@ -501,18 +490,18 @@ enableRecordButtonOK= ()->
   canRecord = true
   if ! Pylon.state.get 'loggedIn'
     canRecord = false
-    (Pylon.get "button-admin").set enabled: true, legend: "log in"
+    Pylon.button_admin.set enabled: true, legend: "log in"
   if canRecord
-    (Pylon.get 'button-action').set enabled: true, legend: "Record"
+    Pylon.button_action.set enabled: true, legend: "Record"
     $('#testID').prop("disabled",false)
   return false
-  
+
 Pylon.on 'sessionUploaded',enableRecordButtonOK
 
-Pylon.on 'adminDone', -> 
+Pylon.on 'adminDone', ->
   #the clinician has just logged in via the app admin panel
 
-  # send up a new client unlock code 
+  # send up a new client unlock code
   # and all the login info from the admin panel to track
   # the handheld's state
   if lockdownMode =Pylon.sessionInfo.get 'lockdownMode'
@@ -526,15 +515,15 @@ Pylon.on 'adminDone', ->
   clientUnlockOK = false
   localStorage['clientUnlockOK']='false'
   {clinic,clinician,client,password,lockdownMode} = sessionInfo.attributes
-  applogger "session not NEW!" unless sessionInfo.isNew() 
+  applogger "session not NEW!" unless sessionInfo.isNew()
   testID = ""
   Pylon.handheld.save {testID,clinic,clinician,clientUnlock,lockdownMode,clientUnlockOK,client,password},{silent: true}
 
-  (Pylon.get 'button-admin').set 'legend',"Log Out"
+  Pylon.button_admin.set 'legend',"Log Out"
   Pylon.state.set 'loggedIn',  true
   pageGen.activateSensorPage()
   enableRecordButtonOK()
-  return 
+  return
 
 protocolsShowedErrors=1
 protocols.on 'fetched', ->
@@ -546,11 +535,6 @@ clinics.on 'fetched', ->
   Pylon.state.set 'clinics',true
   if Pylon.state.all ['protocols','handheld']
     Pylon.trigger 'canLogIn'
-
-configurations.on 'fetched',->
-  Pylon.retroPW = configurations
-  Pylon.userUnlock = configurations
-  return
 
 getConfiguration = ->
   applogger "configurations request initiate"
@@ -621,7 +605,7 @@ getClinics()
 clinicTimer = setInterval getClinics,10000
 clinics.on 'fetched', ->
   clearInterval clinicTimer
-  
+
 ### this is how seen exports things -- it's clean.  we use it as example
 #seen = {}
 #if window? then window.seen = seen # for the web
@@ -652,12 +636,12 @@ $(document).on 'deviceready', ->
   sessionInfo.set 'platformUUID' , window.device?.uuid || "No ID"
   sessionInfo.set('platformIosVersion',window.device?.version|| "noPlatform")
 
-  Pylon.set 
+  Pylon.set
     platformUUID: window.device?.uuid || "No ID"
     platformIosVersion: window.device?.version|| "noPlatform"
     applicationVersion: applicationVersion
 
-  sessionInfo.set 
+  sessionInfo.set
     platformUUID: window.device?.uuid || "No ID"
     platformIosVersion: window.device?.version|| "noPlatform"
     applicationVersion: applicationVersion
@@ -686,14 +670,18 @@ $(document).on 'deviceready', ->
   startBlueTooth()
   #delay loading harry's code until all is quiet on the UIO front
   loadScript = require("./lib/loadScript.coffee").loadScript
-  loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
-    applogger "logon.js returns status of "+status
+  getLogon = ()-> 
+    loadScript Pylon.get('hostUrl')+"logon.js?bla=#{Date.now()}", (status)->
+      if status == 'loaded'
+        clearInterval logonTimer
+      applogger "logon.js returns status of "+status
+  getLogon()
+  logonTimer = setInterval  getLogon, 12000
   return
-  
+
 onPause= ()->
   # Handle the pause event
-  devices = Pylon.get 'devices'
-  devices.map (d)->
+  Pylon.devices.map (d)->
     TiHandler.detachDevice d.cid
   return
 
@@ -705,7 +693,7 @@ detectHash= ()-> #if there is a hash, it is a session to be cloned
     localStorage['hash'] = hash  #update or erase hash
   if hash = localStorage['hash']
     enterLogin hash
-  
+
 $ ->
   $('body').css 'background:yellow' if (sessionInfo.get 'applicationVersion').match /test/
   # Force a page reload if put in background to wipe the sessionInfo and other state

@@ -22,17 +22,13 @@ TIlogger = (TIlog = new buglog("TIhandler")).log;
 lastDisplay = 0;
 
 deviceNameToModel = function(name) {
-  var pd;
-  pd = Pylon.get('devices');
-  return pd.findWhere({
+  return Pylon.devices.findWhere({
     name: name
   });
 };
 
 deviceIdToModel = function(id) {
-  var pd;
-  pd = Pylon.get('devices');
-  return pd.get(id);
+  return Pylon.devices.get(id);
 };
 
 reading = Backbone.Model.extend({
@@ -48,11 +44,11 @@ reading = Backbone.Model.extend({
 
 pView = Backbone.View.extend({
   el: '#scanDevices',
-  model: Pylon.get('devices'),
+  model: Pylon.devices,
   initialize: function() {
     $('#StatusData').html('Ready to connect');
     $('#FirmwareData').html('?');
-    $('#scanningReport').html(Pylon.get('pageGen').scanBody());
+    $('#scanningReport').html(Pylon.pageGen.scanBody());
     Pylon.state.set('scanning', false);
     return this.listenTo(this.model, 'add', function(device) {
       var element, ordinal;
@@ -60,7 +56,7 @@ pView = Backbone.View.extend({
       if (!device.get("rowName")) {
         device.set("rowName", "sensor-" + ordinal);
       }
-      element = (Pylon.get('pageGen')).sensorView(device);
+      element = Pylon.pageGen.sensorView(device);
       return this;
     });
   },
@@ -69,6 +65,7 @@ pView = Backbone.View.extend({
   },
   changer: function() {
     TIlogger("Start Scan button activated");
+    Pylon.trigger('disconnectSensorTags');
     Pylon.state.set({
       scanning: true
     });
@@ -91,7 +88,7 @@ pView = Backbone.View.extend({
   }
 });
 
-Pylon.set('tagViewer', new pView);
+Pylon.tagViewer = new pView;
 
 TiHandler = (function() {
   var ble_found, queryHostDevice;
@@ -113,15 +110,11 @@ TiHandler = (function() {
   };
 
   ble_found = function(device) {
-    var d, eeee, pd;
+    var d, eeee;
     if (!device.name) {
       return;
     }
-    if (device.name.match('etrotope-mot')) {
-      return;
-    }
-    pd = Pylon.get('devices');
-    if (d = pd.findWhere({
+    if (d = Pylon.devices.findWhere({
       name: device.name
     })) {
       d.set(device);
@@ -150,11 +143,20 @@ TiHandler = (function() {
   });
 
   Pylon.on("enableDevice", function(cid) {
-    return Pylon.get('TiHandler').attachDevice(cid);
+    return Pylon.TiHandler.attachDevice(cid);
   });
 
   Pylon.on("disableDevice", function(cid) {
-    return Pylon.get('TiHandler').detachDevice(cid);
+    return Pylon.TiHandler.detachDevice(cid);
+  });
+
+  Pylon.on("disconnectSensorTags", function() {
+    var collection;
+    collection = Pylon.devices;
+    collection.each(function(m) {
+      return Pylon.TiHandler.detachDevice(m.cid);
+    });
+    collection.reset();
   });
 
   TiHandler.prototype.initialize = function(sessionInfo) {
@@ -163,7 +165,7 @@ TiHandler = (function() {
 
   TiHandler.prototype.detachDevice = function(cid) {
     var d, name, role;
-    d = Pylon.get('devices').get(cid);
+    d = Pylon.devices.get(cid);
     if (!d) {
       return;
     }
@@ -179,7 +181,7 @@ TiHandler = (function() {
     if (Pylon.state.get('recording')) {
       return;
     }
-    d = Pylon.get('devices').get(cid);
+    d = Pylon.devices.get(cid);
     name = d.get('name');
     if (!name) {
       name = 'No Name -- HELP';
@@ -207,7 +209,7 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":15,"Case":35,"backbone":32,"jquery":39,"underscore":42}],2:[function(require,module,exports){
+},{"./lib/buglog.coffee":3,"./lib/console":5,"./lib/glib.coffee":6,"./models/device-model.coffee":15,"Case":36,"backbone":33,"jquery":40,"underscore":43}],2:[function(require,module,exports){
 var $, BV, Backbone, EventModel, Pylon, PylonTemplate, _, activateNewButtons, admin, adminData, adminEvent, applicationVersion, applog, applogger, buglog, clients, clinicShowedErrors, clinicTimer, clinicians, clinics, configurationTimer, configurations, detectHash, enableRecordButtonOK, enterAdmin, enterCalibrate, enterClear, enterLogin, enterLogout, enterRecording, enterUpload, eventModelLoader, exitAdmin, exitCalibrate, exitRecording, externalEvent, getClinics, getConfiguration, getHandheld, getProtocol, initAll, localStorage, onHandheld, onPause, pageGen, pages, protocolTimer, protocols, protocolsShowedErrors, recordingIsActive, ref, ref1, ref2, ref3, ref4, resolveConnected, resolveLockdown, sessionInfo, setSensor, startBlueTooth, uploader,
   slice = [].slice;
 
@@ -230,8 +232,20 @@ buglog = require('./lib/buglog.coffee');
 applogger = (applog = new buglog("app")).log;
 
 PylonTemplate = Backbone.Model.extend({
+  defaults: {
+    hostUrl: hostUrl
+  },
   state: (require('./models/state.coffee')).state,
   onHandheld: onHandheld,
+  setLogonVersion: function(version) {
+    this.set({
+      logonVersion: version
+    });
+    this.sessionInfo.set({
+      logonVersion: version
+    });
+    this.trigger("systemEvent:LogonVersion:" + version);
+  },
   theSession: function() {
     return this.attributes.sessionInfo;
   },
@@ -241,21 +255,19 @@ PylonTemplate = Backbone.Model.extend({
         return this.currentProtocol = p;
       }
     } else {
-      return this.currentProtocol = protocols.findWhere({
+      return this.currentProtocol = this.protocols.findWhere({
         name: p
       });
     }
   },
   theProtocol: function() {
-    var protocols;
     if (this.currentProtocol) {
       return this.currentProtocol;
     }
-    protocols = this.attributes.protocols;
-    if (!protocols || !sessionInfo.attributes.testID) {
+    if (!this.protocols || !sessionInfo.attributes.testID) {
       return {};
     }
-    return this.currentProtocol = protocols.findWhere({
+    return this.currentProtocol = this.protocols.findWhere({
       name: sessionInfo.attributes.testID
     });
   },
@@ -265,6 +277,20 @@ PylonTemplate = Backbone.Model.extend({
 });
 
 window.Pylon = Pylon = new PylonTemplate;
+
+Pylon.configurations = require('./models/configurations.coffee');
+
+Pylon.clinics = require('./models/clinics.coffee');
+
+Pylon.clinicians = require('./models/clinicians.coffee');
+
+Pylon.clients = require('./models/clients.coffee');
+
+Pylon.protocols = require('./models/protocols.coffee');
+
+Pylon.sessionInfo = require('./models/session.coffee');
+
+clinics = Pylon.clinics, configurations = Pylon.configurations, clinicians = Pylon.clinicians, clients = Pylon.clients, protocols = Pylon.protocols, sessionInfo = Pylon.sessionInfo;
 
 Pylon.on('all', function() {
   var event, mim, rest;
@@ -281,8 +307,6 @@ Pylon.on('all', function() {
 
 Pylon.set('spearCount', 1);
 
-Pylon.set('hostUrl', hostUrl);
-
 Pylon.set('vertmeterScale', {
   lo: 55.625,
   hi: 56.875
@@ -298,8 +322,6 @@ if (Pylon.onHandheld) {
 
 pages = require('./views/pages.coffee');
 
-Pylon.set('adminView', require('./views/adminView.coffee').adminView);
-
 ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader = ref.eventModelLoader;
 
 
@@ -307,26 +329,6 @@ ref = require("./lib/upload.coffee"), uploader = ref.uploader, eventModelLoader 
 Section: Data Structures
  Routines to create and handle data structures and interfaces to them
  */
-
-configurations = require('./models/configurations.coffee');
-
-Pylon.set('configurations', configurations);
-
-clinics = require('./models/clinics.coffee');
-
-Pylon.set('clinics', clinics);
-
-clinicians = require('./models/clinicians.coffee');
-
-Pylon.set('clinicians', clinicians);
-
-clients = require('./models/clients.coffee');
-
-Pylon.set('clients', clients);
-
-protocols = require('./models/protocols.coffee');
-
-Pylon.set('protocols', protocols);
 
 adminData = Backbone.Model.extend();
 
@@ -336,8 +338,6 @@ admin = new adminData({
   clients: clients,
   protocol: protocols
 });
-
-Pylon.sessionInfo = sessionInfo = require('./models/session.coffee');
 
 applicationVersion = require('./version.coffee');
 
@@ -355,9 +355,7 @@ sessionInfo.set({
 
 applogger("Version:" + (sessionInfo.get('applicationVersion')));
 
-pageGen = new pages.Pages(sessionInfo);
-
-Pylon.set('pageGen', pageGen);
+Pylon.pageGen = pageGen = new pages.Pages(sessionInfo);
 
 EventModel = require("./models/event-model.coffee").EventModel;
 
@@ -444,15 +442,11 @@ activateNewButtons = function() {
     legend: "Reject",
     enabled: false
   });
-  Pylon.on("systemEvent:clear:reject", enterClear);
-  Pylon.on("systemEvent:rejector:reject", enterClear);
   UploadButton = new BV('upload', "u-full-width");
   UploadButton.set({
     legend: "Accept",
     enabled: false
   });
-  Pylon.on("systemEvent:upload:accept", enterUpload);
-  Pylon.on("systemEvent:acceptor:accept", enterUpload);
   AcceptButton = new Pylon.BV('acceptor');
   AcceptButton.set({
     legend: "accept",
@@ -466,6 +460,7 @@ activateNewButtons = function() {
   Pylon.on("systemEvent:upload:accept", enterUpload);
   Pylon.on("systemEvent:acceptor:accept", enterUpload);
   Pylon.on("systemEvent:rejector:reject", enterClear);
+  Pylon.on("systemEvent:clear:reject", enterClear);
   CalibrateButton = new BV('calibrate');
   CalibrateButton.set({
     legend: "notify",
@@ -514,6 +509,7 @@ enterAdmin = function() {
 
 exitAdmin = function() {
   enterLogout();
+  window.location.reload();
   return false;
 };
 
@@ -532,7 +528,7 @@ enterLogin = function(hash) {
     /*
     if mHash == hash
       alert "hash not changed"
-    if !mHash 
+    if !mHash
       alert "No Hash"
      */
     sessionInfo.set(sessionInfo.idAttribute, model.get(model.idAttribute));
@@ -581,16 +577,16 @@ enterLogout = function() {
   $('option:selected').prop('selected', false);
   $('option.forceSelect').prop('selected', true);
   $('#done').removeClass('button-primary').addClass('disabled').attr('disabled', 'disabled').off('click');
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
   Pylon.trigger('admin:enable');
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     legend: "Log In",
     enabled: true
   });
-  (Pylon.get('button-upload')).set('enabled', false);
-  (Pylon.get('button-clear')).set('enabled', false);
+  Pylon.button_upload.set('enabled', false);
+  Pylon.button_clear.set('enabled', false);
   return false;
 };
 
@@ -610,27 +606,21 @@ enterClear = function(accept) {
   Pylon.trigger("removeRecorderWindow");
   Pylon.trigger("removeAcceptReject");
   $('#testID').prop("disabled", false);
+  Pylon.button_clear.set('enabled', false);
+  Pylon.button_upload.set('enabled', false);
+  Pylon.button_action.set({
+    enabled: true,
+    legend: "Record"
+  });
   p = Pylon.setTheCurrentProtocol(Pylon.sessionInfo.get('testID'));
   if (Pylon.onHandheld) {
     restart = Pylon.sessionInfo.get('lockdownMode');
   } else {
     restart = localStorage['hash'];
   }
+  sessionInfo.close(accept);
   pageGen.forceTest();
-  sessionInfo.set({
-    accepted: accept
-  });
-  eventModelLoader(sessionInfo);
-  (Pylon.get('button-clear')).set('enabled', false);
-  (Pylon.get('button-upload')).set('enabled', false);
-  (Pylon.get('button-action')).set({
-    enabled: true,
-    legend: "Record"
-  });
   Pylon.saneTimeout(200, function() {
-    sessionInfo.unset(sessionInfo.idAttribute, {
-      silent: true
-    });
     if (restart) {
       return window.location.reload();
     }
@@ -647,11 +637,11 @@ enterCalibrate = function() {
   Pylon.state.set({
     calibrating: false
   });
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: true,
     legend: "Record"
   });
-  (Pylon.get('button-calibrate')).set({
+  Pylon.button_calibrate.set({
     legend: "Exit Calibration",
     enabled: false
   });
@@ -662,7 +652,7 @@ exitCalibrate = function() {
   Pylon.state.set({
     calibrating: false
   });
-  (Pylon.get('button-calibrate')).set('legend', "Calibrate");
+  Pylon.button_calibrate.set('legend', "Calibrate");
   return false;
 };
 
@@ -697,7 +687,7 @@ enterRecording = function() {
   Pylon.state.set({
     scanning: false
   });
-  (Pylon.get('button-admin')).set('enabled', false);
+  Pylon.button_admin.set('enabled', false);
   if (Pylon.state.get('recording')) {
     return;
   }
@@ -706,7 +696,7 @@ enterRecording = function() {
     scanning: false
   });
   applogger("Record state set scanning false, recording true");
-  (Pylon.get('button-calibrate')).set('enabled', false);
+  Pylon.button_calibrate.set('enabled', false);
   if ((ref5 = Pylon.get('Left')) != null) {
     ref5.set({
       numReadings: 0
@@ -779,13 +769,13 @@ Pylon.on('systemEvent:recordCountDown:fail', function() {
   Pylon.state.set({
     recording: false
   });
-  (Pylon.get('button-calibrate')).set('enabled', true);
+  Pylon.button_calibrate.set('enabled', true);
   pageGen.forceTest('orange');
   $('#testID').prop("disabled", true);
 });
 
 Pylon.on('systemEvent:recordCountDown:start', function() {
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
   return false;
@@ -795,13 +785,12 @@ exitRecording = function() {
   if ('stopping' === Pylon.state.get('recording')) {
     return;
   }
-  Pylon.get('button-action').set({
+  Pylon.button_action.set({
     enabled: false
   });
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     enabled: true
   });
-  debugger;
   return false;
 };
 
@@ -811,19 +800,19 @@ Pylon.on('systemEvent:stopCountDown:over', function() {
     recording: false
   });
   Pylon.trigger('systemEvent:endRecording');
-  (Pylon.get('button-action')).set({
+  Pylon.button_action.set({
     enabled: false
   });
-  (Pylon.get('button-upload')).set({
+  Pylon.button_upload.set({
     enabled: true
   });
-  (Pylon.get('button-calibrate')).set({
+  Pylon.button_calibrate.set({
     enabled: true
   });
-  (Pylon.get('button-clear')).set({
+  Pylon.button_clear.set({
     enabled: true
   });
-  (Pylon.get('button-admin')).set({
+  Pylon.button_admin.set({
     enabled: true
   });
   return false;
@@ -834,7 +823,7 @@ startBlueTooth = function() {
   TiHandlerDef = require('./TiHandler.coffee');
   TiHandler = new TiHandlerDef(sessionInfo);
   window.TiHandler = TiHandler;
-  return Pylon.set('TiHandler', TiHandler);
+  return Pylon.TiHandler = TiHandler;
 };
 
 setSensor = function() {
@@ -857,13 +846,13 @@ enableRecordButtonOK = function() {
   canRecord = true;
   if (!Pylon.state.get('loggedIn')) {
     canRecord = false;
-    (Pylon.get("button-admin")).set({
+    Pylon.button_admin.set({
       enabled: true,
       legend: "log in"
     });
   }
   if (canRecord) {
-    (Pylon.get('button-action')).set({
+    Pylon.button_action.set({
       enabled: true,
       legend: "Record"
     });
@@ -908,7 +897,7 @@ Pylon.on('adminDone', function() {
   }, {
     silent: true
   });
-  (Pylon.get('button-admin')).set('legend', "Log Out");
+  Pylon.button_admin.set('legend', "Log Out");
   Pylon.state.set('loggedIn', true);
   pageGen.activateSensorPage();
   enableRecordButtonOK();
@@ -928,11 +917,6 @@ clinics.on('fetched', function() {
   if (Pylon.state.all(['protocols', 'handheld'])) {
     return Pylon.trigger('canLogIn');
   }
-});
-
-configurations.on('fetched', function() {
-  Pylon.retroPW = configurations;
-  Pylon.userUnlock = configurations;
 });
 
 getConfiguration = function() {
@@ -1089,7 +1073,7 @@ Pylon.rate = function(ms) {
 Pylon.rate(10);
 
 $(document).on('deviceready', function() {
-  var handheld, handheldTimer, loadScript, ref10, ref5, ref6, ref7, ref8, ref9;
+  var getLogon, handheld, handheldTimer, loadScript, logonTimer, ref10, ref5, ref6, ref7, ref8, ref9;
   applogger("device ready");
   require('./lib/capture-log.coffee');
   sessionInfo.set('platformUUID', ((ref5 = window.device) != null ? ref5.uuid : void 0) || "No ID");
@@ -1126,15 +1110,20 @@ $(document).on('deviceready', function() {
   });
   startBlueTooth();
   loadScript = require("./lib/loadScript.coffee").loadScript;
-  loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
-    return applogger("logon.js returns status of " + status);
-  });
+  getLogon = function() {
+    return loadScript(Pylon.get('hostUrl') + ("logon.js?bla=" + (Date.now())), function(status) {
+      if (status === 'loaded') {
+        clearInterval(logonTimer);
+      }
+      return applogger("logon.js returns status of " + status);
+    });
+  };
+  getLogon();
+  logonTimer = setInterval(getLogon, 12000);
 });
 
 onPause = function() {
-  var devices;
-  devices = Pylon.get('devices');
-  devices.map(function(d) {
+  Pylon.devices.map(function(d) {
     return TiHandler.detachDevice(d.cid);
   });
 };
@@ -1178,7 +1167,7 @@ $(function() {
 
 
 
-},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/upload.coffee":10,"./models/clients.coffee":11,"./models/clinicians.coffee":12,"./models/clinics.coffee":13,"./models/configurations.coffee":14,"./models/event-model.coffee":16,"./models/handheld.coffee":17,"./models/protocols.coffee":18,"./models/session.coffee":19,"./models/state.coffee":20,"./version.coffee":21,"./views/adminView.coffee":22,"./views/button-view.coffee":23,"./views/pages.coffee":25,"backbone":32,"jquery":39,"underscore":42}],3:[function(require,module,exports){
+},{"./TiHandler.coffee":1,"./lib/buglog.coffee":3,"./lib/capture-log.coffee":4,"./lib/loadScript.coffee":7,"./lib/upload.coffee":10,"./models/clients.coffee":11,"./models/clinicians.coffee":12,"./models/clinics.coffee":13,"./models/configurations.coffee":14,"./models/event-model.coffee":16,"./models/handheld.coffee":17,"./models/protocols.coffee":18,"./models/session.coffee":19,"./models/state.coffee":20,"./version.coffee":21,"./views/button-view.coffee":23,"./views/pages.coffee":26,"backbone":33,"jquery":40,"underscore":43}],3:[function(require,module,exports){
 var buglog, c, localConsole, logger,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; },
   slice = [].slice;
@@ -1194,11 +1183,16 @@ localConsole = window.Console;
 window.Console = c;
 
 module.exports = buglog = (function() {
+  buglog.prototype.enable = function(names) {
+    return logger.enable(names);
+  };
+
   function buglog(nameSpace) {
-    this.log = bind(this.log, this);
     var queue;
+    this.nameSpace = nameSpace;
+    this.log = bind(this.log, this);
     queue = [];
-    this.yourLogger = new logger(nameSpace);
+    this.yourLogger = new logger(this.nameSpace);
     logger.formatters.j = require('json-stringify-safe');
     this.yourLogger.useColors = false;
     this.yourLogger.log = function() {
@@ -1233,7 +1227,7 @@ module.exports = buglog = (function() {
 
 
 
-},{"./console":5,"debug":37,"json-stringify-safe":40}],4:[function(require,module,exports){
+},{"./console":5,"debug":38,"json-stringify-safe":41}],4:[function(require,module,exports){
 var Backbone, buglog, introlog, logItems, logPacket, logger;
 
 Backbone = require('backbone');
@@ -1307,7 +1301,7 @@ Pylon.accessFileSystem = function() {
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32}],5:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33}],5:[function(require,module,exports){
 /*!
 Copyright (C) 2011 by Marty Zalega
 
@@ -1725,7 +1719,7 @@ exports.loadScript = loadScript;
 
 
 
-},{"underscore":42}],8:[function(require,module,exports){
+},{"underscore":43}],8:[function(require,module,exports){
 var buglog, sanity, sanitylog, sanitylogger, stats,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
 
@@ -1950,7 +1944,7 @@ module.exports = statistics = (function() {
 
 
 },{"./buglog.coffee":3}],10:[function(require,module,exports){
-var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
+var $, Backbone, MyId, Pylon, _, accessItem, buglog, eventModelLoader, getNextItem, hiWater, localStorage, needs, oldAll, records, removeItem, sendToHost, setBadItem, setNewItem, timeOutScheduled, uploader, uploading, uplog, uplogger;
 
 $ = require('jquery');
 
@@ -1961,8 +1955,6 @@ Backbone = require('backbone');
 buglog = require('./buglog.coffee');
 
 uplogger = (uplog = new buglog("uploader")).log;
-
-uplogger("initializing");
 
 localStorage = window.localStorage;
 
@@ -1995,6 +1987,17 @@ hiWater = function() {
   return high;
 };
 
+setBadItem = function(backboneAttributes) {
+  var bad;
+  bad = localStorage.getItem('trash_can');
+  bad = (bad && bad.split(",")) || [];
+  localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
+  if (needs(bad, backboneAttributes.LSid)) {
+    bad.push(backboneAttributes.LSid);
+    localStorage.setItem('trash_can', bad.join(','));
+  }
+};
+
 oldAll = -1;
 
 records = function() {
@@ -2008,27 +2011,27 @@ records = function() {
   return all;
 };
 
-setNewItem = function(backboneAttributes) {
+setNewItem = function(backboneAttributes, time) {
   var events;
+  if (time == null) {
+    time = 50;
+  }
   events = records();
-  uplogger("keys = " + (events.join(',')));
   localStorage.setItem(backboneAttributes.LSid, JSON.stringify(backboneAttributes));
   if (needs(events, backboneAttributes.LSid)) {
     events.push(backboneAttributes.LSid);
     localStorage.setItem('all_events', events.join(','));
   }
   timeOutScheduled = true;
-  setTimeout(getNextItem, 50);
+  setTimeout(getNextItem, time);
 };
 
 accessItem = function(lsid) {
-  uplogger("accessing item " + lsid);
   return localStorage.getItem(lsid);
 };
 
 removeItem = function(lsid) {
   var events, i, id, key, len;
-  uplogger("removing item " + lsid);
   events = records();
 
   /*
@@ -2048,20 +2051,16 @@ removeItem = function(lsid) {
   }
   localStorage.removeItem(lsid);
   localStorage.setItem('all_events', events.join(','));
-  uplogger("removeItem set all_events " + (events.join(',')));
 };
 
 getNextItem = function() {
   var e, events, item, key, uploadDataObject;
-  uplogger("Uploader Activated");
   events = records();
   if (!events.length) {
-    uplogger("Nothing  to Upload");
     timeOutScheduled = false;
     return null;
   }
   if (!events.length || uploading) {
-    uplogger("Busy -- ");
     return null;
   }
   key = events.shift();
@@ -2071,7 +2070,7 @@ getNextItem = function() {
   } catch (error) {
     e = error;
     uplogger("Error in localStorage retrieval- key==" + key);
-    uplogger("item discarded -- invalid JSON");
+    uplogger("item discarded -- invalid JSON", item);
     return null;
   }
   return sendToHost(uploadDataObject);
@@ -2095,12 +2094,11 @@ eventModelLoader = function(uploadDataModel) {
   item.LSid = MyId();
   item.url = uploadDataModel.url;
   item.hostFails = 0;
-  uplogger("adding " + item.LSid + " to localStorage");
   setNewItem(item);
 };
 
 sendToHost = function(uDM) {
-  var hopper, stress, uploadDataObject, url;
+  var hopper, uploadDataObject, url;
   uploading = uDM.LSid;
   url = uDM.url;
   if (!url.match('http[s]?://')) {
@@ -2110,17 +2108,12 @@ sendToHost = function(uDM) {
     url: url
   });
   uploadDataObject = new hopper(uDM);
-  stress = Pylon.get('stress');
-  if (stress > Math.random()) {
-    uplogger("stress test upload failure, item " + (uploadDataObject.get('LSid')) + ", retry in 5 seconds");
-    return;
-  }
-  uDM = uploadDataObject.attributes;
-  if (uDM.session) {
-    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
-  } else {
-    uplogger("attempt " + uDM.LSid + " ", uDM.url, uDM._id);
-  }
+
+  /*
+   *  uncomment to force failures in testing
+  if .2 > Math.random()
+    uploadDataObject.url = "silly"
+   */
   uploadDataObject.save(null, {
     success: function(a, b, code) {
       var id;
@@ -2134,23 +2127,30 @@ sendToHost = function(uDM) {
         uplogger("success " + id + " (session) ");
         Pylon.trigger('sessionUploaded');
       }
-      uplogger("upload of " + id + " complete");
       setTimeout(getNextItem, 0);
     },
     error: function(a, b, c) {
-      var failCode, fails;
-      setTimeout(getNextItem, 5000);
-      uDM = a.attributes;
-      if (uDM.session) {
-        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
-      } else {
-        uplogger("failure " + uDM.LSid + " ", uDM.url, uDM.id);
-      }
+      var code, id, stophere;
       uploading = false;
-      failCode = b.status;
-      fails = a.get('hostFails');
-      fails += 1;
-      uplogger(fails + " failures (" + failCode + ") on " + (a.get('LSid')));
+      stophere = "error";
+      uDM = a.attributes;
+      code = b.statusText;
+      if (uDM.session) {
+        uplogger("failure " + uDM.LSid + " " + code + " ", uDM.url, uDM.readings.substring(0, 30), uDM.role, uDM.session);
+      } else {
+        uplogger("failure (session) " + code + " " + uDM.LSid + " ", uDM.url, uDM.id);
+      }
+      id = uDM.LSid;
+      removeItem(id);
+      uDM.hostFails += 1;
+      if (uDM.hostFails > 10) {
+        uplogger("item " + id + " removed from upload queue");
+        setBadItem(uDM);
+        timeOutScheduled = true;
+        setTimeout(getNextItem, 0);
+        return;
+      }
+      setNewItem(uDM, 100);
     }
   });
 };
@@ -2178,7 +2178,7 @@ module.exports = {
 
 
 
-},{"./buglog.coffee":3,"backbone":32,"jquery":39,"underscore":42}],11:[function(require,module,exports){
+},{"./buglog.coffee":3,"backbone":33,"jquery":40,"underscore":43}],11:[function(require,module,exports){
 var $, Backbone, _, clientCollection, clientModel, clients;
 
 window.$ = $ = require('jquery');
@@ -2202,7 +2202,7 @@ module.exports = clients = new clientCollection;
 
 
 
-},{"backbone":32,"jquery":39,"underscore":42}],12:[function(require,module,exports){
+},{"backbone":33,"jquery":40,"underscore":43}],12:[function(require,module,exports){
 var Backbone, clinicianCollection, clinicianModel;
 
 Backbone = require('backbone');
@@ -2222,7 +2222,7 @@ module.exports = new clinicianCollection;
 
 
 
-},{"backbone":32}],13:[function(require,module,exports){
+},{"backbone":33}],13:[function(require,module,exports){
 var $, Backbone, _, clinicCollection, clinicModel;
 
 window.$ = $ = require('jquery');
@@ -2244,7 +2244,7 @@ module.exports = new clinicCollection;
 
 
 
-},{"backbone":32,"jquery":39,"underscore":42}],14:[function(require,module,exports){
+},{"backbone":33,"jquery":40,"underscore":43}],14:[function(require,module,exports){
 var $, Backbone, ConfigurationCollection, ConfigurationModel, _;
 
 window.$ = $ = require('jquery');
@@ -2257,6 +2257,7 @@ ConfigurationModel = Backbone.Model.extend({
   initialize: function() {
     Pylon.unlock = this.attributes.unlock;
     Pylon.loginPassword = this.attributes.loginPassword;
+    Pylon.eMailCarbon = this.attributes.eMailCarbon;
   }
 });
 
@@ -2273,7 +2274,7 @@ module.exports = new ConfigurationCollection;
 
 
 
-},{"backbone":32,"jquery":39,"underscore":42}],15:[function(require,module,exports){
+},{"backbone":33,"jquery":40,"underscore":43}],15:[function(require,module,exports){
 var Backbone, EventModel, Sanity, ab2str, accelerometer, boilerplate, buglog, deviceCollection, devicelog, devicelogger, infoService, lastDisplay, str2ab;
 
 Backbone = require('backbone');
@@ -2342,6 +2343,26 @@ exports.deviceModel = Backbone.Model.extend({
   },
   urlRoot: function() {
     return Pylon.get('hostUrl') + 'sensor-tag';
+  },
+  demote: function() {
+    this.set({
+      firmwareVersion: "sensorTag",
+      modelNumber: "modelNumber",
+      rowname: "",
+      role: "",
+      serialNumber: "serialnumber",
+      softwareVersion: "softwareVersion",
+      name: "none",
+      hasBoilerPlate: false,
+      buttonText: 'connect',
+      buttonClass: 'button-primary',
+      deviceStatus: '--',
+      connected: false,
+      rate: 20,
+      subscribeState: false,
+      lastDisplay: Date.now(),
+      numReadings: 0
+    });
   },
   initialize: function() {
     var error, name, role;
@@ -2567,23 +2588,73 @@ exports.deviceModel = Backbone.Model.extend({
       });
     }
   },
+  getBoil: function(count) {
+    var thePromise;
+    if (count == null) {
+      count = 0;
+    }
+    if (count > 5) {
+      Pylon.trigger("systemEvent:sanity:badBoilerplate" + this.get('role'));
+      this.set({
+        connected: false,
+        deviceStatus: 'Rejected'
+      });
+      Pylon.devices.remove(this);
+      return;
+    }
+    thePromise = Promise.all(this.getBoilerplate());
+    return thePromise.then((function(_this) {
+      return function() {
+        var boilerBad, c1, c2, e;
+        try {
+          if (!_this.attributes.firmwareVersion.match(/\(.*\)/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.modelNumber.match(/CC2650 SensorTag/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.serialNumber.match(/\([LlRr]\)/)) {
+            boilerBad = true;
+          }
+          if (!_this.attributes.softwareVersion.match(/Retrotope/)) {
+            boilerBad = true;
+          }
+          if (_this.attributes.name.match(/retrotope-mot/i)) {
+            boilerBad = true;
+          }
+        } catch (error1) {
+          e = error1;
+          boilerBad = true;
+        }
+        c1 = (_this.attributes.serialNumber.match(/\(([LlRr])\)/))[1].toUpperCase();
+        c2 = (_this.attributes.name.match(/\(([LlRr])\)/))[1].toUpperCase();
+        if (c1 !== c1) {
+          boilerBad = true;
+        }
+        if (boilerBad) {
+          _this.getBoil(count + 1);
+        } else {
+          Pylon.trigger("systemEvent:sanity:goodBoilerplate" + _this.get('role'));
+          _this.set('hasBoilerPlate', true);
+          _this.resubscribe();
+        }
+        thePromise["catch"](function() {
+          Pylon.trigger("systemEvent:sanity:badBoilerplate" + _this.get('role'));
+          Pylon.devices.remove(_this);
+          return _this.set({
+            connected: false,
+            deviceStatus: 'Rejected'
+          });
+        });
+      };
+    })(this));
+  },
   subscribe: function() {
-    var e, thePromise;
+    var e;
     Pylon.trigger("systemEvent:sanity:warn" + this.attributes.role);
     try {
       devicelogger(" subscribe attempt " + this.attributes.name);
-      thePromise = Promise.all(this.getBoilerplate());
-      thePromise.then((function(_this) {
-        return function() {
-          return _this.set('hasBoilerPlate', true);
-        };
-      })(this));
-      thePromise.then(this.resubscribe.bind(this));
-      thePromise["catch"]((function(_this) {
-        return function() {
-          return Pylon.trigger("systemEvent:sanity:fail" + _this.get('role'));
-        };
-      })(this));
+      this.getBoil();
     } catch (error1) {
       e = error1;
       Pylon.trigger("systemEvent:sanity:fail" + this.get('role'));
@@ -2679,11 +2750,11 @@ deviceCollection = Backbone.Collection.extend({
   model: exports.deviceModel
 });
 
-Pylon.set('devices', new deviceCollection);
+Pylon.devices = new deviceCollection;
 
 
 
-},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":16,"backbone":32}],16:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"../lib/sanity.coffee":8,"./event-model.coffee":16,"backbone":33}],16:[function(require,module,exports){
 var Backbone, EventModel, _, eventModelLoader;
 
 Backbone = require('backbone');
@@ -2708,7 +2779,7 @@ EventModel = Backbone.Model.extend({
     Pylon.on('systemEvent:endRecording', _.bind(this.close, this));
     sessionInfo = Pylon.sessionInfo;
     this.listenTo(sessionInfo, 'change:_id', function() {
-      return this.set('session', sessionInfo.get('_id'));
+      this.set('session', sessionInfo.get('_id'));
     });
   },
   flush: function() {
@@ -2718,6 +2789,7 @@ EventModel = Backbone.Model.extend({
     }
     flushTime = Date.now();
     if ((this.has('session')) && (this.has('readings'))) {
+      this.set('path', Pylon.sessionInfo.getEventPath());
       eventModelLoader(this);
     }
     this.unset('readings');
@@ -2746,7 +2818,7 @@ exports.EventModel = EventModel;
 
 
 
-},{"../lib/upload.coffee":10,"backbone":32,"underscore":42}],17:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":33,"underscore":43}],17:[function(require,module,exports){
 
 /*
  * set up information regarding the specific device
@@ -2795,6 +2867,7 @@ handheld.on('change', function() {
   handlogger("handheld change: " + (JSON.stringify(handheld.attributes)));
   localStorage['clientUnlockOK'] = handheld.get('clientUnlockOK');
   localStorage['debug'] = handheld.get('debugString');
+  introlog.enable(localStorage['debug']);
   if (handheld.get('loadLogFiles')) {
     Pylon.accessFileSystem();
   }
@@ -2843,7 +2916,7 @@ module.exports = handheld;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32}],18:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33}],18:[function(require,module,exports){
 var Backbone, _, protocol, protocolCollection, shuffle;
 
 _ = require('underscore');
@@ -2909,17 +2982,109 @@ module.exports = new protocolCollection;
 
 
 
-},{"backbone":32,"underscore":42}],19:[function(require,module,exports){
-var Backbone, rawSession, sessionInfo;
+},{"backbone":33,"underscore":43}],19:[function(require,module,exports){
+var Backbone, eventModelLoader, rawSession, sessionInfo;
 
 Backbone = require('backbone');
+
+eventModelLoader = require('../lib/upload.coffee').eventModelLoader;
 
 rawSession = Backbone.Model.extend({
   idAttribute: '_id',
   url: Pylon.get('hostUrl') + 'session',
+  getEventPath: function() {
+    return this.rawPath + "/event" + (this.eventCounter++) + ".json";
+  },
+  rawPath: "",
+  eventCounter: 0,
+  setPath: function() {
+    var client, clientName, clinic, clinicName, clinician, clinicianName, err;
+    try {
+      clinic = this.get('clinic');
+      clinicName = Pylon.clinics.findWhere({
+        _id: clinic
+      }).get('name');
+      clinician = this.get('clinician');
+      clinicianName = Pylon.clinicians.findWhere({
+        _id: clinician
+      }).get('name');
+      client = this.get('client');
+      clientName = Pylon.clients.findWhere({
+        _id: client
+      }).get('name');
+    } catch (error) {
+      err = error;
+      return;
+    }
+    this.rawPath = (clinicName + "/" + clinicianName.first + " " + clinicianName.last + "/" + clientName.first + " " + clientName.last + "/" + (this.get('beginTime'))).replace(/ +/g, '_').toLowerCase();
+    this.set({
+      path: this.rawPath + "/session.json",
+      eMailCarbon: Pylon.eMailCarbon,
+      clinicName: clinicName,
+      clinicianName: clinicianName,
+      clinicianEmail: Pylon.clinicians.findWhere({
+        _id: clinician
+      }).get('email'),
+      clientName: clientName,
+      logonVersion: Pylon.get('logonVersion')
+    });
+  },
+  close: function(accepted) {
+    var endTime, endTimeHuman;
+    endTime = Date.now();
+    endTimeHuman = new Date();
+    endTimeHuman.setTime(endTime);
+    this.set({
+      accepted: accepted,
+      endTime: endTime,
+      endTimeLocal: endTimeHuman.toLocaleTimeString(),
+      endDateLocal: endTimeHuman.toLocaleDateString()
+    });
+    debugger;
+    eventModelLoader(this);
+    this.unset('beginTime', {
+      silent: true
+    });
+    this.unset('path', {
+      silent: true
+    });
+    this.unset('_id', {
+      silent: true
+    });
+    this.eventCounter = 0;
+  },
   initialize: function() {
+    Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
+      return function() {
+        var beginTime, beginTimeLocal;
+        beginTime = Date.now();
+        beginTimeLocal = new Date();
+        beginTimeLocal.setTime(beginTime);
+        _this.set({
+          beginTime: beginTime,
+          beginTimeLocal: beginTimeLocal.toLocaleTimeString(),
+          beginDateLocal: beginTimeLocal.toLocaleDateString()
+        });
+        _this.setPath();
+      };
+    })(this));
     return this.on('change:testID', function() {
-      return Pylon.setTheCurrentProtocol(null);
+      this.eventCounter = 0;
+      Pylon.setTheCurrentProtocol(null);
+      if (this.attributes.testID) {
+        this.attributes.protocolName = this.attributes.testID;
+      } else {
+        this.unset('beginTime', {
+          silent: true
+        });
+        this.unset('path', {
+          silent: true
+        });
+        this.unset('_id', {
+          silent: true
+        });
+        this.eventCounter = 0;
+      }
     });
   }
 });
@@ -2938,7 +3103,7 @@ module.exports = sessionInfo;
 
 
 
-},{"backbone":32}],20:[function(require,module,exports){
+},{"../lib/upload.coffee":10,"backbone":33}],20:[function(require,module,exports){
 var Backbone, State, _, buglog, statelog, statelogger;
 
 buglog = require('../lib/buglog.coffee');
@@ -2998,8 +3163,8 @@ exports.state = new State;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"underscore":42}],21:[function(require,module,exports){
-module.exports = '3.1.23-test';
+},{"../lib/buglog.coffee":3,"backbone":33,"underscore":43}],21:[function(require,module,exports){
+module.exports = '3.3.5';
 
 
 
@@ -3048,7 +3213,7 @@ adminView = (function() {
     var clientViewTemplate, clinicViewTemplate, clinicianViewTemplate, doneViewTemplate;
     clinicViewTemplate = Backbone.View.extend({
       el: '#desiredClinic',
-      collection: Pylon.get('clinics'),
+      collection: Pylon.clinics,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3062,7 +3227,7 @@ adminView = (function() {
           if (theOptionCid) {
             theClinic = this.collection.get(theOptionCid);
             try {
-              this.attributes.session.set('clinic', theClinic);
+              this.attributes.session.set('clinic', theClinic.id);
             } catch (error1) {
               error = error1;
               adminlogger("Error from setting clinic", error);
@@ -3073,13 +3238,13 @@ adminView = (function() {
           }
           this.attributes.session.unset('clinician');
           this.attributes.session.unset('client');
-          temp = Pylon.get('clinicians');
+          temp = Pylon.clinicians;
           temp.reset();
           if (theClinic) {
             temp.add(theClinic.get('clinicians'));
           }
           temp.trigger('change');
-          temp = Pylon.get('clients');
+          temp = Pylon.clients;
           temp.reset();
           if (theClinic) {
             temp.add(theClinic.get('clients'));
@@ -3119,7 +3284,7 @@ adminView = (function() {
     });
     clinicianViewTemplate = Backbone.View.extend({
       el: '#desiredClinician',
-      collection: Pylon.get('clinicians'),
+      collection: Pylon.clinicians,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3165,7 +3330,7 @@ adminView = (function() {
     });
     clientViewTemplate = Backbone.View.extend({
       el: '#desiredClient',
-      collection: Pylon.get('clients'),
+      collection: Pylon.clients,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -3237,7 +3402,7 @@ adminView = (function() {
     this.clientView = new clientViewTemplate;
     this.clinicView = new clinicViewTemplate;
     this.clinicianView = new clinicianViewTemplate;
-    Pylon.get('clinics').trigger('change');
+    Pylon.clinics.trigger('change');
   };
 
   Pylon.on("reveal", function() {
@@ -3359,7 +3524,7 @@ exports.adminView = new adminView;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"jquery":39,"teacup":41}],23:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],23:[function(require,module,exports){
 var $, Backbone, T, V;
 
 Backbone = require('backbone');
@@ -3372,7 +3537,7 @@ T = require('teacup');
 /*
 DebugButton = new BV 'debug'
  * initialize with legend and enabled boolean
- * BV sets Pylon with the attribute 'button-name'
+ * BV sets Pylon with the attribute 'button_name'
  *  NB. BV sets Pylon with event triggers like 'systemEvent:name:legend'
 DebugButton.set
   legend: "Show Log"
@@ -3453,7 +3618,7 @@ module.exports = Backbone.Model.extend({
     if (classes == null) {
       classes = "three.columns";
     }
-    Pylon.set("button-" + this.name, this);
+    Pylon["button_" + this.name] = this;
     this.setTrigger();
     this.on("change:legend", this.setTrigger, this);
     this.view = new V(this, this.name, classes);
@@ -3465,7 +3630,270 @@ module.exports = Backbone.Model.extend({
 
 
 
-},{"backbone":32,"jquery":39,"teacup":41}],24:[function(require,module,exports){
+},{"backbone":33,"jquery":40,"teacup":42}],24:[function(require,module,exports){
+var $, Backbone, Device, Devices, LibraryView, T, _, accelerometer, boilerplate, buglog, deviceLibrary, enginelogger, fullscanBody, fullscanExample, implementing, infoService, introlog,
+  slice = [].slice;
+
+Backbone = require('backbone');
+
+_ = require('underscore');
+
+$ = require('jquery');
+
+T = require('teacup');
+
+buglog = require('../lib/buglog.coffee');
+
+enginelogger = (introlog = new buglog("fullscan")).log;
+
+implementing = function() {
+  var classReference, i, j, key, len, mixin, mixins, ref, value;
+  mixins = 2 <= arguments.length ? slice.call(arguments, 0, i = arguments.length - 1) : (i = 0, []), classReference = arguments[i++];
+  for (j = 0, len = mixins.length; j < len; j++) {
+    mixin = mixins[j];
+    ref = mixin.prototype;
+    for (key in ref) {
+      value = ref[key];
+      classReference.prototype[key] = value;
+    }
+  }
+  return classReference;
+};
+
+infoService = "0000180a-0000-1000-8000-00805f9b34fb";
+
+infoService = "180a";
+
+boilerplate = {
+  firmwareVersion: "2a26",
+  modelNumber: "2a24",
+  serialNumber: "2a25",
+  softwareVersion: "2a28"
+};
+
+accelerometer = {
+  service: "F000AA80-0451-4000-B000-000000000000",
+  data: "F000AA81-0451-4000-B000-000000000000",
+  notification: "F0002902-0451-4000-B000-000000000000",
+  configuration: "F000AA82-0451-4000-B000-000000000000",
+  period: "F000AA83-0451-4000-B000-000000000000"
+};
+
+accelerometer.notification = '00002902-0000-1000-8000-00805f9b34fb';
+
+accelerometer.notification = '2902';
+
+accelerometer.period = 'F000AA83-0451-4000-B000-000000000000';
+
+fullscanBody = Backbone.View.extend({
+  el: "#protocol-here",
+  clear: function() {
+    enginelogger("fullscan clear");
+    this.$el.html('');
+  },
+  initialize: function() {
+    Pylon.trigger("disconnectSensorTags");
+    enginelogger("fullscan initialize");
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        return T.div(".container", {
+          style: "padding-top:25px;padding-bottom:25px"
+        }, function() {});
+      };
+    })(this)));
+  }
+});
+
+
+/*
+
+advertising: Object
+  kCBAdvDataIsConnectable: 1
+  kCBAdvDataLocalName: "retrotope-mot(L)"
+  kCBAdvDataManufacturerData: ArrayBuffer
+  byteLength: 5
+  ArrayBuffer Prototype
+  kCBAdvDataServiceUUIDs: ["AA80"] (1)
+  kCBAdvDataTxPowerLevel: 0
+
+id: "98FD0808-E151-5717-4AB6-5FA3311EB728"
+name: "SensorTag (l)"
+rssi: -66
+ */
+
+Device = Backbone.Model.extend();
+
+Devices = Backbone.Collection.extend({
+  model: Device
+});
+
+Pylon.deviceLibrary = deviceLibrary = new Devices();
+
+LibraryView = Backbone.View.extend({
+  el: "#deviceList",
+  initialize: function() {
+    return this.listenTo(deviceLibrary, 'update', this.render, this);
+  },
+  render: function() {
+    if (!this.$el) {
+      return;
+    }
+    this.$el.show();
+    return this.$el.html(T.render(function() {
+      return T.div('.container', function() {
+        return deviceLibrary.each(function(node) {
+          return T.div('.row', function() {
+            var a, obj, ref, ref1, ref2;
+            a = node.attributes;
+            enginelogger("rendering deviceList", a.name || "bad Name");
+            if (!((ref = a.name) != null ? ref.match(/etrotope-m|sensorta/i) : void 0)) {
+              return;
+            }
+            T.div('.two.columns', a.id.slice(-4));
+            T.div('.four.columns', a.name);
+            if (a.advertising) {
+              T.div('.four.columns', (ref1 = a.advertising) != null ? ref1.CBAdvDataLocalName : void 0);
+            }
+            if ((ref2 = a.name) != null ? ref2.match(/retroto|sensorta/i) : void 0) {
+              return T.button('.three.columns.button-primary', (
+                obj = {},
+                obj["" + Pylon.onWhat] = "Pylon.trigger('connectTag','" + a.id + "')",
+                obj
+              ), 'Reset');
+            }
+          });
+        });
+      });
+    }));
+  }
+});
+
+fullscanExample = Backbone.View.extend({
+  el: "#example",
+  response: function(got, wanted) {
+    enginelogger("fullscan example response");
+    Pylon.trigger("systemEvent:fullscan:got-" + got);
+  },
+  clear: function() {
+    enginelogger("fullscan example clear");
+    this.$el.html('');
+  },
+  initialize: function() {
+    this.$el.html(T.render((function(_this) {
+      return function() {
+        T.div(".row", "press scan to search for tags");
+        T.div(".row", {
+          style: "margin-top:1rem"
+        }, function() {
+          var obj, obj1;
+          T.div('.one.column');
+          T.button("#disconnectButton.three.columns.button-primary", (
+            obj = {},
+            obj["" + Pylon.onWhat] = "Pylon.trigger('disconnection')",
+            obj
+          ), "STOP");
+          T.div(".five.columns", "Register sensorTag");
+          return T.button("#refreshButton.three.columns.button-primary", (
+            obj1 = {},
+            obj1["" + Pylon.onWhat] = "Pylon.trigger('refreshScan')",
+            obj1
+          ), "SCAN");
+        });
+        return T.div(".app.row", {
+          style: "font-size:2rem;text-align:center"
+        }, function() {
+          T.div("#mainPage", function() {
+            return T.ul("#deviceList");
+          });
+          return T.div("#detailPage", function() {
+            return T.div("#accelerometerData", "waiting");
+          });
+        });
+      };
+    })(this)));
+    Pylon.on('disconnection', function() {
+      Pylon.trigger('disconnecttag');
+      Pylon.trigger("systemEvent:action:stop");
+    });
+    Pylon.on('refreshScan', this.refreshDeviceList, this);
+    Pylon.on('connectTag', this.connect, this);
+    enginelogger("fullscan example initialize");
+    Pylon.viewLibrary = new LibraryView();
+    this.bindEvents();
+    $("#detailPage").hide();
+  },
+  bindEvents: function() {
+    document.addEventListener('deviceready', this.onDeviceReady.bind(this), false);
+  },
+  onDeviceReady: function() {
+    this.refreshDeviceList();
+  },
+  refreshDeviceList: function() {
+    Pylon.trigger('disconnecttag');
+    Pylon.trigger("disconnectSensorTags");
+    deviceLibrary.reset();
+    ble.scan([], 10, this.onDiscoverDevice.bind(this), this.onError.bind());
+    $("#detailPage").hide();
+  },
+  onDiscoverDevice: function(unit) {
+    deviceLibrary.add(unit);
+  },
+  connect: function(e) {
+    var deviceId, onAccelerometerData, onConnect, onStart, startOK;
+    deviceId = e;
+    Pylon.on('disconnecttag', function() {
+      ble.disconnect(deviceId, (function() {}), (function() {}));
+    });
+    onAccelerometerData = function(data) {
+      var a, message;
+      message = void 0;
+      a = new Uint8Array(data);
+      message = 'X: ' + a[0] / 64 + '<br/>' + 'Y: ' + a[1] / 64 + '<br/>' + 'Z: ' + a[2] / 64 * -1;
+      this.$('#accelerometerData').html(message);
+      enginelogger(message);
+    };
+    startOK = (function(_this) {
+      return function() {
+        ble.startNotification(deviceId, accelerometer.service, accelerometer.data, onAccelerometerData, _this.onError);
+      };
+    })(this);
+    onStart = function() {
+      var configData;
+      configData = new Uint16Array(1);
+      configData[0] = 0x017F;
+      return ble.write(deviceId, accelerometer.service, accelerometer.configuration, configData.buffer, ((function(_this) {
+        return function() {
+          return startOK();
+        };
+      })(this)), this.onError);
+    };
+    onConnect = function() {
+      var configData;
+      configData = new Uint8Array(1);
+      configData[0] = 0xFF;
+      ble.write(deviceId, accelerometer.service, accelerometer.period, configData.buffer, ((function(_this) {
+        return function() {
+          enginelogger('Started accelerometer.');
+          onStart();
+        };
+      })(this)), this.onError);
+      $("#detailPage").show();
+      $("#deviceList").hide();
+    };
+    ble.connect(deviceId, onConnect, this.onError.bind(this));
+  },
+  onError: function(reason) {
+    enginelogger('ERROR: ', reason);
+  }
+});
+
+exports.fullscanBody = fullscanBody;
+
+exports.fullscanExample = fullscanExample;
+
+
+
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42,"underscore":43}],25:[function(require,module,exports){
 var $, Backbone, T, buglog, implementing, introlog, intrologger, lockDown, pHT, protocolPhase,
   slice = [].slice;
 
@@ -3557,7 +3985,7 @@ lockDown = new protocolPhase;
 
 
 
-},{"../lib/buglog.coffee":3,"./patient-modal.coffee":26,"backbone":32,"jquery":39,"teacup":41}],25:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":40,"teacup":42}],26:[function(require,module,exports){
 var $, Backbone, Pages, Teacup, buglog, implementing, viewlog, viewlogger,
   slice = [].slice,
   bind = function(fn, me){ return function(){ return fn.apply(me, arguments); }; };
@@ -3586,10 +4014,10 @@ implementing = function() {
   return classReference;
 };
 
-Pylon.set('adminView', require('./adminView.coffee').adminView);
+Pylon.adminView = require('./adminView.coffee').adminView;
 
 Pages = (function() {
-  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, mongoObjectId, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
+  var T, a, acceptReject, alerter, banner, body, br, button, canvas, div, doctype, durationReport, form, h2, h3, h4, h5, head, hr, img, input, label, li, ol, option, p, password, protocolReport, raw, recorder, ref, renderable, select, span, table, tag, tbody, td, tea, text, th, thead, tr, ul;
 
   T = tea = new Teacup.Teacup;
 
@@ -3952,32 +4380,31 @@ Pages = (function() {
     return Pylon.sessionInfo.unset('testID');
   };
 
-  mongoObjectId = function() {
-    var timestamp;
-    timestamp = (new Date().getTime() / 1000 | 0).toString(16);
-    return (timestamp + 'deadbeefxxxxxxxx').replace(/[x]/g, function() {
-      return (Math.random() * 16 | 0).toString(16);
-    }).toLowerCase();
-  };
-
   Pages.prototype.wireButtons = function() {
-    var model;
-    model = Pylon.sessionInfo;
+    var sessionInfo;
+    sessionInfo = Pylon.sessionInfo;
     return $('#testID').change((function(_this) {
       return function(node) {
         $('#ProtocolSelect').text('Which Protocol?').css('color', '');
-        model.set('testID', $('#testID option:selected').val());
-        model.set(model.idAttribute, mongoObjectId());
-        (Pylon.get('button-admin')).set({
-          legend: "Log Out",
-          enable: true
+        sessionInfo.set('testID', $('#testID option:selected').val());
+        Pylon.button_admin.set({
+          legend: "Session?",
+          enable: false
         });
-        model.save(null, {
+        sessionInfo.save(null, {
           success: function(model, response, options) {
             viewlogger("session logged with host");
+            return Pylon.button_admin.set({
+              legend: "Log Out",
+              enable: true
+            });
           },
           error: function(model, response, options) {
             viewlogger("Session save Fail: " + response.statusText);
+            return Pylon.button_admin.set({
+              legend: "Log Out",
+              enable: true
+            });
           }
         });
         return false;
@@ -3987,7 +4414,7 @@ Pages = (function() {
 
   Pages.prototype.renderPage = function() {
     var bodyHtml, protocolViewTemplate, scaleSweetSpot, setVertmeter;
-    bodyHtml = this.theBody(this.topButtons, Pylon.get('adminView').adminContents);
+    bodyHtml = this.theBody(this.topButtons, Pylon.adminView.adminContents);
     $('body').html(bodyHtml);
     this.wireButtons();
     require('./lock-down.coffee');
@@ -3995,7 +4422,7 @@ Pages = (function() {
     require('./protocol-active.coffee');
     protocolViewTemplate = Backbone.View.extend({
       el: '#testID',
-      collection: Pylon.get('protocols'),
+      collection: Pylon.protocols,
       attributes: {
         session: Pylon.sessionInfo
       },
@@ -4020,10 +4447,9 @@ Pages = (function() {
         viewlogger("Rendering Tests");
         this.$el.html(T.render((function(_this) {
           return function() {
-            var clinician, clinicianID, i, len, lockWanted, protocol, ref1, z;
+            var clinician, clinicianID, i, len, lockWanted, protocol, ref1;
             clinicianID = Pylon.sessionInfo.get('clinician');
-            z = Pylon.get('clinicians');
-            clinician = z.findWhere({
+            clinician = Pylon.clinicians.findWhere({
               _id: clinicianID
             });
             lockWanted = Pylon.sessionInfo.get('lockdownMode');
@@ -4100,7 +4526,7 @@ Pages = (function() {
           return;
         }
         viewlogger("activating Right");
-        if (old = Pylon.get('RightView')) {
+        if (old = Pylon.RightView) {
           old.clearTimer();
         }
         statusRightViewTemplate = Backbone.View.extend({
@@ -4118,7 +4544,7 @@ Pages = (function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
-        Pylon.set("RightView", new statusRightViewTemplate);
+        Pylon.RightView = new statusRightViewTemplate;
       };
     })(this));
     Pylon.on('change:Left', (function(_this) {
@@ -4144,16 +4570,16 @@ Pages = (function() {
             return this.$el.html("Items: " + this.model.get('numReadings'));
           }
         });
-        Pylon.set("LeftView", new statusLeftViewTemplate);
+        Pylon.LeftView = new statusLeftViewTemplate;
       };
     })(this));
-    Pylon.get('adminView').wireAdmin();
+    Pylon.adminView.wireAdmin();
   };
 
   Pages.prototype.activateAdminPage = function(buttonSpec) {
     $('#adminForm').addClass('active');
     $('#sensorPage').removeClass('active');
-    return Pylon.get('adminView').inspectAdminPage();
+    return Pylon.adminView.inspectAdminPage();
   };
 
   Pages.prototype.activateSensorPage = function(buttonSpec) {
@@ -4169,7 +4595,7 @@ exports.Pages = Pages;
 
 
 
-},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./lock-down.coffee":24,"./protocol-active.coffee":27,"./protocol-phase.coffee":28,"backbone":32,"jquery":39,"teacup":41}],26:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./adminView.coffee":22,"./lock-down.coffee":25,"./protocol-active.coffee":28,"./protocol-phase.coffee":29,"backbone":33,"jquery":40,"teacup":42}],27:[function(require,module,exports){
 var $, Backbone, T, activeKey, buglog, implementing, introlog, intrologger, pHT, protocolHeadTemplate, recorderViewTemplate,
   slice = [].slice;
 
@@ -4448,8 +4874,8 @@ if ((typeof module !== "undefined" && module !== null ? module.exports : void 0)
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"jquery":39,"teacup":41}],27:[function(require,module,exports){
-var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, implementing, listenForTouch, logTouch, ref, ref1, ref2, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],28:[function(require,module,exports){
+var $, BV, Backbone, ProtocolReportTemplate, T, colorTextBody, colorTextExample, dontListenForTouch, fullscanBody, fullscanExample, implementing, listenForTouch, logTouch, ref, ref1, ref2, ref3, saneTimeout, shuffle, tappingBody, tappingExample, tenIconBody, tenIconExample, touchEntries,
   slice = [].slice;
 
 Backbone = require('backbone');
@@ -4466,18 +4892,20 @@ ref1 = require('./tapping.coffee'), tappingBody = ref1.tappingBody, tappingExamp
 
 ref2 = require('./ten-icon.coffee'), tenIconBody = ref2.tenIconBody, tenIconExample = ref2.tenIconExample;
 
+ref3 = require('./fullscan.coffee'), fullscanBody = ref3.fullscanBody, fullscanExample = ref3.fullscanExample;
+
 saneTimeout = function(time, f) {
   return setTimeout(f, time);
 };
 
 implementing = function() {
-  var classReference, k, key, l, len, mixin, mixins, ref3, value;
+  var classReference, k, key, l, len, mixin, mixins, ref4, value;
   mixins = 2 <= arguments.length ? slice.call(arguments, 0, k = arguments.length - 1) : (k = 0, []), classReference = arguments[k++];
   for (l = 0, len = mixins.length; l < len; l++) {
     mixin = mixins[l];
-    ref3 = mixin.prototype;
-    for (key in ref3) {
-      value = ref3[key];
+    ref4 = mixin.prototype;
+    for (key in ref4) {
+      value = ref4[key];
       classReference.prototype[key] = value;
     }
   }
@@ -4485,10 +4913,10 @@ implementing = function() {
 };
 
 shuffle = function(a) {
-  var i, j, k, ref3, ref4;
-  for (i = k = ref3 = a.length - 1; ref3 <= 1 ? k <= 1 : k >= 1; i = ref3 <= 1 ? ++k : --k) {
+  var i, j, k, ref4, ref5;
+  for (i = k = ref4 = a.length - 1; ref4 <= 1 ? k <= 1 : k >= 1; i = ref4 <= 1 ? ++k : --k) {
     j = Math.floor(Math.random() * i);
-    ref4 = [a[j], a[i]], a[i] = ref4[0], a[j] = ref4[1];
+    ref5 = [a[j], a[i]], a[i] = ref5[0], a[j] = ref5[1];
   }
   return a;
 };
@@ -4540,11 +4968,11 @@ touchEntries = {
 logTouch = function(event) {
   var eachTouch, f, key, touch, touches;
   touches = (function() {
-    var k, len, ref3, results;
-    ref3 = event.targetTouches;
+    var k, len, ref4, results;
+    ref4 = event.targetTouches;
     results = [];
-    for (k = 0, len = ref3.length; k < len; k++) {
-      eachTouch = ref3[k];
+    for (k = 0, len = ref4.length; k < len; k++) {
+      eachTouch = ref4[k];
       touch = {};
       for (key in touchEntries) {
         f = touchEntries[key];
@@ -4672,6 +5100,14 @@ ProtocolReportTemplate = Backbone.View.extend({
     var engine;
     engine = theTest.get('engine');
     switch (engine) {
+      case 'fullscan':
+        this.renderExample = new fullscanExample({
+          model: theTest
+        });
+        this.renderBody = new fullscanBody({
+          model: theTest
+        });
+        break;
       case 'stroop':
         this.renderExample = new colorTextExample({
           model: theTest
@@ -4714,7 +5150,7 @@ exports.ProtocolReportTemplate = new ProtocolReportTemplate;
 
 
 
-},{"./button-view.coffee":23,"./stroop.coffee":29,"./tapping.coffee":30,"./ten-icon.coffee":31,"backbone":32,"jquery":39,"teacup":41}],28:[function(require,module,exports){
+},{"./button-view.coffee":23,"./fullscan.coffee":24,"./stroop.coffee":30,"./tapping.coffee":31,"./ten-icon.coffee":32,"backbone":33,"jquery":40,"teacup":42}],29:[function(require,module,exports){
 var $, Backbone, T, buglog, implementing, introlog, intrologger, pHT, pP, protocolPhase,
   slice = [].slice;
 
@@ -4749,14 +5185,22 @@ protocolPhase = Backbone.Model.extend({
     protocol: null
   },
   initialize: function() {
-    var abort, countOut, exitThisTest, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, start, terminate, underway;
+    var abort, countOut, exitThisTest, justWait, leadIn, practice, proceedWithNextTest, selectTheFirstTest, selectTheNextTest, setTestOrDefault, startProtocol, terminate, underway;
     intrologger("initialize");
     Pylon.on('systemEvent:recordCountDown:start', (function(_this) {
       return function() {
         var p, sessionInfo;
         _this.set('protocol', p = Pylon.theProtocol());
+        Pylon.sessionInfo.set('duration', -1);
         if (!p.get('gestureCapture')) {
+          Pylon.set('logonVersion', "Not Active");
+          Pylon.sessionInfo.set('duration', 0);
           Pylon.trigger("systemEvent:externalTimer:show");
+          if ("Not Active" === Pylon.get("logonVersion")) {
+            alert("Initialization Failure, press OK to reload");
+            window.location.reload();
+            return;
+          }
         }
         if (p.get('mileStonesAreProtocols')) {
           _this.allMyProtocols = (p.get('mileStones')).slice(0);
@@ -4765,7 +5209,7 @@ protocolPhase = Backbone.Model.extend({
         }
         sessionInfo = Pylon.sessionInfo;
         if (sessionInfo.isNew()) {
-          start();
+          startProtocol();
         } else {
           leadIn();
         }
@@ -4778,7 +5222,7 @@ protocolPhase = Backbone.Model.extend({
         Pylon.trigger('removeRecorderWindow');
       };
     })(this);
-    start = (function(_this) {
+    startProtocol = (function(_this) {
       return function() {
         var sessionID;
         if (sessionInfo.isNew()) {
@@ -4839,7 +5283,7 @@ protocolPhase = Backbone.Model.extend({
     })(this);
     underway = (function(_this) {
       return function() {
-        var limit, p;
+        var limit, p, start;
         Pylon.trigger('protocol:proceed');
         p = Pylon.theProtocol();
         limit = p.get('testDuration');
@@ -4983,7 +5427,7 @@ pP = new protocolPhase;
 
 
 
-},{"../lib/buglog.coffee":3,"./patient-modal.coffee":26,"backbone":32,"jquery":39,"teacup":41}],29:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"./patient-modal.coffee":27,"backbone":33,"jquery":40,"teacup":42}],30:[function(require,module,exports){
 var $, Backbone, T, buglog, colorTextBody, colorTextExample, colorToHue, colorToName, enginelogger, implementing, introlog, shuffle,
   slice = [].slice;
 
@@ -5159,7 +5603,7 @@ exports.colorTextExample = colorTextExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"jquery":39,"teacup":41}],30:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],31:[function(require,module,exports){
 var $, Backbone, T, buglog, enginelogger, implementing, introlog, tappingBody, tappingExample,
   slice = [].slice;
 
@@ -5251,7 +5695,7 @@ exports.tappingExample = tappingExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"jquery":39,"teacup":41}],31:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42}],32:[function(require,module,exports){
 var $, Backbone, T, _, activeKey, buglog, enginelogger, implementing, introlog, keyPadWithIcon, rowWithIcon, shuffle, tenIconBody, tenIconExample,
   slice = [].slice;
 
@@ -5470,7 +5914,7 @@ exports.tenIconExample = tenIconExample;
 
 
 
-},{"../lib/buglog.coffee":3,"backbone":32,"jquery":39,"teacup":41,"underscore":42}],32:[function(require,module,exports){
+},{"../lib/buglog.coffee":3,"backbone":33,"jquery":40,"teacup":42,"underscore":43}],33:[function(require,module,exports){
 (function (global){
 //     Backbone.js 1.3.3
 
@@ -7394,7 +7838,7 @@ exports.tenIconExample = tenIconExample;
 });
 
 }).call(this,typeof global !== "undefined" ? global : typeof self !== "undefined" ? self : typeof window !== "undefined" ? window : {})
-},{"jquery":39,"underscore":33}],33:[function(require,module,exports){
+},{"jquery":40,"underscore":34}],34:[function(require,module,exports){
 //     Underscore.js 1.8.3
 //     http://underscorejs.org
 //     (c) 2009-2015 Jeremy Ashkenas, DocumentCloud and Investigative Reporters & Editors
@@ -8944,7 +9388,7 @@ exports.tenIconExample = tenIconExample;
   }
 }.call(this));
 
-},{}],34:[function(require,module,exports){
+},{}],35:[function(require,module,exports){
 // shim for using process in browser
 
 var process = module.exports = {};
@@ -9004,7 +9448,7 @@ process.chdir = function (dir) {
 };
 process.umask = function() { return 0; };
 
-},{}],35:[function(require,module,exports){
+},{}],36:[function(require,module,exports){
 /*! Case - v1.4.2 - 2016-11-11
 * Copyright (c) 2016 Nathan Bubna; Licensed MIT, GPL */
 (function() {
@@ -9158,7 +9602,7 @@ process.umask = function() { return 0; };
 
 }).call(this);
 
-},{}],36:[function(require,module,exports){
+},{}],37:[function(require,module,exports){
 /**
  * Helpers.
  */
@@ -9312,7 +9756,7 @@ function plural(ms, n, name) {
   return Math.ceil(ms / n) + ' ' + name + 's';
 }
 
-},{}],37:[function(require,module,exports){
+},{}],38:[function(require,module,exports){
 (function (process){
 /**
  * This is the web browser implementation of `debug()`.
@@ -9501,7 +9945,7 @@ function localstorage() {
 }
 
 }).call(this,require('_process'))
-},{"./debug":38,"_process":34}],38:[function(require,module,exports){
+},{"./debug":39,"_process":35}],39:[function(require,module,exports){
 
 /**
  * This is the common logic for both the Node.js and web browser
@@ -9705,7 +10149,7 @@ function coerce(val) {
   return val;
 }
 
-},{"ms":36}],39:[function(require,module,exports){
+},{"ms":37}],40:[function(require,module,exports){
 /*!
  * jQuery JavaScript Library v3.3.1
  * https://jquery.com/
@@ -20071,7 +20515,7 @@ if ( !noGlobal ) {
 return jQuery;
 } );
 
-},{}],40:[function(require,module,exports){
+},{}],41:[function(require,module,exports){
 exports = module.exports = stringify
 exports.getSerialize = serializer
 
@@ -20100,7 +20544,7 @@ function serializer(replacer, cycleReplacer) {
   }
 }
 
-},{}],41:[function(require,module,exports){
+},{}],42:[function(require,module,exports){
 // Generated by CoffeeScript 1.9.3
 (function() {
   var Teacup, doctypes, elements, fn1, fn2, fn3, fn4, i, j, l, len, len1, len2, len3, m, merge_elements, ref, ref1, ref2, ref3, tagName,
@@ -20535,7 +20979,7 @@ function serializer(replacer, cycleReplacer) {
 
 }).call(this);
 
-},{}],42:[function(require,module,exports){
+},{}],43:[function(require,module,exports){
 (function (global){
 //     Underscore.js 1.9.1
 //     http://underscorejs.org
