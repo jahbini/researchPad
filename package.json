@@ -24,8 +24,7 @@
         "seen-js": "^0.2.7",
         "teacup": "latest",
         "underscore": "^1.9.1",
-        "winston": "^3.1.0",
-        "org.nypr.cordova.nslogger-cocoalumberjack-connector-plugin": "../lumberjack"
+        "winston": "^3.1.0"
     },
     "browser": {
         "Case": "./node_modules/case",
