@@ -17,10 +17,8 @@ transporter = Mailer.createTransport
   secure: false
   #secure: "TLS"
   auth:
-    user: "FRDA-Trial@retrotope.com"
-    pass: "Retro94022"
-    #user: "jim@cambodianbamboostudies.com"
-    #pass: "Tqbfj0tlD"
+    user: "jim@cambodianbamboostudies.com"
+    pass: "Tqbfj0tlD"
 
 csvOrder = 'clinicName,clientName,beginDateLocal,beginTimeLocal,protocolName,walkTime,accepted,endTimeLocal'
 
